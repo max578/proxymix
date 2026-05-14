@@ -1,0 +1,137 @@
+---
+title: "Quickstart"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Quickstart}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 6,
+  fig.height = 4,
+  out.width = "100%"
+)
+set.seed(20260513)
+```
+
+```{r setup}
+library(proxymix)
+```
+
+`proxymix` fits Gaussian-mixture *proxies* to user-supplied target densities. The unified verb is
+
+```r
+fit_proxymix(target, N, regime = c("auto", "moment", "sample", "kld"))
+```
+
+— and the three fitting regimes come from Hoek and Elliott (2024):
+
+| Regime       | When it applies                                | Method                                |
+|--------------|------------------------------------------------|---------------------------------------|
+| `"moment"`   | `N == 1` and the target carries samples        | Closed-form moment matching           |
+| `"sample"`   | `N >= 2` and the target carries samples        | Classical EM                          |
+| `"kld"`      | The target carries `log_density` only          | **Importance-sampled KLD-EM**         |
+
+The `"kld"` regime is the wedge: no other CRAN package fits Gaussian-mixture proxies when you can evaluate `f(x)` but cannot (cheaply) sample from it.
+
+## A target you cannot sample from
+
+We use the bundled "banana" target — a non-Gaussian 2-D shape obtained by warping an isotropic Gaussian through a quadratic. Its log-density is exact and normalised; we deliberately do *not* attach samples, so only regime (iii) applies.
+
+```{r banana}
+tgt <- banana_target()
+tgt
+```
+
+A quick look at the target as a contour grid:
+
+```{r banana-contour, fig.cap = "The banana target density."}
+grid_x <- seq(-3, 3, length.out = 120)
+grid_y <- seq(-3, 3, length.out = 120)
+G <- expand.grid(x1 = grid_x, x2 = grid_y)
+G$f <- exp(tgt@log_density(as.matrix(G)))
+
+if (requireNamespace("ggplot2", quietly = TRUE)) {
+  library(ggplot2)
+  ggplot(G, aes(x1, x2, z = f)) +
+    geom_contour_filled(bins = 12L) +
+    scale_fill_viridis_d(option = "mako", guide = "none") +
+    coord_equal() +
+    labs(title = "Banana target", x = expression(x[1]), y = expression(x[2])) +
+    theme_minimal(base_size = 12)
+}
+```
+
+## Fit a Gaussian-mixture proxy
+
+We fit a 3-component proxy by KLD-EM with importance sampling against a multivariate-Student-t proposal. The fit runs in a fraction of a second.
+
+```{r fit}
+proposal <- is_mvt(n_dim = 2L, mean = c(0, 0),
+                   sigma = 4 * diag(2), df = 5)
+
+fit <- fit_proxymix(tgt, N = 3L, regime = "kld",
+                    proposal = proposal,
+                    is_size = 2000L,
+                    max_iter = 30L,
+                    seed = 1L)
+fit
+```
+
+Diagnostics:
+
+```{r diagnostics}
+data.frame(
+  iter = seq_along(kld_trace(fit)),
+  kld  = kld_trace(fit)
+)
+ess_trace(fit)
+```
+
+## Overlay the proxy on the target
+
+```{r overlay, fig.cap = "Banana target (filled) with the 3-component proxy overlaid (dashed contours)."}
+G$g <- exp(dgmm(as.matrix(G[, c("x1", "x2")]), fit, log = TRUE))
+
+if (requireNamespace("ggplot2", quietly = TRUE)) {
+  ggplot(G, aes(x1, x2)) +
+    geom_contour_filled(aes(z = f), bins = 10L, alpha = 0.8) +
+    geom_contour(aes(z = g), colour = "white", linetype = "dashed",
+                 linewidth = 0.4, bins = 8L) +
+    scale_fill_viridis_d(option = "mako", guide = "none") +
+    coord_equal() +
+    labs(title = "Target (filled) and proxy (dashed)",
+         x = expression(x[1]), y = expression(x[2])) +
+    theme_minimal(base_size = 12)
+}
+```
+
+## Closed-form mixture operations
+
+Because the fit is a Gaussian mixture, marginals and conditionals are closed-form and exact:
+
+```{r ops}
+gmm_marginalise(fit, keep = 1L)
+gmm_conditionalise(fit, given = c(NA, 0.5))
+```
+
+You can sample from the proxy directly:
+
+```{r sample}
+x <- rgmm(500L, fit)
+head(x)
+```
+
+## Where to next
+
+* `vignette("three_regimes")` — what each of regimes (i), (ii), (iii) does, with a head-to-head comparison on a target whose ground truth is known.
+* `vignette("density_shapes")` — the wedge demonstration. KLD-EM fit on three different non-Gaussian targets (banana, donut, three-mixture), with KLD / ESS / Hellinger reported.
+* `vignette("roadmap")` — what the Tier-2 stubs are for and when they will graduate.
+
+## Reference
+
+Hoek, J. van der and Elliott, R. J. (2024). *Mixtures of multivariate Gaussians.* Stochastic Analysis and Applications. <https://doi.org/10.1080/07362994.2024.2372605>.

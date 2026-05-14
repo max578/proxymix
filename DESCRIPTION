@@ -1,0 +1,59 @@
+Package: proxymix
+Type: Package
+Title: KL-Optimal Gaussian Mixture Proxies for Arbitrary Target Densities
+Version: 0.3.0
+Authors@R: c(
+    person(given = "Max",
+           family = "Moldovan",
+           role = c("aut", "cre"),
+           email = "max.moldovan@gmail.com",
+           comment = c(ORCID = "0000-0001-9680-8474")),
+    person(given = "Johannes",
+           family = "van der Hoek",
+           role = "ctb",
+           comment = "Foundational theory in Hoek & Elliott (2024)."),
+    person(given = "Robert J.",
+           family = "Elliott",
+           role = "ctb",
+           comment = "Foundational theory in Hoek & Elliott (2024)."))
+Description: Fits multivariate Gaussian-mixture proxies that are
+    Kullback-Leibler optimal to user-supplied target densities on real
+    Euclidean space. Three fitting regimes are unified under one verb:
+    (i) closed-form moment matching for a single component,
+    (ii) classical expectation-maximisation when independent samples are
+    available, and (iii) importance-sampled KLD-EM when the target can be
+    evaluated point-wise but not (cheaply) sampled. Closed-form
+    Gaussian-mixture operators (density, sampling, marginalisation,
+    conditioning, divergence) round out the toolkit. Implements the
+    regime hierarchy of Hoek and Elliott (2024)
+    <doi:10.1080/07362994.2024.2372605>.
+License: MIT + file LICENSE
+URL: https://github.com/max578/proxymix
+BugReports: https://github.com/max578/proxymix/issues
+Encoding: UTF-8
+Language: en-AU
+Depends:
+    R (>= 4.3)
+Imports:
+    S7,
+    stats,
+    mvnfast,
+    cli,
+    rlang
+Suggests:
+    mclust,
+    ggplot2,
+    viridis,
+    patchwork,
+    withr,
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0),
+    vdiffr,
+    spelling,
+    covr
+VignetteBuilder: knitr
+RoxygenNote: 7.3.3
+Roxygen: list(markdown = TRUE)
+Config/testthat/edition: 3
+Config/testthat/parallel: true

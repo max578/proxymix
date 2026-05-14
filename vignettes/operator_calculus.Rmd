@@ -1,0 +1,252 @@
+---
+title: "Affine-Gaussian operator calculus on a Gaussian mixture"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Affine-Gaussian operator calculus on a Gaussian mixture}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 6,
+  fig.height = 4,
+  out.width = "100%"
+)
+set.seed(20260514)
+```
+
+```{r setup}
+library(proxymix)
+library(ggplot2)
+```
+
+# Why an operator calculus
+
+A fitted Gaussian-mixture proxy supports four kinds of downstream
+operations in closed form:
+
+* **Pushforward** through a linear sensor or aggregation operator
+  (`gmm_affine`, `gmm_aggregate`).
+* **Bayesian update** on a noisy linear observation
+  (`gmm_observe` — the finite-mixture analogue of a Kalman update).
+* **Marginalisation** over a coordinate subset
+  (`gmm_marginalise`, shipped since v0.1).
+* **Conditioning** on fully observed coordinates
+  (`gmm_conditionalise`, `gmm_missing`).
+
+Each operator returns a `gmm`, so the operators compose freely without
+ever leaving closed form. This is the algebraic dividend of having
+fitted a *parametric* proxy in the first place — a non-parametric KDE
+or a Monte Carlo sample bank cannot do this.
+
+# A worked example
+
+Start with a 2D mixture proxy of a pair of latent variables.
+
+```{r}
+g_prior <- gmm(
+  weights     = c(0.6, 0.4),
+  means       = list(c(-1, 0), c(1.5, 0.5)),
+  covariances = list(diag(c(0.6, 0.8)), diag(c(0.7, 0.5)))
+)
+g_prior
+```
+
+## Pushforward through a linear sensor
+
+Suppose we observe `y = A x + epsilon` with `epsilon ~ N(0, R)` and
+sensor matrix
+
+```{r}
+A <- matrix(c(1, 0,
+              0, 1,
+              1, 1), nrow = 3L, byrow = TRUE)
+b <- c(0, 0, 0)
+R <- 0.05 * diag(3)
+```
+
+`gmm_affine()` returns the pushed-forward mixture in `R^3`.
+
+```{r}
+g_pushed <- gmm_affine(g_prior, A, b, noise_cov = R)
+g_pushed
+```
+
+The weights are unchanged; the means are `A mu_k + b` and the
+covariances are `A Sigma_k A' + R`. The output is a closed-form mixture
+in the sensor space.
+
+## Bayesian update on a noisy linear observation
+
+Suppose now that we observe `y = 0.8` on the *first* coordinate of `x`
+alone, with noise variance `R = 0.25`.
+
+```{r}
+A_obs <- matrix(c(1, 0), nrow = 1L)
+g_post <- gmm_observe(g_prior, A = A_obs, y = 0.8,
+                      noise_cov = matrix(0.25, 1L, 1L))
+g_post
+```
+
+Component weights have been multiplied by the marginal evidence
+`pi_k * dnorm(y; A mu_k, S_k)` and renormalised. Component means and
+covariances have been Kalman-updated component-wise.
+
+Visualise the prior and the posterior on a planar grid:
+
+```{r, fig.height = 4}
+grid <- expand.grid(x = seq(-4, 5, length.out = 80L),
+                    y = seq(-3, 3, length.out = 60L))
+gm <- as.matrix(grid)
+prior_df <- data.frame(x = grid$x, y = grid$y,
+                       d = dgmm(gm, g_prior), part = "prior")
+post_df  <- data.frame(x = grid$x, y = grid$y,
+                       d = dgmm(gm, g_post),  part = "posterior")
+long <- rbind(prior_df, post_df)
+ggplot(long, aes(x, y, z = d)) +
+  geom_contour_filled(bins = 8L) +
+  facet_wrap(~ part) +
+  coord_equal() +
+  scale_fill_viridis_d() +
+  labs(title = "Prior vs Bayesian update on y_1 = 0.8 (sigma = 0.5)",
+       x = "x", y = "y", fill = "density") +
+  theme_minimal(base_size = 11)
+```
+
+## Kalman parity check
+
+For a single-component prior, `gmm_observe()` collapses exactly to a
+Kalman update. Verify:
+
+```{r}
+g_single <- gmm(
+  weights     = 1,
+  means       = list(c(0, 0)),
+  covariances = list(diag(c(1, 2)))
+)
+g_one_obs <- gmm_observe(
+  g_single,
+  A = matrix(c(1, 0), nrow = 1L),
+  y = 0.5,
+  noise_cov = matrix(0.5, 1L, 1L)
+)
+
+## Hand Kalman:
+S      <- diag(c(1, 2))
+H      <- matrix(c(1, 0), nrow = 1L)
+R_obs  <- matrix(0.5, 1L, 1L)
+Sx     <- H %*% S %*% t(H) + R_obs
+gain   <- S %*% t(H) %*% solve(Sx)
+mu_hat <- as.numeric(gain * 0.5)
+S_hat  <- S - gain %*% H %*% S
+
+list(
+  mu_diff_max  = max(abs(mu_hat - g_one_obs@means[[1L]])),
+  cov_diff_max = max(abs(S_hat  - g_one_obs@covariances[[1L]]))
+)
+```
+
+The differences are at the level of the numerical-hygiene ridge (1e-6),
+so the operator is exact up to numerical tolerance.
+
+## Aggregation through a coarsening matrix
+
+Aggregating a fine-grained latent (3 components) into a coarser one
+(sum of the first two coordinates) is a special case of `gmm_affine`
+with a row-sum `A`.
+
+```{r}
+g_fine <- gmm(
+  weights     = c(0.3, 0.4, 0.3),
+  means       = list(c(0, 0, 0), c(2, 1, -1), c(-1, -1, 2)),
+  covariances = list(diag(3), diag(3), diag(3))
+)
+A_agg <- matrix(c(1, 1, 0,
+                  0, 0, 1), nrow = 2L, byrow = TRUE)
+gmm_aggregate(g_fine, A_agg)
+```
+
+The aggregated mixture has the same number of components and weights as
+the fine one, but with `mu` and `Sigma` mapped through `A`.
+
+## Missing-data conditioning
+
+If a subset of coordinates is *exactly* observed (no noise),
+`gmm_missing()` routes through the Schur-complement path:
+
+```{r}
+gmm_missing(g_prior, observed = 2L, values = 0.5)
+```
+
+This is equivalent to `gmm_conditionalise(g_prior, given = c(NA, 0.5))`
+but with a clearer index-based signature for missing-data pipelines.
+
+# Composition rules
+
+The operators commute exactly with `gmm_marginalise()` when applied to
+disjoint coordinate subsets, and they associate under sequential
+observation:
+
+```{r}
+## Two sequential observations on disjoint coordinates
+g_a <- gmm_observe(g_prior, A = matrix(c(1, 0), nrow = 1L),
+                   y = 0.5, noise_cov = matrix(0.25, 1, 1))
+g_ab <- gmm_observe(g_a,    A = matrix(c(0, 1), nrow = 1L),
+                    y = 0.2, noise_cov = matrix(0.25, 1, 1))
+
+## Equivalent: one observation on the stacked coordinates
+g_stack <- gmm_observe(
+  g_prior,
+  A         = diag(2),
+  y         = c(0.5, 0.2),
+  noise_cov = 0.25 * diag(2)
+)
+
+list(
+  weights_diff = max(abs(g_ab@weights - g_stack@weights)),
+  mu1_diff     = max(abs(g_ab@means[[1L]] - g_stack@means[[1L]])),
+  cov1_diff    = max(abs(g_ab@covariances[[1L]] - g_stack@covariances[[1L]]))
+)
+```
+
+The disagreement is at the ridge level — the two routes coincide.
+
+# When to *not* use the operator calculus
+
+* **Non-linear channels.** The closed-form maths uses linearity of `A`
+  and Gaussianity of the noise. A non-linear sensor (e.g. a Sigmoid
+  observation, a max-pooling aggregator) is *not* closed form and must
+  not be silently approximated; use a Monte Carlo pushforward instead.
+* **Non-Gaussian observation noise.** Same restriction.
+* **Hierarchical / random-effect models.** The operator calculus
+  applies to a *fixed* affine-Gaussian channel; a mixture-of-channels
+  prior on `(A, R)` requires additional integration that is not closed
+  form in general.
+
+# Comparison to a Gaussian-process latent
+
+For a downscaling problem `g(y) = E_{x | y}[f(x)]`:
+
+* A **Gaussian-process latent** for `f(x)` gives a fully non-parametric,
+  uncertainty-rich representation but does not admit closed-form
+  aggregation under general `A`. Sampling is closed form; integration
+  through a linear operator with additive Gaussian noise *is* closed
+  form for a GP, but mixing GP posteriors across aggregation
+  configurations is heavier than the operator calculus shown here.
+* A **finite Gaussian-mixture latent** (what `proxymix` ships) is less
+  flexible but admits the full operator calculus on this page. The
+  trade-off is bias against algebraic tractability. The choice depends
+  on how much closed-form composition the downstream pipeline needs.
+
+# References
+
+* Hoek, J. van der and Elliott, R. J. (2024). *Mixtures of multivariate
+  Gaussians.* Stochastic Analysis and Applications.
+  <doi:10.1080/07362994.2024.2372605>.
+* Kalman, R. E. (1960). *A new approach to linear filtering and
+  prediction problems.* Transactions of the ASME — J. Basic Engineering.
+* Murphy, K. P. (2012). *Machine Learning: A Probabilistic Perspective.*
+  MIT Press. Ch. 4 (Gaussian models), Ch. 18 (state-space).

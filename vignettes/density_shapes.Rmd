@@ -1,0 +1,211 @@
+---
+title: "The wedge: KLD-EM on three density shapes"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{The wedge: KLD-EM on three density shapes}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 6,
+  fig.height = 4,
+  out.width = "100%"
+)
+set.seed(20260513)
+```
+
+```{r setup}
+library(proxymix)
+```
+
+This is the wedge demonstration. The KLD-EM regime fits a Gaussian-mixture proxy to a target whose density we can *evaluate* but cannot easily *sample from*. Existing CRAN packages for Gaussian mixtures — `mclust`, `mixtools`, `flexmix` — all assume i.i.d. samples are available.
+
+We exercise three quite different non-Gaussian target shapes:
+
+* the **banana** — a Rosenbrock-style 2-D bent ridge;
+* the **donut** — a rotationally symmetric annulus;
+* the **three-mixture** — well-separated 2-D Gaussian components.
+
+For each, we
+
+1. plot the target;
+2. fit by `fit_proxymix(regime = "kld")` with a `df = 5` multivariate-t proposal;
+3. report the importance-sample effective size, the final IS-estimated KLD, and a Monte-Carlo Hellinger sanity check;
+4. overlay the proxy on the target.
+
+## Banana
+
+```{r banana-target, fig.cap = "Banana target."}
+banana <- banana_target()
+
+grid_x <- seq(-3.5, 3.5, length.out = 120)
+G_b <- expand.grid(x1 = grid_x, x2 = grid_x)
+G_b$f <- exp(banana@log_density(as.matrix(G_b)))
+
+if (requireNamespace("ggplot2", quietly = TRUE)) {
+  library(ggplot2)
+  ggplot(G_b, aes(x1, x2, z = f)) +
+    geom_contour_filled(bins = 12L) +
+    scale_fill_viridis_d(option = "mako", guide = "none") +
+    coord_equal() +
+    labs(title = "Banana target") +
+    theme_minimal(base_size = 11)
+}
+```
+
+```{r banana-fit}
+fit_b <- fit_proxymix(banana, N = 4L, regime = "kld",
+                      proposal = is_mvt(n_dim = 2L,
+                                        sigma = 4 * diag(2),
+                                        df = 5),
+                      is_size = 3000L,
+                      max_iter = 50L,
+                      seed = 1L)
+fit_b
+```
+
+```{r banana-overlay, fig.cap = "Banana target (filled) with 4-component proxy (dashed)."}
+G_b$g <- exp(dgmm(as.matrix(G_b[, c("x1", "x2")]), fit_b, log = TRUE))
+if (requireNamespace("ggplot2", quietly = TRUE)) {
+  ggplot(G_b, aes(x1, x2)) +
+    geom_contour_filled(aes(z = f), bins = 10L, alpha = 0.85) +
+    geom_contour(aes(z = g), colour = "white", linetype = "dashed",
+                 linewidth = 0.4, bins = 8L) +
+    scale_fill_viridis_d(option = "mako", guide = "none") +
+    coord_equal() +
+    labs(title = "Banana with proxy") +
+    theme_minimal(base_size = 11)
+}
+```
+
+## Donut
+
+```{r donut-target, fig.cap = "Donut target (rotationally symmetric annulus)."}
+donut <- donut_target()
+
+grid_x <- seq(-4, 4, length.out = 120)
+G_d <- expand.grid(x1 = grid_x, x2 = grid_x)
+G_d$f <- exp(donut@log_density(as.matrix(G_d)))
+
+if (requireNamespace("ggplot2", quietly = TRUE)) {
+  ggplot(G_d, aes(x1, x2, z = f)) +
+    geom_contour_filled(bins = 12L) +
+    scale_fill_viridis_d(option = "mako", guide = "none") +
+    coord_equal() +
+    labs(title = "Donut target") +
+    theme_minimal(base_size = 11)
+}
+```
+
+A donut is genuinely hard for a Gaussian mixture — the modes are *infinitely many* (along the ring). With `N = 6` components, KLD-EM finds a balanced ring-approximation:
+
+```{r donut-fit}
+fit_d <- fit_proxymix(donut, N = 6L, regime = "kld",
+                      proposal = is_mvt(n_dim = 2L,
+                                        sigma = 9 * diag(2),
+                                        df = 5),
+                      is_size = 3500L,
+                      max_iter = 60L,
+                      seed = 1L)
+fit_d
+```
+
+```{r donut-overlay, fig.cap = "Donut target (filled) with 6-component proxy (dashed)."}
+G_d$g <- exp(dgmm(as.matrix(G_d[, c("x1", "x2")]), fit_d, log = TRUE))
+if (requireNamespace("ggplot2", quietly = TRUE)) {
+  ggplot(G_d, aes(x1, x2)) +
+    geom_contour_filled(aes(z = f), bins = 10L, alpha = 0.85) +
+    geom_contour(aes(z = g), colour = "white", linetype = "dashed",
+                 linewidth = 0.4, bins = 8L) +
+    scale_fill_viridis_d(option = "mako", guide = "none") +
+    coord_equal() +
+    labs(title = "Donut with proxy") +
+    theme_minimal(base_size = 11)
+}
+```
+
+## Three-mixture
+
+```{r mixture-target, fig.cap = "Three-component mixture target."}
+mt <- mixture_target()
+
+grid_x <- seq(-4.5, 4.5, length.out = 120)
+G_m <- expand.grid(x1 = grid_x, x2 = grid_x)
+G_m$f <- exp(mt@log_density(as.matrix(G_m)))
+
+if (requireNamespace("ggplot2", quietly = TRUE)) {
+  ggplot(G_m, aes(x1, x2, z = f)) +
+    geom_contour_filled(bins = 12L) +
+    scale_fill_viridis_d(option = "mako", guide = "none") +
+    coord_equal() +
+    labs(title = "Three-mixture target") +
+    theme_minimal(base_size = 11)
+}
+```
+
+```{r mixture-fit}
+fit_m <- fit_proxymix(mt, N = 3L, regime = "kld",
+                      proposal = is_mvt(n_dim = 2L,
+                                        sigma = 6 * diag(2),
+                                        df = 5),
+                      is_size = 3000L,
+                      max_iter = 50L,
+                      seed = 1L)
+fit_m
+```
+
+```{r mixture-overlay, fig.cap = "Three-mixture target (filled) with 3-component proxy (dashed)."}
+G_m$g <- exp(dgmm(as.matrix(G_m[, c("x1", "x2")]), fit_m, log = TRUE))
+if (requireNamespace("ggplot2", quietly = TRUE)) {
+  ggplot(G_m, aes(x1, x2)) +
+    geom_contour_filled(aes(z = f), bins = 10L, alpha = 0.85) +
+    geom_contour(aes(z = g), colour = "white", linetype = "dashed",
+                 linewidth = 0.4, bins = 8L) +
+    scale_fill_viridis_d(option = "mako", guide = "none") +
+    coord_equal() +
+    labs(title = "Three-mixture with proxy") +
+    theme_minimal(base_size = 11)
+}
+```
+
+## Summary
+
+```{r summary}
+summary_tbl <- data.frame(
+  target      = c("banana", "donut", "three-mixture"),
+  N           = c(gmm_n_components(fit_b),
+                  gmm_n_components(fit_d),
+                  gmm_n_components(fit_m)),
+  is_size     = c(fit_b@diagnostics$is_size,
+                  fit_d@diagnostics$is_size,
+                  fit_m@diagnostics$is_size),
+  ESS         = round(c(fit_b@diagnostics$ess,
+                        fit_d@diagnostics$ess,
+                        fit_m@diagnostics$ess), 1L),
+  kld_final   = round(c(fit_b@diagnostics$kld_final,
+                        fit_d@diagnostics$kld_final,
+                        fit_m@diagnostics$kld_final), 4L),
+  hellinger2  = round(c(
+    hellinger_mc(fit_b, n_mc = 2000L, seed = 1L)$h2,
+    hellinger_mc(fit_d, n_mc = 2000L, seed = 1L)$h2,
+    hellinger_mc(fit_m, n_mc = 2000L, seed = 1L)$h2
+  ), 4L)
+)
+summary_tbl
+```
+
+Interpretation:
+
+* **`ESS`** — the effective sample size of the importance-sampling weights, out of `is_size`. ESS well below `is_size` means the proposal is wasteful (heavy weight on few draws); ESS near `is_size` means the proposal is close to the target.
+* **`kld_final`** — the importance-sampled estimate of \(\mathrm{KL}(f \Vert g_\theta)\) at the final parameters. *Small is good.*
+* **`hellinger2`** — a Monte-Carlo estimate of the squared Hellinger distance \(H^2(f, g)\). Bounded in \([0, 1]\) when both densities are normalised; a small value confirms the proxy reproduces the target's mass *and* shape.
+
+The three-mixture is fit nearly exactly (the proxy lives in the same parametric family as the target). The banana is well-approximated by four Gaussians along the ridge. The donut — a topology a Gaussian mixture cannot reproduce exactly — is approximated by a ring of 6 components, with a non-trivial residual KLD reflecting the structural mismatch.
+
+## Reference
+
+Hoek, J. van der and Elliott, R. J. (2024). *Mixtures of multivariate Gaussians.* Stochastic Analysis and Applications. <https://doi.org/10.1080/07362994.2024.2372605>.

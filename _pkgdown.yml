@@ -1,0 +1,54 @@
+url: https://maxmoldovan.github.io/proxymix/
+
+template:
+  bootstrap: 5
+  bslib:
+    primary: "#2C3E50"
+    secondary: "#18BC9C"
+
+reference:
+- title: Top-level interface
+  desc: The unified fitting verb and its dispatcher.
+  contents:
+  - has_concept("interface")
+- title: Classes
+  desc: The S7 class hierarchy.
+  contents:
+  - has_concept("classes")
+- title: Target constructors
+  desc: Ways to build a `gmm_target` — from samples, from a log-density, or from a built-in.
+  contents:
+  - has_concept("targets")
+- title: Fitting regimes
+  desc: The three KL-optimal fitting regimes from Hoek and Elliott (2024).
+  contents:
+  - has_concept("fitting")
+- title: Closed-form mixture operators
+  desc: Density, sampling, marginalisation, conditioning, divergence.
+  contents:
+  - has_concept("ops")
+- title: Importance-sampling proposals
+  desc: Pluggable proposals for regime (iii).
+  contents:
+  - has_concept("proposals")
+- title: Initialisation
+  desc: Initial guesses + best-of-multistart wrapper.
+  contents:
+  - has_concept("init")
+- title: Diagnostics
+  desc: KLD trace, ESS, Hellinger MC, information criteria.
+  contents:
+  - has_concept("diagnostics")
+- title: Tier-2 stubs
+  desc: Signatures only; bodies graduate in later releases.
+  contents:
+  - has_concept("stubs")
+
+articles:
+- title: Vignettes
+  navbar: ~
+  contents:
+  - quickstart
+  - three_regimes
+  - density_shapes
+  - roadmap

@@ -1,0 +1,17 @@
+.Rproj.user
+.Rhistory
+.Rdata
+.RData
+.httr-oauth
+.DS_Store
+*.Rcheck/
+*.tar.gz
+inst/doc/
+src/*.o
+src/*.so
+src/*.dll
+/doc/
+/Meta/
+# Working notes — kept local, not in shared history
+critical_review_*.md
+

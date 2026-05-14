@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+title: "proxymix: KL-Optimal Gaussian Mixture Proxies for Arbitrary Target Densities"
+message: "If you use this software, please cite it using the metadata in this file."
+type: software
+authors:
+  - given-names: Max
+    family-names: Moldovan
+    email: max.moldovan@gmail.com
+    orcid: "https://orcid.org/0000-0001-9680-8474"
+abstract: >-
+  An R package fitting multivariate Gaussian-mixture proxies that are
+  Kullback-Leibler optimal to user-supplied target densities. Three regimes
+  are unified under one verb: closed-form moment matching, classical EM on
+  samples, and importance-sampled KLD-EM against an evaluable-only target.
+license: MIT
+version: 0.1.1
+date-released: "2026-05-14"
+references:
+  - type: article
+    title: "Mixtures of multivariate Gaussians"
+    authors:
+      - family-names: Hoek
+        given-names: Johannes
+        name-particle: van der
+      - family-names: Elliott
+        given-names: Robert J.
+    journal: "Stochastic Analysis and Applications"
+    year: 2024
+    doi: "10.1080/07362994.2024.2372605"

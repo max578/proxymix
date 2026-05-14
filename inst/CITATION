@@ -1,0 +1,27 @@
+citHeader("To cite proxymix in publications use:")
+
+bibentry(
+  bibtype  = "Manual",
+  title    = "{proxymix}: KL-Optimal Gaussian Mixture Proxies for Arbitrary Target Densities",
+  author   = person("Max", "Moldovan", email = "max.moldovan@gmail.com",
+                    comment = c(ORCID = "0000-0001-9680-8474")),
+  year     = 2026,
+  note     = "R package version 0.1.1"
+)
+
+bibentry(
+  bibtype  = "Article",
+  title    = "Mixtures of multivariate {G}aussians",
+  author   = c(
+    person("Johannes", "van der Hoek"),
+    person("Robert J.", "Elliott")),
+  journal  = "Stochastic Analysis and Applications",
+  year     = 2024,
+  doi      = "10.1080/07362994.2024.2372605",
+  textVersion = paste(
+    "Hoek, J. van der and Elliott, R. J. (2024).",
+    "Mixtures of multivariate Gaussians.",
+    "Stochastic Analysis and Applications.",
+    "doi:10.1080/07362994.2024.2372605"
+  )
+)

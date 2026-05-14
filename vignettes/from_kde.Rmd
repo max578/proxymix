@@ -1,0 +1,183 @@
+---
+title: "From KDE: compressing a kernel density estimate into a Gaussian-mixture proxy"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{From KDE: compressing a kernel density estimate into a Gaussian-mixture proxy}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 6,
+  fig.height = 4,
+  out.width = "100%"
+)
+set.seed(20260601)
+```
+
+```{r setup}
+library(proxymix)
+library(ggplot2)
+```
+
+# Why a `from_kde()` constructor
+
+A kernel density estimate (KDE) gives a smooth, non-parametric density from
+a sample of `n` points, but with three operational costs:
+
+* **No closed-form marginals.** Integrating out a coordinate of a KDE
+  requires a numerical sweep over the kernel mixture.
+* **No closed-form conditioning.** There is no analogue of the Schur
+  complement; one has to resample or build a conditional KDE per query.
+* **No native aggregation algebra.** Pushforwards through linear
+  operators, observation-channel updates, or block-sums all collapse to
+  Monte Carlo.
+
+`proxymix::from_kde()` *compresses* the KDE into an `N`-component Gaussian
+mixture proxy (with `N` typically much smaller than `n`) by treating the
+KDE as a normalised, evaluable target and running regime (iii) KLD-EM
+against it.  The proxy then supports the full closed-form operator set
+exposed by the rest of the package — `dgmm()`, `rgmm()`,
+`gmm_marginalise()`, `gmm_conditionalise()`, plus the v0.3 affine-Gaussian
+calculus (`gmm_affine()`, `gmm_observe()`).
+
+This is **not new science**.  It is a practical bridge between a
+non-parametric density estimate and a parametric closed-form mixture
+representation.  The bias inherited from the KDE is reproduced in the
+proxy; the bandwidth controls the bias-variance trade-off.
+
+# Recovering a known mixture
+
+Sample from a known bimodal mixture and ask `from_kde()` to recover it.
+
+```{r recover-bimodal}
+set.seed(1L)
+true_means <- list(c(-2, 0), c(2, 0))
+true_cov   <- diag(2)
+x <- rbind(
+  mvnfast::rmvn(150L, mu = true_means[[1L]], sigma = true_cov),
+  mvnfast::rmvn(150L, mu = true_means[[2L]], sigma = true_cov)
+)
+
+fit <- from_kde(
+  x, N = 2L,
+  bandwidth = "silverman",
+  is_size = 2000L, max_iter = 60L, seed = 1L,
+  validation_size = 2000L
+)
+fit
+```
+
+The proxy components sit near the true means.
+
+```{r}
+vapply(fit@means, function(mu) round(mu, 2L), numeric(2L))
+```
+
+# Quality of the importance-sampled fit
+
+Inspect ESS and the largest self-normalised weight: a healthy regime-(iii)
+fit has ESS close to `is_size` and a max-weight share of a few percent.
+
+```{r}
+ess_summary(fit)
+```
+
+The validation block reports a held-out KLD on an independent IS draw —
+this is the audit-mandated safeguard against in-sample overfitting to one
+particular IS realisation.
+
+# Bandwidth sensitivity
+
+Smaller bandwidths track the data more tightly (lower bias, higher
+variance); larger bandwidths smooth the proxy.  The proxy inherits this
+trade-off.
+
+```{r bandwidth-sweep}
+bandwidth_grid <- c(0.2, 0.5, 1.0)
+fits <- lapply(bandwidth_grid, function(h) {
+  from_kde(x, N = 2L, bandwidth = h,
+           is_size = 1500L, max_iter = 40L, seed = 1L)
+})
+
+data.frame(
+  bandwidth      = bandwidth_grid,
+  ess            = vapply(fits, function(f) f@diagnostics$ess, numeric(1L)),
+  max_weight     = vapply(fits, function(f) f@diagnostics$max_weight, numeric(1L)),
+  trace_Sigma_k1 = vapply(fits, function(f) sum(diag(f@covariances[[1L]])), numeric(1L))
+)
+```
+
+# Visualising the compression
+
+Compare the KDE log-density and the proxy log-density on a planar grid.
+
+```{r visualise, fig.height = 4.5}
+grid <- expand.grid(
+  x = seq(-5, 5, length.out = 80L),
+  y = seq(-4, 4, length.out = 60L)
+)
+gm <- as.matrix(grid)
+kde_log_density <- fit@target@log_density
+grid$kde   <- kde_log_density(gm)
+grid$proxy <- log(dgmm(gm, fit))
+
+ggplot() +
+  geom_contour(data = grid, aes(x, y, z = kde),   colour = "steelblue") +
+  geom_contour(data = grid, aes(x, y, z = proxy), colour = "tomato", linetype = "dashed") +
+  geom_point(data = as.data.frame(x), aes(V1, V2),
+             alpha = 0.2, size = 0.6) +
+  coord_equal() +
+  labs(title = "KDE (solid) vs Gaussian-mixture proxy (dashed)",
+       x = "x", y = "y") +
+  theme_minimal(base_size = 11)
+```
+
+# Scope and limits (v0.2)
+
+* **Dimensional cap.** `from_kde()` is well-tested for `p <= 5`; it warns
+  between `p = 6` and `p = 10`, and refuses `p > 10`.  The wedge of
+  regime (iii) is importance sampling, whose effective sample size falls
+  sharply in high dimensions.  The higher-dimensional path waits for the
+  v0.3 affine-Gaussian operator calculus, which composes a low-`p` proxy
+  with linear operators rather than fitting in the ambient space.
+* **Bandwidth shapes.** Only scalar and diagonal bandwidths are
+  supported.  A full-matrix bandwidth effectively encodes a covariance
+  estimate and blurs the KDE-vs-mixture distinction; if that is what you
+  want, fit the mixture directly with `fit_proxymix(regime = "sample")`.
+* **Normalisation.** A KDE is normalised by construction, so the
+  returned `gmm_target` declares `normalised = TRUE` and
+  `log_normalizer = 0`.  This makes `hellinger_mc()` meaningful and lets
+  the KLD diagnostics report absolute values, not shifted ones.
+* **What this is not.** It is not a method for *picking* the KDE
+  bandwidth.  Use the conventional rules of thumb (`"silverman"`,
+  `"scott"`) or a cross-validation procedure outside the package, then
+  pass the chosen bandwidth in.
+
+# When to prefer `fit_proxymix(regime = "sample")` instead
+
+If your goal is "find a Gaussian-mixture density given samples", the
+classical EM regime is more direct, fits in linear time, and does not
+incur the regime-(iii) importance-sampling tax.  `from_kde()` only earns
+its place when you specifically want the KDE's smoothing as a step in
+your pipeline — e.g. as part of a sequence such as
+
+```
+samples |> from_kde() |> gmm_conditionalise() |> rgmm()
+```
+
+— or when the KDE's bias-variance trade-off is part of what you are
+trying to validate downstream.
+
+# References
+
+* Hoek, J. van der and Elliott, R. J. (2024). *Mixtures of multivariate
+  Gaussians.* Stochastic Analysis and Applications.
+  <doi:10.1080/07362994.2024.2372605>.
+* Silverman, B. W. (1986). *Density Estimation for Statistics and Data
+  Analysis.* CRC Press.
+* Scott, D. W. (1992). *Multivariate Density Estimation: Theory,
+  Practice, and Visualization.* Wiley.

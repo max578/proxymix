@@ -88,6 +88,14 @@ The package ships with four educational vignettes:
 * **`density_shapes`** — the wedge demonstration: banana, donut, three-mixture targets fit by importance-sampled KLD-EM.
 * **`roadmap`** — the Tier-2 stubs and the research directions they support.
 
+## Interactive tutorial
+
+A standalone, single-file HTML primer for `proxymix` is hosted at
+
+> **<https://max578.github.io/proxymix-tutorial/>**
+
+The page is targeted at Adelaide University Mathematics and Statistics undergraduates (Guided depth, default) and postgraduate / PhD readers (Technical depth, via the in-page dial). It runs in the browser with no R install required, and works the same way offline by double-click. Source at [`max578/proxymix-tutorial`](https://github.com/max578/proxymix-tutorial).
+
 ## Reference
 
 Hoek, J. van der and Elliott, R. J. (2024). *Mixtures of multivariate Gaussians.* Stochastic Analysis and Applications. [doi:10.1080/07362994.2024.2372605](https://doi.org/10.1080/07362994.2024.2372605).

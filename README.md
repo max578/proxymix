@@ -1,3 +1,4 @@
+
 <!-- README.md is generated from README.Rmd. Please edit that file. -->
 
 # proxymix
@@ -8,17 +9,17 @@
 
 `proxymix` fits multivariate Gaussian-mixture proxies that are
 **Kullback–Leibler optimal** to user-supplied target densities on
-$`\mathbb{R}^p`$. Three regimes from Hoek and Elliott (2024) are unified
+$\mathbb{R}^p$. Three regimes from Hoek and Elliott (2024) are unified
 under one verb:
 
 | Regime | When it applies | Method |
 |----|----|----|
-| **(i) moment** | $`N = 1`$ component | Closed-form moment matching |
+| **(i) moment** | $N = 1$ component | Closed-form moment matching |
 | **(ii) sample** | i.i.d. samples from the target are available | Classical EM |
 | **(iii) kld** | target density `f(x)` can be evaluated but **not** (cheaply) sampled | **KLD-EM with importance sampling** — the wedge |
 
 No other CRAN package implements regime (iii) for arbitrary parametric
-$`f`$. `mclust`, `mixtools`, `flexmix` all assume samples.
+$f$. `mclust`, `mixtools`, `flexmix` all assume samples.
 
 ## Installation
 
@@ -92,11 +93,24 @@ The package ships with four educational vignettes:
 
 - **`quickstart`** — one-page tour.
 - **`three_regimes`** — a walk-through of regimes (i)–(iii) on toy 2-D
-  targets, including the agreement of (i) and (iii) at $`N = 1`$.
+  targets, including the agreement of (i) and (iii) at $N = 1$.
 - **`density_shapes`** — the wedge demonstration: banana, donut,
   three-mixture targets fit by importance-sampled KLD-EM.
 - **`roadmap`** — the Tier-2 stubs and the research directions they
   support.
+
+## Interactive tutorial
+
+A standalone, single-file HTML primer for `proxymix` is hosted at
+
+> **<https://max578.github.io/proxymix-tutorial/>**
+
+The page is targeted at Adelaide University Mathematics and Statistics
+undergraduates (Guided depth, default) and postgraduate / PhD readers
+(Technical depth, via the in-page dial). It runs in the browser with no
+R install required, and works the same way offline by double-click.
+Source at
+[`max578/proxymix-tutorial`](https://github.com/max578/proxymix-tutorial).
 
 ## Reference
 

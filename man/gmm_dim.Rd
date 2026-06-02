@@ -22,6 +22,7 @@ gmm_dim(g)
 }
 \seealso{
 Other classes: 
+\code{\link{autoplot.gmm_fit}},
 \code{\link{gmm}()},
 \code{\link{gmm_fit}()},
 \code{\link{gmm_n_components}()},

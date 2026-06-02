@@ -41,6 +41,7 @@ q
 }
 \seealso{
 Other classes: 
+\code{\link{autoplot.gmm_fit}},
 \code{\link{gmm}()},
 \code{\link{gmm_dim}()},
 \code{\link{gmm_fit}()},

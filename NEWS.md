@@ -1,5 +1,16 @@
 # proxymix (development version)
 
+### New features
+
+* **New: `autoplot()` method for `gmm_fit`.** Render a fitted proxy with
+  `ggplot2::autoplot(fit)` — a marginal density curve in one dimension, or a
+  viridis density raster with per-component ellipses in two. Any ambient
+  dimension is supported: the requested coordinates are reduced through the
+  package's own closed-form `gmm_marginalise()` before plotting (e.g.
+  `autoplot(fit, dims = c(1L, 3L))`). `ggplot2` stays an optional dependency
+  — the method registers only when `ggplot2` is installed, so `R CMD check`
+  remains clean with no sibling package present.
+
 ## proxymix 0.3.0 (2026-05-14)
 
 Second methodological extension. Brings a complete affine-Gaussian

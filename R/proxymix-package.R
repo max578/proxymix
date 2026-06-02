@@ -5,6 +5,6 @@
 #' @import S7
 #' @importFrom stats cov dnorm kmeans pnorm rnorm runif var
 #' @importFrom utils modifyList
-#' @importFrom rlang %||%
+#' @importFrom rlang %||% .data
 ## usethis namespace: end
 NULL

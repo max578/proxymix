@@ -116,6 +116,7 @@ fit@diagnostics$validation_kld
 Other fitting: 
 \code{\link{fit_em_samples}()},
 \code{\link{fit_moment_match}()},
+\code{\link{from_fb_posterior}()},
 \code{\link{from_kde}()}
 }
 \concept{fitting}

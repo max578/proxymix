@@ -1,6 +1,28 @@
-# proxymix (development version)
+# proxymix 0.3.0.9000 (development)
 
 ### New features
+
+* **New: the C4 consumer seam -- compress a flexyBayes posterior directly.**
+  `from_fb_posterior()` is the consumer entry point for the constellation's
+  C4 contract (`fb_log_posterior` / `posterior_proxy`, owned by flexyBayes):
+  it takes a flexyBayes posterior addressed only through its (unnormalised)
+  log-density and returns a closed-form Gaussian-mixture proxy via
+  importance-sampled KLD-EM, generalising the input source from a kernel-
+  density estimate (`from_kde()`) or a PESTO ensemble to any Bayesian
+  posterior. The producer interface the seam expects is materialised and
+  documented by `fb_log_posterior_spec()`; `fb_producer_available()` is a
+  capability probe (degrades to `FALSE`, never errors, when no real producer
+  is installed); and `mock_fb_posterior()` is a synthetic producer (known
+  Gaussian or banana log-density) for testing the path with no sibling
+  package present. **Activation:** the fitted-flexyBayes-object path switches
+  on when flexyBayes lands its `fb_log_posterior` producer (the B4 follow-up).
+  Until then, a fitted flexyBayes object raises an informative seam error,
+  and the bare-callable / `mock_fb_posterior()` paths work today.
+  proxymix never `Imports:` flexyBayes -- the seam is a soft contract and
+  `R CMD check` is clean with no flexyBayes installed; the C4 return path
+  (proxymix serving as a `posterior_proxy(type = "gmm")` backend) stays an
+  adapter on the flexyBayes side, so the constellation's acyclic invariant
+  holds.
 
 * **New: `autoplot()` method for `gmm_fit`.** Render a fitted proxy with
   `ggplot2::autoplot(fit)` — a marginal density curve in one dimension, or a

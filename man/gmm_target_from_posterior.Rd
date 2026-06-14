@@ -81,6 +81,12 @@ tgt <- gmm_target_from_posterior(
 tgt
 }
 \seealso{
+Other interop: 
+\code{\link{fb_log_posterior_spec}()},
+\code{\link{fb_producer_available}()},
+\code{\link{from_fb_posterior}()},
+\code{\link{mock_fb_posterior}()}
+
 Other v0_2: 
 \code{\link{from_kde}()}
 }

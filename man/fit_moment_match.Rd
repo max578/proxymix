@@ -45,6 +45,7 @@ fit_moment_match(tgt, N = 1L)
 Other fitting: 
 \code{\link{fit_em_samples}()},
 \code{\link{fit_kld_em}()},
+\code{\link{from_fb_posterior}()},
 \code{\link{from_kde}()}
 }
 \concept{fitting}

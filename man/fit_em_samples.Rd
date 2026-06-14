@@ -55,6 +55,7 @@ fit@diagnostics$loglik_final
 Other fitting: 
 \code{\link{fit_kld_em}()},
 \code{\link{fit_moment_match}()},
+\code{\link{from_fb_posterior}()},
 \code{\link{from_kde}()}
 }
 \concept{fitting}

@@ -31,6 +31,7 @@ b@log_density(matrix(c(0, 0, 1, 0), ncol = 2, byrow = TRUE))
 \seealso{
 Other targets: 
 \code{\link{donut_target}()},
+\code{\link{epanechnikov_target}()},
 \code{\link{gmm_target_from_samples}()},
 \code{\link{mixture_target}()}
 }

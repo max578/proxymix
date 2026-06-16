@@ -34,6 +34,7 @@ d
 \seealso{
 Other targets: 
 \code{\link{banana_target}()},
+\code{\link{epanechnikov_target}()},
 \code{\link{gmm_target_from_samples}()},
 \code{\link{mixture_target}()}
 }

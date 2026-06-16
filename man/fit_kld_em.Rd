@@ -27,8 +27,11 @@ fit_kld_em(
 
 \item{N}{Number of mixture components.}
 
-\item{proposal}{An \link{is_proposal}. Defaults to a multivariate-t with
-\code{df = 5} in \code{target@n_dim} dimensions.}
+\item{proposal}{An \link{is_proposal}. When \code{NULL} (the default) the proposal is
+chosen automatically: a support-matched \code{\link[=is_uniform]{is_uniform()}} when the target
+declares a bounded or one-sided \code{support}, otherwise a multivariate-t with
+\code{df = 5} in \code{target@n_dim} dimensions. The automatic choice is announced
+with a one-line message so it is never silent.}
 
 \item{is_size}{Number of importance-sampling draws used for fitting.}
 

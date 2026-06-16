@@ -172,6 +172,47 @@ if (requireNamespace("ggplot2", quietly = TRUE)) {
 }
 ```
 
+## Bounded support
+
+The three targets above all live on the whole plane. Some targets are instead **compactly supported** — exactly zero outside a bounded region. The textbook example is the Epanechnikov density \(K(u) = \tfrac{3}{4}(1 - u^2)\) on \([-1, 1]\). No mixture of full-support Gaussians can be exactly zero on an interval, so regime (iii) is the only honest route — and the default \(t\)-proposal is actively dangerous here, since it places importance draws where the target log-density is \(-\infty\), producing non-finite weights.
+
+`proxymix` handles this safely. A target can declare its `support`, and `fit_kld_em()` then selects a *support-matched* `is_uniform()` proposal automatically instead of the crashing default. `epanechnikov_target()` is a built-in compact-support fixture that declares its support:
+
+```{r epan-target}
+epan <- epanechnikov_target(n_dim = 1L)
+epan
+```
+
+Fitting needs no hand-chosen proposal — the declared support drives the choice, announced in a one-line message:
+
+```{r epan-fit}
+fit_e <- fit_proxymix(epan, N = 3L, regime = "kld",
+                      is_size = 4000L, max_iter = 60L, seed = 1L)
+fit_e@diagnostics$proposal_name
+c(ess = round(fit_e@diagnostics$ess, 1L),
+  support_fraction = fit_e@diagnostics$support_fraction,
+  kld_final = round(fit_e@diagnostics$kld_final, 4L))
+```
+
+Every importance draw receives a finite weight (the support fraction is 1), and the three-component proxy tracks the inverted-parabola shape closely:
+
+```{r epan-overlay, fig.cap = "Epanechnikov target (solid) with 3-component proxy (dashed)."}
+xs <- seq(-1.4, 1.4, length.out = 400L)
+df_e <- data.frame(
+  x = xs,
+  f = exp(epan@log_density(matrix(xs, ncol = 1L))),
+  g = exp(dgmm(matrix(xs, ncol = 1L), fit_e, log = TRUE))
+)
+if (requireNamespace("ggplot2", quietly = TRUE)) {
+  ggplot(df_e, aes(x)) +
+    geom_line(aes(y = f), linewidth = 0.8) +
+    geom_line(aes(y = g), linetype = "dashed", linewidth = 0.6,
+              colour = "#2c7fb8") +
+    labs(title = "Epanechnikov with proxy", y = "density") +
+    theme_minimal(base_size = 11)
+}
+```
+
 ## Summary
 
 ```{r summary}

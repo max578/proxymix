@@ -204,3 +204,87 @@ mixture_target <- function(with_samples = FALSE, n = 2000L, seed = 1L) {
   )
 }
 
+#' Compact-support Epanechnikov target
+#'
+#' The canonical compact-support target: a product of one-dimensional
+#' Epanechnikov densities
+#' \eqn{K(u) = \tfrac{3}{4}(1 - u^2)\,\mathbf{1}_{|u| \le 1}}, rescaled to
+#' `[center - half_width, center + half_width]` in each coordinate. No mixture
+#' of full-support Gaussians can have compact support, so this target is the
+#' clean case where regime (iii) is the only honest fitting route. It declares
+#' its `support`, which makes [fit_kld_em()] (and [fit_proxymix()] with
+#' `regime = "kld"`) select a support-matched uniform proposal automatically
+#' instead of the default multivariate-t, which would place importance mass
+#' where the log-density is `-Inf`.
+#'
+#' @param n_dim Ambient dimension `p`.
+#' @param center Length-1 (recycled) or length-`p` numeric centre per
+#'   coordinate.
+#' @param half_width Length-1 (recycled) or length-`p` positive numeric
+#'   half-width per coordinate.
+#' @param with_samples If `TRUE`, attach `n` exact samples drawn by the
+#'   Devroye (1986) three-uniform method. Default `FALSE`.
+#' @param n Number of samples to attach when `with_samples = TRUE`.
+#' @param seed Optional integer seed used when drawing the samples.
+#'
+#' @returns A [gmm_target] in dimension `n_dim` with a declared compact
+#'   `support`.
+#' @family targets
+#' @export
+#' @examples
+#' e <- epanechnikov_target()
+#' e
+#' e@log_density(matrix(c(0, 0.5, 1.5), ncol = 1L)) # finite, finite, -Inf
+epanechnikov_target <- function(n_dim = 1L, center = 0, half_width = 1,
+                                with_samples = FALSE, n = 2000L, seed = 1L) {
+  n_dim <- as.integer(n_dim)
+  center <- as.numeric(rep_len(center, n_dim))
+  half_width <- as.numeric(rep_len(half_width, n_dim))
+  if (any(half_width <= 0)) {
+    cli::cli_abort("`half_width` must be positive in every coordinate.")
+  }
+
+  log_density <- function(x) {
+    if (is.null(dim(x))) x <- matrix(x, nrow = 1L)
+    u <- sweep(sweep(x, 2L, center, "-"), 2L, half_width, "/")
+    one_minus_u2 <- 1 - u^2
+    inside <- one_minus_u2 > 0
+    log_h <- matrix(log(half_width), nrow = nrow(u), ncol = n_dim, byrow = TRUE)
+    ## Evaluate log only on the support; boundary and exterior contribute -Inf.
+    logk <- matrix(-Inf, nrow = nrow(u), ncol = n_dim)
+    logk[inside] <- log(0.75) + log(one_minus_u2[inside]) - log_h[inside]
+    rowSums(logk)
+  }
+
+  samples <- NULL
+  if (isTRUE(with_samples)) {
+    samples <- withr::with_seed(seed, {
+      ## Devroye (1986): the median of three Uniform(-1, 1) draws is
+      ## Epanechnikov on [-1, 1]; rescale per coordinate.
+      draw_epan <- function(m) {
+        u1 <- stats::runif(m, -1, 1)
+        u2 <- stats::runif(m, -1, 1)
+        u3 <- stats::runif(m, -1, 1)
+        ifelse(abs(u3) >= abs(u2) & abs(u3) >= abs(u1), u2, u3)
+      }
+      out <- matrix(0, nrow = n, ncol = n_dim)
+      for (j in seq_len(n_dim)) {
+        out[, j] <- center[j] + half_width[j] * draw_epan(n)
+      }
+      out
+    })
+  }
+
+  gmm_target(
+    n_dim = n_dim,
+    log_density = log_density,
+    samples = samples,
+    normalised = TRUE,
+    log_normalizer = 0,
+    support = list(lower = center - half_width, upper = center + half_width),
+    name = "epanechnikov",
+    metadata = list(family = "epanechnikov",
+                    center = center, half_width = half_width)
+  )
+}
+

@@ -47,27 +47,24 @@ None — first release.
 
 ## Code coverage
 
-`covr::package_coverage()` reports **85.82%** overall on the v0.3.0
-codebase. The deliberately uncovered surface is:
+`covr::package_coverage()` reports **90.82%** overall on the current
+development tree (`0.4.0.9000`). The largest remaining uncovered surface is:
 
-* `R/zzz.R` (0%) — package machinery (`.onLoad`); not scientifically
-  load-bearing.
-* `R/proxymix-classes.R` (~66%) — S7 validator and print-method branches
-  for invalid construction paths. Each branch raises an error or formats
-  a print line; testing the print formatting itself yields little value
-  beyond what `expect_snapshot()` already covers.
-* `R/gmm_target_constructors.R` (~76%) — `gmm_target_from_posterior()`
-  S3 generic dispatch. The `function`-method path is exercised; the
-  `flexybayes`-method path will be covered by the cross-package
-  integration test once that sibling package ships its
-  `fb_log_posterior()` contract.
-* `R/diagnostics.R` (~81%) — defensive guards on degenerate IS samples
-  (every weight numerically zero); exercised in dedicated tests but not
-  on every code path.
+* `R/zzz.R` (0%) — package machinery (`.onLoad`, S7 method registration and
+  the conditional `ggplot2` `autoplot()` registration); it runs at load time
+  and is not creditable by `covr`.
+* `R/init.R` (~82%) and `R/from_fb_posterior.R` (~84%) — multi-start and
+  seam-dispatch branches, exercised indirectly through the fitters.
 
-All numerically-load-bearing scientific code (`R/fit_kld_em.R`,
-`R/fit_em_samples.R`, `R/gmm_ops.R`, `R/operator_calculus.R`,
-`R/from_kde.R`) is covered at **>= 90%**.
+The S7 class, target-constructor, and diagnostic surfaces (previously the
+thinnest) are now covered at **>= 96%**, and every numerically load-bearing
+path (`R/fit_kld_em.R`, `R/fit_em_samples.R`, `R/gmm_ops.R`,
+`R/operator_calculus.R`, `R/from_kde.R`, `R/proposals.R`) is covered at
+**>= 90%**.
+
+> Phase-2 TODO (CRAN submission): refresh the version header, test
+> environments, and the NOTE list against the fresh `0.5.0` tarball before
+> `devtools::release()`.
 
 ## Reproducibility
 

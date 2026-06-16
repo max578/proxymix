@@ -1,3 +1,35 @@
+# proxymix 0.4.0.9000 (development version)
+
+### New features
+
+* **New: support-aware importance proposals for bounded and one-sided
+  targets.** `gmm_target()` gains an optional `support` argument
+  (`list(lower = , upper = )`, with `-Inf` / `Inf` for unbounded
+  coordinates). When a regime-(iii) fit is given such a target and no
+  explicit `proposal`, `fit_kld_em()` now selects a support-matched
+  `is_uniform()` proposal automatically -- inset inside a compact box, or
+  data-derived for a one-sided coordinate -- instead of the default
+  multivariate-t, which placed importance mass where the target log-density
+  is `-Inf` and produced non-finite weights. The automatic choice is
+  announced with a one-line message, never silently. Unbounded targets are
+  unaffected: they keep the heavy-tailed default.
+* **New: `epanechnikov_target()`.** A compact-support fixture (the
+  Epanechnikov kernel `(3/4)(1 - u^2)` on a box) joining `banana_target()`
+  / `donut_target()` / `mixture_target()`. It declares its `support`, so it
+  fits via regime (iii) under the auto-selected uniform proposal with no NaN
+  weights -- the canonical case where no mixture of full-support Gaussians
+  can have compact support.
+
+### Internal and tests
+
+* `inst/validation/regime_iii_pinned_fits.R` gains a pinned Epanechnikov
+  bounded-support fit (ESS, support fraction, no NaN weights).
+* New regression tests lock the no-NaN-weight guarantee on compact and
+  one-sided targets (`test-support-aware-proposal.R`), the exact `K = 1`
+  conditional-mean and conditional-variance match against `lm`
+  (`test-gmr-k1-lm.R`), and class / constructor / diagnostic contract
+  branches. Line coverage raised to >= 90%.
+
 # proxymix 0.4.0
 
 ### New features

@@ -99,6 +99,24 @@ assert_in_range("mixture.validation_kld", fit_m@diagnostics$validation_kld,
                 -0.05, 0.10)
 
 # -------------------------------------------------------------------------
+# Epanechnikov target (compact support; support-matched proposal, v0.4.1)
+# -------------------------------------------------------------------------
+# No explicit proposal: the declared compact support drives automatic
+# is_uniform selection. Locks the no-NaN-weight guarantee (criterion S10).
+epan <- epanechnikov_target(n_dim = 1L)
+fit_e <- fit_proxymix(
+  epan, N = 3L, regime = "kld",
+  is_size = 4000L, max_iter = 60L, seed = 1L,
+  validation_size = 4000L, validation_seed = 2L
+)
+stamp("epanechnikov(N=3)", fit_e)
+assert_in_range("epanechnikov.kld_final",  fit_e@diagnostics$kld_final, -0.05, 1.00)
+assert_in_range("epanechnikov.ess_relative", fit_e@diagnostics$ess_relative,
+                0.30, 1.00)
+assert_in_range("epanechnikov.support_fraction",
+                fit_e@diagnostics$support_fraction, 0.999, 1.001)
+
+# -------------------------------------------------------------------------
 # All-targets summary
 # -------------------------------------------------------------------------
 writeLines("\nSummary table (all-targets):")
@@ -117,7 +135,12 @@ tbl <- rbind(
              kld = fit_m@diagnostics$kld_final,
              validation_kld = fit_m@diagnostics$validation_kld,
              ess_relative = fit_m@diagnostics$ess_relative,
-             max_weight = fit_m@diagnostics$max_weight)
+             max_weight = fit_m@diagnostics$max_weight),
+  data.frame(target = "epanechnikov", N = 3L,
+             kld = fit_e@diagnostics$kld_final,
+             validation_kld = fit_e@diagnostics$validation_kld,
+             ess_relative = fit_e@diagnostics$ess_relative,
+             max_weight = fit_e@diagnostics$max_weight)
 )
 print(tbl, row.names = FALSE, digits = 4L)
 

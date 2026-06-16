@@ -8,6 +8,7 @@ gmm_target(
   n_dim = integer(0),
   log_density = NULL,
   samples = NULL,
+  support = NULL,
   normalised = NA,
   log_normalizer = NA_real_,
   name = "gmm_target",
@@ -24,6 +25,14 @@ attribute name).}
 
 \item{samples}{Optional \code{n} by \code{p} numeric matrix of i.i.d. samples
 from the target.}
+
+\item{support}{Optional declaration of the target's support. \code{NULL} (the
+default) means the full \eqn{\mathbb{R}^p}. Otherwise a list
+\code{list(lower = , upper = )} of per-coordinate bounds, each of length 1
+(recycled) or \code{n_dim}, with \code{-Inf} / \code{Inf} permitted for unbounded
+coordinates. A bounded or one-sided support drives automatic
+support-matched importance proposal selection in regime (iii); see
+\code{\link[=fit_kld_em]{fit_kld_em()}}.}
 
 \item{normalised}{Logical scalar declaring whether \code{log_density}
 integrates to one. \code{TRUE}, \code{FALSE}, or \code{NA} (unknown). Defaults to

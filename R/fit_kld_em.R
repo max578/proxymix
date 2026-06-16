@@ -31,8 +31,11 @@
 #'
 #' @param target A [gmm_target] with a non-NULL `log_density`.
 #' @param N Number of mixture components.
-#' @param proposal An [is_proposal]. Defaults to a multivariate-t with
-#'   `df = 5` in `target@n_dim` dimensions.
+#' @param proposal An [is_proposal]. When `NULL` (the default) the proposal is
+#'   chosen automatically: a support-matched [is_uniform()] when the target
+#'   declares a bounded or one-sided `support`, otherwise a multivariate-t with
+#'   `df = 5` in `target@n_dim` dimensions. The automatic choice is announced
+#'   with a one-line message so it is never silent.
 #' @param is_size Number of importance-sampling draws used for fitting.
 #' @param init A [gmm] initialisation, or `NULL` to use a kmeans pass on
 #'   the importance-resampled draws.
@@ -104,10 +107,18 @@ fit_kld_em <- function(target,
   p <- target@n_dim
 
   if (is.null(proposal)) {
-    proposal <- is_mvt(n_dim = p,
-                       mean = if (!is.null(target@samples)) colMeans(target@samples) else rep(0, p),
-                       sigma = if (!is.null(target@samples)) ridge(stats::cov(target@samples), 1e-3) else diag(p),
-                       df = 5)
+    proposal <- .support_matched_proposal(target)
+    if (is.null(proposal)) {
+      proposal <- is_mvt(n_dim = p,
+                         mean = if (!is.null(target@samples)) colMeans(target@samples) else rep(0, p),
+                         sigma = if (!is.null(target@samples)) ridge(stats::cov(target@samples), 1e-3) else diag(p),
+                         df = 5)
+    } else {
+      cli::cli_inform(c(
+        "Auto-selected a support-matched proposal ({.val {proposal@name}}) for the declared target support.",
+        "i" = "Pass an explicit {.arg proposal} to override."
+      ))
+    }
   }
   if (!S7::S7_inherits(proposal, is_proposal)) {
     cli::cli_abort("`proposal` must be a {.cls is_proposal} object.")

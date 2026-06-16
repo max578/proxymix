@@ -29,6 +29,7 @@ tgt
 Other targets: 
 \code{\link{banana_target}()},
 \code{\link{donut_target}()},
+\code{\link{epanechnikov_target}()},
 \code{\link{mixture_target}()}
 }
 \concept{targets}

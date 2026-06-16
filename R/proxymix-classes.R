@@ -232,6 +232,13 @@ gmm_fit <- S7::new_class(
 #'   `log_density`, if known. Default `NA_real_`. When `normalised = FALSE`
 #'   and `log_normalizer` is finite, downstream diagnostics can correct
 #'   shifted KLD estimates by `+ log_normalizer`.
+#' @param support Optional declaration of the target's support. `NULL` (the
+#'   default) means the full \eqn{\mathbb{R}^p}. Otherwise a list
+#'   `list(lower = , upper = )` of per-coordinate bounds, each of length 1
+#'   (recycled) or `n_dim`, with `-Inf` / `Inf` permitted for unbounded
+#'   coordinates. A bounded or one-sided support drives automatic
+#'   support-matched importance proposal selection in regime (iii); see
+#'   [fit_kld_em()].
 #' @param name Human-readable name.
 #' @param metadata Optional list of additional descriptors.
 #'
@@ -251,6 +258,10 @@ gmm_target <- S7::new_class(
       default = NULL
     ),
     samples = S7::new_property(
+      class = S7::class_any,
+      default = NULL
+    ),
+    support = S7::new_property(
       class = S7::class_any,
       default = NULL
     ),
@@ -295,6 +306,28 @@ gmm_target <- S7::new_class(
     }
     if (length(self@log_normalizer) != 1L) {
       return("`log_normalizer` must be a length-1 numeric")
+    }
+    if (!is.null(self@support)) {
+      s <- self@support
+      if (!is.list(s) || !all(c("lower", "upper") %in% names(s))) {
+        return("`support` must be NULL or a list with `lower` and `upper` elements")
+      }
+      lo <- s$lower
+      hi <- s$upper
+      if (!is.numeric(lo) || !is.numeric(hi)) {
+        return("`support$lower` and `support$upper` must be numeric")
+      }
+      if (!length(lo) %in% c(1L, self@n_dim) ||
+          !length(hi) %in% c(1L, self@n_dim)) {
+        return(sprintf(
+          "`support$lower` / `support$upper` must have length 1 or %d", self@n_dim))
+      }
+      if (anyNA(lo) || anyNA(hi)) {
+        return("`support` bounds must not be NA (use -Inf / Inf for unbounded coordinates)")
+      }
+      if (any(rep_len(hi, self@n_dim) <= rep_len(lo, self@n_dim))) {
+        return("`support$upper` must exceed `support$lower` in every coordinate")
+      }
     }
     NULL
   }
@@ -420,6 +453,12 @@ S7::method(print, gmm_target) <- function(x, ...) {
   if (!is.na(x@log_normalizer)) {
     cat(sprintf("  log Z(f)    : %s\n",
                 format(x@log_normalizer, digits = 6L)))
+  }
+  if (!is.null(x@support)) {
+    lo <- rep_len(x@support$lower, x@n_dim)
+    hi <- rep_len(x@support$upper, x@n_dim)
+    cat(sprintf("  support     : %s\n",
+                paste(sprintf("[%g, %g]", lo, hi), collapse = " x ")))
   }
   invisible(x)
 }

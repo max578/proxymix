@@ -2,7 +2,9 @@ APSIM
 ASME
 BugReports
 Ch
+Devroye
 Donut
+Epanechnikov
 GMM
 Gaussianity
 Hoek
@@ -22,6 +24,7 @@ SPD
 Sejdinovic
 Unnormalised
 Xekalaki
+backends
 chol
 conditionable
 conditionalise
@@ -30,9 +33,12 @@ diag
 doi
 donut
 dx
+erroring
 etc
 fallbacks
+flexyBayes
 hyperrectangle
+infty
 int
 kld
 kmeans
@@ -43,11 +49,15 @@ mathrm
 nk
 overfit
 propto
+proxymix's
 pushforward
 reweights
 roxygen
 samplable
+spec's
 standalone
 symmetrisation
+tfrac
 throughs
+u
 unnormalised

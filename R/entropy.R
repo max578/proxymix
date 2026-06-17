@@ -156,3 +156,126 @@ gmm_divergence <- function(p, q, type = c("cs", "kl"), n_mc = 5000L) {
   }
   d
 }
+
+## Product-of-marginals mixture: the density g_a(a) g_b(b) of two independent
+## blocks is itself a Gaussian mixture, with K_a * K_b components carrying the
+## outer-product weights, stacked means, and block-diagonal covariances. The
+## coordinate order is [a-block, b-block], matching gmm_marginalise(keep =
+## c(block_a, block_b)).
+.product_of_marginals <- function(ga, gb) {
+  wa <- ga@weights
+  wb <- gb@weights
+  pa <- gmm_dim(ga)
+  pb <- gmm_dim(gb)
+  Ka <- length(wa)
+  Kb <- length(wb)
+  w <- numeric(Ka * Kb)
+  means <- vector("list", Ka * Kb)
+  covs <- vector("list", Ka * Kb)
+  idx <- 1L
+  for (i in seq_len(Ka)) {
+    for (j in seq_len(Kb)) {
+      w[idx] <- wa[i] * wb[j]
+      means[[idx]] <- c(ga@means[[i]], gb@means[[j]])
+      s <- matrix(0, pa + pb, pa + pb)
+      s[seq_len(pa), seq_len(pa)] <- ga@covariances[[i]]
+      s[pa + seq_len(pb), pa + seq_len(pb)] <- gb@covariances[[j]]
+      covs[[idx]] <- s
+      idx <- idx + 1L
+    }
+  }
+  gmm(weights = w, means = means, covariances = covs)
+}
+
+#' Cauchy-Schwarz mutual information between two coordinate blocks
+#'
+#' Measures the dependence between two disjoint coordinate blocks of a fitted
+#' joint Gaussian mixture as the Cauchy-Schwarz divergence between the joint
+#' over the two blocks and the product of their marginals,
+#' \deqn{I_{\mathrm{CS}}(A; B) = D_{\mathrm{CS}}(p_{AB},\ p_A\, p_B).}
+#' The product of the marginals is itself a Gaussian mixture, so the quantity is
+#' closed-form. It is non-negative and zero exactly when the two blocks are
+#' independent. (The naive combination \eqn{H_2(A) + H_2(B) - H_2(A, B)} is
+#' **not** a valid mutual information: order-2 Renyi entropies are not additive
+#' over independent blocks and that difference can be negative.)
+#'
+#' @param g A [gmm] (or [gmm_fit]) joint mixture.
+#' @param block_a,block_b Disjoint integer vectors of coordinate indices (in
+#'   `1..p`) naming the two blocks.
+#'
+#' @returns A non-negative numeric scalar.
+#' @family diagnostics
+#' @seealso [gmm_entropy()], [gmm_divergence()]
+#' @export
+#' @examples
+#' ## A correlated bivariate Gaussian: mutual information grows with |rho|.
+#' s <- matrix(c(1, 0.7, 0.7, 1), 2, 2)
+#' g <- gmm(weights = 1, means = list(c(0, 0)), covariances = list(s))
+#' gmm_mutual_information(g, 1L, 2L)
+gmm_mutual_information <- function(g, block_a, block_b) {
+  if (!S7::S7_inherits(g, gmm)) {
+    cli::cli_abort("`g` must be a {.cls gmm} object.")
+  }
+  p <- gmm_dim(g)
+  block_a <- as.integer(block_a)
+  block_b <- as.integer(block_b)
+  if (length(block_a) < 1L || length(block_b) < 1L ||
+        any(c(block_a, block_b) < 1L) || any(c(block_a, block_b) > p)) {
+    cli::cli_abort("`block_a` and `block_b` must be non-empty index vectors in {.val 1}:{.val {p}}.")
+  }
+  if (length(intersect(block_a, block_b)) > 0L) {
+    cli::cli_abort("`block_a` and `block_b` must be disjoint.")
+  }
+  ga <- gmm_marginalise(g, keep = block_a)
+  gb <- gmm_marginalise(g, keep = block_b)
+  gab <- gmm_marginalise(g, keep = c(block_a, block_b))
+  gmm_divergence(gab, .product_of_marginals(ga, gb), type = "cs")
+}
+
+#' Conditional predictive entropy of a Gaussian mixture
+#'
+#' Returns the differential entropy of the conditional mixture \eqn{g_{Y \mid X
+#' = x}} obtained from [gmm_conditionalise()] -- the predictive uncertainty of
+#' the target coordinates given the conditioned ones. The order-2 Renyi entropy
+#' is closed-form; `order = "shannon"` falls back to Monte Carlo. Multiple
+#' conditioning configurations are evaluated row-by-row.
+#'
+#' @param g A [gmm] (or [gmm_fit]) joint mixture.
+#' @param given Either a numeric vector with one entry per coordinate, or a
+#'   matrix whose rows are such vectors. `NA` marks a target (kept) coordinate;
+#'   a numeric value conditions on that coordinate (the [gmm_conditionalise()]
+#'   convention).
+#' @param order `"renyi2"` (closed-form, the default) or `"shannon"`.
+#' @param n_mc,seed Passed to [gmm_entropy()] for `order = "shannon"`.
+#'
+#' @returns A numeric scalar for a single configuration, or a numeric vector
+#'   with one entropy per row of `given`.
+#' @family diagnostics
+#' @seealso [gmm_entropy()], [gmm_conditionalise()]
+#' @export
+#' @examples
+#' ## Joint over (Y, X); predictive entropy of Y at several X values.
+#' s <- matrix(c(2, 0.8, 0.8, 1), 2, 2)
+#' g <- gmm(weights = 1, means = list(c(0, 0)), covariances = list(s))
+#' gmm_conditional_entropy(g, given = rbind(c(NA, 0), c(NA, 1)))
+gmm_conditional_entropy <- function(g, given, order = c("renyi2", "shannon"),
+                                    n_mc = 5000L, seed = NULL) {
+  if (!S7::S7_inherits(g, gmm)) {
+    cli::cli_abort("`g` must be a {.cls gmm} object.")
+  }
+  order <- match.arg(order)
+  was_vector <- !is.matrix(given)
+  gm <- if (was_vector) matrix(given, nrow = 1L) else given
+  if (ncol(gm) != gmm_dim(g)) {
+    cli::cli_abort(c(
+      "`given` must have one entry per coordinate ({gmm_dim(g)}).",
+      "i" = "Mark a target (kept) coordinate with {.code NA} and condition on a numeric value."
+    ))
+  }
+  out <- vapply(seq_len(nrow(gm)), function(i) {
+    cond <- gmm_conditionalise(g, given = gm[i, ])
+    e <- gmm_entropy(cond, order = order, n_mc = n_mc, seed = seed)
+    if (order == "renyi2") e else e$mc
+  }, numeric(1))
+  if (was_vector) out[[1L]] else out
+}

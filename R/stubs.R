@@ -1,15 +1,14 @@
-## Tier-2 stubs.
+## Planned features (not yet implemented).
 ##
-## Each stub ships with a stable signature, full roxygen documentation, and
-## a body that signals a `proxymix_not_yet_implemented` condition pointing
-## the user at `vignettes/roadmap.Rmd`. The signature-stability test in
-## `tests/testthat/test-stubs.R` exists to prevent silent API drift before
-## the bodies graduate to Tier 1.
+## Each placeholder ships with a stable signature, full roxygen documentation,
+## and a body that signals a `proxymix_not_yet_implemented` condition. The
+## signature-stability test in `tests/testthat/test-stubs.R` exists to prevent
+## silent API drift before the bodies are implemented.
 
 stub_not_yet_implemented <- function(fn_name) {
   cli::cli_abort(
     c("`{fn_name}()` is not yet implemented.",
-      "i" = "See {.file vignettes/roadmap.Rmd} for the planned scope and timing."),
+      "i" = "It is a planned feature; see the package NEWS for status."),
     class = "proxymix_not_yet_implemented",
     .frame = parent.frame()
   )
@@ -17,13 +16,13 @@ stub_not_yet_implemented <- function(fn_name) {
 
 #' From an aggregate likelihood to a Gaussian-mixture proxy (stub)
 #'
-#' **Tier-2 stub** — signature stable; body not yet implemented.
+#' **Planned feature** — signature stable; not yet implemented.
 #'
 #' Plan: fit a Gaussian-mixture proxy `f_theta(x)` so that, when used as
 #' the latent-level density inside an aggregate-likelihood downscaling
 #' framework `g(y) = E_{x | y}[f(x)]`, the resulting downscaling likelihood
-#' has tractable closed-form marginalisation. Targets the
-#' kernel-downsizing application described by Sejdinovic et al.
+#' has tractable closed-form marginalisation. Targets aggregate-likelihood
+#' downscaling applications.
 #'
 #' @param y A numeric matrix or vector of aggregate-level observations.
 #' @param latent_aggregator A function mapping latent `x` to aggregate
@@ -44,12 +43,12 @@ from_aggregate_likelihood <- function(y, latent_aggregator, N = 3L, ...) {
 
 #' KLD-EM under collider-induced conditional-independence constraints (stub)
 #'
-#' **Tier-2 stub** — signature stable; body not yet implemented.
+#' **Planned feature** — signature stable; not yet implemented.
 #'
 #' Plan: a regime-(iii) KLD-EM that projects each iteration onto the
 #' manifold of joint densities respecting a DAG-implied set of
-#' conditional-independence constraints. Targets the
-#' collider-regularised regression direction described by Sejdinovic et al.
+#' conditional-independence constraints. Targets collider-regularised
+#' regression under a known DAG.
 #'
 #' @param target A [gmm_target] with a non-NULL `log_density`.
 #' @param dag A description of the DAG structure (planned: an adjacency
@@ -68,7 +67,7 @@ fit_kld_em_collider <- function(target, dag, N = 3L, ...) {
 
 #' Gaussian-mixture samples to APSIM scenario tables (stub)
 #'
-#' **Tier-2 stub** — signature stable; body not yet implemented.
+#' **Planned feature** — signature stable; not yet implemented.
 #'
 #' Plan: convert samples from a fitted [gmm_fit] into the tabular format
 #' consumed by an APSIM scenario runner, optionally honouring a
@@ -94,7 +93,7 @@ to_apsim_scenarios <- function(fit, n = 100L, schema = list(), ...) {
 
 #' Wrap an expensive simulator as a `gmm_target` (stub)
 #'
-#' **Tier-2 stub** — signature stable; body not yet implemented.
+#' **Planned feature** — signature stable; not yet implemented.
 #'
 #' Plan: probe an expensive simulator over a Latin-hypercube design,
 #' build a kernel-density estimate (or empirical-likelihood surface) on

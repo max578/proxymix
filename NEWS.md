@@ -19,7 +19,7 @@
   `proxy_identification_report()` (the executive one-pager). The decision layer
   rides only identified quantities -- the conditional average treatment effect
   and counterfactual *means*.
-* **New: the do-operator and the counterfactual graduate to Tier 1.**
+* **New: the do-operator and the counterfactual as first-class operators.**
   `gmm_intervene()` returns the interventional law `p(. | do(.), .)` -- it sets
   the intervened coordinates inside every component without re-weighting the
   regime gate (the graph surgery that distinguishes `do(T = t)` from `T = t`).
@@ -38,15 +38,9 @@
 
 ### Documentation
 
-* New vignette *Uplift and next-best-action with proxymix*, which works the
-  decision layer end to end -- and shows a case the module loses (a Poisson
-  regression beats it on pure count data), reported, not hidden.
-* New reproducible benchmark in `inst/benchmarks/` grading the decision layer
-  against `grf`, S/T/X meta-learners and `DoubleML` on synthetic ground truth
-  and the public Hillstrom and Criteo uplift datasets. proxymix has lower PEHE
-  than `grf` on every synthetic process and the best Qini on Hillstrom while
-  scoring about six times faster; on the high-dimensional, sparse-signal Criteo
-  data it is competitive but not best -- the loss is reported, not hidden.
+* Vignette figures refreshed to publication quality -- proper mathematical
+  subscripts and Greek symbols in titles and axis labels, shared contour levels,
+  and a legend on the KDE-vs-proxy comparison.
 
 ### Internal and tests
 
@@ -153,7 +147,7 @@ missing-data conditioning — each closed-form and component-wise.
 ### Design and validation
 
 * `docs/design/operator_calculus_v0.3.md` — pre-implementation design
-  note: maths, honesty constraints (no non-affine fallbacks, no
+  note: maths, scope constraints (no non-affine fallbacks, no
   approximate closed form), public API freeze, test obligations,
   performance budget, pre-release gate.
 * `vignettes/operator_calculus.Rmd` — educational vignette with

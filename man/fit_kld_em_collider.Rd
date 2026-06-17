@@ -20,13 +20,13 @@ matrix or a \code{dagitty} object).}
 A \link{gmm_fit} (when implemented).
 }
 \description{
-\strong{Tier-2 stub} — signature stable; body not yet implemented.
+\strong{Planned feature} — signature stable; not yet implemented.
 }
 \details{
 Plan: a regime-(iii) KLD-EM that projects each iteration onto the
 manifold of joint densities respecting a DAG-implied set of
-conditional-independence constraints. Targets the
-collider-regularised regression direction described by Sejdinovic et al.
+conditional-independence constraints. Targets collider-regularised
+regression under a known DAG.
 }
 \examples{
 try(fit_kld_em_collider(banana_target(), dag = matrix(0, 2, 2), N = 2L))

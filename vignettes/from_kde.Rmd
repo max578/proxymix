@@ -87,8 +87,7 @@ ess_summary(fit)
 ```
 
 The validation block reports a held-out KLD on an independent IS draw —
-this is the audit-mandated safeguard against in-sample overfitting to one
-particular IS realisation.
+a safeguard against in-sample overfitting to one particular IS realisation.
 
 # Bandwidth sensitivity
 
@@ -125,15 +124,31 @@ kde_log_density <- fit@target@log_density
 grid$kde   <- kde_log_density(gm)
 grid$proxy <- log(dgmm(gm, fit))
 
+## Shared contour levels so the two log-densities are directly comparable.
+brks <- pretty(range(c(grid$kde, grid$proxy), finite = TRUE), 9L)
 ggplot() +
-  geom_contour(data = grid, aes(x, y, z = kde),   colour = "steelblue") +
-  geom_contour(data = grid, aes(x, y, z = proxy), colour = "tomato", linetype = "dashed") +
   geom_point(data = as.data.frame(x), aes(V1, V2),
-             alpha = 0.2, size = 0.6) +
-  coord_equal() +
-  labs(title = "KDE (solid) vs Gaussian-mixture proxy (dashed)",
-       x = "x", y = "y") +
-  theme_minimal(base_size = 11)
+             colour = "grey55", alpha = 0.25, size = 0.5) +
+  geom_contour(data = grid,
+               aes(x, y, z = kde, colour = "KDE", linetype = "KDE"),
+               breaks = brks, linewidth = 0.45) +
+  geom_contour(data = grid,
+               aes(x, y, z = proxy,
+                   colour = "Mixture proxy", linetype = "Mixture proxy"),
+               breaks = brks, linewidth = 0.55) +
+  scale_colour_manual(name = NULL,
+                      values = c("KDE" = "#2C7FB8",
+                                 "Mixture proxy" = "#D95F0E")) +
+  scale_linetype_manual(name = NULL,
+                        values = c("KDE" = "solid",
+                                   "Mixture proxy" = "dashed")) +
+  coord_equal(expand = FALSE) +
+  labs(title = "KDE and Gaussian-mixture proxy (log-density contours)",
+       x = expression(x[1]), y = expression(x[2])) +
+  theme_minimal(base_size = 11) +
+  theme(plot.title = element_text(face = "bold"),
+        legend.position = "top",
+        panel.grid.minor = element_blank())
 ```
 
 # Scope and limits (v0.2)

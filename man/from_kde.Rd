@@ -82,7 +82,7 @@ it with the closest \code{N}-component mixture in the Kullback-Leibler sense
 the KDE is reproduced in the proxy; the bandwidth controls the
 bias-variance trade-off.
 
-Dimensional scope. The graduation guard is \code{p <= 5} (recommended),
+Dimensional scope. The dimensional guard is \code{p <= 5} (recommended),
 \code{p <= 10} (allowed with warning), \code{p > 10} (rejected). The wedge of
 KLD-EM is regime (iii) IS, whose effective-sample-size collapses
 sharply in high dimensions; richer ambient spaces will await the v0.3

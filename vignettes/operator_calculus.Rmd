@@ -106,14 +106,23 @@ prior_df <- data.frame(x = grid$x, y = grid$y,
 post_df  <- data.frame(x = grid$x, y = grid$y,
                        d = dgmm(gm, g_post),  part = "posterior")
 long <- rbind(prior_df, post_df)
-ggplot(long, aes(x, y, z = d)) +
-  geom_contour_filled(bins = 8L) +
+long$part <- factor(long$part, levels = c("prior", "posterior"),
+                    labels = c("Prior", "Posterior"))
+ggplot(long, aes(x, y)) +
+  geom_raster(aes(fill = d), interpolate = TRUE) +
+  geom_contour(aes(z = d), colour = "white", linewidth = 0.2, alpha = 0.6,
+               bins = 8L) +
   facet_wrap(~ part) +
-  coord_equal() +
-  scale_fill_viridis_d() +
-  labs(title = "Prior vs Bayesian update on y_1 = 0.8 (sigma = 0.5)",
-       x = "x", y = "y", fill = "density") +
-  theme_minimal(base_size = 11)
+  coord_equal(expand = FALSE) +
+  scale_fill_viridis_c(name = "Density") +
+  labs(title = expression(paste("Prior vs posterior after observing ",
+                                y[1] == 0.8, "  (", sigma == 0.5, ")")),
+       x = expression(x[1]), y = expression(x[2])) +
+  theme_minimal(base_size = 11) +
+  theme(plot.title = element_text(face = "bold", size = rel(1)),
+        strip.text = element_text(face = "bold"),
+        panel.grid = element_blank(),
+        legend.position = "right")
 ```
 
 ## Kalman parity check

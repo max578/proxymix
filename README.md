@@ -89,15 +89,17 @@ gmm_conditionalise(fit, given = c(NA, 0.5))
 
 ## Vignettes
 
-The package ships with four educational vignettes:
+The package ships with five vignettes:
 
 - **`quickstart`** — one-page tour.
 - **`three_regimes`** — a walk-through of regimes (i)–(iii) on toy 2-D
   targets, including the agreement of (i) and (iii) at $N = 1$.
 - **`density_shapes`** — the wedge demonstration: banana, donut,
   three-mixture targets fit by importance-sampled KLD-EM.
-- **`roadmap`** — the Tier-2 stubs and the research directions they
-  support.
+- **`operator_calculus`** — closed-form pushforward, Bayesian update,
+  aggregation and conditioning on a fitted mixture.
+- **`from_kde`** — compressing a kernel density estimate into a
+  Gaussian-mixture proxy.
 
 ## Interactive tutorial
 

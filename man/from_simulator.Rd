@@ -17,7 +17,7 @@ from_simulator(simulator, design, ...)
 A \link{gmm_target} (when implemented).
 }
 \description{
-\strong{Tier-2 stub} — signature stable; body not yet implemented.
+\strong{Planned feature} — signature stable; not yet implemented.
 }
 \details{
 Plan: probe an expensive simulator over a Latin-hypercube design,

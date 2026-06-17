@@ -1,7 +1,8 @@
 ## intervene.R -- The do-operator and the K-atom counterfactual.
 ##
-## Graduates the Episode-5 proposals `gmm_intervene()` and
-## `gmm_counterfactual()` to Tier 1. Both read a fitted joint Gaussian mixture
+## Promotes the operators `gmm_intervene()` and
+## `gmm_counterfactual()` to first-class functions. Both read a fitted joint
+## Gaussian mixture
 ## as a latent-class structural causal model: each component is an affine
 ## structural equation and the prior `pi_k` is the regime prevalence. The
 ## do-operator severs the incoming edges of the intervened coordinates -- it
@@ -12,7 +13,7 @@
 ## What is identified: interventional and counterfactual *means*. What is not:
 ## the individual counterfactual *law* (its spread / tail probabilities), which
 ## depends on an unidentified cross-world coupling. `gmm_counterfactual()`
-## returns the mean and refuses the rest -- see Episode 5's honest limits.
+## returns the mean and refuses the rest -- only the mean is identified.
 
 ## Validation ---------------------------------------------------------------
 
@@ -338,15 +339,15 @@ gmm_cf_mean <- function(x) {
   x@mean
 }
 
-## Refused accessors (the honesty gate) -------------------------------------
+## Refused accessors (identification limits) --------------------------------
 
 #' Refused: the variance of an individual counterfactual law
 #'
 #' The per-unit counterfactual *variance* is not identified from the joint
 #' density: it depends on the cross-world coupling of the structural residuals
 #' under the factual and counterfactual treatments, which no goodness-of-fit
-#' can certify (Episode 5). This accessor therefore raises an error rather than
-#' return the (misleading) spread of the abduction atoms.
+#' can certify. This accessor therefore raises an error rather than return the
+#' (misleading) spread of the abduction atoms.
 #'
 #' @param x A [gmm_counterfactual_law].
 #'

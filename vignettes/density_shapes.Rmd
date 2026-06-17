@@ -52,7 +52,8 @@ if (requireNamespace("ggplot2", quietly = TRUE)) {
     geom_contour_filled(bins = 12L) +
     scale_fill_viridis_d(option = "mako", guide = "none") +
     coord_equal() +
-    labs(title = "Banana target") +
+    labs(title = "Banana target",
+         x = expression(x[1]), y = expression(x[2])) +
     theme_minimal(base_size = 11)
 }
 ```
@@ -77,7 +78,8 @@ if (requireNamespace("ggplot2", quietly = TRUE)) {
                  linewidth = 0.4, bins = 8L) +
     scale_fill_viridis_d(option = "mako", guide = "none") +
     coord_equal() +
-    labs(title = "Banana with proxy") +
+    labs(title = "Banana with proxy",
+         x = expression(x[1]), y = expression(x[2])) +
     theme_minimal(base_size = 11)
 }
 ```
@@ -96,7 +98,8 @@ if (requireNamespace("ggplot2", quietly = TRUE)) {
     geom_contour_filled(bins = 12L) +
     scale_fill_viridis_d(option = "mako", guide = "none") +
     coord_equal() +
-    labs(title = "Donut target") +
+    labs(title = "Donut target",
+         x = expression(x[1]), y = expression(x[2])) +
     theme_minimal(base_size = 11)
 }
 ```
@@ -123,7 +126,8 @@ if (requireNamespace("ggplot2", quietly = TRUE)) {
                  linewidth = 0.4, bins = 8L) +
     scale_fill_viridis_d(option = "mako", guide = "none") +
     coord_equal() +
-    labs(title = "Donut with proxy") +
+    labs(title = "Donut with proxy",
+         x = expression(x[1]), y = expression(x[2])) +
     theme_minimal(base_size = 11)
 }
 ```
@@ -142,7 +146,8 @@ if (requireNamespace("ggplot2", quietly = TRUE)) {
     geom_contour_filled(bins = 12L) +
     scale_fill_viridis_d(option = "mako", guide = "none") +
     coord_equal() +
-    labs(title = "Three-mixture target") +
+    labs(title = "Three-mixture target",
+         x = expression(x[1]), y = expression(x[2])) +
     theme_minimal(base_size = 11)
 }
 ```
@@ -167,14 +172,15 @@ if (requireNamespace("ggplot2", quietly = TRUE)) {
                  linewidth = 0.4, bins = 8L) +
     scale_fill_viridis_d(option = "mako", guide = "none") +
     coord_equal() +
-    labs(title = "Three-mixture with proxy") +
+    labs(title = "Three-mixture with proxy",
+         x = expression(x[1]), y = expression(x[2])) +
     theme_minimal(base_size = 11)
 }
 ```
 
 ## Bounded support
 
-The three targets above all live on the whole plane. Some targets are instead **compactly supported** — exactly zero outside a bounded region. The textbook example is the Epanechnikov density \(K(u) = \tfrac{3}{4}(1 - u^2)\) on \([-1, 1]\). No mixture of full-support Gaussians can be exactly zero on an interval, so regime (iii) is the only honest route — and the default \(t\)-proposal is actively dangerous here, since it places importance draws where the target log-density is \(-\infty\), producing non-finite weights.
+The three targets above all live on the whole plane. Some targets are instead **compactly supported** — exactly zero outside a bounded region. The textbook example is the Epanechnikov density \(K(u) = \tfrac{3}{4}(1 - u^2)\) on \([-1, 1]\). No mixture of full-support Gaussians can be exactly zero on an interval, so regime (iii) is the only viable route — and the default \(t\)-proposal is actively unsafe here, since it places importance draws where the target log-density is \(-\infty\), producing non-finite weights.
 
 `proxymix` handles this safely. A target can declare its `support`, and `fit_kld_em()` then selects a *support-matched* `is_uniform()` proposal automatically instead of the crashing default. `epanechnikov_target()` is a built-in compact-support fixture that declares its support:
 

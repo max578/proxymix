@@ -89,7 +89,7 @@ draws from a user-chosen proposal \code{q}.
 The Monte Carlo draws from \code{q} are computed once at the start; the
 resulting self-normalised importance-sampling weights are reused at every
 EM iteration. Adaptive importance sampling — redrawing each round — is
-a Tier-3 deferral.
+out of scope for this release.
 
 Since v0.1.1 the function also draws an \emph{independent} validation IS
 sample when \code{validation_size > 0} and reports its own KLD estimate,

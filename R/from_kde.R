@@ -1,5 +1,5 @@
 ## Compile a kernel density estimate into a closed-form Gaussian-mixture
-## proxy via regime (iii). v0.2.0 Tier-2 graduation.
+## proxy via regime (iii). Added in v0.2.0.
 ##
 ## The KDE itself is *not* the proxy: a KDE has as many components as
 ## samples, no closed-form marginal / conditional, and no aggregation
@@ -97,7 +97,7 @@ make_kde_log_density <- function(samples, h, chunk = 256L) {
 #' the KDE is reproduced in the proxy; the bandwidth controls the
 #' bias-variance trade-off.
 #'
-#' Dimensional scope. The graduation guard is `p <= 5` (recommended),
+#' Dimensional scope. The dimensional guard is `p <= 5` (recommended),
 #' `p <= 10` (allowed with warning), `p > 10` (rejected). The wedge of
 #' KLD-EM is regime (iii) IS, whose effective-sample-size collapses
 #' sharply in high dimensions; richer ambient spaces will await the v0.3

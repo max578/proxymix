@@ -3,13 +3,11 @@ ASME
 BugReports
 CATE
 Ch
-Criteo
 Devroye
 Donut
 Epanechnikov
 GMM
 Gaussianity
-Hillstrom
 Hoek
 INLA
 KLD
@@ -19,11 +17,8 @@ Karlis
 Kullback
 Leibler
 ORCID
-PEHE
-Poisson
 Pushforward
 Pushforwards
-Qini
 Quickstart
 Rosenbrock
 SPD
@@ -36,12 +31,10 @@ conditionable
 conditionalise
 confounder
 cov
-debiased
 diag
 discretised
 doi
 donut
-dx
 erroring
 estimand
 etc
@@ -50,7 +43,6 @@ flexyBayes
 hyperrectangle
 ignorability
 infty
-int
 kld
 kmeans
 marginalisable
@@ -63,7 +55,6 @@ propto
 proxymix's
 pushforward
 reweights
-roxygen
 samplable
 spec's
 standalone

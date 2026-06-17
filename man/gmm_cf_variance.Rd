@@ -16,8 +16,8 @@ Never returns; always raises a \code{proxymix_not_identified} error.
 The per-unit counterfactual \emph{variance} is not identified from the joint
 density: it depends on the cross-world coupling of the structural residuals
 under the factual and counterfactual treatments, which no goodness-of-fit
-can certify (Episode 5). This accessor therefore raises an error rather than
-return the (misleading) spread of the abduction atoms.
+can certify. This accessor therefore raises an error rather than return the
+(misleading) spread of the abduction atoms.
 }
 \examples{
 g <- gmm(weights = 1, means = list(c(0, 0, 0)),

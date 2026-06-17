@@ -211,7 +211,7 @@ mixture_target <- function(with_samples = FALSE, n = 2000L, seed = 1L) {
 #' \eqn{K(u) = \tfrac{3}{4}(1 - u^2)\,\mathbf{1}_{|u| \le 1}}, rescaled to
 #' `[center - half_width, center + half_width]` in each coordinate. No mixture
 #' of full-support Gaussians can have compact support, so this target is the
-#' clean case where regime (iii) is the only honest fitting route. It declares
+#' clean case where regime (iii) is the only viable fitting route. It declares
 #' its `support`, which makes [fit_kld_em()] (and [fit_proxymix()] with
 #' `regime = "kld"`) select a support-matched uniform proposal automatically
 #' instead of the default multivariate-t, which would place importance mass

@@ -1,8 +1,8 @@
-## Signature-stability tests for Tier-2 stubs.
+## Signature-stability tests for the not-yet-implemented placeholders.
 ##
-## These keep the public API frozen across releases: when a stub graduates
-## to a real implementation, the *function signature* must not change, only
-## the body. Update these expectations only when the graduation deliberately
+## These keep the public API frozen across releases: when a placeholder gains
+## a real implementation, the *function signature* must not change, only the
+## body. Update these expectations only when an implementation deliberately
 ## changes the public API.
 
 stub_args <- function(fn) names(formals(fn))

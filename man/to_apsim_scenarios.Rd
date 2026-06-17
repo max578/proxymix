@@ -20,7 +20,7 @@ and units.}
 A data frame in APSIM scenario format (when implemented).
 }
 \description{
-\strong{Tier-2 stub} — signature stable; body not yet implemented.
+\strong{Planned feature} — signature stable; not yet implemented.
 }
 \details{
 Plan: convert samples from a fitted \link{gmm_fit} into the tabular format

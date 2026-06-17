@@ -39,7 +39,7 @@ Epanechnikov densities
 \eqn{K(u) = \tfrac{3}{4}(1 - u^2)\,\mathbf{1}_{|u| \le 1}}, rescaled to
 \verb{[center - half_width, center + half_width]} in each coordinate. No mixture
 of full-support Gaussians can have compact support, so this target is the
-clean case where regime (iii) is the only honest fitting route. It declares
+clean case where regime (iii) is the only viable fitting route. It declares
 its \code{support}, which makes \code{\link[=fit_kld_em]{fit_kld_em()}} (and \code{\link[=fit_proxymix]{fit_proxymix()}} with
 \code{regime = "kld"}) select a support-matched uniform proposal automatically
 instead of the default multivariate-t, which would place importance mass

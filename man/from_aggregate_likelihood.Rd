@@ -20,14 +20,14 @@ space.}
 A \link{gmm_fit} (when implemented).
 }
 \description{
-\strong{Tier-2 stub} — signature stable; body not yet implemented.
+\strong{Planned feature} — signature stable; not yet implemented.
 }
 \details{
 Plan: fit a Gaussian-mixture proxy \code{f_theta(x)} so that, when used as
 the latent-level density inside an aggregate-likelihood downscaling
 framework \verb{g(y) = E_\{x | y\}[f(x)]}, the resulting downscaling likelihood
-has tractable closed-form marginalisation. Targets the
-kernel-downsizing application described by Sejdinovic et al.
+has tractable closed-form marginalisation. Targets aggregate-likelihood
+downscaling applications.
 }
 \examples{
 try(from_aggregate_likelihood(matrix(0, 1, 1),

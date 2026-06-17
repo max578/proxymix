@@ -130,7 +130,8 @@ head(x)
 
 * `vignette("three_regimes")` — what each of regimes (i), (ii), (iii) does, with a head-to-head comparison on a target whose ground truth is known.
 * `vignette("density_shapes")` — the wedge demonstration. KLD-EM fit on three different non-Gaussian targets (banana, donut, three-mixture), with KLD / ESS / Hellinger reported.
-* `vignette("roadmap")` — what the Tier-2 stubs are for and when they will graduate.
+* `vignette("operator_calculus")` — closed-form pushforward, Bayesian update, aggregation and conditioning on a fitted mixture.
+* `vignette("from_kde")` — compressing a kernel density estimate into a Gaussian-mixture proxy.
 
 ## Reference
 

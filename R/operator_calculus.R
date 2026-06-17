@@ -1,12 +1,11 @@
 ## Affine-Gaussian operator calculus on Gaussian mixtures.
 ##
-## v0.3.0 graduation. Closed-form pushforward, conditioning, aggregation,
+## Added in v0.3.0. Closed-form pushforward, conditioning, aggregation,
 ## and missing-coordinate updates. Mathematically: the finite-mixture
 ## analogue of the Kalman update applied component-wise with weight
 ## reweighting by the per-component marginal evidence.
 ##
-## See `docs/design/operator_calculus_v0.3.md` for the maths and the
-## audit-mandated honesty constraints. No silent non-affine fallbacks.
+## Affine channels and Gaussian noise only -- no silent non-affine fallbacks.
 
 ## Validation helpers --------------------------------------------------------
 

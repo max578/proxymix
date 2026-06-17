@@ -101,6 +101,56 @@
   out
 }
 
+## Vectorised responsibilities over a matrix of units -----------------------
+
+## Batch form of `.responsibilities_safe()`: `obs_mat` is `n` by
+## `length(obs_idx)`. Returns an `n` by `K` matrix of responsibilities, one row
+## per unit, with `attr(., "covered")` a length-`n` logical. Rows that underflow
+## every component fall back to the prior weights and are marked not covered.
+## `mvnfast::dmvn` is vectorised over rows, so this is the O(K) serving path.
+.responsibilities_batch <- function(g, obs_idx, obs_mat) {
+  n <- nrow(obs_mat)
+  K <- gmm_n_components(g)
+  log_r <- matrix(0, nrow = n, ncol = K)
+  log_w <- log(g@weights)
+  for (k in seq_len(K)) {
+    mu_b <- g@means[[k]][obs_idx]
+    S_bb <- g@covariances[[k]][obs_idx, obs_idx, drop = FALSE]
+    log_r[, k] <- log_w[k] +
+      mvnfast::dmvn(obs_mat, mu = mu_b, sigma = S_bb, log = TRUE)
+  }
+  mx <- apply(log_r, 1L, max)
+  covered <- is.finite(mx)
+  r <- matrix(g@weights, nrow = n, ncol = K, byrow = TRUE)
+  if (any(covered)) {
+    w <- exp(log_r[covered, , drop = FALSE] - mx[covered])
+    r[covered, ] <- w / rowSums(w)
+  }
+  attr(r, "covered") <- covered
+  r
+}
+
+## Vectorised positivity / mass coverage over a matrix of units. Returns the
+## length-`n` minimum-over-arms coverage probability.
+.coverage_batch <- function(g, z_idx, arms, X) {
+  n <- nrow(X)
+  df <- length(z_idx)
+  K <- gmm_n_components(g)
+  cover <- matrix(Inf, nrow = n, ncol = length(arms))
+  for (a in seq_along(arms)) {
+    Z <- cbind(arms[a], X)
+    best <- rep(Inf, n)
+    for (k in seq_len(K)) {
+      Pz <- chol2inv(chol(g@covariances[[k]][z_idx, z_idx, drop = FALSE]))
+      D <- sweep(Z, 2L, g@means[[k]][z_idx])
+      d2 <- rowSums((D %*% Pz) * D)
+      best <- pmin(best, d2)
+    }
+    cover[, a] <- stats::pchisq(best, df = df, lower.tail = FALSE)
+  }
+  apply(cover, 1L, min)
+}
+
 ## Per-unit positivity / mass coverage --------------------------------------
 
 ## Coverage of a (treatment, covariate) configuration by the fitted joint. For

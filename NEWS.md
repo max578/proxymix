@@ -41,6 +41,12 @@
 * New vignette *Uplift and next-best-action with proxymix*, which works the
   decision layer end to end -- and shows a case the module loses (a Poisson
   regression beats it on pure count data), reported, not hidden.
+* New reproducible benchmark in `inst/benchmarks/` grading the decision layer
+  against `grf`, S/T/X meta-learners and `DoubleML` on synthetic ground truth
+  and the public Hillstrom and Criteo uplift datasets. proxymix has lower PEHE
+  than `grf` on every synthetic process and the best Qini on Hillstrom while
+  scoring about six times faster; on the high-dimensional, sparse-signal Criteo
+  data it is competitive but not best -- the loss is reported, not hidden.
 
 ### Internal and tests
 

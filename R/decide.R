@@ -140,6 +140,69 @@
   .cate_unit(cache, g, z_idx, x_idx, x, t1, t0, mode)$tau
 }
 
+## Vectorised CATE + variance over a matrix of units. This is the serving hot
+## path: responsibilities, conditional means and the delta variance are all
+## computed in matrix form (O(K) passes, no per-unit R loop), realising the
+## closed-form scoring edge.
+.cate_batch <- function(cache, g, z_idx, x_idx, X, t1, t0, mode) {
+  n <- nrow(X)
+  K <- length(cache)
+  dt <- t1 - t0
+
+  if (identical(mode, "latent_confounder")) {
+    rx <- .responsibilities_batch(g, x_idx, X)
+    beta_t <- vapply(cache, function(ck) ck$beta_t, numeric(1L))
+    vk <- vapply(cache, function(ck) ck$sigma2 * ck$var_t / ck$n_eff,
+                 numeric(1L))
+    tau <- as.numeric(rx %*% beta_t) * dt
+    v <- as.numeric((rx^2) %*% vk) * dt^2
+    return(list(tau = tau, var = v, covered = attr(rx, "covered")))
+  }
+
+  Z1 <- cbind(t1, X)
+  Z0 <- cbind(t0, X)
+  r1 <- .responsibilities_batch(g, z_idx, Z1)
+  r0 <- .responsibilities_batch(g, z_idx, Z0)
+  m1 <- numeric(n)
+  m0 <- numeric(n)
+  v <- numeric(n)
+  for (k in seq_len(K)) {
+    ck <- cache[[k]]
+    D1 <- sweep(Z1, 2L, ck$mZ)
+    D0 <- sweep(Z0, 2L, ck$mZ)
+    m1 <- m1 + r1[, k] * (ck$mY + as.numeric(D1 %*% ck$beta))
+    m0 <- m0 + r0[, k] * (ck$mY + as.numeric(D0 %*% ck$beta))
+    D1P <- D1 %*% ck$Pz
+    D0P <- D0 %*% ck$Pz
+    h11 <- (1 + rowSums(D1P * D1)) / ck$n_eff
+    h00 <- (1 + rowSums(D0P * D0)) / ck$n_eff
+    h10 <- (1 + rowSums(D1P * D0)) / ck$n_eff
+    v <- v + ck$sigma2 *
+      (r1[, k]^2 * h11 - 2 * r1[, k] * r0[, k] * h10 + r0[, k]^2 * h00)
+  }
+  list(tau = m1 - m0, var = pmax(v, 0),
+       covered = attr(r1, "covered") & attr(r0, "covered"))
+}
+
+## Vectorised response-scale class probability over a matrix of units.
+.response_prob_batch <- function(cache, g, z_idx, x_idx, X, t, mode, threshold) {
+  n <- nrow(X)
+  K <- length(cache)
+  Z <- cbind(t, X)
+  r <- if (identical(mode, "latent_confounder")) {
+    .responsibilities_batch(g, x_idx, X)
+  } else {
+    .responsibilities_batch(g, z_idx, Z)
+  }
+  p <- numeric(n)
+  for (k in seq_len(K)) {
+    ck <- cache[[k]]
+    mu <- ck$mY + as.numeric(sweep(Z, 2L, ck$mZ) %*% ck$beta)
+    p <- p + r[, k] * stats::pnorm((mu - threshold) / sqrt(ck$sigma2))
+  }
+  p
+}
+
 ## Resampling (mc) standard errors ------------------------------------------
 
 ## Non-parametric bootstrap of the training matrix: refit B times and take the
@@ -267,21 +330,18 @@ proxy_cate <- function(model,
   arms <- c(t0, t1)
 
   n_units <- nrow(X)
-  tau <- numeric(n_units)
-  v <- numeric(n_units)
-  flag <- logical(n_units)
-  for (u in seq_len(n_units)) {
-    res <- .cate_unit(cache, g, z_idx, x_idx, X[u, ], t1, t0, model@assume)
-    if (response_binary) {
-      tau[u] <- .tau_point(cache, g, z_idx, x_idx, X[u, ], t1, t0,
-                           model@assume, scale, threshold, model@outcome_type)
-      v[u] <- NA_real_
-    } else {
-      tau[u] <- res$tau
-      v[u] <- res$var
-    }
-    cov_u <- .unit_coverage(g, z_idx, arms, X[u, ])
-    flag[u] <- (!res$covered) || cov_u < 0.01
+  res <- .cate_batch(cache, g, z_idx, x_idx, X, t1, t0, model@assume)
+  cov_vec <- .coverage_batch(g, z_idx, arms, X)
+  flag <- (!res$covered) | (cov_vec < 0.01)
+  if (response_binary) {
+    tau <- .response_prob_batch(cache, g, z_idx, x_idx, X, t1,
+                                model@assume, threshold) -
+      .response_prob_batch(cache, g, z_idx, x_idx, X, t0,
+                           model@assume, threshold)
+    v <- rep(NA_real_, n_units)
+  } else {
+    tau <- res$tau
+    v <- res$var
   }
 
   se_vec <- rep(NA_real_, n_units)
@@ -431,9 +491,7 @@ proxy_overlap <- function(model, newdata, t1 = 1, t0 = 0, floor = 0.01) {
   z_idx <- c(model@roles$treatment, model@roles$covariate)
   X <- .newdata_x(model, newdata)
   arms <- c(t0, t1)
-  cov_vec <- vapply(seq_len(nrow(X)), function(u) {
-    .unit_coverage(g, z_idx, arms, X[u, ])
-  }, numeric(1L))
+  cov_vec <- .coverage_batch(g, z_idx, arms, X)
   dt <- data.table::data.table(
     id = seq_len(nrow(X)),
     coverage = cov_vec,

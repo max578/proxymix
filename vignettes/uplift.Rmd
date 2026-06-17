@@ -179,6 +179,29 @@ The Poisson model scores better on its own ground. The proxymix reading still
 delivers a usable effect estimate and a defensible audit -- but on pure count
 signal it is not the tool to reach for, and the report says so.
 
+## How it compares
+
+The decision layer is benchmarked against independent implementations (`grf`
+causal forest, S/T/X meta-learners, `DoubleML`) on synthetic ground truth and
+two public uplift datasets. The script and full results are in
+`system.file("benchmarks", package = "proxymix")`. In brief:
+
+- **Synthetic (known truth).** Lower PEHE than `grf` on all four
+  data-generating processes -- on smooth, low-dimensional structure the
+  parametric mixture is more efficient than a forest.
+- **Hillstrom email.** The best Qini coefficient of the five methods (53.2 vs
+  the next-best 50.5), and an average effect matching the debiased `DoubleML`
+  estimate to within 1.4%.
+- **Scoring speed.** About 6x faster per-unit than `grf::predict` -- the
+  vectorised closed-form serving path.
+- **Criteo (an honest loss).** On a 12-dimensional, very-low-event-rate target
+  proxymix is competitive but **4th of 5** (8.4% below the best), and
+  underestimates the average effect. Tree ensembles capture the sparse signal
+  better here, and we report it.
+
+The edge is interpretable, auditable, fast closed-form uplift where the mixture
+structure matches the data -- not universal accuracy dominance.
+
 ## Where this sits
 
 The decision layer graduates the Episode-5 operators `gmm_intervene()` and

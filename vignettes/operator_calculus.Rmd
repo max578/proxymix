@@ -57,8 +57,8 @@ g_prior
 
 ## Pushforward through a linear sensor
 
-Suppose we observe `y = A x + epsilon` with `epsilon ~ N(0, R)` and
-sensor matrix
+Suppose we observe \(y = A x + \epsilon\) with \(\epsilon \sim
+\mathcal{N}(0, R)\) and sensor matrix
 
 ```{r}
 A <- matrix(c(1, 0,
@@ -75,9 +75,9 @@ g_pushed <- gmm_affine(g_prior, A, b, noise_cov = R)
 g_pushed
 ```
 
-The weights are unchanged; the means are `A mu_k + b` and the
-covariances are `A Sigma_k A' + R`. The output is a closed-form mixture
-in the sensor space.
+The weights are unchanged; the means are \(A \mu_k + b\) and the
+covariances are \(A \Sigma_k A^\top + R\). The output is a closed-form
+mixture in the sensor space.
 
 ## Bayesian update on a noisy linear observation
 
@@ -92,8 +92,8 @@ g_post
 ```
 
 Component weights have been multiplied by the marginal evidence
-`pi_k * dnorm(y; A mu_k, S_k)` and renormalised. Component means and
-covariances have been Kalman-updated component-wise.
+\(\pi_k \, \mathcal{N}(y;\, A \mu_k,\, S_k)\) and renormalised. Component
+means and covariances have been Kalman-updated component-wise.
 
 Visualise the prior and the posterior on a planar grid:
 
@@ -237,7 +237,7 @@ The disagreement is at the ridge level — the two routes coincide.
 
 # Comparison to a Gaussian-process latent
 
-For a downscaling problem `g(y) = E_{x | y}[f(x)]`:
+For a downscaling problem \(g(y) = \mathbb{E}_{x \mid y}[f(x)]\):
 
 * A **Gaussian-process latent** for `f(x)` gives a fully non-parametric,
   uncertainty-rich representation but does not admit closed-form

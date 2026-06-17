@@ -89,7 +89,7 @@ gmm_conditionalise(fit, given = c(NA, 0.5))
 
 ## Vignettes
 
-The package ships with five vignettes:
+The package ships with six vignettes:
 
 - **`quickstart`** — one-page tour.
 - **`three_regimes`** — a walk-through of regimes (i)–(iii) on toy 2-D
@@ -100,6 +100,8 @@ The package ships with five vignettes:
   aggregation and conditioning on a fitted mixture.
 - **`from_kde`** — compressing a kernel density estimate into a
   Gaussian-mixture proxy.
+- **`many_methods`** — one fitted mixture in place of regression,
+  clustering, PCA and ridge regression.
 
 ## Interactive tutorial
 

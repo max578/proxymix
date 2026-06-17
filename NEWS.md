@@ -38,6 +38,12 @@
 
 ### Documentation
 
+* New vignette *One mixture, many methods* -- using one fitted Gaussian mixture
+  in place of regression (`lm`), clustering (`kmeans` / `mclust`), principal
+  components (`prcomp`), and ridge regression, with the trade-off of each
+  substitution stated. At `N = 1` the conditional mean is exactly least squares,
+  the covariance eigenvectors are exactly the principal components, and a
+  covariance ridge is exactly the `L2` penalty.
 * Vignette figures refreshed to publication quality -- proper mathematical
   subscripts and Greek symbols in titles and axis labels, shared contour levels,
   and a legend on the KDE-vs-proxy comparison.

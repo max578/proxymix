@@ -96,6 +96,6 @@ All pass on the test environment with the recorded seeds.
   (Quarto `.qmd` is not first-class under `R CMD check --as-cran`).
 * Vignette filenames follow R name rules (start with a letter, not a digit):
   `quickstart.Rmd`, `three_regimes.Rmd`, `density_shapes.Rmd`, `from_kde.Rmd`,
-  `operator_calculus.Rmd`.
+  `operator_calculus.Rmd`, `many_methods.Rmd`.
 * `Encoding: UTF-8`, `Language: en-AU`. `inst/WORDLIST` holds the scientific
   vocabulary so `devtools::spell_check()` passes cleanly.

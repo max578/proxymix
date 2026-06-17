@@ -1,3 +1,16 @@
+# proxymix (development version)
+
+### New features
+
+* **Closed-form entropy diagnostics.** `gmm_entropy()` returns the closed-form
+  quadratic (order-2) Renyi entropy of a Gaussian mixture, or a Monte-Carlo
+  Shannon estimate bracketed by an analytic upper bound. `gmm_divergence()`
+  returns the closed-form, symmetric Cauchy-Schwarz divergence between two
+  mixtures (`type = "cs"`), with `type = "kl"` delegating to `gmm_kld()`. Both
+  rest on the Gaussian-product integral, so the closed-form quantities are exact
+  finite sums of Gaussian-density evaluations. A new vignette,
+  *Entropy diagnostics with proxymix*, demonstrates the layer.
+
 # proxymix 0.6.0
 
 ### New features

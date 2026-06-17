@@ -28,6 +28,7 @@ bic_aic(fit)
 Other diagnostics: 
 \code{\link{ess_summary}()},
 \code{\link{ess_trace}()},
+\code{\link{gmm_entropy}()},
 \code{\link{hellinger_mc}()},
 \code{\link{kld_trace}()}
 }

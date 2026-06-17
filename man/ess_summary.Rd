@@ -34,6 +34,7 @@ ess_summary(fit)
 Other diagnostics: 
 \code{\link{bic_aic}()},
 \code{\link{ess_trace}()},
+\code{\link{gmm_entropy}()},
 \code{\link{hellinger_mc}()},
 \code{\link{kld_trace}()}
 }

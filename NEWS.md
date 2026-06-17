@@ -11,6 +11,15 @@
   finite sums of Gaussian-density evaluations. A new vignette,
   *Entropy diagnostics with proxymix*, demonstrates the layer.
 
+* **Mutual information and conditional predictive entropy.**
+  `gmm_mutual_information()` returns the closed-form, non-negative Cauchy-Schwarz
+  mutual information between two coordinate blocks of a fitted joint (the
+  divergence between the joint and the product of the marginals; zero exactly
+  under independence). `gmm_conditional_entropy()` returns the order-2 Renyi
+  entropy of the conditional mixture from `gmm_conditionalise()` -- the
+  predictive uncertainty of the target coordinates given the conditioned ones,
+  evaluated row-by-row.
+
 # proxymix 0.6.0
 
 ### New features

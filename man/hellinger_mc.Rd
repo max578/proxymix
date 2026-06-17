@@ -39,6 +39,7 @@ Other diagnostics:
 \code{\link{bic_aic}()},
 \code{\link{ess_summary}()},
 \code{\link{ess_trace}()},
+\code{\link{gmm_entropy}()},
 \code{\link{kld_trace}()}
 }
 \concept{diagnostics}

@@ -1,0 +1,74 @@
+---
+title: "Entropy diagnostics with proxymix"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Entropy diagnostics with proxymix}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+set.seed(20260618)
+```
+
+```{r setup}
+library(proxymix)
+```
+
+`proxymix` fits Kullback--Leibler-optimal Gaussian-mixture proxies, so relative entropy is already at the core of the package. This vignette surfaces the entropy structure of a *fitted* mixture as closed-form diagnostics: the quadratic (order-2) Renyi entropy of a mixture, the Cauchy--Schwarz divergence between two mixtures, and a Monte-Carlo Shannon entropy bracketed by an analytic bound.
+
+## The closed-form spine
+
+The integral of a product of two Gaussian densities is itself a Gaussian density evaluation: writing `N(x; m, S)` for a Gaussian density, the integral over `x` of `N(x; a, A) N(x; b, B)` equals `N(a; b, A + B)`. Any quantity that is *quadratic* in a mixture -- the integral of `g(x)^2`, or of `p(x) q(x)` -- is therefore a finite sum of such evaluations, and closed-form. Shannon entropy carries the logarithm of a sum and has no such closed form, so it is estimated by Monte Carlo.
+
+## Renyi-2 entropy
+
+`gmm_entropy()` returns the closed-form order-2 Renyi entropy by default.
+
+```{r}
+g <- gmm(weights = c(0.5, 0.5),
+         means = list(c(-2, 0), c(2, 0)),
+         covariances = list(diag(2), diag(2)))
+gmm_entropy(g)
+```
+
+For a single Gaussian the value is exact and matches the analytic form `H2(N(mu, S)) = (p / 2) log(4 pi) + (1 / 2) log det(S)`:
+
+```{r}
+S <- matrix(c(1, 0.3, 0.3, 1), 2, 2)
+one <- gmm(weights = 1, means = list(c(0, 0)), covariances = list(S))
+c(closed_form = gmm_entropy(one),
+  analytic    = 0.5 * (2 * log(4 * pi) +
+                         as.numeric(determinant(S, logarithm = TRUE)$modulus)))
+```
+
+## Shannon entropy, bracketed
+
+Shannon entropy is returned as a Monte-Carlo estimate with its standard error and an analytic upper bound that brackets it from above.
+
+```{r}
+gmm_entropy(g, order = "shannon", n_mc = 5000L, seed = 1L)
+```
+
+The estimate sits at or below the bound up to Monte-Carlo error, which is the coherence check the bound is there to provide.
+
+## Cauchy--Schwarz divergence
+
+`gmm_divergence()` returns the closed-form, symmetric Cauchy--Schwarz divergence by default. It is non-negative and zero exactly when the two mixtures are proportional.
+
+```{r}
+q <- gmm(weights = 1, means = list(c(0, 0)), covariances = list(diag(2) * 2))
+gmm_divergence(g, q)   # closed-form, symmetric
+gmm_divergence(g, g)   # zero
+```
+
+When the asymmetric Kullback--Leibler divergence is wanted instead, `type = "kl"` delegates to the package's existing Monte-Carlo estimator `gmm_kld()`.
+
+```{r}
+gmm_divergence(g, q, type = "kl", n_mc = 2000L)$mc
+```
+
+## When to use which
+
+The Renyi-2 entropy and the Cauchy--Schwarz divergence are exact and cheap (`O(K^2)` Gaussian evaluations), and are the recommended defaults for reporting the spread of a fitted mixture and the discrepancy between two fits. The Shannon entropy and the Kullback--Leibler divergence are the more familiar quantities but are Monte-Carlo estimates; reach for them when a downstream consumer requires those specific definitions.

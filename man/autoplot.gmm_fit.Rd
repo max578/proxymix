@@ -61,6 +61,7 @@ ggplot2::autoplot(fit, dims = 1L)
 \seealso{
 Other classes: 
 \code{\link{gmm}()},
+\code{\link{gmm_counterfactual_law}()},
 \code{\link{gmm_dim}()},
 \code{\link{gmm_fit}()},
 \code{\link{gmm_n_components}()},

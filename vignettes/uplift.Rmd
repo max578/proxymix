@@ -1,0 +1,192 @@
+---
+title: "Uplift and next-best-action with proxymix"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Uplift and next-best-action with proxymix}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 6,
+  fig.height = 4,
+  out.width = "100%"
+)
+set.seed(20260617)
+```
+
+```{r setup}
+library(proxymix)
+```
+
+## One fit, the whole decision
+
+A single Gaussian-mixture proxy over `(outcome, treatment, covariates)` yields --
+in closed form, from that one fit -- prediction, heterogeneous treatment
+effects, the revenue-maximising per-unit action, the off-line value of a
+targeting policy, and an audit of what is and is not identified. The engine is
+the causal ladder read off a fitted mixture: *seeing* is component
+conditioning, *doing* is an `X`-only regime gate, *imagining* is per-component
+abduction.
+
+`fit_uplift()` assembles the joint fit and returns an `uplift_model`; every
+verb below reads it without re-fitting.
+
+```{r fit}
+n <- 4000L
+x <- stats::rnorm(n)
+t <- stats::rbinom(n, 1L, 0.5)
+## A heterogeneous effect: treatment helps more at higher x.
+tau_true <- 0.4 + 1.2 * x
+y <- 1 + 0.5 * x + tau_true * t + stats::rnorm(n, sd = 0.6)
+dat <- data.frame(y = y, t = t, x = x)
+
+model <- fit_uplift(dat, outcome = "y", treatment = "t", covariates = "x",
+                    N = 3L, regime = "sample", max_iter = 200L, seed = 1L)
+model
+```
+
+## Heterogeneous treatment effects
+
+`proxy_cate()` returns the per-unit effect `$\tau(x)$` with a closed-form delta
+standard error. At a single component the effect collapses to the ordinary
+least-squares treatment coefficient; with several components the mixture
+captures the heterogeneity a single line cannot.
+
+```{r cate}
+grid <- data.frame(x = seq(-1.5, 1.5, by = 0.5))
+ce <- proxy_cate(model, newdata = grid)
+ce
+```
+
+The estimates track the truth `$0.4 + 1.2x$`:
+
+```{r cate-plot, fig.alt = "Estimated CATE against x with the analytic truth overlaid."}
+plot(grid$x, ce$tau, type = "b", pch = 19,
+     xlab = "x", ylab = expression(tau(x)),
+     main = "Estimated vs true CATE")
+lines(grid$x, 0.4 + 1.2 * grid$x, col = "red", lty = 2)
+legend("topleft", c("proxymix", "truth"),
+       col = c("black", "red"), lty = c(1, 2), pch = c(19, NA), bty = "n")
+```
+
+## The next-best action
+
+Under a linear value model, `proxy_decide()` treats a unit when the value of
+its effect exceeds the cost. It also reports the action-flip probability -- the
+chance the recommendation would reverse under sampling noise.
+
+```{r decide}
+proxy_decide(model, grid, value = 1, cost = 0.5)
+```
+
+`proxy_policy_value()` scores a whole targeting policy off-line, with no live
+experiment. The optimal policy weakly dominates treating everyone or no one.
+
+```{r policy}
+nd <- data.frame(x = stats::rnorm(1000))
+rbind(
+  none    = proxy_policy_value(model, nd, "none",    value = 1, cost = 0.5),
+  all     = proxy_policy_value(model, nd, "all",     value = 1, cost = 0.5),
+  optimal = proxy_policy_value(model, nd, "optimal", value = 1, cost = 0.5)
+)
+```
+
+## The honest core: what is identified
+
+The module rides only identified quantities. `proxy_identification_report()`
+states the estimand, the assumption it is read under, the overlap rate, and the
+confounding gap -- the value at risk if a latent regime confounds treatment and
+outcome beyond `X`.
+
+```{r report}
+proxy_identification_report(model, nd)
+```
+
+The confounding gap is a *sensitivity signal*, not a correction. Under
+ignorability the observational and do-operator effects coincide and the gap is
+zero; a non-zero gap measures how far the estimate would move under the
+latent-confounder reading.
+
+```{r gap}
+proxy_confounding_gap(model, grid)
+```
+
+### Counterfactuals: the mean, and only the mean
+
+For an observed unit, `gmm_counterfactual()` returns the retrospective
+counterfactual outcome of changing its treatment. Only the **mean** is
+identified -- the spread of an individual counterfactual depends on an
+unidentified cross-world coupling, so the variance and tail accessors refuse to
+answer rather than mislead.
+
+```{r counterfactual, error = TRUE}
+ru <- proxy_retrospective_uplift(model, observed = dat[1:5, ])
+ru
+
+cf <- gmm_counterfactual(model@fit,
+                         evidence = c(dat$y[1], dat$t[1], dat$x[1]),
+                         do = c(NA, 1, NA), query = 1L)
+gmm_cf_mean(cf)        # identified
+gmm_cf_variance(cf)    # refused -- not identified
+```
+
+## A case the module loses
+
+Episode 4's honesty finding stands: a Gaussian-mixture proxy is not a count
+model. On pure over-dispersed count data, a purpose-built Poisson or
+negative-binomial regression wins on predictive scoring, and we report the loss
+rather than hide it.
+
+```{r loss}
+n2 <- 3000L
+xc <- stats::rnorm(n2)
+tc <- stats::rbinom(n2, 1L, 0.5)
+lambda <- exp(0.3 + 0.5 * tc + 0.4 * xc)
+yc <- stats::rpois(n2, lambda)
+cd <- data.frame(y = yc, t = tc, x = xc)
+
+train <- seq_len(2000L)
+test <- setdiff(seq_len(n2), train)
+
+## proxymix on the count outcome (continuous latent scale).
+mc <- fit_uplift(cd[train, ], "y", "t", "x", N = 2L, regime = "sample",
+                 outcome_type = "count", max_iter = 150L, seed = 2L)
+## Predict each test unit under its own observed treatment.
+pm_pred <- pmax(vapply(test, function(i) {
+  proxy_predict(mc, cd[i, ], t = cd$t[i])$prediction
+}, numeric(1L)), 1e-6)
+
+## A purpose-built Poisson GLM.
+glm_pois <- stats::glm(y ~ t + x, family = stats::poisson, data = cd[train, ])
+glm_pred <- stats::predict(glm_pois, newdata = cd[test, ], type = "response")
+
+## Mean Poisson deviance (lower is better).
+dev <- function(yobs, mu) {
+  mu <- pmax(mu, 1e-8)
+  2 * mean(ifelse(yobs > 0, yobs * log(yobs / mu), 0) - (yobs - mu))
+}
+data.frame(
+  model = c("proxymix (count)", "Poisson GLM"),
+  mean_deviance = c(dev(yc[test], pm_pred), dev(yc[test], glm_pred))
+)
+```
+
+The Poisson model scores better on its own ground. The proxymix reading still
+delivers a usable effect estimate and a defensible audit -- but on pure count
+signal it is not the tool to reach for, and the report says so.
+
+## Where this sits
+
+The decision layer graduates the Episode-5 operators `gmm_intervene()` and
+`gmm_counterfactual()` to first-class functions and builds the `proxy_*`
+verbs on top. It targets the regime-(iii) wedge -- a target you can evaluate
+but not sample from -- as much as the classical sampled case: a regime-(iii)
+fit feeds the same verbs unchanged, inheriting the importance-sampling
+effective-sample-size caveats. See `vignette("three_regimes")` for the regime
+hierarchy and `vignette("roadmap")` for what graduates next.
+```
+

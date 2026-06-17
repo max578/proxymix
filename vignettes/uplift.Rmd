@@ -195,7 +195,7 @@ two public uplift datasets. The script and full results are in
 - **Scoring speed.** About 6x faster per-unit than `grf::predict` -- the
   vectorised closed-form serving path.
 - **Criteo (an honest loss).** On a 12-dimensional, very-low-event-rate target
-  proxymix is competitive but **4th of 5** (8.4% below the best), and
+  proxymix is competitive but **fourth of five** (8.4% below the best), and
   underestimates the average effect. Tree ensembles capture the sparse signal
   better here, and we report it.
 

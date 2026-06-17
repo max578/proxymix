@@ -1,10 +1,14 @@
-# proxymix 0.5.0 — submission notes
+# proxymix 0.6.0 — submission notes
 
 First CRAN submission. The package implements the three-regime
 Gaussian-mixture proxy hierarchy of Hoek and Elliott (2024), including
 the importance-sampled KLD-EM regime for targets that can be evaluated but
-not sampled, a closed-form affine-Gaussian operator calculus, and (new in
-0.5.0) support-aware importance proposals for bounded and one-sided targets.
+not sampled, a closed-form affine-Gaussian operator calculus, support-aware
+importance proposals for bounded and one-sided targets, and (new in 0.6.0) a
+closed-form decision layer (heterogeneous treatment effects, next-best-action,
+off-line policy value and an identification audit) read off a single
+Gaussian-mixture fit, with the `do`-operator and the counterfactual as
+first-class operators.
 
 ## Test environments
 
@@ -16,7 +20,7 @@ not sampled, a closed-form affine-Gaussian operator calculus, and (new in
 
 ## R CMD check results
 
-`R CMD check --as-cran proxymix_0.5.0.tar.gz` on the local environment
+`R CMD check --as-cran proxymix_0.6.0.tar.gz` on the local environment
 returns **0 ERRORs, 0 WARNINGs, 2 NOTEs**, both environmental:
 
 1. **`checking for future file timestamps ... NOTE`** — "unable to verify
@@ -56,7 +60,9 @@ None — first release.
 
 ## Code coverage
 
-`covr::package_coverage()` reports **90.82%** overall. The largest remaining
+`covr::package_coverage()` reports **91.7%** overall; the new decision-layer
+sources (`R/intervene.R`, `R/uplift.R`, `R/decide.R`, `R/identification.R`,
+`R/uplift_internal.R`) are each covered at **>= 89%**. The largest remaining
 uncovered surface is:
 
 * `R/zzz.R` (0%) — package machinery (`.onLoad`, S7 method registration and
@@ -90,6 +96,9 @@ All pass on the test environment with the recorded seeds.
   (Quarto `.qmd` is not first-class under `R CMD check --as-cran`).
 * Vignette filenames follow R name rules (start with a letter, not a digit):
   `quickstart.Rmd`, `three_regimes.Rmd`, `density_shapes.Rmd`, `from_kde.Rmd`,
-  `operator_calculus.Rmd`, `roadmap.Rmd`.
+  `operator_calculus.Rmd`, `uplift.Rmd`, `roadmap.Rmd`.
+* `inst/benchmarks/` ships a reproducible benchmark script and its results;
+  it is not run at check time and depends only on Suggests/external packages
+  (`grf`, `DoubleML`) that are not package dependencies.
 * `Encoding: UTF-8`, `Language: en-AU`. `inst/WORDLIST` holds the scientific
   vocabulary so `devtools::spell_check()` passes cleanly.

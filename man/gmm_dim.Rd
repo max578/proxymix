@@ -24,6 +24,7 @@ gmm_dim(g)
 Other classes: 
 \code{\link{autoplot.gmm_fit}},
 \code{\link{gmm}()},
+\code{\link{gmm_counterfactual_law}()},
 \code{\link{gmm_fit}()},
 \code{\link{gmm_n_components}()},
 \code{\link{gmm_target}()},

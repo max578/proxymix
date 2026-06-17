@@ -27,6 +27,14 @@ reference:
   desc: Density, sampling, marginalisation, conditioning, divergence.
   contents:
   - has_concept("ops")
+- title: Affine and causal operators
+  desc: Pushforward, Kalman update, conditioning, the do-operator and the counterfactual.
+  contents:
+  - has_concept("operators")
+- title: Decision layer (uplift / next-best-action)
+  desc: One joint fit read as CATE, optimal action, off-line policy value, and an identification audit.
+  contents:
+  - has_concept("decision")
 - title: Importance-sampling proposals
   desc: Pluggable proposals for regime (iii).
   contents:
@@ -51,4 +59,5 @@ articles:
   - quickstart
   - three_regimes
   - density_shapes
+  - uplift
   - roadmap

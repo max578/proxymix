@@ -1,3 +1,64 @@
+# proxymix 0.6.0
+
+### New features
+
+* **New: a closed-form decision layer (uplift / next-best-action).** One
+  joint Gaussian-mixture proxy over `(outcome, treatment, covariates)` is read
+  -- in closed form, from that single fit -- as prediction, heterogeneous
+  treatment effects, optimal per-unit actions, off-line policy value, and an
+  identification audit. `fit_uplift()` assembles the joint fit and returns an
+  `uplift_model`; the `proxy_*` verbs score it without re-fitting:
+  `proxy_predict()` (the response / risk-scoring rung), `proxy_cate()` /
+  `proxy_uplift()` (heterogeneous effects with a delta-method or resampling
+  standard error), `proxy_decide()` (the revenue-maximising action plus an
+  action-flip probability), `proxy_policy_value()` (off-line value of a
+  targeting policy), `proxy_confounding_gap()` (the sensitivity to a latent
+  confounder), `proxy_retrospective_uplift()` (counterfactual-mean uplift for
+  observed units), `proxy_regime_segments()` (the fitted regimes as a segment
+  table), `proxy_overlap()` (per-unit positivity / mass coverage), and
+  `proxy_identification_report()` (the executive one-pager). The decision layer
+  rides only identified quantities -- the conditional average treatment effect
+  and counterfactual *means*.
+* **New: the do-operator and the counterfactual graduate to Tier 1.**
+  `gmm_intervene()` returns the interventional law `p(. | do(.), .)` -- it sets
+  the intervened coordinates inside every component without re-weighting the
+  regime gate (the graph surgery that distinguishes `do(T = t)` from `T = t`).
+  `gmm_counterfactual()` returns the `K`-atom counterfactual law of one observed
+  unit by abduction, action, and prediction. Only the counterfactual mean is
+  identified: the new `gmm_counterfactual_law` object exposes `gmm_cf_mean()`,
+  while `gmm_cf_variance()` and `gmm_cf_tail_prob()` deliberately error
+  (`proxymix_not_identified`) -- the individual counterfactual law depends on an
+  unidentified cross-world coupling.
+* **New: binary outcomes via latent-scale fitting with a discretised
+  predictive.** `fit_uplift(outcome_type = "binary")` fits on the latent
+  continuous scale; `proxy_cate(scale = "response")` and
+  `proxy_predict(scale = "response")` report effects and predictions on the
+  discretised predictive probability `P(Y > threshold)`. Count outcomes are
+  supported on the same latent-scale reading.
+
+### Documentation
+
+* New vignette *Uplift and next-best-action with proxymix*, which works the
+  decision layer end to end -- and shows a case the module loses (a Poisson
+  regression beats it on pure count data), reported, not hidden.
+* New reproducible benchmark in `inst/benchmarks/` grading the decision layer
+  against `grf`, S/T/X meta-learners and `DoubleML` on synthetic ground truth
+  and the public Hillstrom and Criteo uplift datasets. proxymix has lower PEHE
+  than `grf` on every synthetic process and the best Qini on Hillstrom while
+  scoring about six times faster; on the high-dimensional, sparse-signal Criteo
+  data it is competitive but not best -- the loss is reported, not hidden.
+
+### Internal and tests
+
+* New `data.table` import for the decision-verb return tables.
+* New test files lock the operators against hand-built linear structural causal
+  models (`test-intervene.R`), the K = 1 reduction of `proxy_cate()` to the
+  ordinary-least-squares treatment coefficient and the asymptotic agreement of
+  the delta standard error with the `lm` coefficient standard error
+  (`test-uplift-cate.R`), the audit verbs including recovery of a planted latent
+  confounder (`test-uplift-audit.R`), and a six-process synthetic validation
+  battery graded against known ground truth (`test-uplift-validation.R`).
+
 # proxymix 0.5.0
 
 ### New features

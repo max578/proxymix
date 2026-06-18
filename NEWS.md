@@ -56,13 +56,17 @@
   track), and at several components it is the Gaussian-sum filter.
 
 * **Mixture reduction.** `gmm_reduce()` collapses a Gaussian mixture to a budget
-  of at most `k_max` components by a greedy, moment-preserving pairwise merge,
-  using either the Runnalls (2007) Kullback-Leibler bound (`cost = "kl"`) or a
-  closed-form Cauchy-Schwarz cost (`cost = "cs"`). Every merge preserves the
-  combined weight, mean and covariance, so the reduced mixture has the same
-  global mean and covariance as the original, and reducing to one component
-  returns the moment-matched Gaussian. This bounds the component count of a
-  Gaussian-sum filter built from `gmm_affine()` and `gmm_observe()`.
+  of at most `k_max` components. The default `method = "merge"` is a greedy,
+  moment-preserving pairwise merge, using either the Runnalls (2007)
+  Kullback-Leibler bound (`cost = "kl"`) or a closed-form Cauchy-Schwarz cost
+  (`cost = "cs"`); every merge preserves the combined weight, mean and
+  covariance, so the reduced mixture has the same global mean and covariance as
+  the original, and reducing to one component returns the moment-matched
+  Gaussian. `method = "anneal"` refines the merge with an annealed re-fit of a
+  budget-sized proxy and keeps it when it improves on the merge (never worse),
+  which helps for smooth, over-parameterised mixtures. Reduction bounds the
+  component count of a Gaussian-sum filter built from `gmm_affine()` and
+  `gmm_observe()`.
 
 # proxymix 0.6.0
 

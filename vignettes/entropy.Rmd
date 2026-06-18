@@ -88,3 +88,27 @@ gmm_conditional_entropy(joint, given = rbind(c(NA, 0), c(NA, 1), c(NA, 2)))
 ## When to use which
 
 The Renyi-2 entropy and the Cauchy--Schwarz divergence are exact and cheap (`O(K^2)` Gaussian evaluations), and are the recommended defaults for reporting the spread of a fitted mixture and the discrepancy between two fits. The Shannon entropy and the Kullback--Leibler divergence are the more familiar quantities but are Monte-Carlo estimates; reach for them when a downstream consumer requires those specific definitions.
+
+## Deterministic annealing and phase transitions
+
+The same statistical-mechanics framing -- the fitting objective is a variational free energy $F = \langle E \rangle - T H$ -- yields a robustness tool. Softening the E-step responsibilities by a temperature $T$, so that $\gamma_{ik} \propto \pi_k\, \mathcal{N}(x_i;\ \mu_k, \Sigma_k)^{1/T}$, and cooling $T$ from a high value toward one, turns the fit into a homotopy: at high $T$ the objective has a single smooth basin, and as $T$ falls the components bifurcate at critical temperatures. Setting `anneal = TRUE` on `fit_em_samples()` or `fit_kld_em()` uses this annealed path as a warm-start for the unchanged cold EM loop, which is far less sensitive to local optima than a cold multi-start.
+
+```{r}
+x <- rbind(
+  matrix(rnorm(200), ncol = 2) + matrix(rep(c(-7, -7), each = 100), ncol = 2),
+  matrix(rnorm(200), ncol = 2) + matrix(rep(c( 7, -7), each = 100), ncol = 2),
+  matrix(rnorm(200), ncol = 2) + matrix(rep(c( 0,  8), each = 100), ncol = 2)
+)
+tgt <- gmm_target_from_samples(x)
+fit <- fit_em_samples(tgt, N = 3L, anneal = TRUE, seed = 1L)
+fit@diagnostics$annealed
+```
+
+Cooling also discovers the component count. `gmm_anneal_path()` tracks the number of distinct centroids as the temperature falls; the count occupying the widest temperature range is the discovered number of components, and the first bifurcation has the closed-form critical temperature $T_c = \lambda_{\max}(\Sigma^{-1} C)$, returned as `t_critical_analytic` for an independent check.
+
+```{r}
+path <- gmm_anneal_path(x, k_max = 6L, n_steps = 60L, seed = 1L)
+path$k_selected
+c(empirical = path$first_critical_temperature,
+  analytic  = path$t_critical_analytic)
+```

@@ -17,12 +17,26 @@
 #' @param ridge_eps Ridge added to each component covariance at every M-step.
 #' @param n_starts Number of multi-start initialisations (only when `init`
 #'   is `NULL`). The best fit by final log-likelihood is returned.
+#' @param anneal Logical. If `TRUE`, a deterministic-annealing warm-start
+#'   (see [gmm_anneal_path()]) replaces the multi-start: the components are
+#'   annealed from a high temperature down to one, and the resulting
+#'   parameters seed a single final (cold) EM polish. This attacks the
+#'   local-optima sensitivity of cold EM at the cost of the schedule length.
+#'   Defaults to `FALSE` (cold best-of-`n_starts`).
+#' @param temp_schedule Optional numeric vector of descending temperatures for
+#'   the annealing warm-start. `NULL` (the default) uses a geometric schedule
+#'   from `10` down to `1` in covariance-whitened units. Ignored when
+#'   `anneal = FALSE`.
+#' @param seed Optional integer seed for the annealing perturbations (the
+#'   warm-start is deterministic given a seed). Ignored when `anneal = FALSE`.
 #' @param canonicalise Logical. If `TRUE` (the default), the fitted
 #'   mixture is post-processed by [gmm_canonicalise()] so that components
 #'   are sorted by descending weight and (as a tiebreaker) by descending
 #'   `||mu||`.
 #'
-#' @returns A [gmm_fit] with `regime = "sample"`.
+#' @returns A [gmm_fit] with `regime = "sample"`. When `anneal = TRUE` the
+#'   diagnostics list also carries `annealed = TRUE` and the `temp_schedule`
+#'   used.
 #' @family fitting
 #' @export
 #' @examples
@@ -36,6 +50,9 @@ fit_em_samples <- function(target, N = 2L,
                            tol = 1e-6,
                            ridge_eps = 1e-6,
                            n_starts = 5L,
+                           anneal = FALSE,
+                           temp_schedule = NULL,
+                           seed = NULL,
                            canonicalise = TRUE) {
   if (!S7::S7_inherits(target, gmm_target)) {
     cli::cli_abort("`target` must be a {.cls gmm_target} object.")
@@ -48,6 +65,18 @@ fit_em_samples <- function(target, N = 2L,
   samples <- target@samples
   n <- nrow(samples)
   p <- ncol(samples)
+
+  if (isTRUE(anneal)) {
+    warm <- .anneal_em_warmstart(samples, rw = rep(1 / n, n), N = N,
+                                 temp_schedule = temp_schedule,
+                                 ridge_eps = ridge_eps, seed = seed)
+    fit <- em_samples_one_run(samples, warm, target,
+                              max_iter, tol, ridge_eps,
+                              call = match.call())
+    fit@diagnostics[["annealed"]] <- TRUE
+    fit@diagnostics[["temp_schedule"]] <- warm@metadata$temp_schedule
+    return(if (isTRUE(canonicalise)) gmm_canonicalise(fit) else fit)
+  }
 
   if (!is.null(init)) {
     fit <- em_samples_one_run(samples, init, target,

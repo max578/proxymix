@@ -12,6 +12,9 @@ fit_em_samples(
   tol = 1e-06,
   ridge_eps = 1e-06,
   n_starts = 5L,
+  anneal = FALSE,
+  temp_schedule = NULL,
+  seed = NULL,
   canonicalise = TRUE
 )
 }
@@ -31,13 +34,30 @@ fit_em_samples(
 \item{n_starts}{Number of multi-start initialisations (only when \code{init}
 is \code{NULL}). The best fit by final log-likelihood is returned.}
 
+\item{anneal}{Logical. If \code{TRUE}, a deterministic-annealing warm-start
+(see \code{\link[=gmm_anneal_path]{gmm_anneal_path()}}) replaces the multi-start: the components are
+annealed from a high temperature down to one, and the resulting
+parameters seed a single final (cold) EM polish. This attacks the
+local-optima sensitivity of cold EM at the cost of the schedule length.
+Defaults to \code{FALSE} (cold best-of-\code{n_starts}).}
+
+\item{temp_schedule}{Optional numeric vector of descending temperatures for
+the annealing warm-start. \code{NULL} (the default) uses a geometric schedule
+from \code{10} down to \code{1} in covariance-whitened units. Ignored when
+\code{anneal = FALSE}.}
+
+\item{seed}{Optional integer seed for the annealing perturbations (the
+warm-start is deterministic given a seed). Ignored when \code{anneal = FALSE}.}
+
 \item{canonicalise}{Logical. If \code{TRUE} (the default), the fitted
 mixture is post-processed by \code{\link[=gmm_canonicalise]{gmm_canonicalise()}} so that components
 are sorted by descending weight and (as a tiebreaker) by descending
 \verb{||mu||}.}
 }
 \value{
-A \link{gmm_fit} with \code{regime = "sample"}.
+A \link{gmm_fit} with \code{regime = "sample"}. When \code{anneal = TRUE} the
+diagnostics list also carries \code{annealed = TRUE} and the \code{temp_schedule}
+used.
 }
 \description{
 Implements regime (ii) of Hoek and Elliott (2024). Runs the textbook

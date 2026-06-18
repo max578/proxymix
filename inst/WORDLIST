@@ -9,6 +9,7 @@ Epanechnikov
 Fraley
 GMM
 Gaussianity
+Gurewitz
 Hoek
 Hoerl
 INLA
@@ -54,9 +55,11 @@ fallbacks
 flexyBayes
 hyperrectangle
 ignorability
+ik
 infty
 kld
 kmeans
+langle
 marginalisable
 mathbb
 mathcal
@@ -70,6 +73,7 @@ overfit
 propto
 proxymix's
 pushforward
+rangle
 reweights
 samplable
 sim

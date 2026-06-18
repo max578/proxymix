@@ -60,6 +60,15 @@
 #' @param support_warn Logical. If `TRUE` (the default), issue a warning
 #'   when more than 5% of IS draws receive non-finite weights (typically
 #'   because the proposal does not dominate the target's support).
+#' @param anneal Logical. If `TRUE`, a deterministic-annealing warm-start
+#'   (see [gmm_anneal_path()]) replaces the kmeans initialisation: components
+#'   are annealed from a high temperature down to one on the importance-weighted
+#'   draws, and the resulting parameters seed the (unchanged) cold KLD-EM loop.
+#'   This attacks the local-optima sensitivity of cold EM. Defaults to `FALSE`.
+#' @param temp_schedule Optional numeric vector of descending temperatures for
+#'   the annealing warm-start. `NULL` (the default) uses a geometric schedule
+#'   from `10` down to `1` in covariance-whitened units. Ignored when
+#'   `anneal = FALSE`.
 #' @param canonicalise Logical. If `TRUE` (the default), the fitted
 #'   mixture is post-processed by [gmm_canonicalise()].
 #'
@@ -94,6 +103,8 @@ fit_kld_em <- function(target,
                        validation_proposal = NULL,
                        validation_seed = NULL,
                        support_warn = TRUE,
+                       anneal = FALSE,
+                       temp_schedule = NULL,
                        canonicalise = TRUE) {
   if (!S7::S7_inherits(target, gmm_target)) {
     cli::cli_abort("`target` must be a {.cls gmm_target} object.")
@@ -148,6 +159,17 @@ fit_kld_em <- function(target,
       "Importance proposal does not dominate target support: only {round(100 * support_fraction, 1)}% of IS draws received finite weight.",
       "i" = "Verify {.code log_density(x) - log q(x)} is finite on the target's support; consider a wider or heavier-tailed proposal."
     ))
+  }
+
+  ## ---- Deterministic-annealing warm-start (optional) ----
+  anneal_schedule_used <- NULL
+  if (isTRUE(anneal)) {
+    init <- .anneal_em_warmstart(
+      x, rw = W, N = N, temp_schedule = temp_schedule,
+      ridge_eps = ridge_eps,
+      seed = if (!is.null(seed)) as.integer(seed) + 2L else NULL
+    )
+    anneal_schedule_used <- init@metadata$temp_schedule
   }
 
   ## ---- Initialisation ----
@@ -303,7 +325,9 @@ fit_kld_em <- function(target,
       is_size = is_size,
       is_sample = x,
       is_log_weights = log_W,
-      proposal_name = proposal@name
+      proposal_name = proposal@name,
+      annealed = isTRUE(anneal),
+      temp_schedule = anneal_schedule_used
     ),
     validation_diag
   )

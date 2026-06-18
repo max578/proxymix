@@ -30,6 +30,16 @@
   physics-derived component-count read whose first phase transition has the
   closed-form critical temperature `lambda_max(Sigma^{-1} C)`.
 
+* **Maximum-entropy targets and the ICL criterion.** `maxent_target()`
+  constructs the least-committal `gmm_target` consistent with the supplied
+  constraints: the Gaussian under second-moment constraints on full support, the
+  uniform under a support constraint alone, and a truncated Gaussian under
+  second-moment constraints on a box (fit via regime (iii) under the
+  automatically selected support-matched proposal). `bic_aic()` now also returns
+  the integrated completed likelihood `icl` and the `classification_entropy` of
+  the fitted responsibilities (Biernacki, Celeux and Govaert 2000), which
+  penalises overlapping components and equals the BIC for a single component.
+
 # proxymix 0.6.0
 
 ### New features

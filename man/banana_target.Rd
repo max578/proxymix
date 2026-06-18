@@ -33,6 +33,7 @@ Other targets:
 \code{\link{donut_target}()},
 \code{\link{epanechnikov_target}()},
 \code{\link{gmm_target_from_samples}()},
+\code{\link{maxent_target}()},
 \code{\link{mixture_target}()}
 }
 \concept{targets}

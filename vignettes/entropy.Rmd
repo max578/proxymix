@@ -112,3 +112,24 @@ path$k_selected
 c(empirical = path$first_critical_temperature,
   analytic  = path$t_critical_analytic)
 ```
+
+## Maximum-entropy targets
+
+Entropy also points the other way -- from a set of constraints to the least-committal density consistent with them. `maxent_target()` builds that maximum-entropy density: the Gaussian under first- and second-moment constraints on the full space, the uniform under a support constraint alone, and a truncated Gaussian under second moments on a box. The bounded cases declare their support, so regime (iii) fits them under an automatically selected support-matched proposal.
+
+```{r}
+g <- maxent_target(moments = list(mean = c(0, 0), cov = diag(2)))
+g@metadata$family
+u <- maxent_target(support = list(lower = c(0, 0), upper = c(1, 1)))
+exp(u@log_density(matrix(c(0.5, 0.5), nrow = 1L)))   # 1 / area = 1
+```
+
+## Selecting a component count with ICL
+
+`bic_aic()` reports the integrated completed likelihood alongside the BIC and AIC. The ICL adds to the BIC twice the entropy of the fitted classification, $\mathrm{ICL} = \mathrm{BIC} + 2 E_N$ with $E_N = -\sum_{i,k} \gamma_{ik} \log \gamma_{ik} \ge 0$, so it penalises mixtures whose components overlap and favours well-separated solutions. It equals the BIC for a single component and is never smaller.
+
+```{r}
+xs <- rbind(matrix(rnorm(200, -4), ncol = 2), matrix(rnorm(200, 4), ncol = 2))
+fit <- fit_em_samples(gmm_target_from_samples(xs), N = 2L)
+unlist(bic_aic(fit)[c("bic", "icl", "classification_entropy")])
+```

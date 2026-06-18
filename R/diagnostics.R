@@ -175,17 +175,35 @@ ess_summary <- function(fit) {
   )
 }
 
-#' Bayesian and Akaike information criteria
+#' Information criteria: BIC, AIC, and ICL
 #'
-#' Returns the BIC and AIC of a regime-(ii) fit. Both criteria are computed
-#' against the *empirical* log-likelihood of the samples used to fit the
-#' model. They are `NA` for regimes that do not have an empirical likelihood
-#' (`"moment"`, `"kld"`).
+#' Returns the Bayesian and Akaike information criteria of a regime-(ii) fit,
+#' together with the integrated completed likelihood (ICL). All three are
+#' computed against the *empirical* log-likelihood of the samples used to fit
+#' the model and are reported on the same scale (smaller is better). They are
+#' `NA` for regimes that do not have an empirical likelihood (`"moment"`,
+#' `"kld"`).
+#'
+#' The ICL of Biernacki, Celeux and Govaert (2000) adds to the BIC twice the
+#' entropy of the fitted classification,
+#' \eqn{\mathrm{ICL} = \mathrm{BIC} + 2 E_N}, where
+#' \eqn{E_N = -\sum_{i,k} \gamma_{ik} \log \gamma_{ik} \ge 0} is the entropy of
+#' the responsibilities \eqn{\gamma_{ik}}. It therefore penalises mixtures whose
+#' components overlap (uncertain assignments), and favours well-separated
+#' clustering solutions over the merely best-fitting ones. Because
+#' \eqn{E_N \ge 0}, the ICL is never smaller than the BIC, and the two coincide
+#' for a single component (\eqn{K = 1}), where every responsibility is one. The
+#' classification entropy itself is returned as `classification_entropy`.
 #'
 #' @param fit A [gmm_fit].
 #'
-#' @returns A list with `bic`, `aic`, and `n_params`.
+#' @returns A list with `bic`, `aic`, `icl`, `classification_entropy`, and
+#'   `n_params`.
 #' @family diagnostics
+#' @references Biernacki, C., Celeux, G. and Govaert, G. (2000) Assessing a
+#'   mixture model for clustering with the integrated completed likelihood.
+#'   *IEEE Transactions on Pattern Analysis and Machine Intelligence* 22(7),
+#'   719--725. \doi{10.1109/34.865189}
 #' @export
 #' @examples
 #' x <- matrix(stats::rnorm(200), ncol = 2)
@@ -196,10 +214,33 @@ bic_aic <- function(fit) {
   if (!S7::S7_inherits(fit, gmm_fit)) {
     cli::cli_abort("`fit` must be a {.cls gmm_fit}.")
   }
+  bic <- fit@diagnostics$bic %||% NA_real_
+  aic <- fit@diagnostics$aic %||% NA_real_
+  n_params <- fit@diagnostics$n_params %||% NA_integer_
+
+  ## ICL = BIC + 2 E_N, with the classification entropy
+  ##   E_N = -sum_{i,k} gamma_ik log gamma_ik   (0 log 0 = 0).
+  ## Defined for the sample regime, where the responsibilities are over the
+  ## fitted samples; NA elsewhere, matching the BIC / AIC policy.
+  en <- NA_real_
+  icl <- NA_real_
+  if (identical(fit@regime, "sample") && !is.null(fit@target) &&
+        !is.null(fit@target@samples) && is.finite(bic)) {
+    samples <- fit@target@samples
+    log_unnorm <- gmm_log_unnorm(samples, fit@weights, fit@means,
+                                 fit@covariances)
+    log_resp <- log_unnorm - logsumexp_rows(log_unnorm)
+    resp <- exp(log_resp)
+    en <- -sum(resp * log_resp, na.rm = TRUE)
+    icl <- bic + 2 * en
+  }
+
   list(
-    bic = fit@diagnostics$bic %||% NA_real_,
-    aic = fit@diagnostics$aic %||% NA_real_,
-    n_params = fit@diagnostics$n_params %||% NA_integer_
+    bic = bic,
+    aic = aic,
+    icl = icl,
+    classification_entropy = en,
+    n_params = n_params
   )
 }
 

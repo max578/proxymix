@@ -2,7 +2,7 @@
 % Please edit documentation in R/diagnostics.R
 \name{bic_aic}
 \alias{bic_aic}
-\title{Bayesian and Akaike information criteria}
+\title{Information criteria: BIC, AIC, and ICL}
 \usage{
 bic_aic(fit)
 }
@@ -10,19 +10,40 @@ bic_aic(fit)
 \item{fit}{A \link{gmm_fit}.}
 }
 \value{
-A list with \code{bic}, \code{aic}, and \code{n_params}.
+A list with \code{bic}, \code{aic}, \code{icl}, \code{classification_entropy}, and
+\code{n_params}.
 }
 \description{
-Returns the BIC and AIC of a regime-(ii) fit. Both criteria are computed
-against the \emph{empirical} log-likelihood of the samples used to fit the
-model. They are \code{NA} for regimes that do not have an empirical likelihood
-(\code{"moment"}, \code{"kld"}).
+Returns the Bayesian and Akaike information criteria of a regime-(ii) fit,
+together with the integrated completed likelihood (ICL). All three are
+computed against the \emph{empirical} log-likelihood of the samples used to fit
+the model and are reported on the same scale (smaller is better). They are
+\code{NA} for regimes that do not have an empirical likelihood (\code{"moment"},
+\code{"kld"}).
+}
+\details{
+The ICL of Biernacki, Celeux and Govaert (2000) adds to the BIC twice the
+entropy of the fitted classification,
+\eqn{\mathrm{ICL} = \mathrm{BIC} + 2 E_N}, where
+\eqn{E_N = -\sum_{i,k} \gamma_{ik} \log \gamma_{ik} \ge 0} is the entropy of
+the responsibilities \eqn{\gamma_{ik}}. It therefore penalises mixtures whose
+components overlap (uncertain assignments), and favours well-separated
+clustering solutions over the merely best-fitting ones. Because
+\eqn{E_N \ge 0}, the ICL is never smaller than the BIC, and the two coincide
+for a single component (\eqn{K = 1}), where every responsibility is one. The
+classification entropy itself is returned as \code{classification_entropy}.
 }
 \examples{
 x <- matrix(stats::rnorm(200), ncol = 2)
 tgt <- gmm_target_from_samples(x)
 fit <- fit_proxymix(tgt, N = 2L, regime = "sample", max_iter = 25L)
 bic_aic(fit)
+}
+\references{
+Biernacki, C., Celeux, G. and Govaert, G. (2000) Assessing a
+mixture model for clustering with the integrated completed likelihood.
+\emph{IEEE Transactions on Pattern Analysis and Machine Intelligence} 22(7),
+719--725. \doi{10.1109/34.865189}
 }
 \seealso{
 Other diagnostics: 

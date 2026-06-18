@@ -1,7 +1,9 @@
 APSIM
 ASME
+Biernacki
 BugReports
 CATE
+Celeux
 Ch
 Devroye
 Donut
@@ -9,9 +11,11 @@ Epanechnikov
 Fraley
 GMM
 Gaussianity
+Govaert
 Gurewitz
 Hoek
 Hoerl
+ICL
 INLA
 Jolliffe
 KLD
@@ -53,6 +57,7 @@ estimand
 etc
 fallbacks
 flexyBayes
+ge
 hyperrectangle
 ignorability
 ik

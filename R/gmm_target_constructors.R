@@ -288,3 +288,182 @@ epanechnikov_target <- function(n_dim = 1L, center = 0, half_width = 1,
   )
 }
 
+#' Maximum-entropy target under moment and support constraints
+#'
+#' Builds the maximum-entropy [gmm_target] consistent with the supplied
+#' constraints, the least-committal density given what is known. The maximum-
+#' entropy density under linear constraints is an exponential family
+#' \eqn{p(x) \propto \exp(\eta^\top T(x))} on the support, and three cases admit
+#' an exact closed form:
+#'
+#' * **First- and second-moment constraints on full support** -- the Gaussian
+#'   \eqn{\mathcal{N}(\mathrm{mean}, \mathrm{cov})}. The moment constraints are
+#'   realised exactly, so a regime-(i) moment match recovers the target, and the
+#'   target carries its `moments` in `metadata` for that purpose.
+#' * **First- and second-moment constraints on a box support** -- the same
+#'   canonical Gaussian form restricted to the box, a *truncated Gaussian*. The
+#'   normaliser is closed-form when `cov` is diagonal (a product of univariate
+#'   Gaussian box probabilities) and the target is then exactly normalised;
+#'   otherwise the target is declared unnormalised and regime (iii) fits it up to
+#'   the unknown constant. Truncation shifts the realised moments inward, so the
+#'   truncated density's mean and covariance are not `mean` and `cov`; it is the
+#'   canonical-form maximum-entropy density on the box, not the moment-matched
+#'   one.
+#' * **A support constraint alone (no moments) on a finite box** -- the uniform
+#'   density, the maximum-entropy density on a compact support. Its differential
+#'   entropy is exactly \eqn{\log \mathrm{vol}(\mathrm{box})}, the largest
+#'   attainable on that support.
+#'
+#' The bounded-support cases declare their `support`, so [fit_kld_em()] (and
+#' [fit_proxymix()] with `regime = "kld"`) selects a support-matched uniform
+#' importance proposal automatically. Together with the Gaussian as the least-
+#' committal full-support density and the [epanechnikov_target()] as a compact-
+#' support obstruction, these complete a family of principled test targets.
+#'
+#' @param moments Either `NULL` (only a support constraint, giving the uniform)
+#'   or a list with `mean` (length-`p` numeric) and `cov` (a `p`-by-`p`
+#'   symmetric positive-definite matrix). Supplying `mean` without `cov` (or vice
+#'   versa) is an error.
+#' @param support `NULL` for the full \eqn{\mathbb{R}^p} (only valid with
+#'   second-moment `moments`, giving the Gaussian), or a list
+#'   `list(lower = , upper = )` of per-coordinate box bounds (each length 1,
+#'   recycled, or length `p`). The uniform case requires finite bounds.
+#' @param name Human-readable name.
+#'
+#' @returns A [gmm_target].
+#' @family targets
+#' @references Jaynes, E. T. (1957) Information theory and statistical mechanics.
+#'   *Physical Review* 106(4), 620--630. \doi{10.1103/PhysRev.106.620}
+#' @export
+#' @examples
+#' ## Full-support second-moment maximum entropy is the Gaussian.
+#' g <- maxent_target(moments = list(mean = c(0, 0), cov = diag(2)))
+#' g@log_density(matrix(c(0, 0), nrow = 1L))
+#'
+#' ## Support alone on a box is the uniform.
+#' u <- maxent_target(support = list(lower = 0, upper = 1))
+#' exp(u@log_density(matrix(c(0.5), nrow = 1L)))
+#'
+#' ## Second moments on a box is a truncated Gaussian, fit via regime (iii).
+#' tg <- maxent_target(moments = list(mean = 0, cov = matrix(1)),
+#'                     support = list(lower = -2, upper = 2))
+#' tg
+maxent_target <- function(moments = NULL, support = NULL,
+                          name = "maxent_target") {
+  have_moments <- !is.null(moments)
+  if (have_moments) {
+    if (!is.list(moments) ||
+          !all(c("mean", "cov") %in% names(moments))) {
+      cli::cli_abort(c(
+        "`moments` must be a list with both `mean` and `cov`.",
+        "i" = "Supply {.code list(mean = ., cov = .)}, or omit `moments` for the uniform."
+      ))
+    }
+    mean_vec <- as.numeric(moments$mean)
+    cov_mat <- moments$cov
+    p <- length(mean_vec)
+    if (!is.matrix(cov_mat) || nrow(cov_mat) != p || ncol(cov_mat) != p) {
+      cli::cli_abort("`moments$cov` must be a {p}-by-{p} matrix.")
+    }
+    chol_cov <- tryCatch(chol(cov_mat), error = function(e) NULL)
+    if (is.null(chol_cov)) {
+      cli::cli_abort("`moments$cov` must be symmetric positive-definite.")
+    }
+  } else {
+    if (is.null(support)) {
+      cli::cli_abort(c(
+        "A maximum-entropy target needs at least one constraint.",
+        "i" = "Supply `moments` (giving the Gaussian) and/or a bounded `support` (giving the uniform / truncated Gaussian)."
+      ))
+    }
+    p <- max(length(support$lower), length(support$upper))
+  }
+
+  ## ---- Full support: the Gaussian ----------------------------------------
+  if (is.null(support)) {
+    log_density <- function(x) {
+      if (is.null(dim(x))) x <- matrix(x, nrow = 1L)
+      mvnfast::dmvn(x, mu = mean_vec, sigma = cov_mat, log = TRUE)
+    }
+    return(gmm_target(
+      n_dim = as.integer(p),
+      log_density = log_density,
+      normalised = TRUE,
+      log_normalizer = 0,
+      name = name,
+      metadata = list(family = "maxent_gaussian",
+                      moments = list(mean = mean_vec, cov = cov_mat))
+    ))
+  }
+
+  ## ---- Bounded support ----------------------------------------------------
+  lower <- rep_len(as.numeric(support$lower), p)
+  upper <- rep_len(as.numeric(support$upper), p)
+  if (any(upper <= lower)) {
+    cli::cli_abort("`support$upper` must exceed `support$lower` in every coordinate.")
+  }
+  support_list <- list(lower = lower, upper = upper)
+
+  inside_mask <- function(x) {
+    keep <- rep(TRUE, nrow(x))
+    for (d in seq_len(p)) {
+      keep <- keep & x[, d] >= lower[d] & x[, d] <= upper[d]
+    }
+    keep
+  }
+
+  if (!have_moments) {
+    ## Uniform on the box (requires a finite box).
+    if (any(!is.finite(lower)) || any(!is.finite(upper))) {
+      cli::cli_abort("the uniform maximum-entropy target requires a finite box `support`.")
+    }
+    log_vol <- sum(log(upper - lower))
+    log_density <- function(x) {
+      if (is.null(dim(x))) x <- matrix(x, nrow = 1L)
+      out <- rep(-Inf, nrow(x))
+      out[inside_mask(x)] <- -log_vol
+      out
+    }
+    return(gmm_target(
+      n_dim = as.integer(p),
+      log_density = log_density,
+      normalised = TRUE,
+      log_normalizer = 0,
+      support = support_list,
+      name = name,
+      metadata = list(family = "maxent_uniform", log_volume = log_vol)
+    ))
+  }
+
+  ## Truncated Gaussian: the canonical Gaussian form restricted to the box.
+  ## Exactly normalisable when `cov` is diagonal (a product of univariate box
+  ## probabilities); otherwise declared unnormalised (regime (iii) self-
+  ## normalises the importance weights).
+  is_diagonal <- max(abs(cov_mat - diag(diag(cov_mat), p))) < 1e-12
+  log_pb <- if (is_diagonal) {
+    sd_d <- sqrt(diag(cov_mat))
+    sum(log(stats::pnorm(upper, mean_vec, sd_d) -
+              stats::pnorm(lower, mean_vec, sd_d)))
+  } else {
+    NA_real_
+  }
+  log_density <- function(x) {
+    if (is.null(dim(x))) x <- matrix(x, nrow = 1L)
+    ld <- mvnfast::dmvn(x, mu = mean_vec, sigma = cov_mat, log = TRUE)
+    if (is.finite(log_pb)) ld <- ld - log_pb
+    ld[!inside_mask(x)] <- -Inf
+    ld
+  }
+  gmm_target(
+    n_dim = as.integer(p),
+    log_density = log_density,
+    normalised = is.finite(log_pb),
+    log_normalizer = if (is.finite(log_pb)) 0 else NA_real_,
+    support = support_list,
+    name = name,
+    metadata = list(family = "maxent_truncated_gaussian",
+                    canonical_mean = mean_vec, canonical_cov = cov_mat,
+                    diagonal = is_diagonal)
+  )
+}
+

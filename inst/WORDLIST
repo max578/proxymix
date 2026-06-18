@@ -1,5 +1,6 @@
 APSIM
 ASME
+Alspach
 Biernacki
 BugReports
 CATE
@@ -26,6 +27,7 @@ Kennard
 Kullback
 Leibler
 Nadaraya
+Nonlinear
 ORCID
 Pushforward
 Pushforwards
@@ -80,6 +82,7 @@ propto
 proxymix's
 pushforward
 rangle
+reweight
 reweights
 samplable
 sim

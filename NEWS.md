@@ -48,6 +48,13 @@
   ordinary least squares (`K = 1`) through fully-local kernel smoothing
   (`K = n`).
 
+* **Kalman filtering over time in the operator-calculus vignette.** The
+  *Affine-Gaussian operator calculus* vignette now shows the predict
+  (`gmm_affine`) and update (`gmm_observe`) operators run as a filter over a
+  time series: at one component the recursion is exactly the classical Kalman
+  filter (verified against a textbook implementation on a constant-velocity
+  track), and at several components it is the Gaussian-sum filter.
+
 # proxymix 0.6.0
 
 ### New features

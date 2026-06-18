@@ -20,6 +20,16 @@
   predictive uncertainty of the target coordinates given the conditioned ones,
   evaluated row-by-row.
 
+* **Deterministic-annealing fitting and phase-transition component discovery.**
+  `fit_em_samples()` and `fit_kld_em()` gain an opt-in `anneal = TRUE` argument
+  that locates the mixture components by deterministic annealing -- cooling a
+  temperature from a high value toward one -- before the unchanged cold EM loop
+  polishes the fit. The annealed warm-start is markedly less sensitive to local
+  optima than a cold multi-start. The companion diagnostic `gmm_anneal_path()`
+  tracks the number of distinct centroids as the temperature falls, a
+  physics-derived component-count read whose first phase transition has the
+  closed-form critical temperature `lambda_max(Sigma^{-1} C)`.
+
 # proxymix 0.6.0
 
 ### New features

@@ -19,6 +19,8 @@ fit_kld_em(
   validation_proposal = NULL,
   validation_seed = NULL,
   support_warn = TRUE,
+  anneal = FALSE,
+  temp_schedule = NULL,
   canonicalise = TRUE
 )
 }
@@ -67,6 +69,17 @@ validation sample. Defaults to \code{seed + 1L} when \code{seed} is supplied,
 \item{support_warn}{Logical. If \code{TRUE} (the default), issue a warning
 when more than 5\% of IS draws receive non-finite weights (typically
 because the proposal does not dominate the target's support).}
+
+\item{anneal}{Logical. If \code{TRUE}, a deterministic-annealing warm-start
+(see \code{\link[=gmm_anneal_path]{gmm_anneal_path()}}) replaces the kmeans initialisation: components
+are annealed from a high temperature down to one on the importance-weighted
+draws, and the resulting parameters seed the (unchanged) cold KLD-EM loop.
+This attacks the local-optima sensitivity of cold EM. Defaults to \code{FALSE}.}
+
+\item{temp_schedule}{Optional numeric vector of descending temperatures for
+the annealing warm-start. \code{NULL} (the default) uses a geometric schedule
+from \code{10} down to \code{1} in covariance-whitened units. Ignored when
+\code{anneal = FALSE}.}
 
 \item{canonicalise}{Logical. If \code{TRUE} (the default), the fitted
 mixture is post-processed by \code{\link[=gmm_canonicalise]{gmm_canonicalise()}}.}

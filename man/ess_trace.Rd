@@ -26,6 +26,7 @@ ess_trace(fit)
 Other diagnostics: 
 \code{\link{bic_aic}()},
 \code{\link{ess_summary}()},
+\code{\link{gmm_anneal_path}()},
 \code{\link{gmm_conditional_entropy}()},
 \code{\link{gmm_entropy}()},
 \code{\link{gmm_mutual_information}()},

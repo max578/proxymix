@@ -40,6 +40,14 @@
   the fitted responsibilities (Biernacki, Celeux and Govaert 2000), which
   penalises overlapping components and equals the BIC for a single component.
 
+* **Kernel regression in the unifying-primitive vignette.** The
+  *One mixture, many methods* vignette now covers Nadaraya-Watson kernel
+  regression as the nonparametric end of the conditioning axis: the conditional
+  mean of a one-component-per-datum kernel density estimate equals the
+  Nadaraya-Watson estimator exactly, so a single conditioning operation spans
+  ordinary least squares (`K = 1`) through fully-local kernel smoothing
+  (`K = n`).
+
 # proxymix 0.6.0
 
 ### New features

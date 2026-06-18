@@ -25,7 +25,7 @@ library(proxymix)
 A fitted Gaussian mixture over your data is a single object, and several
 classical analyses follow from it in closed form -- because conditioning,
 marginalisation, and eigendecomposition are all exact on a Gaussian mixture.
-This vignette shows `proxymix` standing in for four familiar tools. Each
+This vignette shows `proxymix` standing in for five familiar tools. Each
 section keeps the same shape: the **problem**, the **usual tool**, the
 **`proxymix` route**, the **idea** behind the substitution, and **what it does
 and does not** replace. The point is one fitted object serving several jobs,
@@ -89,6 +89,69 @@ regression.
 conditional *densities*, not just the mean. It does not return classical
 inference (standard errors, \(p\)-values) by default, and it assumes Gaussian
 components.
+
+## Kernel regression — from Nadaraya--Watson to a conditioned KDE
+
+**Problem.** Predict \(y\) from \(x\) with no global functional form -- a purely
+local smoother. **Usual tool.** Nadaraya--Watson kernel regression
+(`stats::ksmooth`, package `np`): a kernel-weighted local average of the
+responses. **`proxymix` route.** Place one Gaussian per data point over the
+joint \((y, x)\) -- a kernel density estimate -- and read \(E[y \mid x]\) by
+conditioning. With a Gaussian kernel that conditional mean *is* the
+Nadaraya--Watson estimator, exactly. Where `lm()` sat at \(K = 1\) (one global
+line), Nadaraya--Watson sits at \(K = n\) (one component per datum, fully
+local), and `from_kde()` lands anywhere in between -- a single axis with
+least squares at one end and kernel smoothing at the other.
+
+```{r nw-fit}
+h <- 0.4                                       # kernel bandwidth
+nw <- function(xq) vapply(xq, function(q) {
+  w <- dnorm(q, x, h); sum(w * y) / sum(w)     # Nadaraya--Watson, Gaussian kernel
+}, numeric(1L))
+
+## One Gaussian per datum -- a kernel density estimate of the joint (y, x) --
+## then condition on x and read the conditional mean.
+kde <- gmm(weights = rep(1 / n, n),
+           means = lapply(seq_len(n), function(i) c(y[i], x[i])),
+           covariances = rep(list(diag(c(h^2, h^2))), n))
+xq <- c(-2, -0.5, 1, 2.2)
+c(max_abs_diff = max(abs(nw(xq) - .cond_mean(kde, xq))))   # equal to NW
+```
+
+```{r nw-plot, fig.cap = "One axis, two endpoints: the global line (K = 1, OLS) and the fully local kernel smoother (K = n, Nadaraya-Watson).", fig.alt = "Scatter of y against x with the straight OLS line and the curved Nadaraya-Watson kernel-regression line."}
+if (requireNamespace("ggplot2", quietly = TRUE)) {
+  grid_nw <- data.frame(x = seq(-3, 3, length.out = 200L))
+  grid_nw$ols <- as.numeric(predict(lm(y ~ x, dat), newdata = grid_nw))
+  grid_nw$nw  <- nw(grid_nw$x)
+  ggplot() +
+    geom_point(data = dat, aes(x, y), colour = "grey60", alpha = 0.4, size = 0.7) +
+    geom_line(data = grid_nw, aes(x, ols, colour = "OLS (K = 1)"), linewidth = 0.9) +
+    geom_line(data = grid_nw, aes(x, nw, colour = "kernel (K = n)"), linewidth = 0.9) +
+    scale_colour_manual(name = NULL,
+                        values = c("OLS (K = 1)" = "#2C7FB8",
+                                   "kernel (K = n)" = "#D95F0E")) +
+    labs(title = "From global line to local kernel, one conditioning operation",
+         x = expression(x), y = expression(y)) +
+    theme_minimal(base_size = 11) +
+    theme(legend.position = "top", plot.title = element_text(face = "bold"))
+}
+```
+
+**Idea.** Conditioning a per-point KDE gives responsibilities
+\(\pi_i(x) \propto \mathcal{N}(x \mid x_i, h^2)\) and per-component means \(y_i\),
+so \(E[y \mid x] = \sum_i \pi_i(x)\, y_i\) -- the Nadaraya--Watson ratio. Kernel
+regression is therefore Gaussian-mixture regression with one component per datum,
+a diagonal bandwidth, and only the conditional mean read off. The bandwidth
+\(h\) plays the role of the component covariance.
+
+**Does / does not.** The same operation returns the full conditional *density*
+(predictive variance, quantiles, multimodality), and `gmm_conditional_entropy()`
+scores its uncertainty -- neither available from the bare Nadaraya--Watson mean.
+It also works in regime (iii), where you can evaluate the joint density but have
+no points to average, so a literal kernel estimator does not exist. The price is
+that the one-per-datum estimate costs \(O(n)\) per query; `from_kde()` compresses
+it to a \(K\)-component mixture for \(O(K)\) queries, and -- as with any kernel
+method -- the bandwidth must be chosen.
 
 ## Clustering — from `kmeans()` to the mixture components
 
@@ -220,6 +283,7 @@ family -- so `proxymix` does not perform variable selection.
 | Method | Usual tool | `proxymix` route | What you gain | What you give up |
 |---|---|---|---|---|
 | Regression | `lm` / `glm` | mixture over \((y, x)\) + `gmm_conditionalise()` | nonlinear, heteroscedastic, multimodal conditional densities | built-in inference; Gaussian components |
+| Kernel regression | `ksmooth` / `np` (Nadaraya--Watson) | per-point KDE + `gmm_conditionalise()`; compress with `from_kde()` | full conditional density, uncertainty, the evaluate-only regime | \(O(n)\) per query unless compressed; bandwidth choice |
 | Clustering | `kmeans` / `mclust` | `fit_proxymix(regime = "sample")` | soft, ellipsoidal, density-aware clusters | automatic \(K\); speed at huge \(n\) |
 | PCA | `prcomp` | `eigen()` of the `N = 1` covariance | local PCA per cluster at \(K > 1\) | loadings / scree / biplot conveniences |
 | Ridge | `glmnet` / `lm.ridge` | `ridge_eps` on the covariance | \(L_2\) shrinkage from one object | \(L_1\) sparsity / variable selection |
@@ -241,6 +305,10 @@ Gaussian-mixture assumptions fit your data.
   analysis, and density estimation.* Journal of the American Statistical
   Association 97(458), 611--631.
 * Jolliffe, I. T. (2002). *Principal Component Analysis*, 2nd ed. Springer.
+* Nadaraya, E. A. (1964). *On estimating regression.* Theory of Probability and
+  Its Applications 9(1), 141--142.
+* Watson, G. S. (1964). *Smooth regression analysis.* Sankhya A 26(4),
+  359--372.
 * Tipping, M. E. and Bishop, C. M. (1999). *Probabilistic principal component
   analysis.* Journal of the Royal Statistical Society B 61(3), 611--622.
 * Hoerl, A. E. and Kennard, R. W. (1970). *Ridge regression: biased estimation

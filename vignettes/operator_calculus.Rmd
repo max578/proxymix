@@ -193,6 +193,91 @@ gmm_missing(g_prior, observed = 2L, values = 0.5)
 This is equivalent to `gmm_conditionalise(g_prior, given = c(NA, 0.5))`
 but with a clearer index-based signature for missing-data pipelines.
 
+# Filtering over time — the Kalman filter as a special case
+
+The Bayesian update above is a single step. A *filter* alternates two steps over
+time: a **predict** step that pushes the state forward through the dynamics
+(`gmm_affine`, the Chapman--Kolmogorov propagation of a linear stochastic
+dynamical system), and an **update** step that folds in each noisy measurement
+(`gmm_observe`). Run on a single-component prior, this recursion *is* the
+classical discrete-time Kalman filter; run on a multi-component prior, it is the
+**Gaussian-sum filter** -- a bank of Kalman filters carried in parallel.
+
+Take a one-dimensional constant-velocity track, with state
+\((\text{position}, \text{velocity})\), linear dynamics \(A\), process noise
+\(Q\), and a noisy position sensor \(C = [1, 0]\) with noise \(R\).
+
+```{r kf-setup}
+dt <- 1
+A  <- matrix(c(1, dt, 0, 1), 2L, 2L, byrow = TRUE)   # constant velocity
+C  <- matrix(c(1, 0), 1L, 2L)                         # observe position only
+Q  <- 0.01 * diag(2)                                  # process noise
+R  <- matrix(0.5, 1L, 1L)                             # sensor noise
+set.seed(42)
+n <- 30L
+truth <- matrix(0, n, 2L)
+truth[1L, ] <- c(0, 1)
+for (k in 2:n) {
+  truth[k, ] <- as.numeric(A %*% truth[k - 1L, ]) + mvnfast::rmvn(1L, c(0, 0), Q)
+}
+y <- truth[, 1L] + rnorm(n, 0, sqrt(R[1L, 1L]))       # noisy position readings
+```
+
+The filter is the operator calculus in a loop -- `gmm_affine()` to predict,
+`gmm_observe()` to update:
+
+```{r kf-loop}
+g <- gmm(weights = 1, means = list(c(0, 0)), covariances = list(diag(2)))
+filtered <- numeric(n)
+for (k in seq_len(n)) {
+  if (k > 1L) g <- gmm_affine(g, A = A, b = c(0, 0), noise_cov = Q)  # predict
+  g <- gmm_observe(g, A = C, y = y[k], noise_cov = R)                # update
+  filtered[k] <- g@means[[1L]][1L]
+}
+```
+
+Against a hand-coded textbook Kalman filter the two tracks agree to the level of
+the numerical-hygiene ridge:
+
+```{r kf-parity}
+mu <- c(0, 0); S <- diag(2); kf <- numeric(n)
+for (k in seq_len(n)) {
+  if (k > 1L) { mu <- as.numeric(A %*% mu); S <- A %*% S %*% t(A) + Q }  # predict
+  K  <- S %*% t(C) %*% solve(C %*% S %*% t(C) + R)                       # gain
+  mu <- mu + as.numeric(K %*% (y[k] - C %*% mu))
+  S  <- (diag(2) - K %*% C) %*% S
+  kf[k] <- mu[1L]
+}
+c(max_abs_diff = max(abs(filtered - kf)))
+```
+
+```{r kf-plot, fig.height = 3.4, fig.cap = "A constant-velocity track filtered by the K = 1 operator-calculus recursion (the Kalman filter): noisy readings, the latent truth, and the filtered estimate.", fig.alt = "Time series with scattered noisy position readings, the smooth latent truth line, and the filtered estimate line tracking the truth."}
+track <- data.frame(t = seq_len(n), truth = truth[, 1L], y = y,
+                    filtered = filtered)
+ggplot(track, aes(t)) +
+  geom_point(aes(y = y, colour = "noisy reading"), size = 1.3, alpha = 0.7) +
+  geom_line(aes(y = truth, colour = "latent truth"), linewidth = 0.8) +
+  geom_line(aes(y = filtered, colour = "filtered (K = 1)"), linewidth = 0.9) +
+  scale_colour_manual(name = NULL,
+                      values = c("noisy reading" = "grey55",
+                                 "latent truth" = "#2C7FB8",
+                                 "filtered (K = 1)" = "#D95F0E")) +
+  labs(title = "Predict + update over time is a Kalman filter",
+       x = "time step", y = "position") +
+  theme_minimal(base_size = 11) +
+  theme(legend.position = "top", plot.title = element_text(face = "bold"))
+```
+
+**The mixture generalisation.** At \(K > 1\) the same two calls run a Kalman
+filter inside *every* component and reweight the components by their evidence --
+the Gaussian-sum filter. It represents beliefs a single Kalman filter cannot
+(multimodal posteriors: several competing hypotheses about where the target is),
+at the cost that each `gmm_observe` can multiply the component count. Collapsing
+the mixture back to a fixed budget -- merging components that a divergence such
+as `gmm_divergence()` deems close, or an annealed re-fit -- keeps the filter
+bounded; that collapse is the one piece beyond the closed-form operators shown
+on this page.
+
 # Composition rules
 
 The operators commute exactly with `gmm_marginalise()` when applied to
@@ -257,5 +342,8 @@ For a downscaling problem \(g(y) = \mathbb{E}_{x \mid y}[f(x)]\):
   <doi:10.1080/07362994.2024.2372605>.
 * Kalman, R. E. (1960). *A new approach to linear filtering and
   prediction problems.* Transactions of the ASME — J. Basic Engineering.
+* Alspach, D. L. and Sorenson, H. W. (1972). *Nonlinear Bayesian
+  estimation using Gaussian sum approximations.* IEEE Transactions on
+  Automatic Control 17(4), 439--448.
 * Murphy, K. P. (2012). *Machine Learning: A Probabilistic Perspective.*
   MIT Press. Ch. 4 (Gaussian models), Ch. 18 (state-space).

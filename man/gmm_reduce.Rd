@@ -4,7 +4,15 @@
 \alias{gmm_reduce}
 \title{Reduce a Gaussian mixture to fewer components}
 \usage{
-gmm_reduce(g, k_max, cost = c("kl", "cs"), ridge_eps = 0)
+gmm_reduce(
+  g,
+  k_max,
+  method = c("merge", "anneal"),
+  cost = c("kl", "cs"),
+  draws = 5000L,
+  seed = NULL,
+  ridge_eps = 0
+)
 }
 \arguments{
 \item{g}{A \link{gmm} (or \link{gmm_fit}).}
@@ -13,8 +21,18 @@ gmm_reduce(g, k_max, cost = c("kl", "cs"), ridge_eps = 0)
 \code{k_max} is at least the current component count the mixture is returned
 unchanged.}
 
+\item{method}{\code{"merge"} (the default, moment-preserving greedy merge) or
+\code{"anneal"} (the merge refined by an annealed re-fit; never worse than the
+merge).}
+
 \item{cost}{The pairwise merge cost: \code{"kl"} (the Runnalls Kullback-Leibler
 bound, the default) or \code{"cs"} (the Cauchy-Schwarz divergence).}
+
+\item{draws}{Number of draws used by the \code{"anneal"} re-fit. Ignored when
+\code{method = "merge"}.}
+
+\item{seed}{Optional integer seed for the \code{"anneal"} re-fit (the result is
+deterministic given a seed). Ignored when \code{method = "merge"}.}
 
 \item{ridge_eps}{Ridge added to each merged covariance. The moment-preserving
 merge is positive-definite by construction, so the default \code{0} keeps the
@@ -25,13 +43,13 @@ headroom in very long reduction chains (at the cost of a tiny moment drift).}
 A \link{gmm} with at most \code{k_max} components.
 }
 \description{
-Collapses a Gaussian mixture to at most \code{k_max} components by a greedy,
-moment-preserving pairwise merge. At each step the cheapest pair of components
-is replaced by the single Gaussian that preserves their combined weight, mean
-and covariance, until the component budget is met. Because every merge is
-moment-preserving, the reduced mixture has the \strong{same global mean and
-covariance} as the original, and reducing all the way to a single component
-returns the moment-matched Gaussian.
+Collapses a Gaussian mixture to at most \code{k_max} components. The default
+\code{method = "merge"} is a greedy, moment-preserving pairwise merge: at each step
+the cheapest pair of components is replaced by the single Gaussian that
+preserves their combined weight, mean and covariance, until the component
+budget is met. Because every merge is moment-preserving, the reduced mixture
+has the \strong{same global mean and covariance} as the original, and reducing all
+the way to a single component returns the moment-matched Gaussian.
 }
 \details{
 The merge cost decides which pair is collapsed first. \code{cost = "kl"} is the
@@ -41,10 +59,20 @@ divergence between the two-component sub-mixture and its merge (the same
 Gaussian-product identity that underlies \code{\link[=gmm_divergence]{gmm_divergence()}}), scaled by the
 merged mass. Both are non-negative and zero for identical components.
 
+\code{method = "anneal"} additionally draws a sample from the mixture and refits a
+\code{k_max}-component proxy by annealed EM (see \code{\link[=fit_em_samples]{fit_em_samples()}}), then returns
+whichever of the merge and the re-fit has the smaller Cauchy-Schwarz
+divergence from the original. The re-fit can improve on the greedy merge for
+smooth, over-parameterised mixtures, where a globally fitted proxy beats any
+sequence of pairwise merges; the merge is returned when it is at least as
+good, so the result is never worse than \code{method = "merge"}. Unlike the merge,
+the re-fit is a Monte Carlo fit and does not preserve the global moments
+exactly; raise \code{draws} for a closer re-fit.
+
 Reduction is the closing operation of a Gaussian-sum filter: repeated
 \code{\link[=gmm_observe]{gmm_observe()}} / \code{\link[=gmm_affine]{gmm_affine()}} steps under a Gaussian-mixture noise or
 dynamics model multiply the component count, and \code{gmm_reduce()} returns it to
-a fixed budget while preserving the first two moments.
+a fixed budget.
 }
 \examples{
 ## A six-component mixture with three near-duplicate pairs.

@@ -177,3 +177,46 @@ test_that("a single-component mixture is returned unchanged", {
   g1 <- gmm(weights = 1, means = list(c(0, 0)), covariances = list(diag(2)))
   expect_equal(gmm_n_components(gmm_reduce(g1, 1L)), 1L)
 })
+
+# ---- G2: annealed re-fit collapse -----------------------------------------
+
+test_that("the annealed method is never worse than the merge (GS4)", {
+  skip_on_cran()
+  g <- .random_mixture(8L, seed = 7L)
+  for (km in c(2L, 3L, 4L, 5L)) {
+    rm_ <- gmm_reduce(g, km, method = "merge")
+    ra <- gmm_reduce(g, km, method = "anneal", draws = 6000L, seed = 1L)
+    expect_lte(gmm_divergence(g, ra, type = "cs"),
+               gmm_divergence(g, rm_, type = "cs") + 1e-9)
+    expect_lte(gmm_n_components(ra), km)
+    expect_equal(sum(ra@weights), 1, tolerance = 1e-12)
+  }
+})
+
+test_that("the annealed re-fit improves on the merge for a smooth mixture", {
+  skip_on_cran()
+  ## ten equal components strung along a line -- an over-parameterised ridge,
+  ## where a globally fitted proxy beats any sequence of pairwise merges.
+  gw <- gmm(
+    weights = rep(1 / 10, 10),
+    means = lapply(seq(-4.5, 4.5, length.out = 10L), function(m) c(m, 0)),
+    covariances = rep(list(diag(2)), 10)
+  )
+  d_merge <- gmm_divergence(gw, gmm_reduce(gw, 3L, method = "merge"), type = "cs")
+  d_anneal <- gmm_divergence(
+    gw, gmm_reduce(gw, 3L, method = "anneal", draws = 8000L, seed = 1L),
+    type = "cs")
+  expect_lt(d_anneal, d_merge)
+})
+
+test_that("the annealed reduction is deterministic and respects the budget", {
+  skip_on_cran()
+  g <- .random_mixture(7L, seed = 4L)
+  a1 <- gmm_reduce(g, 3L, method = "anneal", seed = 5L, draws = 4000L)
+  a2 <- gmm_reduce(g, 3L, method = "anneal", seed = 5L, draws = 4000L)
+  expect_equal(a1@means, a2@means)
+  expect_equal(a1@weights, a2@weights)
+  expect_true(S7::S7_inherits(a1, gmm))
+  ## k_max >= K is unchanged under either method
+  expect_equal(gmm_n_components(gmm_reduce(g, 9L, method = "anneal")), 7L)
+})

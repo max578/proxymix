@@ -2,15 +2,17 @@
 ##
 ## A repeated, noisy operation (a Gaussian-sum filter, a product of mixtures, a
 ## fit with redundant components) leaves a mixture with more components than the
-## structure warrants. `gmm_reduce()` collapses it to a budget by a greedy,
-## moment-preserving pairwise merge: at each step the pair of components whose
-## merge costs the least is replaced by the single Gaussian that preserves their
-## combined weight, mean and covariance, until the budget is met.
+## structure warrants. `gmm_reduce()` collapses it to a budget, two ways. The
+## `"merge"` method is a greedy, moment-preserving pairwise merge: at each step
+## the pair whose merge costs the least is replaced by the single Gaussian that
+## preserves their combined weight, mean and covariance, until the budget is met.
+## The `"anneal"` method additionally refits a budget-sized proxy to the mixture
+## by annealed EM and keeps it when it improves on the merge.
 ##
 ## Two merge costs are offered. The Kullback-Leibler bound of Runnalls (2007) is
 ## the textbook choice; the Cauchy-Schwarz cost reuses the package's closed-form
 ## Gaussian-product identity (the same one behind `gmm_divergence`). Because each
-## merge is moment-preserving, the whole reduction preserves the mixture's global
+## merge is moment-preserving, the merge reduction preserves the mixture's global
 ## mean and covariance exactly, and reducing to a single component returns the
 ## moment-matched Gaussian.
 
@@ -81,76 +83,15 @@
 }
 
 # ---------------------------------------------------------------------------
-# gmm_reduce
+# The two reduction strategies
 # ---------------------------------------------------------------------------
 
-#' Reduce a Gaussian mixture to fewer components
-#'
-#' Collapses a Gaussian mixture to at most `k_max` components by a greedy,
-#' moment-preserving pairwise merge. At each step the cheapest pair of components
-#' is replaced by the single Gaussian that preserves their combined weight, mean
-#' and covariance, until the component budget is met. Because every merge is
-#' moment-preserving, the reduced mixture has the **same global mean and
-#' covariance** as the original, and reducing all the way to a single component
-#' returns the moment-matched Gaussian.
-#'
-#' The merge cost decides which pair is collapsed first. `cost = "kl"` is the
-#' Kullback-Leibler upper bound of Runnalls (2007), the standard mixture-
-#' reduction criterion; `cost = "cs"` is the closed-form Cauchy-Schwarz
-#' divergence between the two-component sub-mixture and its merge (the same
-#' Gaussian-product identity that underlies [gmm_divergence()]), scaled by the
-#' merged mass. Both are non-negative and zero for identical components.
-#'
-#' Reduction is the closing operation of a Gaussian-sum filter: repeated
-#' [gmm_observe()] / [gmm_affine()] steps under a Gaussian-mixture noise or
-#' dynamics model multiply the component count, and `gmm_reduce()` returns it to
-#' a fixed budget while preserving the first two moments.
-#'
-#' @param g A [gmm] (or [gmm_fit]).
-#' @param k_max Maximum number of components to keep (a positive integer). When
-#'   `k_max` is at least the current component count the mixture is returned
-#'   unchanged.
-#' @param cost The pairwise merge cost: `"kl"` (the Runnalls Kullback-Leibler
-#'   bound, the default) or `"cs"` (the Cauchy-Schwarz divergence).
-#' @param ridge_eps Ridge added to each merged covariance. The moment-preserving
-#'   merge is positive-definite by construction, so the default `0` keeps the
-#'   global moments exact; set a small positive value for extra numerical
-#'   headroom in very long reduction chains (at the cost of a tiny moment drift).
-#'
-#' @returns A [gmm] with at most `k_max` components.
-#' @family operators
-#' @references Runnalls, A. R. (2007) Kullback-Leibler approach to Gaussian
-#'   mixture reduction. *IEEE Transactions on Aerospace and Electronic Systems*
-#'   43(3), 989--999. \doi{10.1109/TAES.2007.4383588}
-#' @export
-#' @examples
-#' ## A six-component mixture with three near-duplicate pairs.
-#' g <- gmm(
-#'   weights = rep(1 / 6, 6),
-#'   means = list(c(-4, 0), c(-4, 0.1), c(4, 0), c(4.1, 0), c(0, 5), c(0, 5.1)),
-#'   covariances = rep(list(diag(2)), 6)
-#' )
-#' gmm_reduce(g, k_max = 3L)
-gmm_reduce <- function(g, k_max, cost = c("kl", "cs"), ridge_eps = 0) {
-  if (!S7::S7_inherits(g, gmm)) {
-    cli::cli_abort("`g` must be a {.cls gmm} object.")
-  }
-  k_max <- as.integer(k_max)
-  if (length(k_max) != 1L || is.na(k_max) || k_max < 1L) {
-    cli::cli_abort("`k_max` must be a single positive integer.")
-  }
-  cost <- rlang::arg_match(cost)
-
+## Greedy moment-preserving merge to `k_max` components.
+.reduce_merge <- function(g, k_max, cost, ridge_eps) {
   w <- g@weights
   m <- g@means
   S <- g@covariances
   K <- length(w)
-
-  if (k_max >= K) {
-    return(gmm(weights = w, means = m, covariances = S,
-               name = sprintf("%s (<= %d comp)", g@name, k_max)))
-  }
-
   while (K > k_max) {
     best <- Inf
     bi <- NA_integer_
@@ -181,8 +122,119 @@ gmm_reduce <- function(g, k_max, cost = c("kl", "cs"), ridge_eps = 0) {
     S <- S[-bj]
     K <- K - 1L
   }
+  gmm(weights = w / sum(w), means = m, covariances = S,
+      name = sprintf("%s (reduced to %d comp)", g@name, k_max))
+}
 
-  w <- w / sum(w)
-  gmm(weights = w, means = m, covariances = S,
-      name = sprintf("%s (reduced to %d comp)", g@name, K))
+## Annealed re-fit collapse: draw a sample from the mixture and refit a
+## `k_max`-component proxy by annealed EM (the deterministic-annealing warm-start
+## attacks the local optima that beset mixture reduction). Does not preserve the
+## global moments exactly -- it is a Monte Carlo re-fit.
+.reduce_anneal <- function(g, k_max, draws, seed) {
+  x <- if (is.null(seed)) rgmm(draws, g) else withr::with_seed(seed, rgmm(draws, g))
+  fit <- fit_em_samples(gmm_target_from_samples(x), N = k_max,
+                        anneal = TRUE, seed = seed, max_iter = 200L)
+  gmm(weights = fit@weights, means = fit@means, covariances = fit@covariances,
+      name = sprintf("%s (refit to %d comp)", g@name, k_max))
+}
+
+# ---------------------------------------------------------------------------
+# gmm_reduce
+# ---------------------------------------------------------------------------
+
+#' Reduce a Gaussian mixture to fewer components
+#'
+#' Collapses a Gaussian mixture to at most `k_max` components. The default
+#' `method = "merge"` is a greedy, moment-preserving pairwise merge: at each step
+#' the cheapest pair of components is replaced by the single Gaussian that
+#' preserves their combined weight, mean and covariance, until the component
+#' budget is met. Because every merge is moment-preserving, the reduced mixture
+#' has the **same global mean and covariance** as the original, and reducing all
+#' the way to a single component returns the moment-matched Gaussian.
+#'
+#' The merge cost decides which pair is collapsed first. `cost = "kl"` is the
+#' Kullback-Leibler upper bound of Runnalls (2007), the standard mixture-
+#' reduction criterion; `cost = "cs"` is the closed-form Cauchy-Schwarz
+#' divergence between the two-component sub-mixture and its merge (the same
+#' Gaussian-product identity that underlies [gmm_divergence()]), scaled by the
+#' merged mass. Both are non-negative and zero for identical components.
+#'
+#' `method = "anneal"` additionally draws a sample from the mixture and refits a
+#' `k_max`-component proxy by annealed EM (see [fit_em_samples()]), then returns
+#' whichever of the merge and the re-fit has the smaller Cauchy-Schwarz
+#' divergence from the original. The re-fit can improve on the greedy merge for
+#' smooth, over-parameterised mixtures, where a globally fitted proxy beats any
+#' sequence of pairwise merges; the merge is returned when it is at least as
+#' good, so the result is never worse than `method = "merge"`. Unlike the merge,
+#' the re-fit is a Monte Carlo fit and does not preserve the global moments
+#' exactly; raise `draws` for a closer re-fit.
+#'
+#' Reduction is the closing operation of a Gaussian-sum filter: repeated
+#' [gmm_observe()] / [gmm_affine()] steps under a Gaussian-mixture noise or
+#' dynamics model multiply the component count, and `gmm_reduce()` returns it to
+#' a fixed budget.
+#'
+#' @param g A [gmm] (or [gmm_fit]).
+#' @param k_max Maximum number of components to keep (a positive integer). When
+#'   `k_max` is at least the current component count the mixture is returned
+#'   unchanged.
+#' @param method `"merge"` (the default, moment-preserving greedy merge) or
+#'   `"anneal"` (the merge refined by an annealed re-fit; never worse than the
+#'   merge).
+#' @param cost The pairwise merge cost: `"kl"` (the Runnalls Kullback-Leibler
+#'   bound, the default) or `"cs"` (the Cauchy-Schwarz divergence).
+#' @param draws Number of draws used by the `"anneal"` re-fit. Ignored when
+#'   `method = "merge"`.
+#' @param seed Optional integer seed for the `"anneal"` re-fit (the result is
+#'   deterministic given a seed). Ignored when `method = "merge"`.
+#' @param ridge_eps Ridge added to each merged covariance. The moment-preserving
+#'   merge is positive-definite by construction, so the default `0` keeps the
+#'   global moments exact; set a small positive value for extra numerical
+#'   headroom in very long reduction chains (at the cost of a tiny moment drift).
+#'
+#' @returns A [gmm] with at most `k_max` components.
+#' @family operators
+#' @references Runnalls, A. R. (2007) Kullback-Leibler approach to Gaussian
+#'   mixture reduction. *IEEE Transactions on Aerospace and Electronic Systems*
+#'   43(3), 989--999. \doi{10.1109/TAES.2007.4383588}
+#' @export
+#' @examples
+#' ## A six-component mixture with three near-duplicate pairs.
+#' g <- gmm(
+#'   weights = rep(1 / 6, 6),
+#'   means = list(c(-4, 0), c(-4, 0.1), c(4, 0), c(4.1, 0), c(0, 5), c(0, 5.1)),
+#'   covariances = rep(list(diag(2)), 6)
+#' )
+#' gmm_reduce(g, k_max = 3L)
+gmm_reduce <- function(g, k_max, method = c("merge", "anneal"),
+                       cost = c("kl", "cs"), draws = 5000L, seed = NULL,
+                       ridge_eps = 0) {
+  if (!S7::S7_inherits(g, gmm)) {
+    cli::cli_abort("`g` must be a {.cls gmm} object.")
+  }
+  k_max <- as.integer(k_max)
+  if (length(k_max) != 1L || is.na(k_max) || k_max < 1L) {
+    cli::cli_abort("`k_max` must be a single positive integer.")
+  }
+  method <- rlang::arg_match(method)
+  cost <- rlang::arg_match(cost)
+  K <- length(g@weights)
+
+  if (k_max >= K) {
+    return(gmm(weights = g@weights, means = g@means, covariances = g@covariances,
+               name = sprintf("%s (<= %d comp)", g@name, k_max)))
+  }
+
+  merged <- .reduce_merge(g, k_max, cost, ridge_eps)
+  if (method == "merge") {
+    return(merged)
+  }
+
+  refit <- .reduce_anneal(g, k_max, as.integer(draws), seed)
+  if (gmm_divergence(g, refit, type = "cs") <
+        gmm_divergence(g, merged, type = "cs")) {
+    refit
+  } else {
+    merged
+  }
 }

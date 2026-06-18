@@ -312,8 +312,11 @@ c(mean_shift = max(abs(mix_mean(g6) - mix_mean(g3))),
 
 Reducing all the way to a single component returns the moment-matched Gaussian,
 so `gmm_reduce()` interpolates between the full mixture and its single-Gaussian
-summary. In a Gaussian-sum filter it runs after each update, holding the
-component count at the budget while the first two moments are preserved exactly.
+summary. For a smooth, over-parameterised mixture a globally fitted proxy can
+beat any sequence of pairwise merges; `method = "anneal"` refits a budget-sized
+proxy by annealed EM and keeps it when it improves on the merge. In a
+Gaussian-sum filter, reduction runs after each update, holding the component
+count at the budget.
 
 # Composition rules
 

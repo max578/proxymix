@@ -59,7 +59,8 @@ Other operators:
 \code{\link{gmm_aggregate}()},
 \code{\link{gmm_counterfactual}()},
 \code{\link{gmm_missing}()},
-\code{\link{gmm_observe}()}
+\code{\link{gmm_observe}()},
+\code{\link{gmm_reduce}()}
 
 Other decision: 
 \code{\link{fit_uplift}()},

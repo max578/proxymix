@@ -272,11 +272,48 @@ ggplot(track, aes(t)) +
 filter inside *every* component and reweight the components by their evidence --
 the Gaussian-sum filter. It represents beliefs a single Kalman filter cannot
 (multimodal posteriors: several competing hypotheses about where the target is),
-at the cost that each `gmm_observe` can multiply the component count. Collapsing
-the mixture back to a fixed budget -- merging components that a divergence such
-as `gmm_divergence()` deems close, or an annealed re-fit -- keeps the filter
-bounded; that collapse is the one piece beyond the closed-form operators shown
-on this page.
+at the cost that each `gmm_observe` (under a Gaussian-mixture noise or dynamics
+model) can multiply the component count. Collapsing the mixture back to a fixed
+budget keeps the filter bounded; that collapse is `gmm_reduce()`, next.
+
+# Bounding the filter — mixture reduction
+
+`gmm_reduce()` collapses a mixture to a budget of at most `k_max` components by a
+greedy, moment-preserving pairwise merge: at each step the cheapest pair is
+replaced by the single Gaussian that preserves their combined weight, mean and
+covariance. Two merge costs decide which pair goes first -- the Kullback--Leibler
+bound of Runnalls (2007), `cost = "kl"`, and a closed-form Cauchy--Schwarz cost,
+`cost = "cs"`, built from the same Gaussian-product identity as
+`gmm_divergence()`.
+
+Take a six-component mixture that really has three clusters, each split into two
+near-identical components, and reduce it to three:
+
+```{r reduce}
+g6 <- gmm(
+  weights     = rep(1 / 6, 6),
+  means       = list(c(-5, 0), c(-5, 0.15), c(5, 0), c(5.1, -0.1),
+                     c(0, 6), c(0.1, 6.1)),
+  covariances = rep(list(0.5 * diag(2)), 6)
+)
+g3 <- gmm_reduce(g6, k_max = 3L)
+gmm_n_components(g3)
+```
+
+Because every merge is moment-preserving, the reduction leaves the mixture's
+global mean and covariance untouched -- and merging near-duplicates barely moves
+the mixture, so the divergence from the original is negligible:
+
+```{r reduce-check}
+mix_mean <- function(g) Reduce(`+`, Map(`*`, g@weights, g@means))
+c(mean_shift = max(abs(mix_mean(g6) - mix_mean(g3))),
+  divergence = gmm_divergence(g6, g3, type = "cs"))
+```
+
+Reducing all the way to a single component returns the moment-matched Gaussian,
+so `gmm_reduce()` interpolates between the full mixture and its single-Gaussian
+summary. In a Gaussian-sum filter it runs after each update, holding the
+component count at the budget while the first two moments are preserved exactly.
 
 # Composition rules
 
@@ -345,5 +382,8 @@ For a downscaling problem \(g(y) = \mathbb{E}_{x \mid y}[f(x)]\):
 * Alspach, D. L. and Sorenson, H. W. (1972). *Nonlinear Bayesian
   estimation using Gaussian sum approximations.* IEEE Transactions on
   Automatic Control 17(4), 439--448.
+* Runnalls, A. R. (2007). *Kullback--Leibler approach to Gaussian mixture
+  reduction.* IEEE Transactions on Aerospace and Electronic Systems
+  43(3), 989--999.
 * Murphy, K. P. (2012). *Machine Learning: A Probabilistic Perspective.*
   MIT Press. Ch. 4 (Gaussian models), Ch. 18 (state-space).

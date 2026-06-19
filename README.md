@@ -87,9 +87,20 @@ gmm_conditionalise(fit, given = c(NA, 0.5))
     gmm_conditionalise(fit, given)
     gmm_kld(fit_p, fit_q)     # Monte Carlo + variational bounds
 
+## Mapping the optima of an objective
+
+    fit   <- from_objective(f, lower, upper, N = 10L)  # a mixture map of the optima
+    gmm_modes(fit)$modes                               # the distinct optima
+
+`from_objective()` treats an objective `f` as the Gibbs measure
+`exp(-f / T)` — a regime-(iii) target you can evaluate but not sample — and
+returns a closed-form mixture over its low regions, so a multimodal `f` is
+recovered as a whole rather than one optimum at a time. `gmm_modes()`
+resolves the fitted map into the recovered optima.
+
 ## Vignettes
 
-The package ships with six vignettes:
+The package ships with eight vignettes:
 
 - **`quickstart`** — one-page tour.
 - **`three_regimes`** — a walk-through of regimes (i)–(iii) on toy 2-D
@@ -102,6 +113,10 @@ The package ships with six vignettes:
   Gaussian-mixture proxy.
 - **`many_methods`** — one fitted mixture in place of regression,
   clustering, PCA and ridge regression.
+- **`entropy`** — closed-form entropy, divergence and mutual-information
+  diagnostics.
+- **`calibration`** — mapping the optima of an objective via its Gibbs
+  measure.
 
 ## Interactive tutorial
 

@@ -121,7 +121,8 @@ Other fitting:
 \code{\link{fit_em_samples}()},
 \code{\link{fit_kld_em}()},
 \code{\link{fit_moment_match}()},
-\code{\link{from_kde}()}
+\code{\link{from_kde}()},
+\code{\link{from_objective}()}
 
 Other interop: 
 \code{\link{fb_log_posterior_spec}()},

@@ -46,6 +46,7 @@ Other ops:
 \code{\link{gmm_conditionalise}()},
 \code{\link{gmm_kld}()},
 \code{\link{gmm_marginalise}()},
+\code{\link{gmm_modes}()},
 \code{\link{rgmm}()}
 }
 \concept{ops}

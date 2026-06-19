@@ -60,6 +60,7 @@ cf@mean
 Other operators: 
 \code{\link{gmm_affine}()},
 \code{\link{gmm_aggregate}()},
+\code{\link{gmm_filter}()},
 \code{\link{gmm_intervene}()},
 \code{\link{gmm_missing}()},
 \code{\link{gmm_observe}()},

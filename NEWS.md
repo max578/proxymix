@@ -1,3 +1,23 @@
+# proxymix 0.8.0
+
+### New features
+
+* **A mixture proxy for the optima of an objective.** `from_objective()`
+  fits a Gaussian-mixture proxy to the Gibbs measure `exp(-f(x) / T)` of a
+  user-supplied objective `f` over a bounded box, by cooling a short
+  temperature ladder through regime-(iii) KLD-EM (`fit_kld_em()`). The Gibbs
+  measure can be evaluated point-wise but not directly sampled, so this is
+  regime (iii) applied to an objective: the returned mixture is a closed-form
+  map over the low regions of `f`, and a multimodal objective is recovered as
+  a whole rather than one optimum at a time. A new vignette, *Mapping the
+  optima of an objective*, works through the bimodal and Himmelblau cases.
+
+* **Modes of a Gaussian mixture.** `gmm_modes()` returns the distinct local
+  modes of a mixture density by Gaussian mean-shift from each component mean
+  (Carreira-Perpinan 2000), with the mixture density at each mode. It
+  resolves the map from `from_objective()` into the recovered optima and
+  applies to any `gmm` or `gmm_fit`.
+
 # proxymix 0.7.0
 
 ### New features

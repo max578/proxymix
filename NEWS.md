@@ -68,6 +68,19 @@
   component count of a Gaussian-sum filter built from `gmm_affine()` and
   `gmm_observe()`.
 
+* **Bounded Gaussian-sum filtering.** `gmm_filter()` runs a filter over an
+  observation series by alternating the predict operator (`gmm_affine()`), the
+  update operator (`gmm_observe()`) and an optional reduction (`gmm_reduce()`).
+  At one component it is the Kalman filter (verified against a textbook
+  implementation); with a Gaussian-sum process or measurement noise -- a `gmm`
+  supplied in place of a covariance matrix -- it is the Gaussian-sum filter of
+  Alspach and Sorenson (1972), and the `k_max` cap holds the component count at
+  budget over a long horizon. It returns the filtered mixture at each step, the
+  filtered means and covariances, and a tidy per-step summary including the
+  log marginal evidence. Constant and time-varying dynamics and measurements are
+  both supported. A new section of the *Affine-Gaussian operator calculus*
+  vignette demonstrates the verb.
+
 # proxymix 0.6.0
 
 ### New features

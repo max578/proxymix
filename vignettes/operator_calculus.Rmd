@@ -318,6 +318,74 @@ proxy by annealed EM and keeps it when it improves on the merge. In a
 Gaussian-sum filter, reduction runs after each update, holding the component
 count at the budget.
 
+# A bounded filter in one call — `gmm_filter()`
+
+The predict / update / reduce loop is packaged as a single verb. `gmm_filter()`
+takes the prior belief, the linear-Gaussian `dynamics` and `measurement`, the
+observation series `y`, and an optional component cap `k_max`. With Gaussian
+noise and `k_max = NULL` it is the Kalman filter; with a Gaussian-sum process or
+measurement noise -- a `gmm` in place of a covariance matrix -- it is the
+Gaussian-sum filter, bounded by `gmm_reduce()` after each step.
+
+On the constant-velocity track above, the verb reproduces the explicit Kalman
+recursion to machine precision (using the same predict-then-update convention):
+
+```{r gmm-filter-kalman}
+prior <- gmm(weights = 1, means = list(c(0, 0)), covariances = list(diag(2)))
+out <- gmm_filter(prior,
+                  dynamics    = list(A = A, Q = Q),
+                  measurement = list(C = C, R = R),
+                  y = y, ridge_eps = 0)
+
+mu <- c(0, 0); P <- diag(2); kf2 <- numeric(n)
+for (k in seq_len(n)) {
+  mu <- as.numeric(A %*% mu); P <- A %*% P %*% t(A) + Q          # predict
+  G  <- P %*% t(C) %*% solve(C %*% P %*% t(C) + R)               # gain
+  mu <- mu + as.numeric(G %*% (y[k] - C %*% mu))                 # update
+  P  <- (diag(2) - G %*% C) %*% P
+  kf2[k] <- mu[1L]
+}
+c(max_abs_diff = max(abs(out$mean[, 1L] - kf2)))
+```
+
+A heavy-tailed disturbance is awkward for a single Gaussian process noise.
+Modelled as a two-component Gaussian sum -- a calm regime and an occasional
+larger jump -- the recursion becomes a genuine Gaussian-sum filter. Each step
+multiplies the component count by two, so the cap returns it to budget:
+
+```{r gmm-filter-gsf}
+q_heavy <- gmm(weights     = c(0.9, 0.1),
+               means       = list(c(0, 0), c(0, 0)),
+               covariances = list(0.01 * diag(2), 0.5 * diag(2)))
+gsf <- gmm_filter(prior,
+                  dynamics    = list(A = A, Q = q_heavy),
+                  measurement = list(C = C, R = R),
+                  y = y, k_max = 6L)
+c(max_components = max(gsf$summary$n_components), steps = nrow(gsf$summary))
+```
+
+The component count is held at the cap across the whole series. The `$summary`
+data frame records the filtered mean, standard deviation and component count at
+each step, and `$filtered` holds the full filtered mixture per step for any
+downstream closed-form query.
+
+```{r gmm-filter-plot, fig.height = 3.4, fig.cap = "The same track filtered by the Gaussian-sum filter with a two-component heavy-tailed process noise, capped at six components per step. The filtered mean tracks the latent truth while the component count stays bounded.", fig.alt = "Time series with noisy position readings, the latent truth line, and the Gaussian-sum-filter estimate tracking the truth."}
+gsf_track <- data.frame(t = seq_len(n), truth = truth[, 1L], y = y,
+                        filtered = gsf$mean[, 1L])
+ggplot(gsf_track, aes(t)) +
+  geom_point(aes(y = y, colour = "noisy reading"), size = 1.3, alpha = 0.7) +
+  geom_line(aes(y = truth, colour = "latent truth"), linewidth = 0.8) +
+  geom_line(aes(y = filtered, colour = "Gaussian-sum filter"), linewidth = 0.9) +
+  scale_colour_manual(name = NULL,
+                      values = c("noisy reading" = "grey55",
+                                 "latent truth" = "#2C7FB8",
+                                 "Gaussian-sum filter" = "#D95F0E")) +
+  labs(title = "A bounded Gaussian-sum filter via gmm_filter()",
+       x = "time step", y = "position") +
+  theme_minimal(base_size = 11) +
+  theme(legend.position = "top", plot.title = element_text(face = "bold"))
+```
+
 # Composition rules
 
 The operators commute exactly with `gmm_marginalise()` when applied to

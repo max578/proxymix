@@ -40,6 +40,7 @@ gmm_aggregate(g, A)
 Other operators: 
 \code{\link{gmm_affine}()},
 \code{\link{gmm_counterfactual}()},
+\code{\link{gmm_filter}()},
 \code{\link{gmm_intervene}()},
 \code{\link{gmm_missing}()},
 \code{\link{gmm_observe}()},

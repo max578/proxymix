@@ -103,7 +103,8 @@ Other fitting:
 \code{\link{fit_em_samples}()},
 \code{\link{fit_kld_em}()},
 \code{\link{fit_moment_match}()},
-\code{\link{from_fb_posterior}()}
+\code{\link{from_fb_posterior}()},
+\code{\link{from_objective}()}
 
 Other v0_2: 
 \code{\link{gmm_target_from_posterior}()}

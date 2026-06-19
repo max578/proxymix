@@ -1,4 +1,4 @@
-# proxymix (development version)
+# proxymix 0.7.0
 
 ### New features
 

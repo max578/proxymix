@@ -1,3 +1,32 @@
+# proxymix 0.9.0
+
+### New features
+
+* **Multiple imputation by Gaussian-mixture conditioning.** `gmm_impute()`
+  fits a Gaussian mixture to a numeric dataset that contains missing values
+  and draws `m` completed datasets from the mixture conditional
+  `p(x_missing | x_observed)`, the same Schur-complement algebra as
+  `gmm_conditionalise()`. Because the mixture can be multimodal and
+  heteroscedastic, the imputations follow the shape of the joint
+  distribution, which keeps downstream inference valid on data a
+  single-Gaussian or linear-Gaussian imputer mis-specifies. The mixture is
+  fitted to the incomplete data by an expectation-maximisation that uses each
+  row's observed margin and restores the conditional covariance of the filled
+  entries; each completion is drawn under a mixture fitted to a bootstrap
+  resample of the rows, so the pooled inference reflects both imputation and
+  parameter uncertainty. This release covers numeric data missing at random.
+
+* **Pooling, diagnostics, and mice interoperability.** `gmm_complete()`
+  extracts the completed datasets. `proxy_pool()` pools a column mean in
+  closed form -- the exact large-sample limit of the between-imputation
+  variance, with no Monte-Carlo noise and an imputation / parameter variance
+  split -- and `proxy_fmi()` reports its fraction of missing information. For a
+  regression or any other model estimand, `as_mids()` packages the completions
+  as a `mice` object so the joint mixture imputations flow into `mice::pool()`
+  unchanged: proxymix supplies the imputation model, mice the pooling. A new
+  vignette, *Imputing missing data with a mixture*, works through a multimodal
+  example.
+
 # proxymix 0.8.0
 
 ### New features

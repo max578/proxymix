@@ -35,6 +35,10 @@ reference:
   desc: One joint fit read as CATE, optimal action, off-line policy value, and an identification audit.
   contents:
   - has_concept("decision")
+- title: Missing data
+  desc: Multiple imputation by mixture conditioning, with pooling and the fraction of missing information.
+  contents:
+  - has_concept("imputation")
 - title: Importance-sampling proposals
   desc: Pluggable proposals for regime (iii).
   contents:
@@ -64,3 +68,4 @@ articles:
   - many_methods
   - entropy
   - calibration
+  - missing_data

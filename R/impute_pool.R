@@ -156,6 +156,12 @@ proxy_pool <- function(object, column, method = c("analytic", "rubin")) {
     cli::cli_abort("`object` must be a {.cls gmm_imputation}.")
   }
   method <- match.arg(method)
+  mech <- object@mechanism
+  ## analytic pooling assumes the ungated (missing-at-random) mixture conditional,
+  ## so a gated coordinate is pooled by Rubin's rules over the drawn completions.
+  if (inherits(mech, "proxymix_gate") && mech$type != "mar" && method == "analytic") {
+    method <- "rubin"
+  }
   if (!is.character(column) || length(column) != 1L ||
       !column %in% object@var_names) {
     cli::cli_abort(c(

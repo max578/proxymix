@@ -49,6 +49,8 @@ Other imputation:
 \code{\link{gmm_complete}()},
 \code{\link{gmm_imputation}()},
 \code{\link{gmm_impute}()},
-\code{\link{proxy_fmi}()}
+\code{\link{mechanism}},
+\code{\link{proxy_fmi}()},
+\code{\link{proxy_mnar_sensitivity}()}
 }
 \concept{imputation}

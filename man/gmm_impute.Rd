@@ -8,7 +8,7 @@ gmm_impute(
   data,
   N = NULL,
   m = 20L,
-  mechanism = "mar",
+  mechanism = mar(),
   seed = NULL,
   max_iter = 100L,
   tol = 1e-06,
@@ -23,8 +23,8 @@ the Bayesian information criterion over \code{1:6}.}
 
 \item{m}{Number of completed datasets to draw. Default \code{20L}.}
 
-\item{mechanism}{Missingness mechanism. Only \code{"mar"} is currently
-supported.}
+\item{mechanism}{A missingness mechanism: \code{\link[=mar]{mar()}}, \code{\link[=censored]{censored()}}, or \code{\link[=mnar]{mnar()}}.
+The string \code{"mar"} is also accepted. Default \code{\link[=mar]{mar()}}.}
 
 \item{seed}{Optional integer seed. When supplied the result is
 reproducible and the ambient random-number state is restored on exit.}
@@ -63,9 +63,13 @@ the \code{m} imputations is therefore drawn under a mixture fitted to an
 independent bootstrap resample of the rows, so \code{\link[=proxy_pool]{proxy_pool()}} reflects both
 imputation and parameter uncertainty.
 
-Scope. This release covers numeric data missing at random (MAR): the
-probability that an entry is missing may depend on the observed entries but
-not on the missing value itself. Categorical variables are out of scope.
+The \code{mechanism} says how an entry came to be missing, which sets the
+conditional the missing value is drawn from: \code{\link[=mar]{mar()}} (the default) for missing
+at random, \code{\link[=censored]{censored()}} for a known interval such as a detection limit, or
+\code{\link[=mnar]{mnar()}} for a value-dependent selection model. The interval and
+value-dependent gates act on a single coordinate, and a row missing that
+coordinate must have its other coordinates observed. Numeric data only;
+categorical variables are out of scope.
 }
 \examples{
 set.seed(1)
@@ -83,7 +87,9 @@ Other imputation:
 \code{\link{as_mids}()},
 \code{\link{gmm_complete}()},
 \code{\link{gmm_imputation}()},
+\code{\link{mechanism}},
 \code{\link{proxy_fmi}()},
+\code{\link{proxy_mnar_sensitivity}()},
 \code{\link{proxy_pool}()}
 }
 \concept{imputation}

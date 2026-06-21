@@ -24,7 +24,9 @@ Other imputation:
 \code{\link{as_mids}()},
 \code{\link{gmm_imputation}()},
 \code{\link{gmm_impute}()},
+\code{\link{mechanism}},
 \code{\link{proxy_fmi}()},
+\code{\link{proxy_mnar_sensitivity}()},
 \code{\link{proxy_pool}()}
 }
 \concept{imputation}

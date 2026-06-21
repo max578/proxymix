@@ -274,7 +274,7 @@ gmm_imputation <- S7::new_class(
     point_fit = S7::class_any,
     n_components = S7::class_integer,
     m = S7::class_integer,
-    mechanism = S7::new_property(class = S7::class_character, default = "mar"),
+    mechanism = S7::new_property(class = S7::class_any, default = "mar"),
     observed = S7::class_any,
     var_names = S7::class_character,
     is_data_frame = S7::new_property(class = S7::class_logical, default = FALSE),
@@ -306,16 +306,20 @@ gmm_imputation <- S7::new_class(
 #' independent bootstrap resample of the rows, so [proxy_pool()] reflects both
 #' imputation and parameter uncertainty.
 #'
-#' Scope. This release covers numeric data missing at random (MAR): the
-#' probability that an entry is missing may depend on the observed entries but
-#' not on the missing value itself. Categorical variables are out of scope.
+#' The `mechanism` says how an entry came to be missing, which sets the
+#' conditional the missing value is drawn from: [mar()] (the default) for missing
+#' at random, [censored()] for a known interval such as a detection limit, or
+#' [mnar()] for a value-dependent selection model. The interval and
+#' value-dependent gates act on a single coordinate, and a row missing that
+#' coordinate must have its other coordinates observed. Numeric data only;
+#' categorical variables are out of scope.
 #'
 #' @param data A numeric matrix or data frame with `NA` for missing entries.
 #' @param N Number of mixture components. `NULL` (the default) selects it by
 #'   the Bayesian information criterion over `1:6`.
 #' @param m Number of completed datasets to draw. Default `20L`.
-#' @param mechanism Missingness mechanism. Only `"mar"` is currently
-#'   supported.
+#' @param mechanism A missingness mechanism: [mar()], [censored()], or [mnar()].
+#'   The string `"mar"` is also accepted. Default [mar()].
 #' @param seed Optional integer seed. When supplied the result is
 #'   reproducible and the ambient random-number state is restored on exit.
 #' @param max_iter Maximum EM iterations per fit. Default `100L`.
@@ -336,10 +340,10 @@ gmm_imputation <- S7::new_class(
 #' x2[runif(200) < plogis(x1)] <- NA          # missing at random on x1
 #' imp <- gmm_impute(cbind(x1, x2), N = 1L, m = 10L, seed = 1L)
 #' proxy_pool(imp, "x2")$estimate             # pooled mean of x2
-gmm_impute <- function(data, N = NULL, m = 20L, mechanism = "mar",
+gmm_impute <- function(data, N = NULL, m = 20L, mechanism = mar(),
                        seed = NULL, max_iter = 100L, tol = 1e-6,
                        ridge_eps = 1e-6) {
-  mechanism <- match.arg(mechanism, c("mar"))
+  gate <- .as_gate(mechanism)
   is_df <- is.data.frame(data)
   if (is_df) {
     if (!all(vapply(data, is.numeric, logical(1)))) {
@@ -371,6 +375,21 @@ gmm_impute <- function(data, N = NULL, m = 20L, mechanism = "mar",
     cli::cli_abort("`m` must be an integer >= 2.")
   }
 
+  ## A value-dependent (MNAR) or interval (censored) gate acts on one coordinate,
+  ## and a row missing that coordinate must have its other coordinates observed.
+  gated <- gate$type != "mar"
+  cj <- NA_integer_
+  if (gated) {
+    cj <- .gate_coord_index(gate, var_names)
+    if (ncol(X) > 1L && anyNA(X[, -cj, drop = FALSE])) {
+      cli::cli_abort(c(
+        "A {.val {gate$type}} mechanism needs {.field coord} to be the only \\
+         column with missing values.",
+        "i" = "Columns other than {.val {var_names[cj]}} must be fully observed."))
+    }
+    if (!anyNA(X[, cj])) cli::cli_warn("`coord` has no missing values.")
+  }
+
   ## RNG hygiene: a supplied seed is reproducible and side-effect-free.
   if (!is.null(seed)) {
     if (exists(".Random.seed", envir = globalenv())) {
@@ -392,29 +411,47 @@ gmm_impute <- function(data, N = NULL, m = 20L, mechanism = "mar",
     cli::cli_abort("`N` must be a positive integer scalar.")
   }
 
-  point <- .fit_em_missing(X, N, max_iter = max_iter, tol = tol,
-                           ridge_eps = ridge_eps, fallback_mean = col_means)
-
   fits <- vector("list", m)
   completions <- vector("list", m)
-  for (b in seq_len(m)) {
-    bi <- sample.int(n, n, replace = TRUE)
-    fit_b <- .fit_em_missing(X[bi, , drop = FALSE], N, max_iter = max_iter,
-                             tol = tol, ridge_eps = ridge_eps,
-                             fallback_mean = col_means)$gmm
-    fits[[b]] <- fit_b
-    cb <- .draw_missing(fit_b, X, obs)
-    colnames(cb) <- var_names
-    completions[[b]] <- cb
+  accept <- rep(NA_real_, m)
+  if (gated) {
+    point <- .fit_em_gated(X, N, cj, gate, max_iter = max_iter, tol = tol,
+                           ridge_eps = ridge_eps, fallback_mean = col_means)
+    for (b in seq_len(m)) {
+      bi <- sample.int(n, n, replace = TRUE)
+      fb <- .fit_em_gated(X[bi, , drop = FALSE], N, cj, gate, max_iter = max_iter,
+                          tol = tol, ridge_eps = ridge_eps, fallback_mean = col_means)
+      fits[[b]] <- fb$gmm
+      dr <- .draw_gated(fb$gmm, X, cj, gate, fb$alpha)
+      cb <- dr$data
+      accept[b] <- dr$accept
+      colnames(cb) <- var_names
+      completions[[b]] <- cb
+    }
+  } else {
+    point <- .fit_em_missing(X, N, max_iter = max_iter, tol = tol,
+                             ridge_eps = ridge_eps, fallback_mean = col_means)
+    for (b in seq_len(m)) {
+      bi <- sample.int(n, n, replace = TRUE)
+      fit_b <- .fit_em_missing(X[bi, , drop = FALSE], N, max_iter = max_iter,
+                               tol = tol, ridge_eps = ridge_eps,
+                               fallback_mean = col_means)$gmm
+      fits[[b]] <- fit_b
+      cb <- .draw_missing(fit_b, X, obs)
+      colnames(cb) <- var_names
+      completions[[b]] <- cb
+    }
   }
 
   gmm_imputation(
     data = X, completions = completions, fits = fits, point_fit = point$gmm,
-    n_components = N, m = m, mechanism = mechanism, observed = obs,
+    n_components = N, m = m, mechanism = gate, observed = obs,
     var_names = var_names, is_data_frame = is_df,
     diagnostics = list(
       missing_rate = colMeans(!obs),
-      converged = point$converged, iterations = point$iterations
+      converged = point$converged, iterations = point$iterations,
+      mnar_alpha = if (gated) point$alpha else NA_real_,
+      min_accept = if (gated) min(accept) else NA_real_
     ),
     call = match.call()
   )
@@ -449,7 +486,16 @@ gmm_complete <- function(object, which = 1L) {
 S7::method(print, gmm_imputation) <- function(x, ...) {
   cat(sprintf("<gmm_imputation>: m = %d completions, K = %d components, p = %d\n",
               x@m, x@n_components, ncol(x@data)))
-  cat(sprintf("  mechanism  : %s\n", x@mechanism))
+  mech <- x@mechanism
+  mech_str <- if (inherits(mech, "proxymix_gate")) {
+    switch(mech$type,
+      mar = "missing at random",
+      censored = sprintf("censored on %s to [%g, %g]", mech$coord, mech$lower, mech$upper),
+      mnar = sprintf("MNAR on %s (%s, beta = %g)", mech$coord, mech$link, mech$beta))
+  } else {
+    as.character(mech)
+  }
+  cat(sprintf("  mechanism  : %s\n", mech_str))
   mr <- x@diagnostics$missing_rate
   cat(sprintf("  missing    : %s\n",
               paste(sprintf("%s %.0f%%", x@var_names, 100 * mr), collapse = ", ")))

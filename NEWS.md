@@ -1,3 +1,19 @@
+# proxymix 0.11.0
+
+### New features
+
+* **Missing-not-at-random and censored imputation.** `gmm_impute()` now takes a
+  missingness mechanism. `mnar()` specifies a selection model in which an entry of
+  a coordinate is missing with a probability that depends on its own unobserved
+  value, fitted jointly with the mixture so the imputations are not biased by an
+  ignorable model. The slope is a sensitivity parameter, supplied rather than
+  estimated, and the intercept is calibrated to the observed missingness rate.
+  `censored()` handles a known interval, such as a detection limit, by drawing
+  from the mixture conditional truncated to that interval in closed form. `mar()`
+  is the default and reproduces the earlier behaviour.
+* **`proxy_mnar_sensitivity()`** sweeps the sensitivity slope over a grid and
+  pools the coordinate mean at each value, the input to a tipping-point analysis.
+
 # proxymix 0.10.0
 
 ### New features

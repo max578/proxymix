@@ -39,6 +39,10 @@ reference:
   desc: Multiple imputation by mixture conditioning, with pooling and the fraction of missing information.
   contents:
   - has_concept("imputation")
+- title: State-space instability testing
+  desc: End-of-sample structural-break test on the Gaussian-sum filter.
+  contents:
+  - gmm_eos_test
 - title: Importance-sampling proposals
   desc: Pluggable proposals for regime (iii).
   contents:
@@ -69,3 +73,4 @@ articles:
   - entropy
   - calibration
   - missing_data
+  - end_of_sample

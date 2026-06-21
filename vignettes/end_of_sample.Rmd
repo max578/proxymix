@@ -1,0 +1,116 @@
+---
+title: "Testing the last observation for instability"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Testing the last observation for instability}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 6,
+  fig.height = 4.2,
+  out.width = "100%"
+)
+set.seed(20260621)
+```
+
+```{r setup}
+library(proxymix)
+```
+
+# The end-of-sample question
+
+A model is fitted to a series and one more observation arrives. Is it
+consistent with the model, or has something just changed? When the suspect
+window is tiny -- a single point, or a handful -- the usual structural-break
+tests (Chow, sup-Wald) are undefined, because the parameters of the post-break
+regime cannot be estimated from so few observations. `gmm_eos_test()` answers
+the question in exactly this regime by scoring the last `m` one-step filter
+innovations and calibrating the score, following Andrews (2003).
+
+# The statistic
+
+Run the Gaussian-sum filter implied by the operator calculus over the series.
+At each step it returns a one-step predictive mean and an innovation covariance
+$S_t$, so the standardised innovation
+$z_t = S_t^{-1/2}(y_t - C\hat{x}_{t\mid t-1})$ is standard normal under a
+correct, stable, linear-Gaussian model. The statistic sums the last `m` squared
+standardised innovations,
+$$ \mathrm{EoS}_m = \sum_{t = n-m+1}^{n} z_t^{\top} z_t, $$
+which a break inflates. Two calibrations are offered. `method = "chisq"` refers
+the statistic to a $\chi^2$ distribution on `m` times the observation dimension
+degrees of freedom, exact when the innovations are Gaussian. `method =
+"andrews"` is the distribution-free subsampling test of Andrews (2003): the
+statistic's rank among the in-sample overlapping `m`-blocks of the same
+innovations gives the p-value, which stays calibrated when the innovations are
+not Gaussian.
+
+# A worked example
+
+Take a local-level model, a random walk observed with noise, and simulate a
+stable series from it.
+
+```{r model}
+prior       <- gmm(weights = 1, means = list(0), covariances = list(matrix(10)))
+dynamics    <- list(A = matrix(1), Q = matrix(0.04))   # the state random walk
+measurement <- list(C = matrix(1), R = matrix(1))      # the noisy observation
+
+n <- 120
+level <- cumsum(c(0, rnorm(n - 1, 0, sqrt(0.04))))
+y_stable <- level + rnorm(n, 0, 1)
+```
+
+A stable series is not flagged: the last observation sits where the filter
+expects it.
+
+```{r stable}
+gmm_eos_test(prior, dynamics, measurement, y_stable, m = 1L, method = "andrews")
+```
+
+Now copy the series and push the final observation away by five standard
+deviations of the observation noise.
+
+```{r break}
+y_break <- y_stable
+y_break[n] <- y_break[n] + 5
+gmm_eos_test(prior, dynamics, measurement, y_break, m = 1L, method = "andrews")
+```
+
+The break inflates the statistic and the test rejects. The picture shows why:
+the broken point falls far outside the band the filter predicts for it.
+
+```{r figure, fig.alt = "A local-level series with its final observation pushed five standard deviations away; the broken point sits far outside the path of the underlying state."}
+plot(y_stable, type = "l", col = "grey60", xlab = "time", ylab = "observation",
+     main = "End-of-sample break in the last observation")
+lines(level, col = "#1b7837", lwd = 2)
+points(n, y_break[n], pch = 19, col = "#b2182b")
+legend("topleft", c("observed (stable)", "underlying state", "broken final point"),
+       col = c("grey60", "#1b7837", "#b2182b"), lwd = c(1, 2, NA),
+       pch = c(NA, NA, 19), bty = "n")
+```
+
+# Robustness to non-Gaussian noise
+
+The two calibrations agree when the innovations are Gaussian. They part company
+when the observation noise is heavy-tailed: the parametric $\chi^2$ reference is
+then mis-specified, while the subsampling test, which judges the end-of-sample
+block only against the other blocks of the same series, keeps its size. The
+`method = "andrews"` option is the one to reach for when normality is in doubt.
+
+# Scope
+
+The test is defined for a fitted linear-Gaussian state-space model, supplied
+exactly as for `gmm_filter()`: a single-component `gmm` prior, a `dynamics` list
+with the state-transition and process-noise matrices, and a `measurement` list
+with the observation and observation-noise matrices. The small-`m` regime
+(`m = 1, 2, 3`) is the point of the test, and `m` must be smaller than the
+series length.
+
+# Reference
+
+Andrews, D. W. K. (2003). End-of-Sample Instability Tests. *Econometrica*,
+71(6), 1661--1694.

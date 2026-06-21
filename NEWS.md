@@ -1,3 +1,18 @@
+# proxymix 0.10.0
+
+### New features
+
+* **End-of-sample instability testing.** `gmm_eos_test()` asks whether the last
+  `m` observations of a series are consistent with a linear-Gaussian state-space
+  model fitted on the rest, in the small-`m` regime (even `m = 1`) where ordinary
+  structural-break tests are undefined because the post-break parameters cannot
+  be estimated. It scores the last `m` standardised one-step filter innovations
+  and calibrates the score either parametrically (a chi-square reference, exact
+  under Gaussian innovations) or by the distribution-free subsampling test of
+  Andrews (2003), which stays valid under heavy-tailed observation noise. A new
+  vignette, *Testing the last observation for instability*, works through a
+  local-level example.
+
 # proxymix 0.9.0
 
 ### New features

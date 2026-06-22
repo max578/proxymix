@@ -81,6 +81,21 @@ gmm <- S7::new_class(
       if (!is.matrix(S) || nrow(S) != p || ncol(S) != p) {
         return(sprintf("component %d: `covariances[[k]]` must be a %dx%d matrix", k, p, p))
       }
+      ## a Gaussian component needs a symmetric positive-(semi-)definite
+      ## covariance. When the entries are finite, reject a clearly indefinite
+      ## matrix (e.g. a negative variance) via the smallest eigenvalue of the
+      ## symmetric part, against a scale-relative tolerance so a numerically
+      ## near-singular fit still passes. A non-finite covariance is left to the
+      ## downstream evaluators (a fit to a degenerate target may carry one).
+      if (all(is.finite(S))) {
+        ev <- eigen((S + t(S)) / 2, symmetric = TRUE, only.values = TRUE)$values
+        tol <- 1e-8 * max(1, max(abs(S)))
+        if (min(ev) < -tol) {
+          return(sprintf(paste0(
+            "component %d: `covariances[[k]]` must be symmetric positive-definite ",
+            "(smallest eigenvalue %.3g)"), k, min(ev)))
+        }
+      }
     }
     NULL
   }

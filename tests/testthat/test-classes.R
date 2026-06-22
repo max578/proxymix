@@ -25,6 +25,27 @@ test_that("gmm rejects mismatched component shapes", {
   )
 })
 
+test_that("gmm rejects a covariance that is not positive-definite", {
+  expect_error(
+    gmm(weights = c(0.5, 0.5),
+        means = list(0, 1),
+        covariances = list(matrix(-1), matrix(1))),
+    "positive-definite"
+  )
+  ## an indefinite 2x2 (one negative eigenvalue) is rejected too
+  expect_error(
+    gmm(weights = 1, means = list(c(0, 0)),
+        covariances = list(matrix(c(1, 0, 0, -2), 2))),
+    "positive-definite"
+  )
+  ## a valid (near-singular but PSD) covariance still constructs
+  expect_s7_class(
+    gmm(weights = 1, means = list(c(0, 0)),
+        covariances = list(matrix(c(1, 0, 0, 1e-10), 2))),
+    gmm
+  )
+})
+
 test_that("gmm_fit inherits from gmm", {
   x <- matrix(stats::rnorm(200), ncol = 2)
   tgt <- gmm_target_from_samples(x)

@@ -1,3 +1,15 @@
+# proxymix (development version)
+
+### Bug fixes
+
+* `gmm()` now rejects a covariance that is not positive-definite. A component
+  covariance with a negative variance (or, more generally, a negative eigenvalue
+  beyond numerical tolerance) was previously accepted silently, deferring the
+  failure to a later evaluation. The validator now checks the smallest eigenvalue
+  of each finite covariance against a scale-relative tolerance, so a clearly
+  indefinite matrix is caught at construction while a numerically near-singular
+  fit still constructs.
+
 # proxymix 0.11.1
 
 ### Bug fixes

@@ -1,3 +1,14 @@
+# proxymix 0.11.1
+
+### Bug fixes
+
+* `gmm_impute(mechanism = censored(...))` is now numerically stable when a mixture
+  component sits well past the censoring bound. The fit could previously produce
+  `NA` responsibilities and abort, because it initialised the missing entries from
+  the observed mean -- the wrong side of a one-sided bound -- and the
+  truncated-conditional moments could overshoot the interval. It now initialises
+  inside the censored interval and clamps the truncated moments to it.
+
 # proxymix 0.11.0
 
 ### New features

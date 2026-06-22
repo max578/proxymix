@@ -59,13 +59,17 @@
   sdv <- sqrt(s2)
   aL <- (L - mu) / sdv
   aU <- (U - mu) / sdv
-  Z <- stats::pnorm(aU) - stats::pnorm(aL)
+  Z <- pmax(stats::pnorm(aU) - stats::pnorm(aL), 1e-300)
   lam <- (stats::dnorm(aL) - stats::dnorm(aU)) / Z
-  m1 <- mu + sdv * lam
   tL <- ifelse(is.finite(aL), aL * stats::dnorm(aL), 0)
   tU <- ifelse(is.finite(aU), aU * stats::dnorm(aU), 0)
   v <- s2 * (1 + (tL - tU) / Z - lam * lam)
-  list(I = Z, m1 = m1, v = pmax(v, 0))
+  ## the truncated mean lies in [L, U]; clamp to guard the numerical overshoot
+  ## when a component barely overlaps the interval (Z near zero).
+  loC <- if (is.finite(L)) L else mu - 10 * sdv
+  hiC <- if (is.finite(U)) U else mu + 10 * sdv
+  m1 <- pmin(pmax(mu + sdv * lam, loC), hiC)
+  list(I = Z, m1 = m1, v = pmax(pmin(v, (hiC - loC)^2), 0))
 }
 
 ## Expected gate at marginal level: E_{N(mu, s2)}[g(a + b y)] for one component,
@@ -120,10 +124,20 @@
   p_miss <- mean(miss)
   is_mnar <- identical(gate$type, "mnar")
 
-  ## initialise by filling the missing coordinate with the observed coordinate
-  ## mean (a neutral start for both mechanisms)
-  fillv <- if (any(!miss)) mean(X[!miss, cj]) else
-    if (!is.null(fallback_mean)) fallback_mean[cj] else 0
+  ## initialise the missing coordinate. For censoring the missing values lie in
+  ## the censored interval, so the observed mean is the wrong side of the bound; a
+  ## representative point inside the interval is a stable start. For the smooth
+  ## mechanisms the observed mean is the neutral start.
+  obs_mean <- if (any(!miss)) mean(X[!miss, cj]) else
+    (if (!is.null(fallback_mean)) fallback_mean[cj] else 0)
+  obs_sd <- if (sum(!miss) > 1L) stats::sd(X[!miss, cj]) else 1
+  fillv <- if (identical(gate$type, "censored")) {
+    if (is.finite(gate$lower) && is.finite(gate$upper)) (gate$lower + gate$upper) / 2
+    else if (is.finite(gate$upper)) gate$upper - obs_sd
+    else gate$lower + obs_sd
+  } else {
+    obs_mean
+  }
   Xf <- X
   Xf[miss, cj] <- fillv
   cl <- if (K == 1L) rep(1L, n) else
@@ -172,6 +186,7 @@
       }
       logr[, k] <- lk
     }
+    logr[is.nan(logr)] <- -Inf          # a vanished component must not poison the row
     row_ll <- .logsumexp_rows(logr)
     Rsp <- exp(logr - row_ll)
     ll <- sum(row_ll)
@@ -180,7 +195,7 @@
     ## with its gated conditional mean and restoring its gated variance.
     Nk <- colSums(Rsp)
     for (k in seq_len(K)) {
-      if (Nk[k] < .Machine$double.eps) next
+      if (!is.finite(Nk[k]) || Nk[k] < .Machine$double.eps) next
       Xk <- X
       vk <- numeric(n)
       if (any(miss)) {

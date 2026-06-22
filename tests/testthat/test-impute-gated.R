@@ -142,6 +142,20 @@ test_that("the MNAR sensitivity sweep is monotone and brackets truth", {
 # dispatch, scope, and reproducibility
 # ---------------------------------------------------------------------------
 
+test_that("censored fit is numerically stable when a component sits past the bound", {
+  ## Regression: a left-censored column whose mixture has a component well above
+  ## the threshold previously produced NA responsibilities and aborted the EM
+  ## (the gated conditional of the far component overshot the bound). The fit must
+  ## now run and return a finite, sensible estimate.
+  dg <- .gated_dgp(42L, n = 600L, censor = 0.3)
+  expect_no_error(
+    imp <- gmm_impute(dg$data, N = 2L, m = 8L,
+                      mechanism = censored("y", upper = 0.3), seed = 42L))
+  est <- proxy_pool(imp, "y")$estimate
+  expect_true(is.finite(est))
+  expect_lt(abs(est - dg$truth), 0.2)
+})
+
 test_that("gated dispatch enforces its scope and is reproducible", {
   dg <- .gated_dgp(51L)
   ## a second column with NA is out of scope for a gated mechanism

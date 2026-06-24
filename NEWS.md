@@ -1,3 +1,16 @@
+# proxymix 0.11.3 (development version)
+
+### New features
+
+* `gmm_independence_graph()` returns the undirected second-order
+  conditional-independence (Gaussian graphical model) structure of a fitted
+  mixture -- the partial-correlation skeleton of its overall covariance, in
+  closed form. Composed with `fit_kld_em()`, it recovers the dependency
+  structure of a target that can only be *evaluated* (an unnormalised energy /
+  Gibbs density), where no sample exists to drive a sampling-based estimator.
+  It is a graphical-model diagnostic, not a causal-discovery method: it recovers
+  the undirected Markov skeleton, not edge directions.
+
 # proxymix 0.11.2
 
 ### Bug fixes

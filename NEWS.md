@@ -1,3 +1,12 @@
+# proxymix 0.11.4
+
+### Internal
+
+* Ships the durable two-sided conformance case set in `inst/validation/` (the
+  authored validation cases that the `/pkg-validation` dossier runs to compute the
+  API-coverage gate). No change to package code; this gives the previously
+  local-only validation IP a tracked, travelling home.
+
 # proxymix 0.11.3
 
 ### New features

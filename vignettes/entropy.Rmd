@@ -133,3 +133,29 @@ xs <- rbind(matrix(rnorm(200, -4), ncol = 2), matrix(rnorm(200, 4), ncol = 2))
 fit <- fit_em_samples(gmm_target_from_samples(xs), N = 2L)
 unlist(bic_aic(fit)[c("bic", "icl", "classification_entropy")])
 ```
+
+## Dependency structure of a mixture
+
+`gmm_independence_graph()` reads the undirected second-order conditional-independence (Gaussian graphical model) structure of a fitted mixture: an edge $i - j$ is absent exactly when the partial correlation of coordinates $i$ and $j$, given all the others, is below a threshold -- the Markov statement $x_i \perp x_j \mid x_{\mathrm{rest}}$ at second order. The overall covariance of a mixture is closed-form in its parameters, so no sampling is needed.
+
+```{r}
+omega <- diag(4)                                   # a tridiagonal precision = a chain
+for (i in 1:3) omega[i, i + 1L] <- omega[i + 1L, i] <- -0.5
+g <- gmm(weights = 1, means = list(rep(0, 4)), covariances = list(solve(omega)))
+gmm_independence_graph(g)                          # recovers x1 - x2 - x3 - x4
+```
+
+The distinctive use is **regime (iii)**. Composed with `fit_kld_em()`, the diagnostic recovers the dependency structure of a target you can only *evaluate* -- an unnormalised energy density -- where no sample exists to drive a conventional structure estimator. The continuous field below couples only neighbouring coordinates; the recovered graph is the chain.
+
+```{r}
+energy <- function(X) {
+  X <- matrix(X, ncol = 3)
+  rowSums((X^2 - 1)^2) - 0.7 * (X[, 1] * X[, 2] + X[, 2] * X[, 3])
+}
+target <- gmm_target(n_dim = 3L, log_density = function(X) -energy(X))
+g <- fit_kld_em(target, N = 8L, proposal = is_uniform(3L, -3, 3),
+                is_size = 6000L, anneal = TRUE, seed = 1L, support_warn = FALSE)
+gmm_independence_graph(g)
+```
+
+This is a graphical-model diagnostic, not a causal-discovery method: it returns the undirected Markov skeleton, not edge directions, and being second order it sees only dependence that enters the covariance.

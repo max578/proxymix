@@ -1,3 +1,26 @@
+# proxymix 0.11.5
+
+### Fixes
+
+* `withr` is now a hard dependency (`Imports`, previously `Suggests`). It is
+  called on the core seeded-sampling paths (annealing, entropy estimation,
+  importance-sampled KLD-EM fitting, mixture reduction, the `gmm_target`
+  sample constructors, initialisation, and the seeded diagnostics), so a clean
+  installation without `withr` would have failed at runtime. Declaring it as the
+  runtime dependency it already is removes that failure mode.
+
+### Internal
+
+* Metadata coherence: the `_pkgdown.yml` site `url:` now resolves to the
+  package's GitHub Pages host (`max578.github.io/proxymix`), and `CITATION.cff`
+  `version` and `date-released` track the released version.
+* The censored-imputation recovery check now grades the estimator on its mean
+  absolute error across several simulated draws rather than a single draw. With
+  more than half of the target column left-censored, finite-sample recovery
+  carries a small expected positive bias, so one draw could legitimately sit
+  further from the truth than a tight per-draw bound allowed; the comparison
+  against the LOD/2 substitute is unchanged.
+
 # proxymix 0.11.4
 
 ### Internal

@@ -247,7 +247,7 @@ test_that("the return value has the documented shape", {
   Q <- 0.1 * diag(2)
   C <- diag(2)
   R <- 0.2 * diag(2)
-  Y <- matrix(stats::rnorm(8), ncol = 2L)
+  Y <- withr::with_seed(250, matrix(stats::rnorm(8), ncol = 2L))
 
   out <- gmm_filter(prior,
                     dynamics = list(A = A, Q = Q),
@@ -294,7 +294,7 @@ test_that("time-varying dynamics/measurement functions equal the constant form",
   Q <- 0.05 * diag(2)
   C <- matrix(c(1, 0), nrow = 1L)
   R <- matrix(0.3, 1L, 1L)
-  Y <- matrix(stats::rnorm(6), ncol = 1L)
+  Y <- withr::with_seed(297, matrix(stats::rnorm(6), ncol = 1L))
 
   const <- gmm_filter(prior,
                       dynamics = list(A = A, Q = Q),
@@ -349,7 +349,7 @@ test_that("input validation rejects malformed arguments", {
   prior <- gmm(weights = 1, means = list(c(0, 0)), covariances = list(diag(2)))
   good_dyn <- list(A = diag(2), Q = 0.1 * diag(2))
   good_meas <- list(C = matrix(c(1, 0), nrow = 1L), R = matrix(0.2, 1L, 1L))
-  Y <- matrix(stats::rnorm(4), ncol = 1L)
+  Y <- withr::with_seed(352, matrix(stats::rnorm(4), ncol = 1L))
 
   expect_error(
     gmm_filter("not a gmm", good_dyn, good_meas, Y),

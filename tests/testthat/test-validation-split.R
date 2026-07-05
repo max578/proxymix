@@ -1,9 +1,17 @@
 test_that("validation_size = 0 leaves validation diagnostics NA", {
   fit <- fit_kld_em(banana_target(), N = 2L,
-                    is_size = 1000L, max_iter = 10L, seed = 1L)
+                    is_size = 1000L, max_iter = 10L, seed = 1L,
+                    validation_size = 0L)
   expect_true(is.na(fit@diagnostics$validation_kld))
   expect_true(is.na(fit@diagnostics$validation_ess))
   expect_equal(fit@diagnostics$validation_size, 0L)
+})
+
+test_that("the default validation split is a quarter of is_size", {
+  fit <- fit_kld_em(banana_target(), N = 2L,
+                    is_size = 1000L, max_iter = 10L, seed = 1L)
+  expect_equal(fit@diagnostics$validation_size, 250L)
+  expect_true(is.finite(fit@diagnostics$validation_kld))
 })
 
 test_that("validation_size > 0 populates validation_kld / validation_ess", {

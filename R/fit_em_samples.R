@@ -85,9 +85,18 @@ fit_em_samples <- function(target, N = 2L,
     return(if (isTRUE(canonicalise)) gmm_canonicalise(fit) else fit)
   }
 
-  ## Multi-start: kmeans + (n_starts - 1) random restarts.
+  ## Multi-start: kmeans + (n_starts - 1) random restarts. A supplied `seed`
+  ## drives both the kmeans start and the restart draws, so the multi-start
+  ## is reproducible end-to-end; without one, the restarts keep their
+  ## historical fixed seeds (identical across calls, documented) and kmeans
+  ## uses the ambient stream.
   inits <- vector("list", max(1L, n_starts))
-  inits[[1L]] <- init_kmeans(samples, N = N, ridge_eps = ridge_eps)
+  inits[[1L]] <- if (is.null(seed)) {
+    init_kmeans(samples, N = N, ridge_eps = ridge_eps)
+  } else {
+    withr::with_seed(as.integer(seed),
+                     init_kmeans(samples, N = N, ridge_eps = ridge_eps))
+  }
   if (n_starts > 1L) {
     mu_global <- colMeans(samples)
     sd_global <- sqrt(diag(stats::cov(samples)))
@@ -95,7 +104,7 @@ fit_em_samples <- function(target, N = 2L,
       inits[[1L + i]] <- init_random(
         N = N, p = p, centre = mu_global,
         scale = mean(sd_global), sigma_diag = mean(sd_global^2),
-        seed = 1000L + i
+        seed = if (is.null(seed)) 1000L + i else as.integer(seed) + i
       )
     }
   }
@@ -128,11 +137,15 @@ em_samples_one_run <- function(samples, init, target,
 
   weights <- init@weights
   means <- init@means
+  ## Data-scaled ridge: invariant to the data's units, constant within the
+  ## fit (see `.data_scaled_eps()`).
+  ridge_eps <- .data_scaled_eps(ridge_eps, mean(diag(stats::cov(samples))))
   covs <- lapply(init@covariances, function(S) ridge(S, ridge_eps))
 
   loglik_trace <- numeric(0L)
   converged <- FALSE
   it <- 0L
+  n_reseeds <- 0L
 
   for (it in seq_len(max_iter)) {
     log_resp_unnorm <- gmm_log_unnorm(samples, weights, means, covs)
@@ -152,12 +165,21 @@ em_samples_one_run <- function(samples, init, target,
     log_resp <- log_resp_unnorm - ll_row
     resp <- exp(log_resp)
     Nk <- colSums(resp)
-    weights <- as.numeric(Nk / n)
+    empty <- Nk < 1e-12
+    ## A dead component must get its WEIGHT reset too: `Nk / n` gives an
+    ## exact zero, `log(0) = -Inf` zeroes its responsibilities forever, and
+    ## a reseeded mean would be dead on arrival (the reseed then re-fires
+    ## every iteration). Granting it one observation's worth of mass lets
+    ## the next E-step actually reach it.
+    Nk_adj <- Nk
+    Nk_adj[empty] <- 1
+    n_reseeds <- n_reseeds + sum(empty)
+    weights <- as.numeric(Nk_adj / sum(Nk_adj))
     for (k in seq_len(N)) {
-      if (Nk[k] < 1e-12) {
-        ## Empty component: re-seed from the data point with highest
-        ## current log-likelihood — robust against collapse.
-        worst <- which.max(-ll_row)
+      if (empty[k]) {
+        ## Re-seed at the data point the current mixture explains worst
+        ## (the lowest per-row log-likelihood), at data scale.
+        worst <- which.min(ll_row)
         means[[k]] <- as.numeric(samples[worst, ])
         covs[[k]] <- ridge(stats::cov(samples), ridge_eps)
         next
@@ -167,6 +189,22 @@ em_samples_one_run <- function(samples, init, target,
       S_new <- crossprod(diff * sqrt(resp[, k])) / Nk[k]
       means[[k]] <- mu_new
       covs[[k]] <- symmetrise(ridge(S_new, ridge_eps))
+    }
+  }
+
+  ## The EM objective is monotone under exact updates. An empty-component
+  ## reseed is a deliberate restart-like intervention that legitimately dips
+  ## the objective before recovering, so the invariant is only asserted for
+  ## reseed-free runs; reseed counts are recorded in the diagnostics either
+  ## way.
+  if (n_reseeds == 0L && length(loglik_trace) > 2L) {
+    worst_drop <- min(diff(loglik_trace))
+    if (worst_drop < -1e-6 * max(1, abs(loglik_trace[1L]))) {
+      cli::cli_warn(
+        c("The EM log-likelihood decreased by {signif(-worst_drop, 3)} during fitting.",
+          "i" = "This usually signals ridge regularisation interacting with a near-singular component."),
+        class = "proxymix_nonmonotone"
+      )
     }
   }
 
@@ -188,12 +226,25 @@ em_samples_one_run <- function(samples, init, target,
       loglik_final = loglik_final,
       n_used = n,
       n_params = n_params,
+      n_reseeds = n_reseeds,
       bic = bic,
       aic = aic
     ),
     converged = converged,
     iterations = as.integer(it),
     call = call,
-    name = sprintf("em_samples[N=%d] on %s", N, target@name)
+    name = sprintf("em_samples[N=%d] on %s", N, target@name),
+    metadata = list(quality = list(
+      regime = "sample",
+      converged = converged,
+      degenerate = FALSE,
+      ess = NA_real_,
+      ess_relative = NA_real_,
+      min_component_ess = NA_real_,
+      max_weight = NA_real_,
+      support_fraction = NA_real_,
+      kld_final = NA_real_,
+      validation_gap = NA_real_
+    ))
   )
 }

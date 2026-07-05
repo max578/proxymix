@@ -10,5 +10,11 @@
       "autoplot", "proxymix::gmm_fit", .autoplot_gmm_fit,
       envir = asNamespace("ggplot2")
     )
+    ## Plain mixtures (operator-calculus results) plot too: the composed
+    ## objects are exactly the ones users need to look at.
+    registerS3method(
+      "autoplot", "proxymix::gmm", .autoplot_gmm_fit,
+      envir = asNamespace("ggplot2")
+    )
   }
 }

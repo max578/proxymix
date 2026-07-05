@@ -48,14 +48,25 @@
 #'   `-log Z(f)` offset and is therefore never used for stopping).
 #' @param ridge_eps Ridge added to each component covariance at every
 #'   M-step.
-#' @param min_ess Minimum effective sample size below which a warning is
-#'   issued.
-#' @param seed Optional integer seed used when drawing the fitting IS
-#'   sample.
+#' @param min_ess Minimum effective sample size below which the fit is
+#'   flagged as degenerate: a classed warning (`proxymix_low_ess`) is
+#'   issued (or, with `on_low_ess = "abort"`, a classed error
+#'   `proxymix_degenerate_fit`), the fit's `converged` flag is forced to
+#'   `FALSE`, and `degenerate = TRUE` is recorded in the diagnostics and
+#'   the quality certificate.
+#' @param on_low_ess What to do when the effective sample size falls below
+#'   `min_ess`: `"warn"` (the default) flags and continues, `"abort"`
+#'   refuses to return a degenerate fit.
+#' @param seed Optional integer seed. When supplied, the fit is
+#'   reproducible end-to-end: the fitting IS draw, the initialisation
+#'   resample and kmeans pass, and any empty-component reseed draws are
+#'   all derived from it. When `NULL`, those draws consume the ambient
+#'   random-number stream.
 #' @param validation_size Number of independent importance-sampling draws
-#'   to use for held-out validation. Default `0L` (no validation split).
-#'   Set to a positive integer (typically `is_size / 2` to `is_size`) to
-#'   enable validation diagnostics.
+#'   to use for held-out validation. The default `NULL` uses
+#'   `ceiling(is_size / 4)`, so the overfit-vs-generalise diagnostic
+#'   (`validation_kld` and the certificate's `validation_gap`) exists by
+#'   default; set `0L` to disable the validation split.
 #' @param validation_proposal Optional [is_proposal] for the validation
 #'   sample. Defaults to the same proposal used for fitting.
 #' @param validation_seed Optional integer seed used when drawing the
@@ -102,8 +113,9 @@ fit_kld_em <- function(target,
                        tol = 1e-5,
                        ridge_eps = 1e-6,
                        min_ess = 50,
+                       on_low_ess = c("warn", "abort"),
                        seed = NULL,
-                       validation_size = 0L,
+                       validation_size = NULL,
                        validation_proposal = NULL,
                        validation_seed = NULL,
                        support_warn = TRUE,
@@ -116,10 +128,30 @@ fit_kld_em <- function(target,
   if (is.null(target@log_density)) {
     cli::cli_abort("regime {.val kld} requires `target@log_density` to be supplied.")
   }
+  on_low_ess <- rlang::arg_match(on_low_ess)
   N <- as.integer(N)
   is_size <- as.integer(is_size)
-  validation_size <- as.integer(validation_size)
+  validation_size <- if (is.null(validation_size)) {
+    as.integer(ceiling(is_size / 4))
+  } else {
+    as.integer(validation_size)
+  }
   p <- target@n_dim
+
+  ## The dimension guard lives at the core fitter, not only in the wrapper
+  ## entry points: importance sampling loses effective sample size sharply
+  ## with dimension, and a direct call deserves the same disclosure.
+  if (p > 10L) {
+    cli::cli_warn(c(
+      "Importance-sampled KLD-EM in {p} dimensions: expect severe effective-sample-size loss.",
+      "i" = "Inspect {.code ess_summary(fit)}; consider fitting a lower-dimensional sub-vector and composing with the operator calculus."
+    ), class = "proxymix_high_dimension")
+  } else if (p > 5L) {
+    cli::cli_inform(c(
+      "Importance-sampled KLD-EM is well-characterised for {.code p <= 5} (got p = {p}).",
+      "i" = "Inspect {.code ess_summary(fit)} for effective-sample-size loss."
+    ))
+  }
 
   if (is.null(proposal)) {
     proposal <- .support_matched_proposal(target)
@@ -152,18 +184,32 @@ fit_kld_em <- function(target,
   max_weight <- draws$max_weight
   support_fraction <- draws$support_fraction
 
-  if (ess < min_ess) {
-    cli::cli_warn(c(
-      "Effective sample size is low: ESS = {round(ess, 1)} out of {is_size}.",
+  degenerate <- ess < min_ess
+  if (degenerate) {
+    low_ess_msg <- c(
+      "Effective sample size is low: ESS = {round(ess, 1)} out of {is_size}; the fit is flagged as degenerate.",
       "i" = "Consider a heavier-tailed proposal or more IS draws."
-    ))
+    )
+    if (on_low_ess == "abort") {
+      cli::cli_abort(low_ess_msg, class = "proxymix_degenerate_fit")
+    }
+    cli::cli_warn(low_ess_msg, class = "proxymix_low_ess")
   }
   if (isTRUE(support_warn) && support_fraction < 0.95) {
     cli::cli_warn(c(
       "Importance proposal does not dominate target support: only {round(100 * support_fraction, 1)}% of IS draws received finite weight.",
       "i" = "Verify {.code log_density(x) - log q(x)} is finite on the target's support; consider a wider or heavier-tailed proposal."
-    ))
+    ), class = "proxymix_support")
   }
+
+  ## IS-weighted data moments, used to reseed an empty component at data
+  ## scale rather than at the arbitrary unit scale.
+  mu_w <- colSums(W * x)
+  S_w <- crossprod((x - matrix(mu_w, nrow = is_size, ncol = p, byrow = TRUE)) *
+                     sqrt(W))
+  ## Data-scaled ridge: invariant to the target's units, constant within
+  ## the fit (see `.data_scaled_eps()`).
+  ridge_eps <- .data_scaled_eps(ridge_eps, mean(diag(S_w)))
 
   ## ---- Deterministic-annealing warm-start (optional) ----
   anneal_schedule_used <- NULL
@@ -179,16 +225,25 @@ fit_kld_em <- function(target,
   ## ---- Initialisation ----
   if (is.null(init)) {
     ## Bootstrap-resample x by IS weights to obtain a pseudo-sample with
-    ## approximately target distribution, then kmeans on it.
-    idx <- sample.int(is_size, size = min(is_size, 5L * N * 50L),
-                      replace = TRUE, prob = W)
-    pseudo <- x[idx, , drop = FALSE]
-    init <- tryCatch(init_kmeans(pseudo, N = N, ridge_eps = ridge_eps),
-                     error = function(e) NULL)
+    ## approximately target distribution, then kmeans on it. Derived from
+    ## `seed` when one is supplied, so the whole fit is reproducible.
+    build_init <- function() {
+      idx <- sample.int(is_size, size = min(is_size, 5L * N * 50L),
+                        replace = TRUE, prob = W)
+      pseudo <- x[idx, , drop = FALSE]
+      tryCatch(init_kmeans(pseudo, N = N, ridge_eps = ridge_eps),
+               error = function(e) NULL)
+    }
+    init <- if (is.null(seed)) {
+      build_init()
+    } else {
+      withr::with_seed(as.integer(seed) + 3L, build_init())
+    }
     if (is.null(init)) {
       init <- init_random(N = N, p = p,
                           centre = if (!is.null(target@samples)) colMeans(target@samples) else rep(0, p),
-                          scale = 1, sigma_diag = 1, seed = 42L)
+                          scale = 1, sigma_diag = 1,
+                          seed = if (is.null(seed)) 42L else as.integer(seed) + 4L)
     }
   }
   if (!S7::S7_inherits(init, gmm)) {
@@ -204,6 +259,7 @@ fit_kld_em <- function(target,
   weighted_obj_trace <- numeric(0L)
   converged <- FALSE
   it <- 0L
+  n_reseeds <- 0L
   for (it in seq_len(max_iter)) {
     log_resp_unnorm <- gmm_log_unnorm(x, weights, means, covs)
     log_g <- logsumexp_rows(log_resp_unnorm)
@@ -238,14 +294,26 @@ fit_kld_em <- function(target,
     ## M-step.
     W_resp <- resp * W
     Nk_W <- colSums(W_resp)
-    weights <- pmax(as.numeric(Nk_W), 1e-300)
-    weights <- weights / sum(weights)
+    empty <- Nk_W < 1e-12
+    ## A dead component must get its WEIGHT reset too, not just its mean:
+    ## a zero (or 1e-300-floored) weight zeroes its responsibilities on the
+    ## next E-step, so a reseeded mean is dead on arrival and the reseed
+    ## re-fires every iteration. Grant it one draw's worth of mass.
+    Nk_adj <- Nk_W
+    Nk_adj[empty] <- 1 / is_size
+    n_reseeds <- n_reseeds + sum(empty)
+    weights <- as.numeric(Nk_adj / sum(Nk_adj))
     for (k in seq_len(N)) {
-      if (Nk_W[k] < 1e-12) {
-        ## Empty component: re-seed at IS-weighted random sample.
-        idx <- sample.int(is_size, size = 1L, prob = W)
+      if (empty[k]) {
+        ## Re-seed at an IS-weighted random draw, at data scale.
+        idx <- if (is.null(seed)) {
+          sample.int(is_size, size = 1L, prob = W)
+        } else {
+          withr::with_seed(as.integer(seed) + 100L + it,
+                           sample.int(is_size, size = 1L, prob = W))
+        }
         means[[k]] <- as.numeric(x[idx, ])
-        covs[[k]] <- ridge(diag(1, p), ridge_eps)
+        covs[[k]] <- ridge(S_w, max(ridge_eps, 1e-6))
         next
       }
       mu_new <- as.numeric(colSums(W_resp[, k] * x) / Nk_W[k])
@@ -256,6 +324,21 @@ fit_kld_em <- function(target,
     }
   }
 
+  ## The IS-weighted EM objective is monotone under exact updates. An
+  ## empty-component reseed is a deliberate restart-like intervention that
+  ## legitimately dips the objective, so the invariant is only asserted for
+  ## reseed-free runs.
+  if (n_reseeds == 0L && length(weighted_obj_trace) > 2L) {
+    worst_drop <- min(diff(weighted_obj_trace))
+    if (worst_drop < -1e-6 * max(1, abs(weighted_obj_trace[1L]))) {
+      cli::cli_warn(
+        c("The importance-weighted EM objective decreased by {signif(-worst_drop, 3)} during fitting.",
+          "i" = "This usually signals ridge regularisation interacting with a near-singular component."),
+        class = "proxymix_nonmonotone"
+      )
+    }
+  }
+
   ## ---- Final fitting-sample diagnostics ----
   log_resp_unnorm <- gmm_log_unnorm(x, weights, means, covs)
   log_g <- logsumexp_rows(log_resp_unnorm)
@@ -263,6 +346,13 @@ fit_kld_em <- function(target,
   finite_d <- is.finite(d_n) & is.finite(W) & W > 0
   kld_final <- sum(W[finite_d] * d_n[finite_d])
   mc_se_kld <- sqrt(sum(W[finite_d]^2 * (d_n[finite_d] - kld_final)^2))
+
+  ## Per-component Kish ESS at the final responsibilities: a tail component
+  ## can sit on a handful of effective draws while the global ESS looks
+  ## healthy.
+  W_resp_final <- exp(log_resp_unnorm - log_g) * W
+  per_component_ess <- colSums(W_resp_final)^2 /
+    pmax(colSums(W_resp_final^2), 1e-300)
 
   norm_status <- target@normalised
   kld_is_shifted <- !isTRUE(norm_status)
@@ -319,6 +409,10 @@ fit_kld_em <- function(target,
     )
   }
 
+  ## A degenerate (ESS-collapsed) fit is never reported as converged: the
+  ## EM may have stabilised, but on a handful of effective draws.
+  converged <- converged && !degenerate
+
   diagnostics <- c(
     list(
       kld_trace = kld_trace,
@@ -330,8 +424,11 @@ fit_kld_em <- function(target,
       mc_se_kld = mc_se_kld,
       ess = ess,
       ess_relative = ess / is_size,
+      per_component_ess = per_component_ess,
       max_weight = max_weight,
       support_fraction = support_fraction,
+      degenerate = degenerate,
+      n_reseeds = n_reseeds,
       is_size = is_size,
       is_sample = x,
       is_log_weights = log_W,
@@ -340,6 +437,23 @@ fit_kld_em <- function(target,
       temp_schedule = anneal_schedule_used
     ),
     validation_diag
+  )
+
+  quality <- list(
+    regime = "kld",
+    converged = converged,
+    degenerate = degenerate,
+    ess = ess,
+    ess_relative = ess / is_size,
+    min_component_ess = min(per_component_ess),
+    max_weight = max_weight,
+    support_fraction = support_fraction,
+    kld_final = kld_final,
+    validation_gap = if (validation_size > 0L) {
+      validation_diag$validation_kld - kld_final
+    } else {
+      NA_real_
+    }
   )
 
   fit <- gmm_fit(
@@ -352,7 +466,8 @@ fit_kld_em <- function(target,
     converged = converged,
     iterations = as.integer(it),
     call = match.call(),
-    name = sprintf("kld_em[N=%d] on %s", N, target@name)
+    name = sprintf("kld_em[N=%d] on %s", N, target@name),
+    metadata = list(quality = quality)
   )
   if (isTRUE(canonicalise)) gmm_canonicalise(fit) else fit
 }

@@ -46,11 +46,18 @@
   list(w = w, mu = as.numeric(mu), Sigma = symmetrise(Sig))
 }
 
-## Gaussian-product integral N(a; b, A + B) = integral N(x;a,A) N(x;b,B) dx,
-## evaluated as a single multivariate-normal density.
-.gauss_product <- function(a, b, AB) {
-  mvnfast::dmvn(matrix(a, nrow = 1L), mu = b, sigma = AB)
+## Log of the Gaussian-product integral
+##   N(a; b, A + B) = integral N(x;a,A) N(x;b,B) dx,
+## evaluated in the log domain: the raw density underflows for large
+## dimension x scale (p ~ 115 at scale 1e5 reaches exactly 0), which
+## previously turned every merge cost into 0/Inf/NaN and made the merge
+## order arbitrary.
+.log_gauss_product <- function(a, b, AB) {
+  mvnfast::dmvn(matrix(a, nrow = 1L), mu = b, sigma = AB, log = TRUE)
 }
+
+## Log-sum-exp of a short numeric vector.
+.lse <- function(v) logsumexp_rows(matrix(v, nrow = 1L))
 
 # ---------------------------------------------------------------------------
 # Pairwise merge costs
@@ -72,13 +79,17 @@
   w <- wi + wj
   p1 <- wi / w
   p2 <- wj / w
-  v_pp <- p1^2 * .gauss_product(mi, mi, 2 * Si) +
-    2 * p1 * p2 * .gauss_product(mi, mj, Si + Sj) +
-    p2^2 * .gauss_product(mj, mj, 2 * Sj)
-  v_qq <- .gauss_product(mij, mij, 2 * Sij)
-  v_pq <- p1 * .gauss_product(mi, mij, Si + Sij) +
-    p2 * .gauss_product(mj, mij, Sj + Sij)
-  d_cs <- 0.5 * log(v_pp) + 0.5 * log(v_qq) - log(v_pq)
+  log_v_pp <- .lse(c(
+    2 * log(p1) + .log_gauss_product(mi, mi, 2 * Si),
+    log(2) + log(p1) + log(p2) + .log_gauss_product(mi, mj, Si + Sj),
+    2 * log(p2) + .log_gauss_product(mj, mj, 2 * Sj)
+  ))
+  log_v_qq <- .log_gauss_product(mij, mij, 2 * Sij)
+  log_v_pq <- .lse(c(
+    log(p1) + .log_gauss_product(mi, mij, Si + Sij),
+    log(p2) + .log_gauss_product(mj, mij, Sj + Sij)
+  ))
+  d_cs <- 0.5 * log_v_pp + 0.5 * log_v_qq - log_v_pq
   w * max(d_cs, 0)
 }
 
@@ -86,44 +97,61 @@
 # The two reduction strategies
 # ---------------------------------------------------------------------------
 
-## Greedy moment-preserving merge to `k_max` components.
+## Greedy moment-preserving merge to `k_max` components, with the standard
+## incremental cost cache: after a merge only the pairs touching the merged
+## component are re-costed, instead of all O(K^2) pairs (each with its own
+## Cholesky) at every step. Inside a long Gaussian-sum-filter run this is
+## the complexity-class bottleneck.
 .reduce_merge <- function(g, k_max, cost, ridge_eps) {
   w <- g@weights
   m <- g@means
   S <- g@covariances
   K <- length(w)
-  while (K > k_max) {
-    best <- Inf
-    bi <- NA_integer_
-    bj <- NA_integer_
-    best_merge <- NULL
-    for (i in seq_len(K - 1L)) {
-      for (j in (i + 1L):K) {
-        merged <- .merge_two(w[i], m[[i]], S[[i]], w[j], m[[j]], S[[j]])
-        c_ij <- if (cost == "kl") {
-          .runnalls_cost(w[i], S[[i]], w[j], S[[j]], merged$Sigma)
-        } else {
-          .cs_cost(w[i], m[[i]], S[[i]], w[j], m[[j]], S[[j]],
-                   merged$mu, merged$Sigma)
-        }
-        if (c_ij < best) {
-          best <- c_ij
-          bi <- i
-          bj <- j
-          best_merge <- merged
-        }
-      }
+
+  pair_cost <- function(i, j) {
+    merged <- .merge_two(w[i], m[[i]], S[[i]], w[j], m[[j]], S[[j]])
+    if (cost == "kl") {
+      .runnalls_cost(w[i], S[[i]], w[j], S[[j]], merged$Sigma)
+    } else {
+      .cs_cost(w[i], m[[i]], S[[i]], w[j], m[[j]], S[[j]],
+               merged$mu, merged$Sigma)
     }
+  }
+
+  cmat <- matrix(Inf, K, K)
+  for (i in seq_len(K - 1L)) {
+    for (j in (i + 1L):K) cmat[i, j] <- pair_cost(i, j)
+  }
+
+  while (K > k_max) {
+    flat <- which.min(cmat)
+    bi <- (flat - 1L) %% K + 1L
+    bj <- (flat - 1L) %/% K + 1L
+    if (bi > bj) { tmp <- bi; bi <- bj; bj <- tmp }
+    if (!is.finite(cmat[bi, bj])) {
+      cli::cli_abort("mixture reduction failed: no finite merge cost remains.")
+    }
+    best_merge <- .merge_two(w[bi], m[[bi]], S[[bi]], w[bj], m[[bj]], S[[bj]])
     w[bi] <- best_merge$w
     m[[bi]] <- best_merge$mu
     S[[bi]] <- symmetrise(ridge(best_merge$Sigma, ridge_eps))
     w <- w[-bj]
     m <- m[-bj]
     S <- S[-bj]
+    cmat <- cmat[-bj, -bj, drop = FALSE]
     K <- K - 1L
+    if (bi > K) bi <- K
+    for (k in seq_len(K)) {
+      if (k == bi) next
+      i <- min(k, bi)
+      j <- max(k, bi)
+      cmat[i, j] <- pair_cost(i, j)
+    }
   }
   gmm(weights = w / sum(w), means = m, covariances = S,
-      name = sprintf("%s (reduced to %d comp)", g@name, k_max))
+      name = sprintf("reduce[%d](%s)",
+                     k_max, if (nchar(g@name) > 40L) "..." else g@name),
+      metadata = .op_result_meta(g, "reduce", list(k_max = k_max)))
 }
 
 ## Annealed re-fit collapse: draw a sample from the mixture and refit a
@@ -222,7 +250,8 @@ gmm_reduce <- function(g, k_max, method = c("merge", "anneal"),
 
   if (k_max >= K) {
     return(gmm(weights = g@weights, means = g@means, covariances = g@covariances,
-               name = sprintf("%s (<= %d comp)", g@name, k_max)))
+               name = sprintf("%s (<= %d comp)", g@name, k_max),
+               metadata = .op_result_meta(g, "reduce", list(k_max = k_max))))
   }
 
   merged <- .reduce_merge(g, k_max, cost, ridge_eps)

@@ -117,7 +117,11 @@ hellinger_mc <- function(fit, n_mc = 5000L, seed = NULL) {
     ratio <- exp(0.5 * (log_g - log_f))
     finite <- is.finite(ratio) & is.finite(W)
     integral_est <- sum(W[finite] * ratio[finite])
-    se <- stats::sd(ratio[finite]) / sqrt(sum(finite))
+    ## Standard error of the SELF-NORMALISED weighted estimator: with a
+    ## skewed weight profile (the norm in regime iii) the naive
+    ## sd(ratio)/sqrt(n) treats the weights as uniform and can understate
+    ## the Monte Carlo error by orders of magnitude.
+    se <- sqrt(sum(W[finite]^2 * (ratio[finite] - integral_est)^2))
     n_used <- sum(finite)
   } else {
     ## Sampling from g_theta directly. integral sqrt(f g) dx
@@ -173,6 +177,42 @@ ess_summary <- function(fit) {
     validation_support_fraction = d$validation_support_fraction %||% NA_real_,
     validation_kld            = d$validation_kld %||% NA_real_
   )
+}
+
+#' The quality certificate of a fit or derived mixture
+#'
+#' Returns the fit-quality certificate: a small list recording the fitting
+#' regime, convergence, degeneracy, the effective-sample-size profile of
+#' the importance weights, and (when a validation split was drawn) the
+#' held-out validation gap. The certificate is stamped into the object's
+#' metadata at fit time and carried unchanged through every closed-form
+#' operator, so it can be read off a marginal, a conditional, a filtered
+#' belief, or any other derived mixture -- alongside the `provenance`
+#' vector recording the chain of operations that produced it.
+#'
+#' Downstream verbs read the same certificate and raise a one-shot
+#' advisory (class `proxymix_low_quality`) when the source fit is flagged.
+#'
+#' @param g A [gmm] or [gmm_fit].
+#'
+#' @returns A list with elements `regime`, `converged`, `degenerate`,
+#'   `ess`, `ess_relative`, `min_component_ess`, `max_weight`,
+#'   `support_fraction`, `kld_final`, and `validation_gap` (fields not
+#'   applicable to the regime are `NA`), or `NULL` for a mixture that was
+#'   never fitted (e.g. built directly with [gmm()]).
+#' @family diagnostics
+#' @export
+#' @examples
+#' fit <- fit_proxymix(banana_target(), N = 2L, regime = "kld",
+#'                     is_size = 1500L, max_iter = 15L, seed = 1L)
+#' gmm_fit_quality(fit)
+#' ## The certificate survives the operator calculus.
+#' gmm_fit_quality(gmm_marginalise(fit, keep = 1L))
+gmm_fit_quality <- function(g) {
+  if (!S7::S7_inherits(g, gmm)) {
+    cli::cli_abort("`g` must be a {.cls gmm} (or {.cls gmm_fit}).")
+  }
+  g@metadata$quality
 }
 
 #' Information criteria: BIC, AIC, and ICL

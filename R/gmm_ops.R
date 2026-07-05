@@ -169,9 +169,8 @@ gmm_marginalise <- function(g, keep) {
     weights = g@weights,
     means = new_means,
     covariances = new_covs,
-    name = sprintf("marginal[%s] of %s",
-                   paste(keep, collapse = ","),
-                   g@name)
+    name = .op_name("marginalise", g),
+    metadata = .op_result_meta(g, "marginalise", list(kept = keep))
   )
 }
 
@@ -239,7 +238,8 @@ gmm_conditionalise <- function(g, given) {
     weights = new_weights,
     means = new_means,
     covariances = new_covs,
-    name = sprintf("conditional of %s", g@name)
+    name = .op_name("conditionalise", g),
+    metadata = .op_result_meta(g, "conditionalise", list(fixed = fixed))
   )
 }
 

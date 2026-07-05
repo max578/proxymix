@@ -282,7 +282,12 @@ from_objective <- function(objective, lower, upper,
   )
 
   ## Cool through the ladder, warm-starting each step from the last fit.
-  for (temp in ladder) {
+  ## Each step derives its own seed: re-seeding the IS stream identically at
+  ## every temperature made half of the draws (the uniform exploration mass)
+  ## byte-identical across the whole ladder, so a basin missed by the first
+  ## exploration draw was never probed again.
+  for (s in seq_along(ladder)) {
+    temp <- ladder[s]
     g <- gmm(
       weights = fit@weights, means = fit@means,
       covariances = lapply(fit@covariances,
@@ -293,7 +298,9 @@ from_objective <- function(objective, lower, upper,
       make_target(temp), N = N, proposal = proposal,
       is_size = is_size, init = gmm(weights = fit@weights, means = fit@means,
                                     covariances = fit@covariances),
-      max_iter = max_iter, ridge_eps = ridge_eps, seed = seed,
+      max_iter = max_iter, ridge_eps = ridge_eps,
+      seed = if (is.null(seed)) NULL else as.integer(seed) + s,
+      validation_size = 0L,
       support_warn = FALSE, canonicalise = FALSE
     )
   }

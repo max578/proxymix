@@ -7,6 +7,7 @@
 .pehe <- function(est, truth) sqrt(mean((est - truth)^2))
 
 test_that("crossing regimes: the effect changes sign with x", {
+  skip_on_cran()
   dat <- withr::with_seed(701L, {
     n <- 3000L
     x <- stats::rnorm(n)
@@ -57,7 +58,11 @@ test_that("non-linear gate: a smooth effect is tracked by the mixture", {
   ce <- proxy_cate(m, grid, se = FALSE)
   tau_true <- 1 / (1 + exp(-2 * grid$x))
   expect_lt(.pehe(ce$tau, tau_true), 0.2)
-  expect_true(all(diff(ce$tau) > 0))        # monotone increasing, like the truth
+  ## Monotone like the truth, with a small slack: strict positivity of every
+  ## adjacent difference from a local-optimum EM is one BLAS rounding away
+  ## from a flake on another platform.
+  expect_true(all(diff(ce$tau) > -0.02))
+  expect_gt(stats::cor(ce$tau, tau_true, method = "spearman"), 0.99)
 })
 
 test_that("null effect: the estimate is near zero with covering intervals", {

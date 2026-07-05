@@ -31,6 +31,9 @@ Rscript inst/validation/regime_iii_pinned_fits.R
 | Script | What it validates |
 |---|---|
 | `regime_iii_pinned_fits.R` | KLD-EM on banana / donut / 3-mixture with pinned seeds. Asserts that final KLD, validation KLD, relative ESS, and max weight all fall in pre-specified ranges. |
+| `from_kde_pinned_fits.R` | KDE-compression fits with pinned seeds and pre-specified quality ranges. |
+| `operator_calculus_pinned.R` | Pinned parity checks for the closed-form operators. |
+| `contract-conformance.R` | The two-sided conformance case set over the exported surface (positive + negative cases per function, plus metamorphic invariants). Self-contained: a built-in serial driver runs it anywhere, and `tests/testthat/test-conformance-cases.R` executes it during test runs off CRAN. |
 
 ## Why not just unit tests?
 

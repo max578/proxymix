@@ -21,3 +21,4 @@
 ^check_.*\.log$
 ^tools$
 ^texput\.log$
+^CRAN-SUBMISSION$

@@ -1,3 +1,14 @@
+# proxymix 0.15.1
+
+### Housekeeping
+
+* Author list reduced to the package author-maintainer. Credit for the
+  foundational theory remains with van der Hoek and Elliott (2024)
+  through the package `CITATION`, the `DESCRIPTION` references, and the
+  documentation.
+* Typography pass over the earlier vignettes (dashes normalised); no
+  content changes.
+
 # proxymix 0.15.0
 
 ### New features

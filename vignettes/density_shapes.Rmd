@@ -22,13 +22,13 @@ set.seed(20260513)
 library(proxymix)
 ```
 
-This vignette demonstrates regime (iii) across target shapes. The KLD-EM regime fits a Gaussian-mixture proxy to a target whose density we can *evaluate* but cannot easily *sample from*. Existing CRAN packages for Gaussian mixtures — `mclust`, `mixtools`, `flexmix` — all assume i.i.d. samples are available.
+This vignette demonstrates regime (iii) across target shapes. The KLD-EM regime fits a Gaussian-mixture proxy to a target whose density we can *evaluate* but cannot easily *sample from*. Existing CRAN packages for Gaussian mixtures -- `mclust`, `mixtools`, `flexmix` -- all assume i.i.d. samples are available.
 
 We exercise three quite different non-Gaussian target shapes:
 
-* the **banana** — a Rosenbrock-style 2-D bent ridge;
-* the **donut** — a rotationally symmetric annulus;
-* the **three-mixture** — well-separated 2-D Gaussian components.
+* the **banana** -- a Rosenbrock-style 2-D bent ridge;
+* the **donut** -- a rotationally symmetric annulus;
+* the **three-mixture** -- well-separated 2-D Gaussian components.
 
 For each, we
 
@@ -104,7 +104,7 @@ if (requireNamespace("ggplot2", quietly = TRUE)) {
 }
 ```
 
-A donut is genuinely hard for a Gaussian mixture — the modes are *infinitely many* (along the ring). With `N = 6` components, KLD-EM finds a balanced ring-approximation:
+A donut is genuinely hard for a Gaussian mixture -- the modes are *infinitely many* (along the ring). With `N = 6` components, KLD-EM finds a balanced ring-approximation:
 
 ```{r donut-fit}
 fit_d <- fit_proxymix(donut, N = 6L, regime = "kld",
@@ -180,7 +180,7 @@ if (requireNamespace("ggplot2", quietly = TRUE)) {
 
 ## Bounded support
 
-The three targets above all live on the whole plane. Some targets are instead **compactly supported** — exactly zero outside a bounded region. The textbook example is the Epanechnikov density \(K(u) = \tfrac{3}{4}(1 - u^2)\) on \([-1, 1]\). No mixture of full-support Gaussians can be exactly zero on an interval, so regime (iii) is the only viable route — and the default \(t\)-proposal is actively unsafe here, since it places importance draws where the target log-density is \(-\infty\), producing non-finite weights.
+The three targets above all live on the whole plane. Some targets are instead **compactly supported** -- exactly zero outside a bounded region. The textbook example is the Epanechnikov density \(K(u) = \tfrac{3}{4}(1 - u^2)\) on \([-1, 1]\). No mixture of full-support Gaussians can be exactly zero on an interval, so regime (iii) is the only viable route -- and the default \(t\)-proposal is actively unsafe here, since it places importance draws where the target log-density is \(-\infty\), producing non-finite weights.
 
 `proxymix` handles this safely. A target can declare its `support`, and `fit_kld_em()` then selects a *support-matched* `is_uniform()` proposal automatically instead of the crashing default. `epanechnikov_target()` is a built-in compact-support fixture that declares its support:
 
@@ -189,7 +189,7 @@ epan <- epanechnikov_target(n_dim = 1L)
 epan
 ```
 
-Fitting needs no hand-chosen proposal — the declared support drives the choice, announced in a one-line message:
+Fitting needs no hand-chosen proposal -- the declared support drives the choice, announced in a one-line message:
 
 ```{r epan-fit}
 fit_e <- fit_proxymix(epan, N = 3L, regime = "kld",
@@ -247,11 +247,11 @@ summary_tbl
 
 Interpretation:
 
-* **`ESS`** — the effective sample size of the importance-sampling weights, out of `is_size`. ESS well below `is_size` means the proposal is wasteful (heavy weight on few draws); ESS near `is_size` means the proposal is close to the target.
-* **`kld_final`** — the importance-sampled estimate of \(\mathrm{KL}(f \Vert g_\theta)\) at the final parameters. *Small is good.*
-* **`hellinger2`** — a Monte-Carlo estimate of the squared Hellinger distance \(H^2(f, g)\). Bounded in \([0, 1]\) when both densities are normalised; a small value confirms the proxy reproduces the target's mass *and* shape.
+* **`ESS`** -- the effective sample size of the importance-sampling weights, out of `is_size`. ESS well below `is_size` means the proposal is wasteful (heavy weight on few draws); ESS near `is_size` means the proposal is close to the target.
+* **`kld_final`** -- the importance-sampled estimate of \(\mathrm{KL}(f \Vert g_\theta)\) at the final parameters. *Small is good.*
+* **`hellinger2`** -- a Monte-Carlo estimate of the squared Hellinger distance \(H^2(f, g)\). Bounded in \([0, 1]\) when both densities are normalised; a small value confirms the proxy reproduces the target's mass *and* shape.
 
-The three-mixture is fit nearly exactly (the proxy lives in the same parametric family as the target). The banana is well-approximated by four Gaussians along the ridge. The donut — a topology a Gaussian mixture cannot reproduce exactly — is approximated by a ring of 6 components, with a non-trivial residual KLD reflecting the structural mismatch.
+The three-mixture is fit nearly exactly (the proxy lives in the same parametric family as the target). The banana is well-approximated by four Gaussians along the ridge. The donut -- a topology a Gaussian mixture cannot reproduce exactly -- is approximated by a ring of 6 components, with a non-trivial residual KLD reflecting the structural mismatch.
 
 ## Reference
 

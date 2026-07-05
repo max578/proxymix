@@ -16,17 +16,39 @@ under one verb:
 |----|----|----|
 | **(i) moment** | $N = 1$ component | Closed-form moment matching |
 | **(ii) sample** | i.i.d. samples from the target are available | Classical EM |
-| **(iii) kld** | target density `f(x)` can be evaluated but **not** (cheaply) sampled | **KLD-EM with importance sampling** — the wedge |
+| **(iii) kld** | target density `f(x)` can be evaluated but **not** (cheaply) sampled | **KLD-EM with importance sampling** |
 
-No other CRAN package implements regime (iii) for arbitrary parametric
-$f$. `mclust`, `mixtools`, `flexmix` all assume samples.
+Regime (iii) is the reason the package exists. The sample-based mixture
+packages (`mclust`, `mixtools`, `flexmix`) all assume i.i.d. draws from
+the target; `proxymix` fits directly against an evaluable (possibly
+unnormalised) log-density.
+
+**Why not MCMC?** If you can evaluate the unnormalised density you can
+always run a sampler and then fit a mixture to the draws. The
+regime-(iii) fit is the shortcut when what you want *is* the compact
+closed-form object: no chain tuning or convergence diagnostics, a
+deterministic pipeline given the seed, and a mixture whose marginals,
+conditionals, moments and samples are then available in closed form
+through the operator calculus. The trade-off is dimension: the
+importance sampling that drives regime (iii) loses effective sample size
+sharply beyond roughly $p = 5$–$10$, and every fit reports its effective
+sample size so that limit is visible rather than silent. For
+high-dimensional posteriors, sample with your favourite MCMC and use
+regime (ii) on the draws.
 
 ## Installation
 
-Local install from the source tree:
+From GitHub:
+
+    # install.packages("remotes")
+    remotes::install_github("max578/proxymix")
+
+or locally from the source tree:
 
     R CMD build proxymix
     R CMD INSTALL proxymix_*.tar.gz
+
+Documentation site: <https://max578.github.io/proxymix/>.
 
 ## Quick start
 
@@ -39,28 +61,28 @@ banana <- banana_target()
 ## Fit a 3-component Gaussian mixture proxy via KLD-EM with importance sampling.
 fit <- fit_proxymix(banana, N = 3L, regime = "kld",
                     proposal = is_mvt(n_dim = 2L, df = 5),
-                    is_size = 2000L, max_iter = 25L)
+                    is_size = 2000L, max_iter = 60L, seed = 1L)
 
 print(fit)
 #> <gmm_fit>: regime = "kld", K = 3, p = 2
 #>   target     : banana
-#>   iterations : 25
-#>   converged  : FALSE
-#>   [1] w = 0.5185, |mu| = 0.3203, tr(Sigma) = 1.4429
-#>   [2] w = 0.2664, |mu| = 1.0130, tr(Sigma) = 2.4879
-#>   [3] w = 0.2151, |mu| = 1.1665, tr(Sigma) = 2.4686
+#>   iterations : 41
+#>   converged  : TRUE
+#>   [1] w = 0.6451, |mu| = 0.3305, tr(Sigma) = 1.3600
+#>   [2] w = 0.2482, |mu| = 1.2959, tr(Sigma) = 2.2339
+#>   [3] w = 0.1067, |mu| = 1.8934, tr(Sigma) = 4.9070
 
 ## Closed-form operations on the fitted mixture.
 gmm_marginalise(fit, keep = 1L)
 #> <marginal[1] of kld_em[N=3] on banana>: K = 3 components in p = 1 dimensions
-#>   [1] w = 0.5185, |mu| = 0.0075, tr(Sigma) = 0.4566
-#>   [2] w = 0.2664, |mu| = 0.9980, tr(Sigma) = 0.5020
-#>   [3] w = 0.2151, |mu| = 1.0880, tr(Sigma) = 0.5608
+#>   [1] w = 0.6451, |mu| = 0.1833, tr(Sigma) = 0.4616
+#>   [2] w = 0.2482, |mu| = 1.1497, tr(Sigma) = 0.4853
+#>   [3] w = 0.1067, |mu| = 1.5983, tr(Sigma) = 0.6313
 gmm_conditionalise(fit, given = c(NA, 0.5))
 #> <conditional of kld_em[N=3] on banana>: K = 3 components in p = 1 dimensions
-#>   [1] w = 0.5223, |mu| = 0.0245, tr(Sigma) = 0.4551
-#>   [2] w = 0.2590, |mu| = 1.1247, tr(Sigma) = 0.2020
-#>   [3] w = 0.2188, |mu| = 1.1205, tr(Sigma) = 0.2423
+#>   [1] w = 0.6726, |mu| = 0.2640, tr(Sigma) = 0.4519
+#>   [2] w = 0.2584, |mu| = 1.1126, tr(Sigma) = 0.2355
+#>   [3] w = 0.0691, |mu| = 1.4202, tr(Sigma) = 0.1195
 ```
 
 ## The unified fitting verb
@@ -93,19 +115,33 @@ gmm_conditionalise(fit, given = c(NA, 0.5))
     gmm_modes(fit)$modes                               # the distinct optima
 
 `from_objective()` treats an objective `f` as the Gibbs measure
-`exp(-f / T)` — a regime-(iii) target you can evaluate but not sample — and
-returns a closed-form mixture over its low regions, so a multimodal `f` is
-recovered as a whole rather than one optimum at a time. `gmm_modes()`
-resolves the fitted map into the recovered optima.
+`exp(-f / T)` — a regime-(iii) target you can evaluate but not sample —
+and returns a closed-form mixture over its low regions, so a multimodal
+`f` is recovered as a whole rather than one optimum at a time.
+`gmm_modes()` resolves the fitted map into the recovered optima.
+
+## Which function do I need?
+
+| You have | You want | Reach for |
+|----|----|----|
+| an evaluable (unnormalised) log-density | a compact closed-form proxy | `gmm_target()` then `fit_proxymix(regime = "kld")` |
+| i.i.d. samples | a mixture fit | `gmm_target_from_samples()` then `fit_proxymix()` |
+| an objective function | a map of its optima | `from_objective()`, `gmm_modes()` |
+| a kernel density estimate | a small closed-form surrogate | `from_kde()` |
+| a fitted mixture | marginals, conditionals, updates | `gmm_marginalise()`, `gmm_conditionalise()`, `gmm_observe()`, `gmm_affine()` |
+| data with holes | multiple imputation | `gmm_impute()` with `mar()` / `mnar()` / `censored()` |
+| a time series + state-space model | filtering / stability testing | `gmm_filter()`, `gmm_eos_test()` |
+| a fitted mixture | information-theoretic diagnostics | `gmm_entropy()`, `gmm_divergence()`, `gmm_mutual_information()` |
+| a fitted mixture + treatment data | causal / decision quantities | `gmm_intervene()`, `fit_uplift()`, `proxy_cate()` |
 
 ## Vignettes
 
-The package ships with eight vignettes:
+The package ships with eleven vignettes:
 
 - **`quickstart`** — one-page tour.
 - **`three_regimes`** — a walk-through of regimes (i)–(iii) on toy 2-D
   targets, including the agreement of (i) and (iii) at $N = 1$.
-- **`density_shapes`** — the wedge demonstration: banana, donut,
+- **`density_shapes`** — the regime-(iii) demonstration: banana, donut,
   three-mixture targets fit by importance-sampled KLD-EM.
 - **`operator_calculus`** — closed-form pushforward, Bayesian update,
   aggregation and conditioning on a fitted mixture.
@@ -117,6 +153,12 @@ The package ships with eight vignettes:
   diagnostics.
 - **`calibration`** — mapping the optima of an objective via its Gibbs
   measure.
+- **`missing_data`** — multiple imputation by conditioning the fitted
+  mixture (missing at random).
+- **`missing_data_mnar`** — imputation under value-dependent missingness
+  and censoring, with sensitivity analysis.
+- **`end_of_sample`** — testing whether the last few observations of a
+  series are consistent with a fitted state-space model.
 
 ## Interactive tutorial
 

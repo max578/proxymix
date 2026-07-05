@@ -130,9 +130,12 @@ summary(pool(fit))
 
 # Scope
 
-This release imputes numeric data that is missing at random: the probability
+This vignette covers numeric data that is missing at random: the probability
 that an entry is missing may depend on the observed entries but not on the
-missing value itself. The number of mixture components is chosen by the
-Bayesian information criterion when `N` is left at its default, and a supplied
-`seed` makes the result reproducible without disturbing the ambient
-random-number state.
+missing value itself. Value-dependent missingness (`mnar()`) and censoring at
+a known bound (`censored()`) are supported through the `mechanism` argument
+and are the subject of the companion vignette *Imputation when the mechanism
+depends on the value* (`vignette("missing_data_mnar")`). The number of mixture
+components is chosen by the Bayesian information criterion when `N` is left at
+its default, and a supplied `seed` makes the result reproducible without
+disturbing the ambient random-number state.

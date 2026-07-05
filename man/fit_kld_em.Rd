@@ -2,7 +2,7 @@
 % Please edit documentation in R/fit_kld_em.R
 \name{fit_kld_em}
 \alias{fit_kld_em}
-\title{Importance-sampled KLD-EM fit (the wedge)}
+\title{Importance-sampled KLD-EM fit (regime iii)}
 \usage{
 fit_kld_em(
   target,
@@ -43,7 +43,11 @@ the importance-resampled draws.}
 \item{max_iter}{Maximum number of EM iterations.}
 
 \item{tol}{Convergence tolerance on the relative change in the
-importance-sampled KLD estimate.}
+importance-weighted EM objective \verb{Q(theta) = sum_n W_n log g(x_n)}.
+\code{Q} is invariant to the target's normalising constant, so the
+stopping rule behaves identically for normalised and unnormalised
+targets (the importance-sampled KLD estimate carries an additive
+\verb{-log Z(f)} offset and is therefore never used for stopping).}
 
 \item{ridge_eps}{Ridge added to each component covariance at every
 M-step.}

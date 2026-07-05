@@ -2,6 +2,9 @@
 
 ## Stable row-wise log-sum-exp on an n-by-K matrix.
 ## Callers must supply an actual matrix; we never guess the orientation.
+## NaN entries are treated as -Inf (an excluded term) everywhere, not just
+## in the row-max; a row whose maximum is +Inf returns +Inf (the sum of a
+## divergent term is divergent, not zero).
 logsumexp_rows <- function(m) {
   if (!is.matrix(m)) {
     cli::cli_abort("`m` must be a matrix; got {.cls {class(m)[1L]}}.")
@@ -11,11 +14,12 @@ logsumexp_rows <- function(m) {
   m_safe <- m
   m_safe[is.nan(m_safe)] <- -Inf
   mx <- vapply(seq_len(n), function(i) max(m_safe[i, ]), numeric(1L))
-  finite <- is.finite(mx)
   out <- rep(-Inf, n)
+  out[is.infinite(mx) & mx > 0] <- Inf
+  finite <- is.finite(mx)
   if (any(finite)) {
     out[finite] <- mx[finite] +
-      log(rowSums(exp(m[finite, , drop = FALSE] - mx[finite])))
+      log(rowSums(exp(m_safe[finite, , drop = FALSE] - mx[finite])))
   }
   out
 }

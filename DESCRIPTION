@@ -1,7 +1,7 @@
 Package: proxymix
 Type: Package
 Title: KL-Optimal Gaussian Mixture Proxies for Arbitrary Target Densities
-Version: 0.11.5
+Version: 0.11.6
 Authors@R: c(
     person(given = "Max",
            family = "Moldovan",
@@ -31,7 +31,7 @@ Description: Fits multivariate Gaussian-mixture proxies that are
     regime hierarchy of Hoek and Elliott (2024)
     <doi:10.1080/07362994.2024.2372605>.
 License: MIT + file LICENSE
-URL: https://github.com/max578/proxymix
+URL: https://github.com/max578/proxymix, https://max578.github.io/proxymix/
 BugReports: https://github.com/max578/proxymix/issues
 Encoding: UTF-8
 Language: en-AU

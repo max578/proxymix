@@ -98,10 +98,9 @@ make_kde_log_density <- function(samples, h, chunk = 256L) {
 #' bias-variance trade-off.
 #'
 #' Dimensional scope. The dimensional guard is `p <= 5` (recommended),
-#' `p <= 10` (allowed with warning), `p > 10` (rejected). The wedge of
-#' KLD-EM is regime (iii) IS, whose effective-sample-size collapses
-#' sharply in high dimensions; richer ambient spaces will await the v0.3
-#' affine-Gaussian operator calculus.
+#' `p <= 10` (allowed with warning), `p > 10` (rejected). Regime-(iii)
+#' KLD-EM is driven by importance sampling, whose effective sample size
+#' collapses sharply in high dimensions.
 #'
 #' @param samples An `n` by `p` numeric matrix of points. `n >= 5`,
 #'   `p <= 10`.
@@ -134,7 +133,6 @@ make_kde_log_density <- function(samples, h, chunk = 256L) {
 #' @returns A [gmm_fit] with `regime = "kld"` and metadata recording the
 #'   KDE inputs (`kde_samples_n`, `bandwidth`, `bandwidth_method`).
 #' @family fitting
-#' @family v0_2
 #' @export
 #' @examples
 #' set.seed(1L)

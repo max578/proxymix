@@ -83,8 +83,8 @@ calibrated to the observed fraction missing.
 # The slope is a sensitivity parameter
 
 A missing-not-at-random departure cannot be identified from the observed data, so
-a single estimate would overstate what the data support. The honest summary is a
-curve: `proxy_mnar_sensitivity()` sweeps the slope and reports the pooled mean
+a single estimate would overstate what the data support. The appropriate summary is
+a curve: `proxy_mnar_sensitivity()` sweeps the slope and reports the pooled mean
 with its interval at each value, and the analyst reads off where a conclusion
 would change.
 

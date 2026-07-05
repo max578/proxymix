@@ -88,7 +88,7 @@
 #' optima.
 #'
 #' The Gibbs measure can be evaluated point-wise but not directly sampled,
-#' which is precisely the setting of regime (iii) ("the wedge"): minimising
+#' which is precisely the setting of regime (iii): minimising
 #' the Kullback-Leibler divergence from a Gaussian mixture to a peaked
 #' target is the rank-weighted Gaussian update at the heart of [fit_kld_em()].
 #' This function is that fit, driven against a sequence of cooling Gibbs

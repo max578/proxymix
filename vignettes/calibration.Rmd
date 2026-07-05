@@ -28,7 +28,7 @@ An objective $f(x)$ to be minimised over a box defines an unnormalised
 density, the Gibbs measure $\exp(-f(x) / T)$, whose mass concentrates on the
 low regions of $f$ as the temperature $T$ falls. That density can be
 evaluated point-wise but not directly sampled, which is exactly regime (iii)
-of Hoek and Elliott (2024) -- "the wedge". `from_objective()` fits a
+of Hoek and Elliott (2024). `from_objective()` fits a
 Gaussian-mixture proxy to $\exp(-f / T)$ by cooling a short temperature
 ladder through the same importance-sampled KLD-EM that `fit_kld_em()` runs,
 warm-starting each step from the previous fit.

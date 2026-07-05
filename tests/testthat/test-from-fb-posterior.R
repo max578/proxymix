@@ -1,7 +1,7 @@
-## Tests for the C4 consumer seam: fb_log_posterior_spec(),
+## Tests for the posterior-producer seam: fb_log_posterior_spec(),
 ## fb_producer_available(), mock_fb_posterior(), and from_fb_posterior().
-## Producer-pending: flexyBayes's fb_log_posterior generic is not released, so
-## every test runs against a bare callable or the synthetic mock producer.
+## No producer package is assumed to be installed, so every test runs
+## against a bare callable or the synthetic mock producer.
 
 # ---- fb_log_posterior_spec() --------------------------------------------------
 
@@ -125,12 +125,12 @@ test_that("the banana mock is a 2-D conforming spec", {
 
 # ---- from_fb_posterior(): the consumer verb -----------------------------------
 
-test_that("a fitted flexyBayes object raises a clear seam error", {
-  ## Producer-pending: an opaque 'fitted object' has no registered producer.
-  fake_fit <- structure(list(), class = "flexybayes")
+test_that("a fitted model object with no producer raises a clear seam error", {
+  ## An opaque 'fitted object' has no registered producer.
+  fake_fit <- structure(list(), class = "some_bayes_fit")
   expect_error(
     from_fb_posterior(fake_fit, N = 1L),
-    regexp = "C4 producer"
+    regexp = "posterior producer"
   )
 })
 
@@ -153,8 +153,7 @@ test_that("a Gaussian posterior compresses to a near-exact single component", {
   ## Recovered single component is near standard normal.
   expect_lt(max(abs(fit@means[[1L]])), 0.2)
   expect_equal(diag(fit@covariances[[1L]]), c(1, 1), tolerance = 0.15)
-  ## C4 provenance stamped on the fit metadata.
-  expect_equal(fit@metadata$from_fb_posterior$contract, "C4")
+  ## Provenance stamped on the fit metadata.
   expect_equal(fit@metadata$from_fb_posterior$producer_name,
                spec$name)
 })

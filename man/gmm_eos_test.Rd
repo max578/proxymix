@@ -19,11 +19,16 @@ gmm_eos_test(
 defined for a fitted linear-Gaussian model; multi-component priors are not
 yet supported).}
 
-\item{dynamics}{A list with \code{A} (the state-transition matrix) and \code{Q} (the
-process-noise covariance), as for \code{\link[=gmm_filter]{gmm_filter()}}.}
+\item{dynamics}{A list with \code{A} (the state-transition matrix), \code{Q} (the
+process-noise covariance) and an optional offset \code{b}, or a function
+\verb{function(t)} returning such a list, exactly as for \code{\link[=gmm_filter]{gmm_filter()}}.
+Gaussian-sum (mixture) process noise is rejected: the calibrations
+below are defined for Gaussian innovations only.}
 
-\item{measurement}{A list with \code{C} (the observation matrix) and \code{R} (the
-observation-noise covariance).}
+\item{measurement}{A list with \code{C} (the observation matrix), \code{R} (the
+observation-noise covariance) and an optional offset \code{d}, or a function
+\verb{function(t)} returning such a list, exactly as for \code{\link[=gmm_filter]{gmm_filter()}}.
+Gaussian-sum measurement noise is rejected for the same reason.}
 
 \item{y}{A numeric vector or an \verb{n x d} matrix of observations.}
 

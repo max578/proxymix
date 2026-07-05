@@ -99,9 +99,9 @@ Information criteria are populated:
 bic_aic(s_fit)
 ```
 
-## Regime (iii): importance-sampled KLD-EM — the wedge
+## Regime (iii): importance-sampled KLD-EM
 
-Regime (iii) is the wedge of `proxymix`: it fits a Gaussian-mixture proxy when the target's `log_density` is evaluable but **no samples are available**. Examples include posterior distributions in Bayesian models, intractable likelihoods, expensive simulators, and downscaling targets in spatial statistics.
+Regime (iii) is the reason `proxymix` exists: it fits a Gaussian-mixture proxy when the target's `log_density` is evaluable but **no samples are available**. Examples include posterior distributions in Bayesian models, intractable likelihoods, expensive simulators, and downscaling targets in spatial statistics.
 
 The algorithm:
 

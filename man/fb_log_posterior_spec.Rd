@@ -2,7 +2,7 @@
 % Please edit documentation in R/from_fb_posterior.R
 \name{fb_log_posterior_spec}
 \alias{fb_log_posterior_spec}
-\title{The C4 \code{fb_log_posterior} producer interface}
+\title{The \code{fb_log_posterior} producer interface}
 \usage{
 fb_log_posterior_spec(
   producer,
@@ -15,8 +15,8 @@ fb_log_posterior_spec(
 )
 }
 \arguments{
-\item{producer}{A bare callable, a fitted flexyBayes object (when the
-producer is released), or an \code{fb_log_posterior_spec}.}
+\item{producer}{A bare callable, a fitted model object from a producer
+package, or an \code{fb_log_posterior_spec}.}
 
 \item{parameter_names}{Character vector of parameter names. Required for the
 bare-callable form unless attached as
@@ -40,15 +40,15 @@ An \code{fb_log_posterior_spec}: a classed list with elements
 \code{draws}, and \code{name}.
 }
 \description{
-Materialises the draft C4 contract (\code{fb_log_posterior} / \code{posterior_proxy},
-owned by flexyBayes) as a small, validated specification object that
-\code{\link[=from_fb_posterior]{from_fb_posterior()}} consumes. It is the single seam between proxymix (the
-consumer) and flexyBayes (the producer): any object that satisfies the
-interface described here can be compressed into a Gaussian-mixture proxy
-without proxymix ever depending on flexyBayes at runtime.
+Materialises the posterior-producer contract as a small, validated
+specification object that \code{\link[=from_fb_posterior]{from_fb_posterior()}} consumes. It is the single
+seam between proxymix (the consumer) and an external Bayesian fitting
+package (the producer): any object that satisfies the interface described
+here can be compressed into a Gaussian-mixture proxy without proxymix ever
+depending on the producer package at runtime.
 }
 \details{
-A conforming C4 producer is one of:
+A conforming producer is one of:
 \itemize{
 \item a \strong{bare callable} \verb{function(theta)} that takes a numeric matrix with
 rows indexing independent parameter draws and columns indexing parameters,
@@ -57,9 +57,9 @@ and returns a length-\code{nrow(theta)} numeric vector of
 callable must be vectorised, side-effect free, and domain-safe (return
 \code{-Inf} outside support rather than erroring). Supply \code{parameter_names}
 (or attach them as \code{attr(callable, "parameter_names")});
-\item a \strong{fitted flexyBayes object} whose class registers an
-\code{fb_log_posterior()} method \emph{in flexyBayes} (the B4 follow-up). When that
-producer lands, \code{fb_log_posterior(fit)} is expected to return an object
+\item a \strong{fitted model object} whose class registers an
+\code{fb_log_posterior()} method \emph{in its own package}. When such a producer
+is installed, \code{fb_log_posterior(fit)} is expected to return an object
 carrying the callable plus the metadata fields below, which this
 constructor normalises;
 \item an already-built \strong{\code{fb_log_posterior_spec}}, returned unchanged.
@@ -72,24 +72,21 @@ are:
 \item{\code{parameter_names}}{Character vector naming the parameters; its
 length fixes the proxy's ambient dimension.}
 \item{\code{log_normalizer}}{The log marginal likelihood \verb{log Z}, when the
-producer can supply it (flexyBayes can for several backends), or
-\code{NA_real_} otherwise. A finite value lets downstream diagnostics report
-an absolute, rather than shifted, KLD.}
+producer can supply it, or \code{NA_real_} otherwise. A finite value lets
+downstream diagnostics report an absolute, rather than shifted, KLD.}
 \item{\code{support_lower}, \code{support_upper}}{Optional length-\code{n_dim} numeric
 bounds on each parameter's support (e.g. a variance parameter is bounded
 below by zero). Used to centre and scale the default importance proposal;
 \code{NA} entries are treated as unbounded.}
 \item{\code{draws}}{Optional \code{n} by \code{n_dim} numeric matrix of posterior draws
 from the producer, used only to seed the default importance proposal's
-location and scale. Never required -- the C4 contract is the
+location and scale. Never required -- the contract is the
 \emph{log-density}, not the draws.}
 }
 
-This is the proxymix-side reading of a contract owned by flexyBayes. Where
-the draft leaves a detail open, the choice made here (vectorised matrix
-input, \code{-Inf}-outside-support, optional \verb{support_*} / \code{draws} proposal
-seeds) is a \strong{proposal for the B4 producer to converge on}, recorded so the
-two sides agree before the producer ships.
+Where the contract leaves a detail open, the choice made here (vectorised
+matrix input, \code{-Inf}-outside-support, optional \verb{support_*} / \code{draws}
+proposal seeds) is recorded so both sides of the seam agree.
 }
 \examples{
 ## Build a spec from a bare unnormalised log-posterior (a 2-D Gaussian).

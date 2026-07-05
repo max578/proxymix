@@ -36,7 +36,7 @@ fit_proxymix(target, N, regime = c("auto", "moment", "sample", "kld"))
 | `"sample"`   | `N >= 2` and the target carries samples        | Classical EM                          |
 | `"kld"`      | The target carries `log_density` only          | **Importance-sampled KLD-EM**         |
 
-The `"kld"` regime is the wedge: no other CRAN package fits Gaussian-mixture proxies when you can evaluate `f(x)` but cannot (cheaply) sample from it.
+The `"kld"` regime is the reason the package exists: it fits Gaussian-mixture proxies when you can evaluate `f(x)` but cannot (cheaply) sample from it -- the setting the sample-based mixture packages (`mclust`, `mixtools`, `flexmix`) do not address.
 
 ## A target you cannot sample from
 
@@ -129,7 +129,7 @@ head(x)
 ## Where to next
 
 * `vignette("three_regimes")` — what each of regimes (i), (ii), (iii) does, with a head-to-head comparison on a target whose ground truth is known.
-* `vignette("density_shapes")` — the wedge demonstration. KLD-EM fit on three different non-Gaussian targets (banana, donut, three-mixture), with KLD / ESS / Hellinger reported.
+* `vignette("density_shapes")` — the regime-(iii) demonstration. KLD-EM fit on three different non-Gaussian targets (banana, donut, three-mixture), with KLD / ESS / Hellinger reported.
 * `vignette("operator_calculus")` — closed-form pushforward, Bayesian update, aggregation and conditioning on a fitted mixture.
 * `vignette("from_kde")` — compressing a kernel density estimate into a Gaussian-mixture proxy.
 

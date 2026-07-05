@@ -47,6 +47,10 @@ reference:
   desc: Pluggable proposals for regime (iii).
   contents:
   - has_concept("proposals")
+- title: Interoperability
+  desc: Compiling external Bayesian posteriors into proxies.
+  contents:
+  - has_concept("interop")
 - title: Initialisation
   desc: Initial guesses + best-of-multistart wrapper.
   contents:
@@ -73,4 +77,5 @@ articles:
   - entropy
   - calibration
   - missing_data
+  - missing_data_mnar
   - end_of_sample

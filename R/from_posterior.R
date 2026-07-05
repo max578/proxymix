@@ -1,21 +1,18 @@
 ## Convenience constructor for compiling an (unnormalised) Bayesian
-## posterior into a proxymix `gmm_target`. Contract A of the
-## proxymix <-> flexyBayes interop, defined in
-## `plan/proxymix_plan_v0.2_methodological.md` (section "Cross-package
-## synergy contracts").
+## posterior into a proxymix `gmm_target`.
 ##
-## proxymix never depends on flexyBayes (or Stan, pymc, brms, ...).  The
-## generic dispatches on the supplied object: a raw callable goes through
-## `gmm_target_from_posterior.function`; a model object goes through a
-## class-specific method that the relevant Bayesian package is expected
-## to register.
+## proxymix never depends on any Bayesian fitting package (Stan, pymc,
+## brms, ...). The generic dispatches on the supplied object: a raw
+## callable goes through `gmm_target_from_posterior.function`; a model
+## object goes through a class-specific method that the relevant Bayesian
+## package is expected to register.
 
 #' Compile an unnormalised Bayesian posterior into a `gmm_target`
 #'
 #' Generic S3 constructor that turns a Bayesian posterior — represented
-#' either by a fitted model object (e.g. from `flexyBayes`, `brms`,
-#' `Stan`) or by a bare callable — into a `gmm_target` suitable for the
-#' regime (iii) wedge of [fit_proxymix()] / [fit_kld_em()].
+#' either by a fitted model object (e.g. from `brms` or `Stan`) or by a
+#' bare callable — into a `gmm_target` suitable for regime (iii) of
+#' [fit_proxymix()] / [fit_kld_em()].
 #'
 #' The contract for the underlying callable is:
 #'
@@ -35,14 +32,13 @@
 #'
 #' @param model One of:
 #'   * a function — a bare callable satisfying the contract above;
-#'   * a fitted model object whose class registers a method (e.g.
-#'     `flexybayes::gmm_target_from_posterior.flexybayes`).
+#'   * a fitted model object whose class registers a
+#'     `gmm_target_from_posterior.<class>` method in its own package.
 #' @param ... Forwarded to method-specific implementations.
 #'
 #' @returns A [gmm_target] with `normalised = FALSE` and the user-supplied
 #'   `log_normalizer` (or `NA_real_`).
 #' @family interop
-#' @family v0_2
 #' @export
 #' @examples
 #' # A trivial unnormalised log-posterior: a 2D banana centred near (1, 0).

@@ -1,9 +1,9 @@
-## Regime (iii) of Hoek and Elliott (2024): the wedge.
+## Regime (iii) of Hoek and Elliott (2024).
 ##
 ## Importance-sampled KLD-EM minimises KL(f || g_theta) when the target f
 ## can be evaluated point-wise but not (cheaply) sampled.
 
-#' Importance-sampled KLD-EM fit (the wedge)
+#' Importance-sampled KLD-EM fit (regime iii)
 #'
 #' Implements regime (iii) of Hoek and Elliott (2024). Minimises
 #' `KL(f || g_theta)` where `f` is supplied as an evaluable log-density on
@@ -41,7 +41,11 @@
 #'   the importance-resampled draws.
 #' @param max_iter Maximum number of EM iterations.
 #' @param tol Convergence tolerance on the relative change in the
-#'   importance-sampled KLD estimate.
+#'   importance-weighted EM objective `Q(theta) = sum_n W_n log g(x_n)`.
+#'   `Q` is invariant to the target's normalising constant, so the
+#'   stopping rule behaves identically for normalised and unnormalised
+#'   targets (the importance-sampled KLD estimate carries an additive
+#'   `-log Z(f)` offset and is therefore never used for stopping).
 #' @param ridge_eps Ridge added to each component covariance at every
 #'   M-step.
 #' @param min_ess Minimum effective sample size below which a warning is
@@ -216,9 +220,15 @@ fit_kld_em <- function(target,
     kld_trace <- c(kld_trace, kld)
     weighted_obj_trace <- c(weighted_obj_trace, weighted_obj)
 
+    ## Convergence is judged on the importance-weighted EM objective
+    ## Q(theta) = sum_n W_n log g(x_n), never on the KLD trace: for an
+    ## unnormalised target the KLD trace carries the additive -log Z(f)
+    ## offset, so a relative-change rule on it would depend on the
+    ## target's arbitrary normalisation. Q is offset-free by construction
+    ## (the self-normalised W and log g never touch the constant).
     if (it > 1L) {
-      delta <- abs(kld_trace[it] - kld_trace[it - 1L]) /
-        (abs(kld_trace[it - 1L]) + 1e-12)
+      delta <- abs(weighted_obj_trace[it] - weighted_obj_trace[it - 1L]) /
+        (abs(weighted_obj_trace[it - 1L]) + 1e-12)
       if (delta < tol) {
         converged <- TRUE
         break

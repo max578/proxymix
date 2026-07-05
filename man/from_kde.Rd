@@ -83,10 +83,9 @@ the KDE is reproduced in the proxy; the bandwidth controls the
 bias-variance trade-off.
 
 Dimensional scope. The dimensional guard is \code{p <= 5} (recommended),
-\code{p <= 10} (allowed with warning), \code{p > 10} (rejected). The wedge of
-KLD-EM is regime (iii) IS, whose effective-sample-size collapses
-sharply in high dimensions; richer ambient spaces will await the v0.3
-affine-Gaussian operator calculus.
+\code{p <= 10} (allowed with warning), \code{p > 10} (rejected). Regime-(iii)
+KLD-EM is driven by importance sampling, whose effective sample size
+collapses sharply in high dimensions.
 }
 \examples{
 set.seed(1L)
@@ -105,9 +104,5 @@ Other fitting:
 \code{\link{fit_moment_match}()},
 \code{\link{from_fb_posterior}()},
 \code{\link{from_objective}()}
-
-Other v0_2: 
-\code{\link{gmm_target_from_posterior}()}
 }
 \concept{fitting}
-\concept{v0_2}

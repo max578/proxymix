@@ -8,7 +8,8 @@
 #'
 #' * `"moment"` - closed-form moment matching ([fit_moment_match()]).
 #' * `"sample"` - classical EM on i.i.d. samples ([fit_em_samples()]).
-#' * `"kld"` - importance-sampled KLD-EM ([fit_kld_em()]) — the wedge.
+#' * `"kld"` - importance-sampled KLD-EM ([fit_kld_em()]) for a target
+#'   that can be evaluated but not sampled.
 #'
 #' With `regime = "auto"` the choice is made from the shape of the supplied
 #' target:

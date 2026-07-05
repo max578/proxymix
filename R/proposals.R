@@ -232,3 +232,29 @@ is_mvt <- function(n_dim, mean = rep(0, n_dim), sigma = diag(n_dim), df = 5) {
                        data_derived = needs_data))
   q
 }
+
+# ---------------------------------------------------------------------------
+# Preferred constructor names
+# ---------------------------------------------------------------------------
+
+#' Preferred names for the importance-proposal constructors
+#'
+#' `proposal_uniform()`, `proposal_mvn()`, and `proposal_mvt()` are the
+#' preferred names of [is_uniform()], [is_mvn()], and [is_mvt()]: the
+#' historical `is_*` prefix reads as a logical predicate, which these
+#' constructors are not. The `is_*` names remain available as aliases and
+#' are not scheduled for removal.
+#'
+#' @inheritParams is_uniform
+#' @returns An [is_proposal] object.
+#' @family proposals
+#' @export
+proposal_uniform <- is_uniform
+
+#' @rdname proposal_uniform
+#' @export
+proposal_mvn <- is_mvn
+
+#' @rdname proposal_uniform
+#' @export
+proposal_mvt <- is_mvt

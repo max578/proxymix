@@ -172,7 +172,7 @@ gK  <- gmm(weights = c(0.6, 0.4), means = list(c(0, 0, 0), c(2, 1, 1)),
            covariances = list(diag(3), diag(3)))         # 3-D, K = 2 (causal joint)
 cf  <- gmm_counterfactual(g3, evidence = c(1, 0, 0.2),
                           do = c(NA, 1, NA), query = 1L)  # a counterfactual law
-mfb <- mock_fb_posterior(shape = "gaussian", n_dim = 2L) # a mock FB producer
+mfb <- proxymix:::mock_fb_posterior(shape = "gaussian", n_dim = 2L) # a mock producer (internal seam)
 
 ## MNAR data with a genuine MNAR NA in column "y", taken verbatim from
 ## proxy_mnar_sensitivity()'s own @examples (its missingness probability
@@ -303,10 +303,10 @@ CASES <- list(
   err_case("gmm_observe", "gmm_observe y=NA",
            function() gmm_observe(g2, matrix(c(1, 0), 1, 2), y = NA_real_, noise_cov = matrix(0.2))),
   ok_case("from_fb_posterior", "from_fb_posterior consumes a mock producer",
-          function() from_fb_posterior(mock_fb_posterior("gaussian", n_dim = 2L),
+          function() proxymix:::from_fb_posterior(proxymix:::mock_fb_posterior("gaussian", n_dim = 2L),
                                        N = 2L, is_size = 800L, seed = 1L)),
   err_case("from_fb_posterior", "from_fb_posterior non-producer",
-           function() from_fb_posterior(42)),
+           function() proxymix:::from_fb_posterior(42)),
 
   ## -- information: entropy / divergence / mutual information / conditional ----
   ok_case("gmm_entropy", "gmm_entropy finite",
@@ -630,17 +630,17 @@ CASES <- list(
 
   ## -- forward / FB producers -------------------------------------------------
   ok_case("fb_log_posterior_spec", "fb_log_posterior_spec builds",
-          function() fb_log_posterior_spec(function(theta) -0.5 * rowSums(theta^2),
+          function() proxymix:::fb_log_posterior_spec(function(theta) -0.5 * rowSums(theta^2),
                                            parameter_names = c("a", "b"))),
   err_case("fb_log_posterior_spec", "fb_log_posterior_spec non-function producer",
-           function() fb_log_posterior_spec(42)),
+           function() proxymix:::fb_log_posterior_spec(42)),
   ok_case("fb_producer_available", "fb_producer_available returns logical",
-          function() fb_producer_available(),
+          function() proxymix:::fb_producer_available(),
           check = function(v) is.logical(v) && length(v) == 1L),
   ok_case("mock_fb_posterior", "mock_fb_posterior gaussian",
-          function() mock_fb_posterior(shape = "gaussian", n_dim = 2L)),
+          function() proxymix:::mock_fb_posterior(shape = "gaussian", n_dim = 2L)),
   err_case("mock_fb_posterior", "mock_fb_posterior bad shape",
-           function() mock_fb_posterior(shape = "zzz")),
+           function() proxymix:::mock_fb_posterior(shape = "zzz")),
 
   ## -- S7 result constructors -------------------------------------------------
   ok_case("gmm_fit", "gmm_fit constructs a fit object",
@@ -665,13 +665,13 @@ CASES <- list(
   err_case("multi_start_best_of", "multi_start_best_of char fit_fn",
            function() multi_start_best_of("x", list(), identity)),
   err_case("to_apsim_scenarios", "to_apsim_scenarios non-fit",
-           function() to_apsim_scenarios(42)),
+           function() proxymix:::to_apsim_scenarios(42)),
   err_case("fit_kld_em_collider", "fit_kld_em_collider non-target",
-           function() fit_kld_em_collider(42, dag = matrix(0, 2, 2))),
+           function() proxymix:::fit_kld_em_collider(42, dag = matrix(0, 2, 2))),
   err_case("from_aggregate_likelihood", "from_aggregate_likelihood is a stub",
-           function() from_aggregate_likelihood(g1)),
+           function() proxymix:::from_aggregate_likelihood(g1)),
   err_case("from_simulator", "from_simulator is a stub",
-           function() from_simulator(function(x) x, n_dim = 2L))
+           function() proxymix:::from_simulator(function(x) x, n_dim = 2L))
 )
 
 ## ---- deliberately left without TWO-sided coverage (documented scope) --------

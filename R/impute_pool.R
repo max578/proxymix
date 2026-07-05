@@ -160,6 +160,10 @@ proxy_pool <- function(object, column, method = c("analytic", "rubin")) {
   ## analytic pooling assumes the ungated (missing-at-random) mixture conditional,
   ## so a gated coordinate is pooled by Rubin's rules over the drawn completions.
   if (inherits(mech, "proxymix_gate") && mech$type != "mar" && method == "analytic") {
+    cli::cli_inform(c(
+      "Analytic pooling is not defined for a gated ({.val {mech$type}}) mechanism; pooling by Rubin's rules instead.",
+      "i" = "The returned attribute {.code method} records what was used."
+    ))
     method <- "rubin"
   }
   if (!is.character(column) || length(column) != 1L ||

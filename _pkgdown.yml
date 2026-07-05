@@ -59,10 +59,6 @@ reference:
   desc: KLD trace, ESS, Hellinger MC, information criteria.
   contents:
   - has_concept("diagnostics")
-- title: Planned features
-  desc: Signatures only; not yet implemented.
-  contents:
-  - has_concept("stubs")
 
 articles:
 - title: Vignettes

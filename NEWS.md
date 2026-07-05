@@ -1,3 +1,67 @@
+# proxymix 0.13.0
+
+### New features
+
+* **The algebra is completed.** Four operations whose mathematics already
+  lived inside the package are now first-class operators:
+  `gmm_product()` (the normalised pointwise product of two mixtures -- the
+  conjugate Bayes update, with the marginal evidence returned as
+  `metadata$log_integral` and an optional `reduce` to cap the `K1 * K2`
+  component growth), `gmm_convolve()` (the exact distribution of the sum of
+  independent mixture variables), `gmm_mix()` (model averaging /
+  mixture-of-mixtures), and `gmm_mean()` / `gmm_cov()` (the exact first two
+  moments). `pgmm()` / `qgmm()` complete the d/p/q/r quartet in one
+  dimension. All follow the operator metadata policy: the quality
+  certificate travels and the provenance chain grows.
+* **`gmm_evidence()`: the normalising constant as a first-class output.**
+  With the fitted proxy as the importance proposal, `log Z` of the target
+  (the log marginal likelihood, for a posterior handed over as
+  `likelihood x prior`) is estimated in the log domain with a delta-method
+  standard error and a heavy-tail diagnostic (classed warning
+  `proxymix_heavy_tail` when the proxy's tails look lighter than the
+  target's). Validated against known constants for unimodal and multimodal
+  targets.
+* **Accessors and tidiers.** `gmm_weights()`, `gmm_means()`,
+  `gmm_covariances()` read the component parameters without reaching into
+  the `@` property layout; broom-style `tidy()` (component table) and
+  `glance()` (one-row fit summary) register against the `generics` package
+  when installed.
+* `proposal_uniform()`, `proposal_mvn()`, `proposal_mvt()` are the
+  preferred names of the importance-proposal constructors (the historical
+  `is_*` prefix reads as a logical predicate); the `is_*` names remain as
+  aliases.
+
+### API changes
+
+* The four planned-interface placeholders (`from_aggregate_likelihood()`,
+  `fit_kld_em_collider()`, `to_apsim_scenarios()`, `from_simulator()`) and
+  the posterior-producer seam helpers (`from_fb_posterior()`,
+  `fb_log_posterior_spec()`, `fb_producer_available()`,
+  `mock_fb_posterior()`) are internal as of this release: an exported
+  function whose only behaviour is to error, or whose contract awaits an
+  unreleased counterpart, does not belong on the public surface. Their
+  signatures and behaviour are unchanged and remain under test; the
+  general-purpose S3 generic `gmm_target_from_posterior()` remains the
+  public route for external posteriors.
+* The imputation mechanism layer is explicitly sealed: `.as_gate()` rejects
+  unknown gate types with a clear error instead of letting a third-party
+  gate object fail deep inside the engine.
+
+### Behaviour changes
+
+* `gmm_impute()` on complete data now does what its warning says: the
+  completions are the data verbatim, with no bootstrap refits, no
+  imputation draws, and no random-number consumption (previously it fitted
+  and drew anyway).
+* `proxy_pool(method = "analytic")` on a gated (MNAR / censored) mechanism
+  announces the downgrade to Rubin's rules instead of switching silently.
+
+### Performance
+
+* The `gmm` validator takes a Cholesky-first fast path and pays for an
+  eigendecomposition only when the Cholesky fails -- mixtures are
+  constructed inside hot loops (every filter step builds several).
+
 # proxymix 0.12.0
 
 ### New features

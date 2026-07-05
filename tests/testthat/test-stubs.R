@@ -1,3 +1,9 @@
+## Internal as of v0.13.0; tested through `:::`.
+from_aggregate_likelihood <- proxymix:::from_aggregate_likelihood
+fit_kld_em_collider <- proxymix:::fit_kld_em_collider
+to_apsim_scenarios <- proxymix:::to_apsim_scenarios
+from_simulator <- proxymix:::from_simulator
+
 ## Signature-stability tests for the not-yet-implemented placeholders.
 ##
 ## These keep the public API frozen across releases: when a placeholder gains

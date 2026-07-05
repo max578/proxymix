@@ -414,6 +414,38 @@ gmm_impute <- function(data, N = NULL, m = 20L, mechanism = mar(),
   fits <- vector("list", m)
   completions <- vector("list", m)
   accept <- rep(NA_real_, m)
+  if (!anyNA(X)) {
+    ## Complete data: behave exactly as the warning above says. The point
+    ## fit is still returned (it is the object's model of the data), but
+    ## the completions are the data verbatim -- no bootstrap refits, no
+    ## imputation draws, no random-number consumption.
+    point <- if (gated) {
+      .fit_em_gated(X, N, cj, gate, max_iter = max_iter, tol = tol,
+                    ridge_eps = ridge_eps, fallback_mean = col_means)
+    } else {
+      .fit_em_missing(X, N, max_iter = max_iter, tol = tol,
+                      ridge_eps = ridge_eps, fallback_mean = col_means)
+    }
+    Xn <- X
+    colnames(Xn) <- var_names
+    for (b in seq_len(m)) {
+      fits[[b]] <- point$gmm
+      completions[[b]] <- Xn
+    }
+    return(gmm_imputation(
+      data = X, completions = completions, fits = fits,
+      point_fit = point$gmm,
+      n_components = N, m = m, mechanism = gate, observed = obs,
+      var_names = var_names, is_data_frame = is_df,
+      diagnostics = list(
+        missing_rate = colMeans(!obs),
+        converged = point$converged, iterations = point$iterations,
+        mnar_alpha = if (gated) point$alpha else NA_real_,
+        min_accept = NA_real_
+      ),
+      call = match.call()
+    ))
+  }
   if (gated) {
     point <- .fit_em_gated(X, N, cj, gate, max_iter = max_iter, tol = tol,
                            ridge_eps = ridge_eps, fallback_mean = col_means)

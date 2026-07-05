@@ -36,10 +36,13 @@ gmm_missing(g, observed = 2L, values = 0.5)
 Other operators: 
 \code{\link{gmm_affine}()},
 \code{\link{gmm_aggregate}()},
+\code{\link{gmm_convolve}()},
 \code{\link{gmm_counterfactual}()},
 \code{\link{gmm_filter}()},
 \code{\link{gmm_intervene}()},
+\code{\link{gmm_mix}()},
 \code{\link{gmm_observe}()},
+\code{\link{gmm_product}()},
 \code{\link{gmm_reduce}()}
 }
 \concept{operators}

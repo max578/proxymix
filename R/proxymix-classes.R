@@ -88,12 +88,22 @@ gmm <- S7::new_class(
       ## near-singular fit still passes. A non-finite covariance is left to the
       ## downstream evaluators (a fit to a degenerate target may carry one).
       if (all(is.finite(S))) {
-        ev <- eigen((S + t(S)) / 2, symmetric = TRUE, only.values = TRUE)$values
-        tol <- 1e-8 * max(1, max(abs(S)))
-        if (min(ev) < -tol) {
-          return(sprintf(paste0(
-            "component %d: `covariances[[k]]` must be symmetric positive-definite ",
-            "(smallest eigenvalue %.3g)"), k, min(ev)))
+        ## Cholesky-first fast path: mixtures are constructed inside hot
+        ## loops (every filter step builds one), and a successful chol()
+        ## proves positive-definiteness at a fraction of an eigen
+        ## decomposition. Only a chol() failure pays for the eigenvalues,
+        ## where the scale-relative tolerance decides near-singular
+        ## (allowed) versus indefinite (rejected).
+        Ssym <- (S + t(S)) / 2
+        chol_ok <- !is.null(tryCatch(chol(Ssym), error = function(e) NULL))
+        if (!chol_ok) {
+          ev <- eigen(Ssym, symmetric = TRUE, only.values = TRUE)$values
+          tol <- 1e-8 * max(1, max(abs(S)))
+          if (min(ev) < -tol) {
+            return(sprintf(paste0(
+              "component %d: `covariances[[k]]` must be symmetric positive-definite ",
+              "(smallest eigenvalue %.3g)"), k, min(ev)))
+          }
         }
       }
     }

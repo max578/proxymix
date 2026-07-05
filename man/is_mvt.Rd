@@ -33,6 +33,7 @@ q
 \seealso{
 Other proposals: 
 \code{\link{is_mvn}()},
-\code{\link{is_uniform}()}
+\code{\link{is_uniform}()},
+\code{\link{proposal_uniform}()}
 }
 \concept{proposals}

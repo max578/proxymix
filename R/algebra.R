@@ -244,7 +244,7 @@ gmm_mix <- function(gmms, weights = NULL) {
 #' ([gmm_marginalise()]) or push through the relevant linear functional
 #' ([gmm_affine()]).
 #'
-#' @param q,x Numeric vector of quantiles.
+#' @param q Numeric vector of quantiles.
 #' @param p Numeric vector of probabilities in `(0, 1)`.
 #' @param g A one-dimensional [gmm] (or [gmm_fit]).
 #' @param lower.tail Logical; if `TRUE` (default), probabilities are

@@ -246,6 +246,8 @@ is_mvt <- function(n_dim, mean = rep(0, n_dim), sigma = diag(n_dim), df = 5) {
 #' are not scheduled for removal.
 #'
 #' @inheritParams is_uniform
+#' @param mean,cov Forwarded to [is_mvn()].
+#' @param sigma,df Forwarded to [is_mvt()].
 #' @returns An [is_proposal] object.
 #' @family proposals
 #' @export

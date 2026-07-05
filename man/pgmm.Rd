@@ -10,7 +10,7 @@ pgmm(q, g, lower.tail = TRUE)
 qgmm(p, g)
 }
 \arguments{
-\item{q, x}{Numeric vector of quantiles.}
+\item{q}{Numeric vector of quantiles.}
 
 \item{g}{A one-dimensional \link{gmm} (or \link{gmm_fit}).}
 

@@ -14,8 +14,9 @@ fit_kld_em(
   tol = 1e-05,
   ridge_eps = 1e-06,
   min_ess = 50,
+  on_low_ess = c("warn", "abort"),
   seed = NULL,
-  validation_size = 0L,
+  validation_size = NULL,
   validation_proposal = NULL,
   validation_seed = NULL,
   support_warn = TRUE,
@@ -52,16 +53,28 @@ targets (the importance-sampled KLD estimate carries an additive
 \item{ridge_eps}{Ridge added to each component covariance at every
 M-step.}
 
-\item{min_ess}{Minimum effective sample size below which a warning is
-issued.}
+\item{min_ess}{Minimum effective sample size below which the fit is
+flagged as degenerate: a classed warning (\code{proxymix_low_ess}) is
+issued (or, with \code{on_low_ess = "abort"}, a classed error
+\code{proxymix_degenerate_fit}), the fit's \code{converged} flag is forced to
+\code{FALSE}, and \code{degenerate = TRUE} is recorded in the diagnostics and
+the quality certificate.}
 
-\item{seed}{Optional integer seed used when drawing the fitting IS
-sample.}
+\item{on_low_ess}{What to do when the effective sample size falls below
+\code{min_ess}: \code{"warn"} (the default) flags and continues, \code{"abort"}
+refuses to return a degenerate fit.}
+
+\item{seed}{Optional integer seed. When supplied, the fit is
+reproducible end-to-end: the fitting IS draw, the initialisation
+resample and kmeans pass, and any empty-component reseed draws are
+all derived from it. When \code{NULL}, those draws consume the ambient
+random-number stream.}
 
 \item{validation_size}{Number of independent importance-sampling draws
-to use for held-out validation. Default \code{0L} (no validation split).
-Set to a positive integer (typically \code{is_size / 2} to \code{is_size}) to
-enable validation diagnostics.}
+to use for held-out validation. The default \code{NULL} uses
+\code{ceiling(is_size / 4)}, so the overfit-vs-generalise diagnostic
+(\code{validation_kld} and the certificate's \code{validation_gap}) exists by
+default; set \code{0L} to disable the validation split.}
 
 \item{validation_proposal}{Optional \link{is_proposal} for the validation
 sample. Defaults to the same proposal used for fitting.}

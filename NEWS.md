@@ -1,3 +1,111 @@
+# proxymix 0.12.0
+
+### New features
+
+* **Fit-quality certificate.** Every fitter now stamps a quality certificate
+  into the result's metadata (regime, convergence, degeneracy, the
+  effective-sample-size profile including a new per-component ESS, the
+  support fraction, and the held-out validation gap), readable with the new
+  `gmm_fit_quality()`. Every closed-form operator carries the certificate
+  through unchanged, together with a `provenance` vector recording the chain
+  of operations, so the certificate can be read off a marginal, a filtered
+  belief, or any other derived mixture. Downstream verbs (`gmm_entropy()`,
+  `gmm_mutual_information()`, `gmm_independence_graph()`, `gmm_intervene()`,
+  `gmm_counterfactual()`, `gmm_filter()`) read the same certificate and raise
+  a one-shot advisory (class `proxymix_low_quality`) when the source fit is
+  flagged.
+* **Degeneracy is a state, not a footnote.** An importance-sampling collapse
+  (`ESS < min_ess`) now flags the fit as degenerate: the warning is classed
+  (`proxymix_low_ess`), `converged` is forced to `FALSE`, and the new
+  `on_low_ess = "abort"` refuses to return the fit at all (classed error
+  `proxymix_degenerate_fit`). Previously a fit sitting on one effective draw
+  could report `converged = TRUE` with a warning as the only trace.
+* **Held-out validation on by default.** `validation_size` now defaults to
+  `ceiling(is_size / 4)` rather than `0`, so the overfit-vs-generalise
+  diagnostic exists on every regime-(iii) fit. Pass `validation_size = 0L`
+  to disable.
+* `autoplot()` is now registered for plain `gmm` objects too, so
+  operator-calculus results (marginals, conditionals, filtered beliefs) plot
+  directly rather than only freshly fitted proxies.
+* A dimension disclosure now lives at the core fitter: `fit_kld_em()` notes
+  `p > 5` and warns (classed `proxymix_high_dimension`) beyond `p = 10`,
+  instead of only the wrapper entry points knowing the scaling story.
+* Classed conditions throughout the fitting path: `proxymix_low_ess`,
+  `proxymix_degenerate_fit`, `proxymix_high_dimension`, `proxymix_support`,
+  `proxymix_nonmonotone`, `proxymix_low_quality` -- pipelines can
+  condition-handle instead of matching message text.
+
+### Behaviour changes
+
+* **Seeded fits are now reproducible end-to-end.** `fit_kld_em(seed =)`
+  previously seeded only the importance-sampling draw; the initialisation
+  resample, the kmeans pass, and empty-component reseeds consumed the ambient
+  random-number stream, so two calls with the same seed could return
+  different fits. All internal draws now derive from the seed. Fits under a
+  given seed therefore differ from 0.11.x. `fit_em_samples(seed =)` likewise
+  drives its multi-start (previously hard-coded restart seeds).
+* `from_objective()` derives a distinct seed per cooling step: previously the
+  importance-sampling stream was re-seeded identically at every temperature,
+  so with the default `exploration = 0.5` half of the draws were
+  byte-identical across the whole ladder and a basin missed by the first
+  exploration draw was never probed again.
+* **Data-scaled ridge in the fitters.** The EM fitters scale their
+  covariance ridge by the data's covariance scale (previously an absolute
+  constant), so the same default regularises identically at data scale
+  `1e-8` and `1e+8`. The floor is constant within a fit -- a ridge relative
+  to the component's own diagonal would shrink together with a collapsing
+  component and stop flooring exactly when needed. At unit data scale the
+  behaviour is unchanged to first order; the operators' tiny hygiene ridge
+  is unchanged.
+* An empty (dead) EM component now has its weight reset alongside its mean
+  and covariance (previously the weight stayed at zero, the reseeded mean
+  was unreachable, and the reseed re-fired every iteration); the reseed
+  covariance is at data scale. Both EM fitters also warn (classed
+  `proxymix_nonmonotone`) if their objective decreases beyond numerical
+  tolerance, which the documentation previously claimed and the code did
+  not do.
+
+### Bug fixes
+
+* Mixture-reduction merge costs are computed in the log domain: the raw
+  Gaussian-product density underflows for large dimension times scale
+  (reaching exactly zero near `p = 115` at scale `1e5`), which made every
+  merge cost `0/Inf/NaN` and the merge order arbitrary.
+* `hellinger_mc()` reports the standard error of the self-normalised
+  weighted estimator; the previous `sd(ratio)/sqrt(n)` treated skewed
+  importance weights as uniform and could understate the Monte Carlo error
+  by orders of magnitude.
+
+### Performance
+
+* Greedy mixture reduction caches pairwise merge costs and re-costs only the
+  pairs touching the merged component (previously all `O(K^2)` pairs were
+  re-costed, each with its own Cholesky, after every single merge -- the
+  bottleneck inside long Gaussian-sum-filter runs).
+* The log-sum-exp row maximum is computed by a vectorised `pmax` reduce
+  rather than a per-row loop, on every E-step's hot path.
+
+### Tests
+
+* The shipped conformance case set now executes during test runs (off CRAN)
+  through its built-in driver, so the two-sided contract sweep gates checks
+  rather than living only in an external harness; the two remaining stubs
+  gained negative cases.
+* New independent oracles: closed-form Gaussian KL and quadrature for
+  `gmm_kld()` at `K = 1` (the package's namesake divergence previously had
+  only positivity checks), closed-form Gaussian Hellinger for
+  `hellinger_mc()`, quadrature for the logit-link gated moments (the shipped
+  default link previously had no moment-level oracle), and a probit-link
+  end-to-end MNAR recovery.
+* New metamorphic invariants: Renyi-2 affine equivariance
+  (`H(AX + b) = H(X) + log|det A|`), marginal-vs-joint quadrature
+  consistency, `gmm_observe` with a near-noiseless selection row against
+  `gmm_conditionalise`, post-operator mass preservation, and an
+  `rgmm`/`dgmm` Kolmogorov-Smirnov cross-check.
+* The uplift Monte Carlo studies are skipped on CRAN and grade monotonicity
+  with slack plus a rank correlation, instead of strict positivity of every
+  adjacent difference from a local-optimum EM.
+
 # proxymix 0.11.6
 
 ### Bug fixes

@@ -138,7 +138,7 @@ test_that("G0: gmm_aggregate equals gmm_affine for an aggregation matrix", {
     expect_lt(max(abs(g_agg@covariances[[k]] - g_aff@covariances[[k]])),
               1e-12)
   }
-  expect_equal(g_agg@metadata$operator, "gmm_aggregate")
+  expect_identical(utils::tail(g_agg@metadata$provenance, 1L), "aggregate")
 })
 
 test_that("M0: gmm_missing equals gmm_conditionalise", {

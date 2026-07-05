@@ -123,13 +123,9 @@ gmm_affine <- function(g, A, b = 0, noise_cov = NULL, ridge_eps = 1e-6) {
     weights     = g@weights,
     means       = out_means,
     covariances = out_covs,
-    name        = sprintf("affine(%s)", g@name),
-    metadata    = modifyList(
-      g@metadata,
-      list(operator = "gmm_affine",
-           source_class = class(g)[1L],
-           input_dim = p, output_dim = m)
-    )
+    name        = .op_name("affine", g),
+    metadata    = .op_result_meta(g, "affine",
+                                  list(input_dim = p, output_dim = m))
   )
 }
 
@@ -230,16 +226,13 @@ gmm_observe <- function(g, A, y, noise_cov, b = 0, ridge_eps = 1e-6) {
       "Marginal evidence is (numerically) zero at every component; observation is far from the prior.",
       "i" = "Returning the prior mixture unchanged (`metadata$gmm_observe_no_update = TRUE`)."
     ))
-    out_meta <- modifyList(g@metadata, list(
-      operator = "gmm_observe",
-      gmm_observe_no_update = TRUE
-    ))
     return(gmm(
       weights = g@weights,
       means = g@means,
       covariances = g@covariances,
-      name = sprintf("observe(%s) [no update]", g@name),
-      metadata = out_meta
+      name = sprintf("%s [no update]", .op_name("observe", g)),
+      metadata = .op_result_meta(g, "observe",
+                                 list(gmm_observe_no_update = TRUE))
     ))
   }
   new_weights_unnormalised <- exp(log_new - mx)
@@ -250,10 +243,8 @@ gmm_observe <- function(g, A, y, noise_cov, b = 0, ridge_eps = 1e-6) {
     weights     = new_weights,
     means       = new_means,
     covariances = new_covs,
-    name        = sprintf("observe(%s)", g@name),
-    metadata    = modifyList(g@metadata, list(
-      operator              = "gmm_observe",
-      source_class          = class(g)[1L],
+    name        = .op_name("observe", g),
+    metadata    = .op_result_meta(g, "observe", list(
       gmm_observe_no_update = FALSE,
       log_marginal_evidence = log_marginal_evidence
     ))
@@ -292,8 +283,8 @@ gmm_observe <- function(g, A, y, noise_cov, b = 0, ridge_eps = 1e-6) {
 #' gmm_aggregate(g, A)
 gmm_aggregate <- function(g, A, noise_cov = NULL, ridge_eps = 1e-6) {
   out <- gmm_affine(g, A, b = 0, noise_cov = noise_cov, ridge_eps = ridge_eps)
-  out@name <- sprintf("aggregate(%s)", g@name)
-  out@metadata <- modifyList(out@metadata, list(operator = "gmm_aggregate"))
+  out@name <- .op_name("aggregate", g)
+  out@metadata$provenance[length(out@metadata$provenance)] <- "aggregate"
   out
 }
 
@@ -349,11 +340,9 @@ gmm_missing <- function(g, observed, values) {
   given <- rep(NA_real_, p)
   given[observed] <- as.numeric(values)
   out <- gmm_conditionalise(g, given = given)
-  out@name <- sprintf("missing(%s)", g@name)
-  out@metadata <- modifyList(out@metadata, list(
-    operator     = "gmm_missing",
-    observed_idx = observed,
-    values       = as.numeric(values)
-  ))
+  out@name <- .op_name("missing", g)
+  out@metadata$provenance[length(out@metadata$provenance)] <- "missing"
+  out@metadata$observed_idx <- observed
+  out@metadata$values <- as.numeric(values)
   out
 }

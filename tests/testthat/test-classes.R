@@ -47,7 +47,7 @@ test_that("gmm rejects a covariance that is not positive-definite", {
 })
 
 test_that("gmm_fit inherits from gmm", {
-  x <- matrix(stats::rnorm(200), ncol = 2)
+  x <- withr::with_seed(50, matrix(stats::rnorm(200), ncol = 2))
   tgt <- gmm_target_from_samples(x)
   fit <- fit_em_samples(tgt, N = 2L, max_iter = 25L, n_starts = 2L)
   expect_s7_class(fit, gmm_fit)
@@ -63,7 +63,7 @@ test_that("gmm_target requires log_density or samples", {
 })
 
 test_that("gmm_target_from_samples carries the matrix verbatim", {
-  x <- matrix(stats::rnorm(200), ncol = 2)
+  x <- withr::with_seed(50, matrix(stats::rnorm(200), ncol = 2))
   tgt <- gmm_target_from_samples(x)
   expect_identical(tgt@samples, x)
   expect_equal(tgt@n_dim, 2L)

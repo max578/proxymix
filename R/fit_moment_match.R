@@ -76,7 +76,8 @@ fit_moment_match <- function(target, N = 1L, ridge_eps = 1e-6,
       converged = TRUE,
       iterations = 0L,
       call = match.call(),
-      name = sprintf("moment_match[N=1] on %s", target@name)
+      name = sprintf("moment_match[N=1] on %s", target@name),
+      metadata = list(quality = .moment_quality())
     )
     return(if (isTRUE(canonicalise)) gmm_canonicalise(g) else g)
   }
@@ -103,7 +104,25 @@ fit_moment_match <- function(target, N = 1L, ridge_eps = 1e-6,
     converged = TRUE,
     iterations = 0L,
     call = match.call(),
-    name = sprintf("moment_match[N=%d] on %s", N, target@name)
+    name = sprintf("moment_match[N=%d] on %s", N, target@name),
+    metadata = list(quality = .moment_quality())
   )
   if (isTRUE(canonicalise)) gmm_canonicalise(g) else g
+}
+
+## The certificate of a closed-form moment match: deterministic, always
+## converged, with the sampling-diagnostic fields not applicable.
+.moment_quality <- function() {
+  list(
+    regime = "moment",
+    converged = TRUE,
+    degenerate = FALSE,
+    ess = NA_real_,
+    ess_relative = NA_real_,
+    min_component_ess = NA_real_,
+    max_weight = NA_real_,
+    support_fraction = NA_real_,
+    kld_final = NA_real_,
+    validation_gap = NA_real_
+  )
 }

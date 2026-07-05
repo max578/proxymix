@@ -263,6 +263,10 @@ NULL
   if (!isTRUE(show_data)) {
     return(NULL)
   }
+  ## A plain mixture (e.g. an operator result) carries no target.
+  if (!S7::S7_inherits(object, gmm_fit)) {
+    return(NULL)
+  }
   tgt <- object@target
   if (is.null(tgt) || !S7::S7_inherits(tgt, gmm_target)) {
     return(NULL)
@@ -293,9 +297,13 @@ NULL
 #' @noRd
 #' @keywords internal
 .fit_title <- function(object) {
-  sprintf(
-    "proxymix proxy: regime \"%s\", K = %d",
-    object@regime,
-    gmm_n_components(object)
-  )
+  if (S7::S7_inherits(object, gmm_fit)) {
+    sprintf(
+      "proxymix proxy: regime \"%s\", K = %d",
+      object@regime,
+      gmm_n_components(object)
+    )
+  } else {
+    sprintf("proxymix mixture: K = %d", gmm_n_components(object))
+  }
 }

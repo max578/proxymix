@@ -13,11 +13,6 @@ test_that("kl_gauss falls back to determinant when S_a is not chol-able", {
   expect_true(is.finite(val))
 })
 
-test_that("is_pd distinguishes PD from indefinite matrices", {
-  expect_true(is_pd(diag(2)))
-  expect_false(is_pd(matrix(c(1, 2, 2, 1), 2, 2)))
-})
-
 test_that("as_input_matrix validates shape", {
   expect_error(as_input_matrix(matrix(1:4, ncol = 2L), p = 3L), "column")
   expect_error(as_input_matrix(1:3, p = 2L), "length 2")
@@ -34,7 +29,8 @@ test_that("diagnostic accessors reject a non-fit", {
 
 test_that("hellinger_mc errors without a target log-density", {
   ## A samples-only target has no log_density.
-  fit <- fit_proxymix(gmm_target_from_samples(matrix(stats::rnorm(200), ncol = 2)),
+  x <- withr::with_seed(31, matrix(stats::rnorm(200), ncol = 2))
+  fit <- fit_proxymix(gmm_target_from_samples(x),
                       N = 2L, regime = "sample", max_iter = 10L)
   expect_error(hellinger_mc(fit), "log_density")
 })

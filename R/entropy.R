@@ -90,6 +90,7 @@ gmm_entropy <- function(g, order = c("renyi2", "shannon"),
   if (!S7::S7_inherits(g, gmm)) {
     cli::cli_abort("`g` must be a {.cls gmm} object.")
   }
+  .check_quality(g, "gmm_entropy")
   order <- match.arg(order)
   if (order == "renyi2") {
     return(-.log_cross_information_potential(g, g))
@@ -216,6 +217,7 @@ gmm_mutual_information <- function(g, block_a, block_b) {
   if (!S7::S7_inherits(g, gmm)) {
     cli::cli_abort("`g` must be a {.cls gmm} object.")
   }
+  .check_quality(g, "gmm_mutual_information")
   p <- gmm_dim(g)
   block_a <- as.integer(block_a)
   block_b <- as.integer(block_b)
@@ -328,6 +330,7 @@ gmm_independence_graph <- function(g, threshold = 0.05) {
   if (!S7::S7_inherits(g, gmm)) {
     cli::cli_abort("`g` must be a {.cls gmm} object.")
   }
+  .check_quality(g, "gmm_independence_graph")
   if (!is.numeric(threshold) || length(threshold) != 1L || threshold < 0) {
     cli::cli_abort("`threshold` must be a single non-negative number.")
   }

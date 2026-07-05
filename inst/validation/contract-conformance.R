@@ -361,8 +361,11 @@ CASES <- list(
   ok_case("from_kde", "from_kde 2-D compress",
           function() from_kde(X2[1:80, ], N = 2L, is_size = 400L, seed = 1L)),
   err_case("from_kde", "from_kde char", function() from_kde("x", N = 3L)),
-  err_case("from_kde", "from_kde p>5 scope guard",
-           function() from_kde(matrix(rnorm(60), ncol = 6L), N = 2L, seed = 1L)),
+  ## p in 6..10 is documented to WARN and proceed; the hard scope guard is
+  ## p > 10 (the old p = 6 expectation only "passed" because the downstream
+  ## fit crashed, which is exactly what a two-sided case must not count).
+  err_case("from_kde", "from_kde p>10 scope guard",
+           function() from_kde(matrix(rnorm(132), ncol = 11L), N = 2L, seed = 1L)),
   err_case("from_kde", "from_kde N=0", function() from_kde(X2[1:80, ], N = 0L)),
 
   ## -- optimisation: from_objective / gmm_modes -------------------------------
@@ -664,7 +667,11 @@ CASES <- list(
   err_case("to_apsim_scenarios", "to_apsim_scenarios non-fit",
            function() to_apsim_scenarios(42)),
   err_case("fit_kld_em_collider", "fit_kld_em_collider non-target",
-           function() fit_kld_em_collider(42, dag = matrix(0, 2, 2)))
+           function() fit_kld_em_collider(42, dag = matrix(0, 2, 2))),
+  err_case("from_aggregate_likelihood", "from_aggregate_likelihood is a stub",
+           function() from_aggregate_likelihood(g1)),
+  err_case("from_simulator", "from_simulator is a stub",
+           function() from_simulator(function(x) x, n_dim = 2L))
 )
 
 ## ---- deliberately left without TWO-sided coverage (documented scope) --------
@@ -673,8 +680,9 @@ CASES <- list(
 ## and are NOT findings -- there is no rejectable / acceptable counterpart to add
 ## without fabricating one:
 ##
-##   * Planned-interface stubs in R/stubs.R -- from_aggregate_likelihood,
-##     from_simulator, to_apsim_scenarios, fit_kld_em_collider. Every call signals
+##   * Planned-interface stubs in R/stubs.R -- all four (from_aggregate_likelihood,
+##     from_simulator, to_apsim_scenarios, fit_kld_em_collider) carry an err_case
+##     row above; every call signals
 ##     `proxymix_not_yet_implemented`, so there is no valid input that returns
 ##     ok; only the error side is meaningful (see their err_case rows above).
 ##   * gmm_cf_variance / gmm_cf_tail_prob -- by-design refusal accessors. The

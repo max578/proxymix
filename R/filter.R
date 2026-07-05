@@ -277,6 +277,7 @@ gmm_filter <- function(prior, dynamics, measurement, y,
   if (!S7::S7_inherits(prior, gmm)) {
     cli::cli_abort("`prior` must be a {.cls gmm} object.")
   }
+  .check_quality(prior, "gmm_filter")
   reduce <- rlang::arg_match(reduce)
   if (!is.null(k_max)) {
     k_max <- as.integer(k_max)

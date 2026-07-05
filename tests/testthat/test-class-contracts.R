@@ -66,7 +66,8 @@ test_that("is_proposal validator rejects malformed proposals", {
 })
 
 test_that("print methods cover fit, target-with-support, and overflow branches", {
-  fit <- fit_proxymix(gmm_target_from_samples(matrix(stats::rnorm(200), ncol = 2)),
+  fit <- fit_proxymix(gmm_target_from_samples(
+    withr::with_seed(69, matrix(stats::rnorm(200), ncol = 2))),
                       N = 1L, regime = "moment")
   expect_output(print(fit), "gmm_fit")
 

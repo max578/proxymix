@@ -80,6 +80,7 @@ gmm_intervene <- function(g, do, given = NULL, ridge_eps = 1e-6) {
   if (!S7::S7_inherits(g, gmm)) {
     cli::cli_abort("`g` must be a {.cls gmm} object.")
   }
+  .check_quality(g, "gmm_intervene")
   p <- gmm_dim(g)
   do_idx <- .validate_coord_vector(do, p, "do")
   if (is.null(given)) {
@@ -184,6 +185,7 @@ gmm_counterfactual <- function(g, evidence, do, query, ridge_eps = 1e-6) {
   if (!S7::S7_inherits(g, gmm)) {
     cli::cli_abort("`g` must be a {.cls gmm} object.")
   }
+  .check_quality(g, "gmm_counterfactual")
   p <- gmm_dim(g)
   obs_idx <- .validate_coord_vector(evidence, p, "evidence")
   do_idx <- .validate_coord_vector(do, p, "do")

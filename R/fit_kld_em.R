@@ -10,10 +10,30 @@
 #' the target, via expectation-maximisation against importance-sampled
 #' draws from a user-chosen proposal `q`.
 #'
-#' The Monte Carlo draws from `q` are computed once at the start; the
-#' resulting self-normalised importance-sampling weights are reused at every
-#' EM iteration. Adaptive importance sampling — redrawing each round — is
-#' out of scope for this release.
+#' With `adapt = "none"` (the default) the Monte Carlo draws from `q` are
+#' computed once at the start and the resulting self-normalised
+#' importance-sampling weights are reused at every EM iteration. With
+#' `adapt = "pmc"` the proposal is refreshed every `refresh_every`
+#' iterations with a defensive mixture built from the current iterate --
+#' the population-Monte-Carlo scheme: the fitted mixture (covariances
+#' inflated by `inflate`) carries `1 - defensive_gamma` of the proposal
+#' mass and the original proposal `q` keeps `defensive_gamma` as a
+#' heavy-tailed anchor, a fresh IS batch is drawn, and EM continues on the
+#' refreshed weights. Because the refreshed proposal tracks the target,
+#' the effective sample size recovers from a poor initial proposal and the
+#' usable dimension range extends well beyond what a fixed proposal
+#' reaches; the per-batch ESS trace is reported as
+#' `diagnostics$ess_history`. While a batch is degenerate (its effective
+#' sample size is below `min_ess`), the refresh fires every iteration
+#' with an escalating covariance inflation floored at a growing fraction
+#' of the batch's sample covariance, so a collapsed iterate walks back
+#' out toward the target instead of freezing; and convergence is only
+#' accepted on an adapted batch, so a run that stabilises on the original
+#' proposal's draw is refreshed at least once before it is allowed to
+#' stop. The scheme is the mixture population-Monte-Carlo idea of Cappé
+#' et al. (2008) with the defensive-mixture safeguard of Owen and Zhou
+#' (2000); it re-draws rather than recycles batches (compare the adaptive
+#' multiple importance sampling of Cornuet et al., 2012).
 #'
 #' Since v0.1.1 the function also draws an *independent* validation IS
 #' sample when `validation_size > 0` and reports its own KLD estimate,
@@ -75,6 +95,16 @@
 #' @param support_warn Logical. If `TRUE` (the default), issue a warning
 #'   when more than 5% of IS draws receive non-finite weights (typically
 #'   because the proposal does not dominate the target's support).
+#' @param adapt Proposal adaptation: `"none"` (the default; one fixed IS
+#'   draw, the historical behaviour) or `"pmc"` (population-Monte-Carlo
+#'   refresh of the proposal from the current iterate; see Details).
+#' @param refresh_every With `adapt = "pmc"`, refresh the proposal after
+#'   this many EM iterations on the current batch. Default `5L`.
+#' @param defensive_gamma With `adapt = "pmc"`, the mass kept on the
+#'   original proposal as a heavy-tailed defensive anchor at every
+#'   refresh (bounds the importance-weight variance). Default `0.15`.
+#' @param inflate With `adapt = "pmc"`, the factor inflating the current
+#'   iterate's covariances inside the refreshed proposal. Default `1.5`.
 #' @param anneal Logical. If `TRUE`, a deterministic-annealing warm-start
 #'   (see [gmm_anneal_path()]) replaces the kmeans initialisation: components
 #'   are annealed from a high temperature down to one on the importance-weighted
@@ -94,6 +124,18 @@
 #'   `mc_se_kld`, `validation_kld`, `validation_ess`, and
 #'   `validation_max_weight`.
 #' @family fitting
+#' @references Cappé, O., Douc, R., Guillin, A., Marin, J.-M. and
+#'   Robert, C. P. (2008) Adaptive importance sampling in general mixture
+#'   classes. *Statistics and Computing* 18, 447--459.
+#'   \doi{10.1007/s11222-008-9059-x}
+#'
+#'   Cornuet, J.-M., Marin, J.-M., Mira, A. and Robert, C. P. (2012)
+#'   Adaptive multiple importance sampling. *Scandinavian Journal of
+#'   Statistics* 39, 798--812. \doi{10.1111/j.1467-9469.2011.00756.x}
+#'
+#'   Owen, A. and Zhou, Y. (2000) Safe and effective importance sampling.
+#'   *Journal of the American Statistical Association* 95(449), 135--143.
+#'   \doi{10.1080/01621459.2000.10473909}
 #' @export
 #' @examples
 #' tgt <- banana_target()
@@ -119,6 +161,10 @@ fit_kld_em <- function(target,
                        validation_proposal = NULL,
                        validation_seed = NULL,
                        support_warn = TRUE,
+                       adapt = c("none", "pmc"),
+                       refresh_every = 5L,
+                       defensive_gamma = 0.15,
+                       inflate = 1.5,
                        anneal = FALSE,
                        temp_schedule = NULL,
                        canonicalise = TRUE) {
@@ -129,6 +175,18 @@ fit_kld_em <- function(target,
     cli::cli_abort("regime {.val kld} requires `target@log_density` to be supplied.")
   }
   on_low_ess <- rlang::arg_match(on_low_ess)
+  adapt <- rlang::arg_match(adapt)
+  refresh_every <- as.integer(refresh_every)
+  if (length(refresh_every) != 1L || is.na(refresh_every) || refresh_every < 1L) {
+    cli::cli_abort("`refresh_every` must be a single positive integer.")
+  }
+  if (!is.numeric(defensive_gamma) || length(defensive_gamma) != 1L ||
+        defensive_gamma <= 0 || defensive_gamma >= 1) {
+    cli::cli_abort("`defensive_gamma` must be a single number strictly inside (0, 1).")
+  }
+  if (!is.numeric(inflate) || length(inflate) != 1L || inflate < 1) {
+    cli::cli_abort("`inflate` must be a single number of at least 1.")
+  }
   N <- as.integer(N)
   is_size <- as.integer(is_size)
   validation_size <- if (is.null(validation_size)) {
@@ -184,16 +242,21 @@ fit_kld_em <- function(target,
   max_weight <- draws$max_weight
   support_fraction <- draws$support_fraction
 
-  degenerate <- ess < min_ess
-  if (degenerate) {
+  flag_low_ess <- function(ess_now) {
     low_ess_msg <- c(
-      "Effective sample size is low: ESS = {round(ess, 1)} out of {is_size}; the fit is flagged as degenerate.",
-      "i" = "Consider a heavier-tailed proposal or more IS draws."
+      "Effective sample size is low: ESS = {round(ess_now, 1)} out of {is_size}; the fit is flagged as degenerate.",
+      "i" = "Consider a heavier-tailed proposal, more IS draws, or {.code adapt = \"pmc\"}."
     )
     if (on_low_ess == "abort") {
       cli::cli_abort(low_ess_msg, class = "proxymix_degenerate_fit")
     }
     cli::cli_warn(low_ess_msg, class = "proxymix_low_ess")
+  }
+  degenerate <- ess < min_ess
+  ## Under PMC adaptation a poor initial draw is expected to recover, so
+  ## degeneracy is judged on the FINAL batch after the loop instead.
+  if (degenerate && adapt == "none") {
+    flag_low_ess(ess)
   }
   if (isTRUE(support_warn) && support_fraction < 0.95) {
     cli::cli_warn(c(
@@ -260,6 +323,11 @@ fit_kld_em <- function(target,
   converged <- FALSE
   it <- 0L
   n_reseeds <- 0L
+  n_refresh <- 0L
+  ess_history <- ess
+  batch_start <- 0L
+  esc <- 1
+  force_refresh <- FALSE
   for (it in seq_len(max_iter)) {
     log_resp_unnorm <- gmm_log_unnorm(x, weights, means, covs)
     log_g <- logsumexp_rows(log_resp_unnorm)
@@ -281,13 +349,28 @@ fit_kld_em <- function(target,
     ## unnormalised target the KLD trace carries the additive -log Z(f)
     ## offset, so a relative-change rule on it would depend on the
     ## target's arbitrary normalisation. Q is offset-free by construction
-    ## (the self-normalised W and log g never touch the constant).
-    if (it > 1L) {
+    ## (the self-normalised W and log g never touch the constant). Both
+    ## compared iterations must belong to the same IS batch: across a PMC
+    ## refresh, Q jumps because the sample changed, not the parameters.
+    ## Under PMC, convergence cannot fire while the current batch is
+    ## degenerate -- stabilising on a handful of effective draws is not
+    ## convergence, and the refreshes need iterations to walk the proposal
+    ## toward the target.
+    if (it > 1L && (it - 1L) > batch_start &&
+          !(adapt == "pmc" && ess < min_ess)) {
       delta <- abs(weighted_obj_trace[it] - weighted_obj_trace[it - 1L]) /
         (abs(weighted_obj_trace[it - 1L]) + 1e-12)
       if (delta < tol) {
-        converged <- TRUE
-        break
+        if (adapt == "pmc" && batch_start == 0L) {
+          ## The parameters stabilised on the ORIGINAL proposal's batch.
+          ## Adapt before accepting: the refreshed proposal (built from
+          ## the stabilised iterate) is usually far more efficient, and
+          ## the final diagnostics should come from an adapted batch.
+          force_refresh <- TRUE
+        } else {
+          converged <- TRUE
+          break
+        }
       }
     }
 
@@ -321,6 +404,62 @@ fit_kld_em <- function(target,
       S_new <- crossprod(diff * sqrt(W_resp[, k])) / Nk_W[k]
       means[[k]] <- mu_new
       covs[[k]] <- symmetrise(ridge(S_new, ridge_eps))
+    }
+
+    ## PMC refresh: rebuild the proposal from the current iterate (a
+    ## defensive mixture keeping `defensive_gamma` mass on the original
+    ## proposal as a heavy-tailed anchor), draw a fresh IS batch, and
+    ## continue EM on the refreshed weights. While the current batch is
+    ## degenerate the refresh fires EVERY iteration with an escalating
+    ## covariance inflation, so a proposal far from the target walks
+    ## toward it (each refresh re-centres on the current iterate) instead
+    ## of freezing after a single hop; the escalation resets as soon as a
+    ## healthy batch is drawn.
+    if (adapt == "pmc" && it < max_iter &&
+          (force_refresh || it %% refresh_every == 0L || ess < min_ess)) {
+      force_refresh <- FALSE
+      ## On a degenerate batch the iterate has typically collapsed onto a
+      ## handful of draws, so multiplying its (near-zero) covariance can
+      ## never re-acquire the target. The escalation therefore also floors
+      ## the proposal covariance at a growing fraction of the current
+      ## batch's sample covariance -- the batch is dominated by the wide
+      ## anchor, so the floor interpolates from "trust the iterate" up to
+      ## "cover what the anchor covers", while the component MEANS stay at
+      ## the iterate (the effective draws' best guess of the target).
+      prop_covs <- if (ess < min_ess) {
+        S_floor <- diag(diag(stats::cov(x)), nrow = p) * (esc / 64)
+        lapply(covs, function(S) (inflate * esc) * S + S_floor)
+      } else {
+        lapply(covs, function(S) inflate * S)
+      }
+      g_infl <- gmm(
+        weights = weights, means = means,
+        covariances = prop_covs
+      )
+      draws <- .draw_pmc_refresh(
+        target, g_infl, proposal, defensive_gamma, is_size,
+        seed = if (is.null(seed)) NULL else as.integer(seed) + 500L + it
+      )
+      x <- draws$x
+      log_f <- draws$log_f
+      log_W <- draws$log_W
+      W <- draws$W
+      ess <- draws$ess
+      max_weight <- draws$max_weight
+      support_fraction <- draws$support_fraction
+      ess_history <- c(ess_history, ess)
+      n_refresh <- n_refresh + 1L
+      batch_start <- it
+      esc <- if (ess < min_ess) min(esc * 2, 64) else 1
+    }
+  }
+
+  ## Under PMC, degeneracy is judged on the final batch (a poor initial
+  ## proposal is expected to recover through the refreshes).
+  if (adapt == "pmc") {
+    degenerate <- ess < min_ess
+    if (degenerate) {
+      flag_low_ess(ess)
     }
   }
 
@@ -429,6 +568,10 @@ fit_kld_em <- function(target,
       support_fraction = support_fraction,
       degenerate = degenerate,
       n_reseeds = n_reseeds,
+      adapt = adapt,
+      n_refresh = n_refresh,
+      ess_history = ess_history,
+      n_target_evals = is_size * (1L + n_refresh) + validation_size,
       is_size = is_size,
       is_sample = x,
       is_log_weights = log_W,
@@ -479,6 +622,13 @@ draw_is_weights <- function(target, proposal, n, seed = NULL) {
   x <- if (is.null(seed)) draw() else withr::with_seed(seed, draw())
   log_f <- target@log_density(x)
   log_q <- proposal@log_density(x)
+  c(list(x = x, log_f = log_f, log_q = log_q),
+    .finalise_is_weights(log_f, log_q))
+}
+
+## Internal: self-normalise log importance weights and report the headline
+## diagnostics. Shared by the initial draw and the PMC refreshes.
+.finalise_is_weights <- function(log_f, log_q) {
   log_w <- log_f - log_q
   finite <- is.finite(log_w)
   support_fraction <- mean(finite)
@@ -495,18 +645,42 @@ draw_is_weights <- function(target, proposal, n, seed = NULL) {
   W <- exp(log_W)
   W[!is.finite(W)] <- 0
   W <- W / sum(W)
-  ess <- 1 / sum(W^2)
-  max_weight <- max(W)
   list(
-    x = x,
-    log_f = log_f,
-    log_q = log_q,
     log_W = log_W,
     W = W,
-    ess = ess,
-    max_weight = max_weight,
+    ess = 1 / sum(W^2),
+    max_weight = max(W),
     support_fraction = support_fraction
   )
+}
+
+## Internal: a PMC refresh draw from the defensive proposal
+##   q_t = (1 - gamma) * g_infl + gamma * q0,
+## where g_infl is the current EM iterate with inflated covariances and q0
+## is the original (heavy-tailed anchor) proposal. The mixture density of
+## the two parts is evaluated exactly, so the weights are unbiased for the
+## defensive proposal actually sampled from.
+.draw_pmc_refresh <- function(target, g_infl, q0, gamma, n, seed = NULL) {
+  draw <- function() {
+    from_anchor <- stats::runif(n) < gamma
+    n_anchor <- sum(from_anchor)
+    x <- matrix(0, nrow = n, ncol = gmm_dim(g_infl))
+    if (n_anchor > 0L) {
+      x[from_anchor, ] <- q0@sample(n_anchor)
+    }
+    if (n_anchor < n) {
+      x[!from_anchor, ] <- rgmm(n - n_anchor, g_infl)
+    }
+    x
+  }
+  x <- if (is.null(seed)) draw() else withr::with_seed(seed, draw())
+  log_f <- target@log_density(x)
+  log_q <- logsumexp_rows(cbind(
+    log1p(-gamma) + dgmm(x, g_infl, log = TRUE),
+    log(gamma) + q0@log_density(x)
+  ))
+  c(list(x = x, log_f = log_f, log_q = log_q),
+    .finalise_is_weights(log_f, log_q))
 }
 
 ## Internal: log g(x) for a mixture given as weights/means/covs, where

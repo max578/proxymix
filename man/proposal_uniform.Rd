@@ -20,6 +20,10 @@ single value).}
 
 \item{upper}{Length-\code{p} numeric vector of upper bounds (recycled from a
 single value).}
+
+\item{mean, cov}{Forwarded to \code{\link[=is_mvn]{is_mvn()}}.}
+
+\item{sigma, df}{Forwarded to \code{\link[=is_mvt]{is_mvt()}}.}
 }
 \value{
 An \link{is_proposal} object.

@@ -1,3 +1,35 @@
+# proxymix 0.14.0
+
+### New features
+
+* **Adaptive proposals for regime (iii): `fit_kld_em(adapt = "pmc")`.**
+  The importance proposal is refreshed from the current EM iterate as a
+  defensive mixture (the fitted components with inflated covariances plus
+  a `defensive_gamma` share of the original proposal as a heavy-tailed
+  anchor) -- the mixture population-Monte-Carlo scheme of Cappé et al.
+  (2008) with the Owen--Zhou (2000) defensive safeguard. While a batch is
+  degenerate the refresh fires every iteration with an escalating
+  inflation floored at a growing fraction of the batch's sample
+  covariance, so a collapsed iterate walks back out to the target; and
+  convergence is only accepted on an adapted batch. The per-batch ESS
+  trace ships in `diagnostics$ess_history` and the total evaluation cost
+  in `diagnostics$n_target_evals`.
+
+  Validated against analytic conjugate Gaussians and a ten-dimensional
+  warped target (`validation/adaptive_pmc_study.R` in the development
+  repository): with a centred but badly over-wide proposal, adaptation
+  restores the relative effective sample size from 0.006 to 0.26 at
+  `p = 20` (5--40x across dimensions) with exact moment recovery; with a
+  proposal mislocated by three standard deviations per coordinate it
+  restores 0.0003 to 0.36 on the warped `p = 10` target and beats the
+  fixed proposal by 6--65x through `p = 15`. The documented boundary: a
+  badly mislocated light anchor at `p = 20` leaves too few effective
+  draws to carry directional signal at these budgets -- supply a located
+  proposal there. On the low-dimensional shipped scenarios adaptation is
+  uniformly at least as good as the fixed proposal (held-out validation
+  KLD), and `adapt = "none"` (the default) is byte-identical to the
+  historical behaviour.
+
 # proxymix 0.13.0
 
 ### New features

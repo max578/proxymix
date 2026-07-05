@@ -20,6 +20,10 @@ fit_kld_em(
   validation_proposal = NULL,
   validation_seed = NULL,
   support_warn = TRUE,
+  adapt = c("none", "pmc"),
+  refresh_every = 5L,
+  defensive_gamma = 0.15,
+  inflate = 1.5,
   anneal = FALSE,
   temp_schedule = NULL,
   canonicalise = TRUE
@@ -87,6 +91,20 @@ validation sample. Defaults to \code{seed + 1L} when \code{seed} is supplied,
 when more than 5\% of IS draws receive non-finite weights (typically
 because the proposal does not dominate the target's support).}
 
+\item{adapt}{Proposal adaptation: \code{"none"} (the default; one fixed IS
+draw, the historical behaviour) or \code{"pmc"} (population-Monte-Carlo
+refresh of the proposal from the current iterate; see Details).}
+
+\item{refresh_every}{With \code{adapt = "pmc"}, refresh the proposal after
+this many EM iterations on the current batch. Default \code{5L}.}
+
+\item{defensive_gamma}{With \code{adapt = "pmc"}, the mass kept on the
+original proposal as a heavy-tailed defensive anchor at every
+refresh (bounds the importance-weight variance). Default \code{0.15}.}
+
+\item{inflate}{With \code{adapt = "pmc"}, the factor inflating the current
+iterate's covariances inside the refreshed proposal. Default \code{1.5}.}
+
 \item{anneal}{Logical. If \code{TRUE}, a deterministic-annealing warm-start
 (see \code{\link[=gmm_anneal_path]{gmm_anneal_path()}}) replaces the kmeans initialisation: components
 are annealed from a high temperature down to one on the importance-weighted
@@ -116,10 +134,30 @@ the target, via expectation-maximisation against importance-sampled
 draws from a user-chosen proposal \code{q}.
 }
 \details{
-The Monte Carlo draws from \code{q} are computed once at the start; the
-resulting self-normalised importance-sampling weights are reused at every
-EM iteration. Adaptive importance sampling — redrawing each round — is
-out of scope for this release.
+With \code{adapt = "none"} (the default) the Monte Carlo draws from \code{q} are
+computed once at the start and the resulting self-normalised
+importance-sampling weights are reused at every EM iteration. With
+\code{adapt = "pmc"} the proposal is refreshed every \code{refresh_every}
+iterations with a defensive mixture built from the current iterate --
+the population-Monte-Carlo scheme: the fitted mixture (covariances
+inflated by \code{inflate}) carries \code{1 - defensive_gamma} of the proposal
+mass and the original proposal \code{q} keeps \code{defensive_gamma} as a
+heavy-tailed anchor, a fresh IS batch is drawn, and EM continues on the
+refreshed weights. Because the refreshed proposal tracks the target,
+the effective sample size recovers from a poor initial proposal and the
+usable dimension range extends well beyond what a fixed proposal
+reaches; the per-batch ESS trace is reported as
+\code{diagnostics$ess_history}. While a batch is degenerate (its effective
+sample size is below \code{min_ess}), the refresh fires every iteration
+with an escalating covariance inflation floored at a growing fraction
+of the batch's sample covariance, so a collapsed iterate walks back
+out toward the target instead of freezing; and convergence is only
+accepted on an adapted batch, so a run that stabilises on the original
+proposal's draw is refreshed at least once before it is allowed to
+stop. The scheme is the mixture population-Monte-Carlo idea of Cappé
+et al. (2008) with the defensive-mixture safeguard of Owen and Zhou
+(2000); it re-draws rather than recycles batches (compare the adaptive
+multiple importance sampling of Cornuet et al., 2012).
 
 Since v0.1.1 the function also draws an \emph{independent} validation IS
 sample when \code{validation_size > 0} and reports its own KLD estimate,
@@ -144,6 +182,20 @@ fit <- fit_kld_em(tgt, N = 3L, proposal = q,
                   validation_size = 1500L)
 fit@diagnostics$kld_final
 fit@diagnostics$validation_kld
+}
+\references{
+Cappé, O., Douc, R., Guillin, A., Marin, J.-M. and
+Robert, C. P. (2008) Adaptive importance sampling in general mixture
+classes. \emph{Statistics and Computing} 18, 447--459.
+\doi{10.1007/s11222-008-9059-x}
+
+Cornuet, J.-M., Marin, J.-M., Mira, A. and Robert, C. P. (2012)
+Adaptive multiple importance sampling. \emph{Scandinavian Journal of
+Statistics} 39, 798--812. \doi{10.1111/j.1467-9469.2011.00756.x}
+
+Owen, A. and Zhou, Y. (2000) Safe and effective importance sampling.
+\emph{Journal of the American Statistical Association} 95(449), 135--143.
+\doi{10.1080/01621459.2000.10473909}
 }
 \seealso{
 Other fitting: 

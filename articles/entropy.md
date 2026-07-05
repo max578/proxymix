@@ -1,0 +1,311 @@
+# Entropy diagnostics with proxymix
+
+``` r
+
+library(proxymix)
+```
+
+`proxymix` fits Kullback–Leibler-optimal Gaussian-mixture proxies, so
+relative entropy is already at the core of the package. This vignette
+surfaces the entropy structure of a *fitted* mixture as closed-form
+diagnostics: the quadratic (order-2) Renyi entropy of a mixture, the
+Cauchy–Schwarz divergence between two mixtures, and a Monte-Carlo
+Shannon entropy bracketed by an analytic bound.
+
+### The closed-form spine
+
+The integral of a product of two Gaussian densities is itself a Gaussian
+density evaluation: writing `N(x; m, S)` for a Gaussian density, the
+integral over `x` of `N(x; a, A) N(x; b, B)` equals `N(a; b, A + B)`.
+Any quantity that is *quadratic* in a mixture – the integral of
+`g(x)^2`, or of `p(x) q(x)` – is therefore a finite sum of such
+evaluations, and closed-form. Shannon entropy carries the logarithm of a
+sum and has no such closed form, so it is estimated by Monte Carlo.
+
+### Renyi-2 entropy
+
+[`gmm_entropy()`](https://max578.github.io/proxymix/reference/gmm_entropy.md)
+returns the closed-form order-2 Renyi entropy by default.
+
+``` r
+
+g <- gmm(weights = c(0.5, 0.5),
+         means = list(c(-2, 0), c(2, 0)),
+         covariances = list(diag(2), diag(2)))
+gmm_entropy(g)
+#> [1] 3.206021
+```
+
+For a single Gaussian the value is exact and matches the analytic form
+`H2(N(mu, S)) = (p / 2) log(4 pi) + (1 / 2) log det(S)`:
+
+``` r
+
+S <- matrix(c(1, 0.3, 0.3, 1), 2, 2)
+one <- gmm(weights = 1, means = list(c(0, 0)), covariances = list(S))
+c(closed_form = gmm_entropy(one),
+  analytic    = 0.5 * (2 * log(4 * pi) +
+                         as.numeric(determinant(S, logarithm = TRUE)$modulus)))
+#> closed_form    analytic 
+#>    2.483869    2.483869
+```
+
+### Shannon entropy, bracketed
+
+Shannon entropy is returned as a Monte-Carlo estimate with its standard
+error and an analytic upper bound that brackets it from above.
+
+``` r
+
+gmm_entropy(g, order = "shannon", n_mc = 5000L, seed = 1L)
+#> $mc
+#> [1] 3.477934
+#> 
+#> $mc_se
+#> [1] 0.01337235
+#> 
+#> $upper_bound
+#> [1] 3.531024
+#> 
+#> $n_mc
+#> [1] 5000
+```
+
+The estimate sits at or below the bound up to Monte-Carlo error, which
+is the coherence check the bound is there to provide.
+
+### Cauchy–Schwarz divergence
+
+[`gmm_divergence()`](https://max578.github.io/proxymix/reference/gmm_divergence.md)
+returns the closed-form, symmetric Cauchy–Schwarz divergence by default.
+It is non-negative and zero exactly when the two mixtures are
+proportional.
+
+``` r
+
+q <- gmm(weights = 1, means = list(c(0, 0)), covariances = list(diag(2) * 2))
+gmm_divergence(g, q)   # closed-form, symmetric
+#> [1] 0.3880596
+gmm_divergence(g, g)   # zero
+#> [1] 0
+```
+
+When the asymmetric Kullback–Leibler divergence is wanted instead,
+`type = "kl"` delegates to the package’s existing Monte-Carlo estimator
+[`gmm_kld()`](https://max578.github.io/proxymix/reference/gmm_kld.md).
+
+``` r
+
+gmm_divergence(g, q, type = "kl", n_mc = 2000L)$mc
+#> [1] 0.5703354
+```
+
+### Mutual information and predictive entropy
+
+Two further reads come from the same closed-form spine.
+[`gmm_mutual_information()`](https://max578.github.io/proxymix/reference/gmm_mutual_information.md)
+measures the dependence between two coordinate blocks of a fitted joint
+as the Cauchy–Schwarz divergence between the joint and the product of
+the marginals; it is non-negative and zero exactly when the blocks are
+independent.
+
+``` r
+
+s <- matrix(c(1, 0.7, 0.7, 1), 2, 2)
+joint <- gmm(weights = 1, means = list(c(0, 0)), covariances = list(s))
+gmm_mutual_information(joint, 1L, 2L)
+#> [1] 0.102997
+```
+
+[`gmm_conditional_entropy()`](https://max578.github.io/proxymix/reference/gmm_conditional_entropy.md)
+returns the predictive uncertainty of the target coordinates given the
+conditioned ones – the order-2 Renyi entropy of the conditional mixture
+from
+[`gmm_conditionalise()`](https://max578.github.io/proxymix/reference/gmm_conditionalise.md),
+evaluated row by row, with `NA` marking the target coordinate.
+
+``` r
+
+gmm_conditional_entropy(joint, given = rbind(c(NA, 0), c(NA, 1), c(NA, 2)))
+#> [1] 0.9288398 0.9288398 0.9288398
+```
+
+### When to use which
+
+The Renyi-2 entropy and the Cauchy–Schwarz divergence are exact and
+cheap (`O(K^2)` Gaussian evaluations), and are the recommended defaults
+for reporting the spread of a fitted mixture and the discrepancy between
+two fits. The Shannon entropy and the Kullback–Leibler divergence are
+the more familiar quantities but are Monte-Carlo estimates; reach for
+them when a downstream consumer requires those specific definitions.
+
+### Deterministic annealing and phase transitions
+
+The same statistical-mechanics framing – the fitting objective is a
+variational free energy $`F = \langle E \rangle - T H`$ – yields a
+robustness tool. Softening the E-step responsibilities by a temperature
+$`T`$, so that
+$`\gamma_{ik} \propto \pi_k\, \mathcal{N}(x_i;\ \mu_k, \Sigma_k)^{1/T}`$,
+and cooling $`T`$ from a high value toward one, turns the fit into a
+homotopy: at high $`T`$ the objective has a single smooth basin, and as
+$`T`$ falls the components bifurcate at critical temperatures. Setting
+`anneal = TRUE` on
+[`fit_em_samples()`](https://max578.github.io/proxymix/reference/fit_em_samples.md)
+or
+[`fit_kld_em()`](https://max578.github.io/proxymix/reference/fit_kld_em.md)
+uses this annealed path as a warm-start for the unchanged cold EM loop,
+which is far less sensitive to local optima than a cold multi-start.
+
+``` r
+
+x <- rbind(
+  matrix(rnorm(200), ncol = 2) + matrix(rep(c(-7, -7), each = 100), ncol = 2),
+  matrix(rnorm(200), ncol = 2) + matrix(rep(c( 7, -7), each = 100), ncol = 2),
+  matrix(rnorm(200), ncol = 2) + matrix(rep(c( 0,  8), each = 100), ncol = 2)
+)
+tgt <- gmm_target_from_samples(x)
+fit <- fit_em_samples(tgt, N = 3L, anneal = TRUE, seed = 1L)
+fit@diagnostics$annealed
+#> [1] TRUE
+```
+
+Cooling also discovers the component count.
+[`gmm_anneal_path()`](https://max578.github.io/proxymix/reference/gmm_anneal_path.md)
+tracks the number of distinct centroids as the temperature falls; the
+count occupying the widest temperature range is the discovered number of
+components, and the first bifurcation has the closed-form critical
+temperature $`T_c = \lambda_{\max}(\Sigma^{-1} C)`$, returned as
+`t_critical_analytic` for an independent check.
+
+``` r
+
+path <- gmm_anneal_path(x, k_max = 6L, n_steps = 60L, seed = 1L)
+path$k_selected
+#> [1] 3
+c(empirical = path$first_critical_temperature,
+  analytic  = path$t_critical_analytic)
+#> empirical  analytic 
+#>  47.60183  51.62393
+```
+
+### Maximum-entropy targets
+
+Entropy also points the other way – from a set of constraints to the
+least-committal density consistent with them.
+[`maxent_target()`](https://max578.github.io/proxymix/reference/maxent_target.md)
+builds that maximum-entropy density: the Gaussian under first- and
+second-moment constraints on the full space, the uniform under a support
+constraint alone, and a truncated Gaussian under second moments on a
+box. The bounded cases declare their support, so regime (iii) fits them
+under an automatically selected support-matched proposal.
+
+``` r
+
+g <- maxent_target(moments = list(mean = c(0, 0), cov = diag(2)))
+g@metadata$family
+#> [1] "maxent_gaussian"
+u <- maxent_target(support = list(lower = c(0, 0), upper = c(1, 1)))
+exp(u@log_density(matrix(c(0.5, 0.5), nrow = 1L)))   # 1 / area = 1
+#> [1] 1
+```
+
+### Selecting a component count with ICL
+
+[`bic_aic()`](https://max578.github.io/proxymix/reference/bic_aic.md)
+reports the integrated completed likelihood alongside the BIC and AIC.
+The ICL adds to the BIC twice the entropy of the fitted classification,
+$`\mathrm{ICL} = \mathrm{BIC} + 2 E_N`$ with
+$`E_N = -\sum_{i,k} \gamma_{ik} \log \gamma_{ik} \ge 0`$, so it
+penalises mixtures whose components overlap and favours well-separated
+solutions. It equals the BIC for a single component and is never
+smaller.
+
+``` r
+
+xs <- rbind(matrix(rnorm(200, -4), ncol = 2), matrix(rnorm(200, 4), ncol = 2))
+fit <- fit_em_samples(gmm_target_from_samples(xs), N = 2L)
+unlist(bic_aic(fit)[c("bic", "icl", "classification_entropy")])
+#>                    bic                    icl classification_entropy 
+#>           1.492235e+03           1.492235e+03           1.409324e-13
+```
+
+### Dependency structure of a mixture
+
+[`gmm_independence_graph()`](https://max578.github.io/proxymix/reference/gmm_independence_graph.md)
+reads the undirected second-order conditional-independence (Gaussian
+graphical model) structure of a fitted mixture: an edge $`i - j`$ is
+absent exactly when the partial correlation of coordinates $`i`$ and
+$`j`$, given all the others, is below a threshold – the Markov statement
+$`x_i \perp x_j \mid x_{\mathrm{rest}}`$ at second order. The overall
+covariance of a mixture is closed-form in its parameters, so no sampling
+is needed.
+
+``` r
+
+omega <- diag(4)                                   # a tridiagonal precision = a chain
+for (i in 1:3) omega[i, i + 1L] <- omega[i + 1L, i] <- -0.5
+g <- gmm(weights = 1, means = list(rep(0, 4)), covariances = list(solve(omega)))
+gmm_independence_graph(g)                          # recovers x1 - x2 - x3 - x4
+#>    x1 x2 x3 x4
+#> x1  0  1  0  0
+#> x2  1  0  1  0
+#> x3  0  1  0  1
+#> x4  0  0  1  0
+#> attr(,"pcor")
+#>              x1    x2    x3           x4
+#> x1 1.000000e+00 5e-01 5e-09 5.169725e-17
+#> x2 5.000000e-01 1e+00 5e-01 5.000000e-09
+#> x3 5.000000e-09 5e-01 1e+00 5.000000e-01
+#> x4 7.775557e-17 5e-09 5e-01 1.000000e+00
+```
+
+The distinctive use is **regime (iii)**. Composed with
+[`fit_kld_em()`](https://max578.github.io/proxymix/reference/fit_kld_em.md),
+the diagnostic recovers the dependency structure of a target you can
+only *evaluate* – an unnormalised energy density – where no sample
+exists to drive a conventional structure estimator. The continuous field
+below couples only neighbouring coordinates; the recovered graph is the
+chain.
+
+``` r
+
+energy <- function(X) {
+  X <- matrix(X, ncol = 3)
+  rowSums((X^2 - 1)^2) - 0.7 * (X[, 1] * X[, 2] + X[, 2] * X[, 3])
+}
+target <- gmm_target(n_dim = 3L, log_density = function(X) -energy(X))
+g <- fit_kld_em(target, N = 8L, proposal = is_uniform(3L, -3, 3),
+                is_size = 6000L, anneal = TRUE, seed = 1L, support_warn = FALSE)
+gmm_independence_graph(g)
+#> `gmm_independence_graph` received a fit whose quality certificate is flagged (converged = TRUE, degenerate = FALSE, relative ESS = 0.045).
+#> ℹ Downstream quantities condition on this proxy; consider refitting before relying on them.
+#> This message is displayed once per session.
+#>    x1 x2 x3
+#> x1  0  1  1
+#> x2  1  0  1
+#> x3  1  1  0
+#> attr(,"pcor")
+#>            x1        x2         x3
+#> x1 1.00000000 0.5168014 0.06905997
+#> x2 0.51680138 1.0000000 0.43982924
+#> x3 0.06905997 0.4398292 1.00000000
+```
+
+This is a graphical-model diagnostic, not a causal-discovery method: it
+returns the undirected Markov skeleton, not edge directions, and being
+second order it sees only dependence that enters the covariance.
+
+## References
+
+- Biernacki, C., Celeux, G. and Govaert, G. (2000). *Assessing a mixture
+  model for clustering with the integrated completed likelihood.* IEEE
+  Transactions on Pattern Analysis and Machine Intelligence 22(7),
+  719–725. <doi:10.1109/34.865189>.
+- Hoek, J. van der and Elliott, R. J. (2024). *Mixtures of multivariate
+  Gaussians.* Stochastic Analysis and Applications.
+  <doi:10.1080/07362994.2024.2372605>.
+- Jaynes, E. T. (1957). *Information theory and statistical mechanics.*
+  Physical Review 106(4), 620–630. <doi:10.1103/PhysRev.106.620>.
+- Rose, K. (1998). *Deterministic annealing for clustering, compression,
+  classification, regression, and related optimization problems.*
+  Proceedings of the IEEE 86(11), 2210–2239. <doi:10.1109/5.726788>.

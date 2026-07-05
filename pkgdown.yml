@@ -1,0 +1,20 @@
+pandoc: 3.9.0.2
+pkgdown: 2.2.0
+pkgdown_sha: ~
+articles:
+  calibration: calibration.html
+  density_shapes: density_shapes.html
+  end_of_sample: end_of_sample.html
+  entropy: entropy.html
+  from_kde: from_kde.html
+  many_methods: many_methods.html
+  missing_data_mnar: missing_data_mnar.html
+  missing_data: missing_data.html
+  operator_calculus: operator_calculus.html
+  posterior_proxy: posterior_proxy.html
+  quickstart: quickstart.html
+  three_regimes: three_regimes.html
+last_built: 2026-07-05T11:14Z
+urls:
+  reference: https://max578.github.io/proxymix/reference
+  article: https://max578.github.io/proxymix/articles

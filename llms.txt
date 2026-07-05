@@ -1,0 +1,541 @@
+# proxymix
+
+`proxymix` fits multivariate Gaussian-mixture proxies that are
+**Kullback–Leibler optimal** to user-supplied target densities on
+$`\mathbb{R}^p`$. Three regimes from Hoek and Elliott (2024) are unified
+under one verb:
+
+| Regime | When it applies | Method |
+|----|----|----|
+| **(i) moment** | $`N = 1`$ component | Closed-form moment matching |
+| **(ii) sample** | i.i.d. samples from the target are available | Classical EM |
+| **(iii) kld** | target density `f(x)` can be evaluated but **not** (cheaply) sampled | **KLD-EM with importance sampling** |
+
+Regime (iii) is the reason the package exists. The sample-based mixture
+packages (`mclust`, `mixtools`, `flexmix`) all assume i.i.d. draws from
+the target; `proxymix` fits directly against an evaluable (possibly
+unnormalised) log-density. The nearest CRAN neighbour is `AdMit`, which
+adaptively fits a mixture of Student-t distributions to an evaluable
+kernel as an importance/proposal density; `proxymix` differs in fitting
+a **Gaussian** mixture that is Kullback–Leibler optimal, precisely so
+that the fitted object then supports the closed-form operator calculus
+(marginals, conditionals, Bayes updates, products, convolutions,
+filtering) and carries a fit-quality certificate through every
+operation.
+
+**Why not MCMC?** If you can evaluate the unnormalised density you can
+always run a sampler and then fit a mixture to the draws. The
+regime-(iii) fit is the shortcut when what you want *is* the compact
+closed-form object: no chain tuning or convergence diagnostics, a
+deterministic pipeline given the seed, and a mixture whose marginals,
+conditionals, moments and samples are then available in closed form
+through the operator calculus. The trade-off is dimension: the
+importance sampling that drives regime (iii) loses effective sample size
+sharply beyond roughly $`p = 5`$–$`10`$, and every fit reports its
+effective sample size so that limit is visible rather than silent. For
+high-dimensional posteriors, sample with your favourite MCMC and use
+regime (ii) on the draws.
+
+## Installation
+
+From GitHub:
+
+``` R
+# install.packages("remotes")
+remotes::install_github("max578/proxymix")
+```
+
+or locally from the source tree:
+
+``` R
+R CMD build proxymix
+R CMD INSTALL proxymix_*.tar.gz
+```
+
+Documentation site: <https://max578.github.io/proxymix/>.
+
+## Quick start
+
+``` r
+
+library(proxymix)
+
+## A target you can evaluate but not sample from — a 2D "banana".
+banana <- banana_target()
+
+## Fit a 3-component Gaussian mixture proxy via KLD-EM with importance sampling.
+fit <- fit_proxymix(banana, N = 3L, regime = "kld",
+                    proposal = is_mvt(n_dim = 2L, df = 5),
+                    is_size = 2000L, max_iter = 60L, seed = 1L)
+
+print(fit)
+#> <gmm_fit>: regime = "kld", K = 3, p = 2
+#>   target     : banana
+#>   iterations : 37
+#>   converged  : TRUE
+#>   [1] w = 0.6456, |mu| = 0.3299, tr(Sigma) = 1.3601
+#>   [2] w = 0.2473, |mu| = 1.2996, tr(Sigma) = 2.2312
+#>   [3] w = 0.1071, |mu| = 1.8882, tr(Sigma) = 4.9044
+
+## Closed-form operations on the fitted mixture.
+gmm_marginalise(fit, keep = 1L)
+#> <marginalise(kld_em[N=3] on banana)>: K = 3 components in p = 1 dimensions
+#>   [1] w = 0.6456, |mu| = 0.1818, tr(Sigma) = 0.4620
+#>   [2] w = 0.2473, |mu| = 1.1518, tr(Sigma) = 0.4846
+#>   [3] w = 0.1071, |mu| = 1.5954, tr(Sigma) = 0.6321
+gmm_conditionalise(fit, given = c(NA, 0.5))
+#> <conditionalise(kld_em[N=3] on banana)>: K = 3 components in p = 1 dimensions
+#>   [1] w = 0.6730, |mu| = 0.2620, tr(Sigma) = 0.4524
+#>   [2] w = 0.2576, |mu| = 1.1133, tr(Sigma) = 0.2352
+#>   [3] w = 0.0694, |mu| = 1.4188, tr(Sigma) = 0.1199
+```
+
+## The unified fitting verb
+
+``` R
+fit_proxymix(
+  target,
+  N        = 1L,
+  regime   = c("auto", "moment", "sample", "kld"),
+  ...
+)
+```
+
+- `target` is an S7 `gmm_target` produced by
+  [`gmm_target()`](https://max578.github.io/proxymix/reference/gmm_target.md)
+  (from a log-density),
+  [`gmm_target_from_samples()`](https://max578.github.io/proxymix/reference/gmm_target_from_samples.md)
+  (from samples), or one of the built-in factories
+  ([`banana_target()`](https://max578.github.io/proxymix/reference/banana_target.md),
+  [`donut_target()`](https://max578.github.io/proxymix/reference/donut_target.md),
+  [`mixture_target()`](https://max578.github.io/proxymix/reference/mixture_target.md)).
+- `regime = "auto"` picks the cheapest applicable regime from the
+  target’s contents.
+
+## Closed-form mixture operators
+
+``` R
+dgmm(x, fit)              # density evaluation
+rgmm(n, fit)              # exact sampling
+gmm_marginalise(fit, keep)
+gmm_conditionalise(fit, given)
+gmm_kld(fit_p, fit_q)     # Monte Carlo + variational bounds
+```
+
+## Mapping the optima of an objective
+
+``` R
+fit   <- from_objective(f, lower, upper, N = 10L)  # a mixture map of the optima
+gmm_modes(fit)$modes                               # the distinct optima
+```
+
+[`from_objective()`](https://max578.github.io/proxymix/reference/from_objective.md)
+treats an objective `f` as the Gibbs measure `exp(-f / T)` — a
+regime-(iii) target you can evaluate but not sample — and returns a
+closed-form mixture over its low regions, so a multimodal `f` is
+recovered as a whole rather than one optimum at a time.
+[`gmm_modes()`](https://max578.github.io/proxymix/reference/gmm_modes.md)
+resolves the fitted map into the recovered optima.
+
+## Which function do I need?
+
+| You have | You want | Reach for |
+|----|----|----|
+| an evaluable (unnormalised) log-density | a compact closed-form proxy | [`gmm_target()`](https://max578.github.io/proxymix/reference/gmm_target.md) then `fit_proxymix(regime = "kld")` |
+| i.i.d. samples | a mixture fit | [`gmm_target_from_samples()`](https://max578.github.io/proxymix/reference/gmm_target_from_samples.md) then [`fit_proxymix()`](https://max578.github.io/proxymix/reference/fit_proxymix.md) |
+| an objective function | a map of its optima | [`from_objective()`](https://max578.github.io/proxymix/reference/from_objective.md), [`gmm_modes()`](https://max578.github.io/proxymix/reference/gmm_modes.md) |
+| a kernel density estimate | a small closed-form surrogate | [`from_kde()`](https://max578.github.io/proxymix/reference/from_kde.md) |
+| a fitted mixture | marginals, conditionals, updates | [`gmm_marginalise()`](https://max578.github.io/proxymix/reference/gmm_marginalise.md), [`gmm_conditionalise()`](https://max578.github.io/proxymix/reference/gmm_conditionalise.md), [`gmm_observe()`](https://max578.github.io/proxymix/reference/gmm_observe.md), [`gmm_affine()`](https://max578.github.io/proxymix/reference/gmm_affine.md) |
+| data with holes | multiple imputation | [`gmm_impute()`](https://max578.github.io/proxymix/reference/gmm_impute.md) with [`mar()`](https://max578.github.io/proxymix/reference/mechanism.md) / [`mnar()`](https://max578.github.io/proxymix/reference/mechanism.md) / [`censored()`](https://max578.github.io/proxymix/reference/mechanism.md) |
+| a time series + state-space model | filtering / stability testing | [`gmm_filter()`](https://max578.github.io/proxymix/reference/gmm_filter.md), [`gmm_eos_test()`](https://max578.github.io/proxymix/reference/gmm_eos_test.md) |
+| a fitted mixture | information-theoretic diagnostics | [`gmm_entropy()`](https://max578.github.io/proxymix/reference/gmm_entropy.md), [`gmm_divergence()`](https://max578.github.io/proxymix/reference/gmm_divergence.md), [`gmm_mutual_information()`](https://max578.github.io/proxymix/reference/gmm_mutual_information.md) |
+| a fitted mixture + treatment data | causal / decision quantities | [`gmm_intervene()`](https://max578.github.io/proxymix/reference/gmm_intervene.md), [`fit_uplift()`](https://max578.github.io/proxymix/reference/fit_uplift.md), [`proxy_cate()`](https://max578.github.io/proxymix/reference/proxy_cate.md) |
+| an unnormalised posterior | the marginal likelihood | [`gmm_evidence()`](https://max578.github.io/proxymix/reference/gmm_evidence.md) |
+| a fitted proxy | error bars on any functional | [`gmm_fit_ensemble()`](https://max578.github.io/proxymix/reference/gmm_fit_ensemble.md), [`proxy_functional_ci()`](https://max578.github.io/proxymix/reference/proxy_functional_ci.md) |
+| an evaluable-only target | the component count | [`select_N()`](https://max578.github.io/proxymix/reference/select_N.md) |
+| a fit collapsing in high dimension | an adaptive proposal | `fit_kld_em(adapt = "pmc")` |
+
+## Vignettes
+
+The package ships with twelve vignettes:
+
+- **`quickstart`** — one-page tour.
+- **`posterior_proxy`** — the flagship workflow: a real unnormalised
+  Bayesian posterior compressed to a proxy, with the evidence,
+  closed-form reads, and bootstrap error bars.
+- **`three_regimes`** — a walk-through of regimes (i)–(iii) on toy 2-D
+  targets, including the agreement of (i) and (iii) at $`N = 1`$.
+- **`density_shapes`** — the regime-(iii) demonstration: banana, donut,
+  three-mixture targets fit by importance-sampled KLD-EM.
+- **`operator_calculus`** — closed-form pushforward, Bayesian update,
+  aggregation and conditioning on a fitted mixture.
+- **`from_kde`** — compressing a kernel density estimate into a
+  Gaussian-mixture proxy.
+- **`many_methods`** — one fitted mixture in place of regression,
+  clustering, PCA and ridge regression.
+- **`entropy`** — closed-form entropy, divergence and mutual-information
+  diagnostics.
+- **`calibration`** — mapping the optima of an objective via its Gibbs
+  measure.
+- **`missing_data`** — multiple imputation by conditioning the fitted
+  mixture (missing at random).
+- **`missing_data_mnar`** — imputation under value-dependent missingness
+  and censoring, with sensitivity analysis.
+- **`end_of_sample`** — testing whether the last few observations of a
+  series are consistent with a fitted state-space model.
+
+## Interactive tutorial
+
+A standalone, single-file HTML primer for `proxymix` is hosted at
+
+> **<https://max578.github.io/proxymix-tutorial/>**
+
+The page is targeted at Adelaide University Mathematics and Statistics
+undergraduates (Guided depth, default) and postgraduate / PhD readers
+(Technical depth, via the in-page dial). It runs in the browser with no
+R install required, and works the same way offline by double-click.
+Source at
+[`max578/proxymix-tutorial`](https://github.com/max578/proxymix-tutorial).
+
+## Reference
+
+Hoek, J. van der and Elliott, R. J. (2024). *Mixtures of multivariate
+Gaussians.* Stochastic Analysis and Applications.
+[doi:10.1080/07362994.2024.2372605](https://doi.org/10.1080/07362994.2024.2372605).
+
+## Licence
+
+MIT © Max Moldovan.
+
+# Package index
+
+## Top-level interface
+
+The unified fitting verb and its dispatcher.
+
+- [`fit_proxymix()`](https://max578.github.io/proxymix/reference/fit_proxymix.md)
+  : Fit a Gaussian-mixture proxy to a target density
+
+## Classes
+
+The S7 class hierarchy.
+
+- [`autoplot.gmm_fit`](https://max578.github.io/proxymix/reference/autoplot.gmm_fit.md)
+  : Plot a fitted Gaussian-mixture proxy
+- [`glance.gmm_fit`](https://max578.github.io/proxymix/reference/glance.gmm_fit.md)
+  : Glance at a fitted Gaussian-mixture proxy
+- [`gmm()`](https://max578.github.io/proxymix/reference/gmm.md) : A
+  Gaussian mixture
+- [`gmm_counterfactual_law()`](https://max578.github.io/proxymix/reference/gmm_counterfactual_law.md)
+  : A per-unit counterfactual law
+- [`gmm_dim()`](https://max578.github.io/proxymix/reference/gmm_dim.md)
+  : Dimension of a Gaussian mixture
+- [`gmm_fit()`](https://max578.github.io/proxymix/reference/gmm_fit.md)
+  : A fitted Gaussian-mixture proxy
+- [`gmm_n_components()`](https://max578.github.io/proxymix/reference/gmm_n_components.md)
+  : Number of components in a Gaussian mixture
+- [`gmm_target()`](https://max578.github.io/proxymix/reference/gmm_target.md)
+  : A target density on R^p
+- [`gmm_weights()`](https://max578.github.io/proxymix/reference/gmm_weights.md)
+  [`gmm_means()`](https://max578.github.io/proxymix/reference/gmm_weights.md)
+  [`gmm_covariances()`](https://max578.github.io/proxymix/reference/gmm_weights.md)
+  : Component parameters of a Gaussian mixture
+- [`is_proposal()`](https://max578.github.io/proxymix/reference/is_proposal.md)
+  : An importance-sampling proposal
+- [`tidy.gmm`](https://max578.github.io/proxymix/reference/tidy.gmm.md)
+  : Tidy a Gaussian mixture into a component table
+
+## Target constructors
+
+Ways to build a `gmm_target` — from samples, from a log-density, or from
+a built-in.
+
+- [`banana_target()`](https://max578.github.io/proxymix/reference/banana_target.md)
+  : Banana-shaped 2-D target
+- [`donut_target()`](https://max578.github.io/proxymix/reference/donut_target.md)
+  : Donut-shaped 2-D target
+- [`epanechnikov_target()`](https://max578.github.io/proxymix/reference/epanechnikov_target.md)
+  : Compact-support Epanechnikov target
+- [`gmm_target_from_samples()`](https://max578.github.io/proxymix/reference/gmm_target_from_samples.md)
+  : Build a target from samples alone
+- [`maxent_target()`](https://max578.github.io/proxymix/reference/maxent_target.md)
+  : Maximum-entropy target under moment and support constraints
+- [`mixture_target()`](https://max578.github.io/proxymix/reference/mixture_target.md)
+  : Three-component Gaussian-mixture target
+
+## Fitting regimes
+
+The three KL-optimal fitting regimes from Hoek and Elliott (2024).
+
+- [`fit_em_samples()`](https://max578.github.io/proxymix/reference/fit_em_samples.md)
+  : Classical EM fit on samples
+- [`fit_kld_em()`](https://max578.github.io/proxymix/reference/fit_kld_em.md)
+  : Importance-sampled KLD-EM fit (regime iii)
+- [`fit_moment_match()`](https://max578.github.io/proxymix/reference/fit_moment_match.md)
+  : Closed-form moment-matching fit
+- [`from_kde()`](https://max578.github.io/proxymix/reference/from_kde.md)
+  : Compile a kernel-density estimate into a Gaussian-mixture proxy
+- [`from_objective()`](https://max578.github.io/proxymix/reference/from_objective.md)
+  : Map the optima of an objective with a Gaussian-mixture proxy
+- [`select_N()`](https://max578.github.io/proxymix/reference/select_N.md)
+  : Select the number of mixture components
+
+## Closed-form mixture operators
+
+Density, sampling, marginalisation, conditioning, divergence.
+
+- [`dgmm()`](https://max578.github.io/proxymix/reference/dgmm.md) :
+  Density of a Gaussian mixture
+- [`gmm_canonicalise()`](https://max578.github.io/proxymix/reference/gmm_canonicalise.md)
+  : Canonicalise the component ordering of a Gaussian mixture
+- [`gmm_conditionalise()`](https://max578.github.io/proxymix/reference/gmm_conditionalise.md)
+  : Conditional of a Gaussian mixture
+- [`gmm_divergence()`](https://max578.github.io/proxymix/reference/gmm_divergence.md)
+  : Divergence between two Gaussian mixtures
+- [`gmm_kld()`](https://max578.github.io/proxymix/reference/gmm_kld.md)
+  : Kullback-Leibler divergence between two Gaussian mixtures
+- [`gmm_marginalise()`](https://max578.github.io/proxymix/reference/gmm_marginalise.md)
+  : Marginal of a Gaussian mixture
+- [`gmm_mean()`](https://max578.github.io/proxymix/reference/gmm_mean.md)
+  [`gmm_cov()`](https://max578.github.io/proxymix/reference/gmm_mean.md)
+  : Mean and covariance of a Gaussian mixture
+- [`gmm_modes()`](https://max578.github.io/proxymix/reference/gmm_modes.md)
+  : Modes of a Gaussian mixture
+- [`pgmm()`](https://max578.github.io/proxymix/reference/pgmm.md)
+  [`qgmm()`](https://max578.github.io/proxymix/reference/pgmm.md) :
+  Distribution and quantile functions of a one-dimensional mixture
+- [`rgmm()`](https://max578.github.io/proxymix/reference/rgmm.md) :
+  Sample from a Gaussian mixture
+
+## Affine and causal operators
+
+Pushforward, Kalman update, conditioning, the do-operator and the
+counterfactual.
+
+- [`gmm_affine()`](https://max578.github.io/proxymix/reference/gmm_affine.md)
+  : Affine pushforward of a Gaussian mixture
+- [`gmm_aggregate()`](https://max578.github.io/proxymix/reference/gmm_aggregate.md)
+  : Aggregation pushforward of a Gaussian mixture
+- [`gmm_convolve()`](https://max578.github.io/proxymix/reference/gmm_convolve.md)
+  : Convolution of two independent Gaussian mixtures
+- [`gmm_counterfactual()`](https://max578.github.io/proxymix/reference/gmm_counterfactual.md)
+  : Counterfactual law of one unit (abduction, action, prediction)
+- [`gmm_filter()`](https://max578.github.io/proxymix/reference/gmm_filter.md)
+  : Bounded Gaussian-sum filtering over an observation series
+- [`gmm_intervene()`](https://max578.github.io/proxymix/reference/gmm_intervene.md)
+  : Interventional law of a Gaussian mixture (the do-operator)
+- [`gmm_missing()`](https://max578.github.io/proxymix/reference/gmm_missing.md)
+  : Condition a Gaussian mixture on the exact values of some coordinates
+- [`gmm_mix()`](https://max578.github.io/proxymix/reference/gmm_mix.md)
+  : Mix Gaussian mixtures into one mixture
+- [`gmm_observe()`](https://max578.github.io/proxymix/reference/gmm_observe.md)
+  : Bayesian update of a Gaussian mixture on a noisy linear observation
+- [`gmm_product()`](https://max578.github.io/proxymix/reference/gmm_product.md)
+  : Pointwise product of two Gaussian mixtures
+- [`gmm_reduce()`](https://max578.github.io/proxymix/reference/gmm_reduce.md)
+  : Reduce a Gaussian mixture to fewer components
+
+## Decision layer (uplift / next-best-action)
+
+One joint fit read as CATE, optimal action, off-line policy value, and
+an identification audit.
+
+- [`fit_uplift()`](https://max578.github.io/proxymix/reference/fit_uplift.md)
+  : Fit an uplift / next-best-action model from a data frame
+
+- [`gmm_cf_mean()`](https://max578.github.io/proxymix/reference/gmm_cf_mean.md)
+  : The identified counterfactual mean
+
+- [`gmm_cf_tail_prob()`](https://max578.github.io/proxymix/reference/gmm_cf_tail_prob.md)
+  : Refused: a tail probability of an individual counterfactual law
+
+- [`gmm_cf_variance()`](https://max578.github.io/proxymix/reference/gmm_cf_variance.md)
+  : Refused: the variance of an individual counterfactual law
+
+- [`gmm_counterfactual()`](https://max578.github.io/proxymix/reference/gmm_counterfactual.md)
+  : Counterfactual law of one unit (abduction, action, prediction)
+
+- [`gmm_intervene()`](https://max578.github.io/proxymix/reference/gmm_intervene.md)
+  : Interventional law of a Gaussian mixture (the do-operator)
+
+- [`proxy_cate()`](https://max578.github.io/proxymix/reference/proxy_cate.md)
+  : Heterogeneous treatment effects (CATE / uplift)
+
+- [`proxy_confounding_gap()`](https://max578.github.io/proxymix/reference/proxy_confounding_gap.md)
+  : Confounding gap: the sensitivity of the effect to the latent regime
+
+- [`proxy_decide()`](https://max578.github.io/proxymix/reference/proxy_decide.md)
+  : Optimal action and expected incremental value per unit
+
+- [`proxy_identification_report()`](https://max578.github.io/proxymix/reference/proxy_identification_report.md)
+  : The identification report (an executive one-pager)
+
+- [`proxy_overlap()`](https://max578.github.io/proxymix/reference/proxy_overlap.md)
+  : Per-unit overlap / positivity diagnostic
+
+- [`proxy_policy_value()`](https://max578.github.io/proxymix/reference/proxy_policy_value.md)
+  : Off-line value of a targeting policy
+
+- [`proxy_predict()`](https://max578.github.io/proxymix/reference/proxy_predict.md)
+  : Predicted outcome under a treatment (the seeing rung)
+
+- [`proxy_regime_segments()`](https://max578.github.io/proxymix/reference/proxy_regime_segments.md)
+  : The fitted regimes as an interpretable segment table
+
+- [`proxy_retrospective_uplift()`](https://max578.github.io/proxymix/reference/proxy_retrospective_uplift.md)
+  : Retrospective (counterfactual-mean) uplift for observed units
+
+- [`proxy_uplift()`](https://max578.github.io/proxymix/reference/proxy_uplift.md)
+  :
+
+  Uplift (alias of
+  [`proxy_cate()`](https://max578.github.io/proxymix/reference/proxy_cate.md)
+  for a binary treatment)
+
+- [`uplift_identification()`](https://max578.github.io/proxymix/reference/uplift_identification.md)
+  : Identification-report object
+
+- [`uplift_model()`](https://max578.github.io/proxymix/reference/uplift_model.md)
+  : A fitted uplift / next-best-action model
+
+## Missing data
+
+Multiple imputation by mixture conditioning, with pooling and the
+fraction of missing information.
+
+- [`as_mids()`](https://max578.github.io/proxymix/reference/as_mids.md)
+  : Convert imputations to a mice multiply-imputed dataset
+
+- [`gmm_complete()`](https://max578.github.io/proxymix/reference/gmm_complete.md)
+  :
+
+  Extract completed datasets from a `gmm_imputation`
+
+- [`gmm_imputation()`](https://max578.github.io/proxymix/reference/gmm_imputation.md)
+  : A Gaussian-mixture multiple-imputation result
+
+- [`gmm_impute()`](https://max578.github.io/proxymix/reference/gmm_impute.md)
+  : Multiple imputation by Gaussian-mixture conditioning
+
+- [`mar()`](https://max578.github.io/proxymix/reference/mechanism.md)
+  [`mnar()`](https://max578.github.io/proxymix/reference/mechanism.md)
+  [`censored()`](https://max578.github.io/proxymix/reference/mechanism.md)
+  : Missingness mechanisms for multiple imputation
+
+- [`proxy_fmi()`](https://max578.github.io/proxymix/reference/proxy_fmi.md)
+  : Fraction of missing information for a column mean
+
+- [`proxy_mnar_sensitivity()`](https://max578.github.io/proxymix/reference/proxy_mnar_sensitivity.md)
+  : Missing-not-at-random sensitivity analysis for a coordinate mean
+
+- [`proxy_pool()`](https://max578.github.io/proxymix/reference/proxy_pool.md)
+  : Pool a column mean across imputations
+
+## State-space instability testing
+
+End-of-sample structural-break test on the Gaussian-sum filter.
+
+- [`gmm_eos_test()`](https://max578.github.io/proxymix/reference/gmm_eos_test.md)
+  : End-of-sample instability test on a Gaussian state-space filter
+
+## Importance-sampling proposals
+
+Pluggable proposals for regime (iii).
+
+- [`is_mvn()`](https://max578.github.io/proxymix/reference/is_mvn.md) :
+  Multivariate-normal proposal
+- [`is_mvt()`](https://max578.github.io/proxymix/reference/is_mvt.md) :
+  Multivariate-t proposal
+- [`is_uniform()`](https://max578.github.io/proxymix/reference/is_uniform.md)
+  : Uniform-on-a-box proposal
+- [`proposal_uniform()`](https://max578.github.io/proxymix/reference/proposal_uniform.md)
+  [`proposal_mvn()`](https://max578.github.io/proxymix/reference/proposal_uniform.md)
+  [`proposal_mvt()`](https://max578.github.io/proxymix/reference/proposal_uniform.md)
+  : Preferred names for the importance-proposal constructors
+
+## Interoperability
+
+Compiling external Bayesian posteriors into proxies.
+
+- [`gmm_target_from_posterior()`](https://max578.github.io/proxymix/reference/gmm_target_from_posterior.md)
+  :
+
+  Compile an unnormalised Bayesian posterior into a `gmm_target`
+
+## Initialisation
+
+Initial guesses + best-of-multistart wrapper.
+
+- [`init_kmeans()`](https://max578.github.io/proxymix/reference/init_kmeans.md)
+  : k-means initialisation
+- [`init_moment_seed()`](https://max578.github.io/proxymix/reference/init_moment_seed.md)
+  : Moment-seed initialisation
+- [`init_random()`](https://max578.github.io/proxymix/reference/init_random.md)
+  : Random initialisation
+- [`init_warm_start()`](https://max578.github.io/proxymix/reference/init_warm_start.md)
+  : Warm-start initialisation from an existing fit
+- [`multi_start_best_of()`](https://max578.github.io/proxymix/reference/multi_start_best_of.md)
+  : Multi-start best-of wrapper
+
+## Diagnostics
+
+KLD trace, ESS, Hellinger MC, information criteria.
+
+- [`bic_aic()`](https://max578.github.io/proxymix/reference/bic_aic.md)
+  : Information criteria: BIC, AIC, and ICL
+- [`ess_summary()`](https://max578.github.io/proxymix/reference/ess_summary.md)
+  : Summary of importance-sampling diagnostics
+- [`ess_trace()`](https://max578.github.io/proxymix/reference/ess_trace.md)
+  : Effective sample size of the importance-sampling weights
+- [`gmm_anneal_path()`](https://max578.github.io/proxymix/reference/gmm_anneal_path.md)
+  : Phase-transition component discovery by deterministic annealing
+- [`gmm_conditional_entropy()`](https://max578.github.io/proxymix/reference/gmm_conditional_entropy.md)
+  : Conditional predictive entropy of a Gaussian mixture
+- [`gmm_entropy()`](https://max578.github.io/proxymix/reference/gmm_entropy.md)
+  : Differential entropy of a Gaussian mixture
+- [`gmm_evidence()`](https://max578.github.io/proxymix/reference/gmm_evidence.md)
+  : Estimate the target's normalising constant from a fitted proxy
+- [`gmm_fit_ensemble()`](https://max578.github.io/proxymix/reference/gmm_fit_ensemble.md)
+  : Bootstrap ensemble of a fitted proxy
+- [`gmm_fit_quality()`](https://max578.github.io/proxymix/reference/gmm_fit_quality.md)
+  : The quality certificate of a fit or derived mixture
+- [`gmm_independence_graph()`](https://max578.github.io/proxymix/reference/gmm_independence_graph.md)
+  : Conditional-independence (Gaussian graphical model) structure of a
+  mixture
+- [`gmm_mutual_information()`](https://max578.github.io/proxymix/reference/gmm_mutual_information.md)
+  : Cauchy-Schwarz mutual information between two coordinate blocks
+- [`hellinger_mc()`](https://max578.github.io/proxymix/reference/hellinger_mc.md)
+  : Monte-Carlo Hellinger distance between a fit and its target
+- [`kld_trace()`](https://max578.github.io/proxymix/reference/kld_trace.md)
+  : Per-iteration KLD trace of a fit
+- [`proxy_functional_ci()`](https://max578.github.io/proxymix/reference/proxy_functional_ci.md)
+  : Percentile interval for any functional of a fitted proxy
+
+# Articles
+
+### Vignettes
+
+- [Quickstart](https://max578.github.io/proxymix/articles/quickstart.md):
+- [Compressing a Bayesian posterior you can evaluate but not
+  sample](https://max578.github.io/proxymix/articles/posterior_proxy.md):
+- [Three regimes: moment, sample, and
+  KLD-EM](https://max578.github.io/proxymix/articles/three_regimes.md):
+- [KLD-EM on three density
+  shapes](https://max578.github.io/proxymix/articles/density_shapes.md):
+- [Affine-Gaussian operator calculus on a Gaussian
+  mixture](https://max578.github.io/proxymix/articles/operator_calculus.md):
+- [From KDE: compressing a kernel density estimate into a
+  Gaussian-mixture
+  proxy](https://max578.github.io/proxymix/articles/from_kde.md):
+- [One mixture, many
+  methods](https://max578.github.io/proxymix/articles/many_methods.md):
+- [Entropy diagnostics with
+  proxymix](https://max578.github.io/proxymix/articles/entropy.md):
+- [Mapping the optima of an
+  objective](https://max578.github.io/proxymix/articles/calibration.md):
+- [Imputing missing data with a
+  mixture](https://max578.github.io/proxymix/articles/missing_data.md):
+- [Missing data that depends on the missing
+  value](https://max578.github.io/proxymix/articles/missing_data_mnar.md):
+- [Testing the last observation for
+  instability](https://max578.github.io/proxymix/articles/end_of_sample.md):

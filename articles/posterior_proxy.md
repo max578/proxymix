@@ -1,0 +1,201 @@
+# Compressing a Bayesian posterior you can evaluate but not sample
+
+``` r
+
+library(proxymix)
+```
+
+This is the workflow the package exists for, end to end on real data:
+you have an *unnormalised* log-posterior – a likelihood times a prior,
+the normalising constant unknown – and you want a compact object you can
+marginalise, condition, integrate, and put error bars on, without
+running and tuning a Markov chain.
+
+## A real unnormalised posterior
+
+A Bayesian logistic regression of transmission type on weight for the
+built-in `mtcars` data, under a flat prior. The log-posterior is the
+log-likelihood, known only up to its normalising constant (the model
+evidence):
+
+``` r
+
+y <- mtcars$am
+w <- mtcars$wt
+
+log_post <- function(theta) {
+  if (is.null(dim(theta))) theta <- matrix(theta, ncol = 2L)
+  eta <- outer(rep(1, length(y)), theta[, 1L]) + outer(w, theta[, 2L])
+  colSums(y * eta - log1p(exp(eta)))
+}
+
+tgt <- gmm_target(
+  n_dim = 2L,
+  log_density = log_post,
+  normalised = FALSE,
+  name = "logistic(am ~ wt)"
+)
+```
+
+## Fit the proxy
+
+A cheap point fit locates the proposal (the usual workflow: any rough
+guess of location and scale will do – with `adapt = "pmc"` the proposal
+is refreshed from the fit itself, so it only has to be survivable, not
+good):
+
+``` r
+
+mle <- stats::glm(am ~ wt, data = mtcars, family = stats::binomial())
+q0 <- proposal_mvt(2L, mean = stats::coef(mle),
+                   sigma = 9 * stats::vcov(mle), df = 5)
+
+fit <- fit_proxymix(tgt, N = 2L, regime = "kld", proposal = q0,
+                    is_size = 3000L, max_iter = 60L, seed = 1L,
+                    adapt = "pmc")
+#> Warning: The importance-weighted EM objective decreased by 0.0716 during fitting.
+#> ℹ This usually signals ridge regularisation interacting with a near-singular
+#>   component.
+gmm_fit_quality(fit)
+#> $regime
+#> [1] "kld"
+#> 
+#> $converged
+#> [1] TRUE
+#> 
+#> $degenerate
+#> [1] FALSE
+#> 
+#> $ess
+#> [1] 2427.338
+#> 
+#> $ess_relative
+#> [1] 0.8091127
+#> 
+#> $min_component_ess
+#> [1] 1728.417
+#> 
+#> $max_weight
+#> [1] 0.0005377459
+#> 
+#> $support_fraction
+#> [1] 1
+#> 
+#> $kld_final
+#> [1] -7.823271
+#> 
+#> $validation_gap
+#> [1] 0.008137811
+```
+
+The certificate above is the part to read before anything else: the
+effective sample size of the importance weights, the degeneracy flag,
+and the held-out validation gap travel with the fit through every
+operation below.
+
+## The evidence, with an independent check
+
+The fitted proxy doubles as the importance proposal for the model
+evidence (the log marginal likelihood under the flat prior). A Laplace
+approximation computed directly from the MLE gives an independent
+first-order check:
+
+``` r
+
+ev <- gmm_evidence(fit, n = 4000L, seed = 2L)
+ev
+#> $log_z
+#> [1] -7.836408
+#> 
+#> $se_log_z
+#> [1] 0.002402278
+#> 
+#> $n
+#> [1] 4000
+#> 
+#> $ess
+#> [1] 3909.77
+#> 
+#> $max_weight_share
+#> [1] 0.00084703
+#> 
+#> $top_decile_share
+#> [1] 0.1246958
+#> 
+#> $flagged
+#> [1] FALSE
+#> 
+#> attr(,"class")
+#> [1] "proxymix_evidence"
+
+## Laplace approximation: log f(theta_hat) + (d/2) log(2 pi)
+## - (1/2) log det(-Hessian).
+H <- -solve(stats::vcov(mle))
+log_post(matrix(stats::coef(mle), nrow = 1L)) + log(2 * pi) -
+  0.5 * as.numeric(determinant(-H, logarithm = TRUE)$modulus)
+#> [1] -7.927324
+```
+
+## Closed-form reads off the proxy
+
+Everything below is exact algebra on the fitted mixture – no chains, no
+further target evaluations. The marginal posterior of the slope, the
+probability the slope is negative, and a central 90% interval:
+
+``` r
+
+slope <- gmm_marginalise(fit, keep = 2L)
+pgmm(0, slope)                 # P(beta_wt < 0 | data)
+#> [1] 0.9999166
+qgmm(c(0.05, 0.95), slope)     # central 90% credible interval
+#> [1] -8.072877 -2.533571
+```
+
+## Error bars on the proxy itself
+
+The numbers above condition on the fitted mixture. The bootstrap
+ensemble prices the fit’s own sampling variability – at zero new
+posterior evaluations, because the replicates re-weight the fit’s cached
+importance draws:
+
+``` r
+
+ens <- gmm_fit_ensemble(fit, B = 80L, seed = 3L)
+proxy_functional_ci(ens, gmm_mean, level = 0.9)
+#>   term estimate  conf.low conf.high
+#> 1   f1 14.80838 14.646580 14.972430
+#> 2   f2 -4.91444 -4.968041 -4.862262
+proxy_functional_ci(ens, function(g) pgmm(0, gmm_marginalise(g, keep = 2L)),
+                    level = 0.9)
+#>   term  estimate  conf.low conf.high
+#> 1   f1 0.9999166 0.9998968 0.9999476
+```
+
+## When to use this, and when not to
+
+If you can evaluate the unnormalised posterior you can always run MCMC
+and fit a sample-based mixture to the draws. Reach for the direct fit
+when what you want *is* the compact closed-form object – deterministic
+given the seed, no chain tuning, evidence and error bars included – and
+the dimension is moderate (the effective sample size of importance
+sampling falls sharply beyond roughly $`p = 5`$–$`10`$; every fit
+reports it). For high-dimensional posteriors, sample first and use
+regime (ii) on the draws. The nearest CRAN neighbour, `AdMit`,
+adaptively fits a mixture of Student-t densities to an evaluable kernel
+for use as a proposal; the Gaussian family here is what buys the
+closed-form operator calculus and the certificate that travel with the
+result.
+
+## References
+
+- Cappé, O., Douc, R., Guillin, A., Marin, J.-M. and Robert, C. P.
+  (2008). *Adaptive importance sampling in general mixture classes.*
+  Statistics and Computing 18, 447–459. <doi:10.1007/s11222-008-9059-x>.
+- Hoek, J. van der and Elliott, R. J. (2024). *Mixtures of multivariate
+  Gaussians.* Stochastic Analysis and Applications.
+  <doi:10.1080/07362994.2024.2372605>.
+- Owen, A. and Zhou, Y. (2000). *Safe and effective importance
+  sampling.* Journal of the American Statistical Association 95(449),
+  135–143. <doi:10.1080/01621459.2000.10473909>.
+- Rubin, D. B. (1981). *The Bayesian bootstrap.* The Annals of
+  Statistics 9(1), 130–134. <doi:10.1214/aos/1176345338>.

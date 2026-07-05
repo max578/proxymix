@@ -1,3 +1,30 @@
+# proxymix 0.15.0
+
+### New features
+
+* **The proxy's own error budget.** `gmm_fit_ensemble()` quantifies the
+  sampling variability of the fitted mixture itself by a Bayesian
+  (weighted) bootstrap: each replicate re-weights the fit's own
+  observations with Dirichlet weights and refits by a warm-started
+  weighted EM. In regime `"kld"` the observations are the fit's cached
+  importance draws, so a replicate costs zero new target evaluations.
+  `proxy_functional_ci()` turns the ensemble into a percentile interval
+  for any functional of the proxy (moments, tail probabilities via the
+  operator calculus, entropies, conditional means) -- functional-space
+  intervals sidestep component label-switching entirely. Coverage
+  validated against analytic truths on a correlated Gaussian target
+  (`validation/ensemble_coverage_study.R`, R = 200 replications):
+  nominal 90% intervals cover the two mean coordinates and a tail
+  probability at 0.885 / 0.855 / 0.855.
+* **`select_N()`: component-count selection across regimes.** With
+  samples, the smallest BIC (agreeing with `mclust::mclustBIC` on shared
+  data); with an evaluable-only target, each candidate is scored on its
+  held-out validation draw (whose Monte Carlo standard error is now
+  reported as `validation_mc_se`) and chosen by the one-standard-error
+  rule. On an evaluable three-component target the selector recovered
+  `N = 3` in ten out of ten seeds. The scored table is returned, so the
+  recommendation can be ignored by callers who prefer to choose by eye.
+
 # proxymix 0.14.0
 
 ### New features

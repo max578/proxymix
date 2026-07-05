@@ -1,34 +1,28 @@
-## from_fb_posterior.R -- the C4 consumer seam.
+## from_fb_posterior.R -- the posterior-producer seam.
 ##
-## Compress a flexyBayes posterior into a closed-form Gaussian-mixture proxy.
-## proxymix is the C4 *consumer*; flexyBayes is the C4 producer/owner. The
-## producer side (the exported `fb_log_posterior` generic in flexyBayes) is
-## not yet released, so this file consumes the DRAFT C4 contract through a
-## small, documented producer interface (`fb_log_posterior_spec()`), degrades
-## gracefully behind a capability probe (`fb_producer_available()`), and ships
-## a synthetic mock producer (`mock_fb_posterior()`) so the path is testable
-## with no sibling package installed.
-##
-## C4 reference: flexyBayes_dev/CONSTELLATION.md (contract registry, C4 row;
-## DAG outflow + acyclic note). proxymix never `Imports:` flexyBayes; the
-## return path (proxymix serving as a `posterior_proxy(type = "gmm")` backend)
-## stays an adapter on the flexyBayes side, never a reverse dependency, so the
-## constellation's acyclic invariant holds.
+## Compress an external Bayesian posterior into a closed-form Gaussian-mixture
+## proxy. The producer side (a package exporting an `fb_log_posterior`
+## generic) is addressed only through a small, documented producer interface
+## (`fb_log_posterior_spec()`); the path degrades gracefully behind a
+## capability probe (`fb_producer_available()`), and a synthetic mock producer
+## (`mock_fb_posterior()`) makes the path testable with no producer package
+## installed. proxymix never `Imports:` a producer package -- the seam is a
+## soft contract and `R CMD check` is clean with none installed.
 
 # ---------------------------------------------------------------------------
-# C4 producer interface -- the seam the B4 (flexyBayes) producer must satisfy
+# Producer interface -- the seam an external posterior producer must satisfy
 # ---------------------------------------------------------------------------
 
-#' The C4 `fb_log_posterior` producer interface
+#' The `fb_log_posterior` producer interface
 #'
-#' Materialises the draft C4 contract (`fb_log_posterior` / `posterior_proxy`,
-#' owned by flexyBayes) as a small, validated specification object that
-#' [from_fb_posterior()] consumes. It is the single seam between proxymix (the
-#' consumer) and flexyBayes (the producer): any object that satisfies the
-#' interface described here can be compressed into a Gaussian-mixture proxy
-#' without proxymix ever depending on flexyBayes at runtime.
+#' Materialises the posterior-producer contract as a small, validated
+#' specification object that [from_fb_posterior()] consumes. It is the single
+#' seam between proxymix (the consumer) and an external Bayesian fitting
+#' package (the producer): any object that satisfies the interface described
+#' here can be compressed into a Gaussian-mixture proxy without proxymix ever
+#' depending on the producer package at runtime.
 #'
-#' A conforming C4 producer is one of:
+#' A conforming producer is one of:
 #'
 #' * a **bare callable** `function(theta)` that takes a numeric matrix with
 #'   rows indexing independent parameter draws and columns indexing parameters,
@@ -37,9 +31,9 @@
 #'   callable must be vectorised, side-effect free, and domain-safe (return
 #'   `-Inf` outside support rather than erroring). Supply `parameter_names`
 #'   (or attach them as `attr(callable, "parameter_names")`);
-#' * a **fitted flexyBayes object** whose class registers an
-#'   `fb_log_posterior()` method *in flexyBayes* (the B4 follow-up). When that
-#'   producer lands, `fb_log_posterior(fit)` is expected to return an object
+#' * a **fitted model object** whose class registers an
+#'   `fb_log_posterior()` method *in its own package*. When such a producer
+#'   is installed, `fb_log_posterior(fit)` is expected to return an object
 #'   carrying the callable plus the metadata fields below, which this
 #'   constructor normalises;
 #' * an already-built **`fb_log_posterior_spec`**, returned unchanged.
@@ -51,27 +45,24 @@
 #'   \item{`parameter_names`}{Character vector naming the parameters; its
 #'     length fixes the proxy's ambient dimension.}
 #'   \item{`log_normalizer`}{The log marginal likelihood `log Z`, when the
-#'     producer can supply it (flexyBayes can for several backends), or
-#'     `NA_real_` otherwise. A finite value lets downstream diagnostics report
-#'     an absolute, rather than shifted, KLD.}
+#'     producer can supply it, or `NA_real_` otherwise. A finite value lets
+#'     downstream diagnostics report an absolute, rather than shifted, KLD.}
 #'   \item{`support_lower`, `support_upper`}{Optional length-`n_dim` numeric
 #'     bounds on each parameter's support (e.g. a variance parameter is bounded
 #'     below by zero). Used to centre and scale the default importance proposal;
 #'     `NA` entries are treated as unbounded.}
 #'   \item{`draws`}{Optional `n` by `n_dim` numeric matrix of posterior draws
 #'     from the producer, used only to seed the default importance proposal's
-#'     location and scale. Never required -- the C4 contract is the
+#'     location and scale. Never required -- the contract is the
 #'     *log-density*, not the draws.}
 #' }
 #'
-#' This is the proxymix-side reading of a contract owned by flexyBayes. Where
-#' the draft leaves a detail open, the choice made here (vectorised matrix
-#' input, `-Inf`-outside-support, optional `support_*` / `draws` proposal
-#' seeds) is a **proposal for the B4 producer to converge on**, recorded so the
-#' two sides agree before the producer ships.
+#' Where the contract leaves a detail open, the choice made here (vectorised
+#' matrix input, `-Inf`-outside-support, optional `support_*` / `draws`
+#' proposal seeds) is recorded so both sides of the seam agree.
 #'
-#' @param producer A bare callable, a fitted flexyBayes object (when the
-#'   producer is released), or an `fb_log_posterior_spec`.
+#' @param producer A bare callable, a fitted model object from a producer
+#'   package, or an `fb_log_posterior_spec`.
 #' @param parameter_names Character vector of parameter names. Required for the
 #'   bare-callable form unless attached as
 #'   `attr(producer, "parameter_names")`.
@@ -112,10 +103,10 @@ fb_log_posterior_spec <- function(producer,
     return(producer)
   }
 
-  ## A fitted flexyBayes object dispatches to flexyBayes's own
-  ## `fb_log_posterior()` method (the B4 producer). proxymix does not
-  ## implement that method -- it lives in flexyBayes -- so until the producer
-  ## ships, this branch raises the seam error rather than guessing.
+  ## A fitted model object dispatches to the producer package's own
+  ## `fb_log_posterior()` method. proxymix does not implement that method --
+  ## it lives in the producer -- so when no producer is installed this branch
+  ## raises the seam error rather than guessing.
   if (!is.function(producer)) {
     .fb_abort_no_producer(producer)
   }
@@ -155,38 +146,39 @@ print.fb_log_posterior_spec <- function(x, ...) {
 # Capability probe -- degrade gracefully when no real producer is present
 # ---------------------------------------------------------------------------
 
-#' Is a real flexyBayes C4 producer available?
+#' Is an external posterior producer available?
 #'
-#' Capability probe for the C4 seam. Returns `TRUE` only when an installed
-#' flexyBayes exports the `fb_log_posterior` generic (the B4 producer). Until
-#' that producer ships, the probe returns `FALSE`, and [from_fb_posterior()]
+#' Capability probe for the posterior-producer seam. Returns `TRUE` only when
+#' the package named by `getOption("proxymix.producer_package")` is installed
+#' and exports the `fb_log_posterior` generic. When no producer package is
+#' named or installed, the probe returns `FALSE`, and [from_fb_posterior()]
 #' still works against a bare callable or the synthetic [mock_fb_posterior()]
-#' -- the probe lets a caller branch on whether a live flexyBayes fit can be
+#' -- the probe lets a caller branch on whether a fitted model object can be
 #' compressed directly.
 #'
-#' The C4 contract is intentionally a soft seam (constellation invariant 1):
-#' proxymix never `Imports:` flexyBayes and `R CMD check` passes with no
-#' sibling installed. This probe is the runtime expression of that: it never
-#' errors, never loads flexyBayes as a side effect of a negative answer, and
-#' degrades to `FALSE` rather than failing.
+#' The contract is intentionally a soft seam: proxymix never `Imports:` a
+#' producer package and `R CMD check` passes with none installed. This probe
+#' is the runtime expression of that: it never errors, never loads the
+#' producer as a side effect of a negative answer, and degrades to `FALSE`
+#' rather than failing.
 #'
-#' @returns A logical scalar: `TRUE` when an installed flexyBayes exports
-#'   `fb_log_posterior`, `FALSE` otherwise.
+#' @returns A logical scalar: `TRUE` when an installed producer package
+#'   exports `fb_log_posterior`, `FALSE` otherwise.
 #' @family interop
 #' @seealso [from_fb_posterior()], [fb_log_posterior_spec()].
 #' @export
 #' @examples
-#' ## FALSE on a machine without the (as-yet-unreleased) flexyBayes producer.
+#' ## FALSE on a machine with no producer package configured.
 #' fb_producer_available()
 fb_producer_available <- function() {
-  ## flexyBayes is a *soft* cross-constellation peer, deliberately absent from
-  ## DESCRIPTION (constellation invariant 1 -- proxymix must `R CMD check`
-  ## clean with no sibling installed, and invariant 5 -- no reverse Imports).
-  ## The package name is assembled at runtime so the static dependency
-  ## scanner does not read it as an undeclared `requireNamespace()` target;
-  ## this is the contract-faithful expression of "optional peer", not a
-  ## hidden hard dependency.
-  pkg <- paste0("flexy", "Bayes")
+  ## The producer package is a soft, optional peer, deliberately absent from
+  ## DESCRIPTION (proxymix must `R CMD check` clean with none installed, and
+  ## the producer must never reverse-depend on proxymix). Its name is read
+  ## from an option so no unreleased package is hard-coded here.
+  pkg <- getOption("proxymix.producer_package", "")
+  if (!is.character(pkg) || length(pkg) != 1L || !nzchar(pkg)) {
+    return(FALSE)
+  }
   if (!requireNamespace(pkg, quietly = TRUE)) {
     return(FALSE)
   }
@@ -201,13 +193,13 @@ fb_producer_available <- function() {
 # Synthetic mock producer -- a known target for tests and examples
 # ---------------------------------------------------------------------------
 
-#' A synthetic C4 producer for testing the seam
+#' A synthetic posterior producer for testing the seam
 #'
-#' Returns a conforming `fb_log_posterior_spec` whose log-density is a
-#' known target, so the C4 consumer path can be exercised end-to-end with no
-#' flexyBayes installed. It is the stand-in for a fitted flexyBayes object
-#' until the B4 producer lands: the spec it returns is byte-for-byte the shape
-#' [from_fb_posterior()] expects from the real producer.
+#' Returns a conforming `fb_log_posterior_spec` whose log-density is a known
+#' target, so the consumer path can be exercised end-to-end with no producer
+#' package installed. It is the stand-in for a fitted model object: the spec
+#' it returns is byte-for-byte the shape [from_fb_posterior()] expects from a
+#' real producer.
 #'
 #' Two shapes are provided. `"gaussian"` is an isotropic `n_dim`-dimensional
 #' Gaussian with a known normaliser, against which proxy recovery and absolute
@@ -286,41 +278,40 @@ mock_fb_posterior <- function(shape = c("gaussian", "banana"),
 }
 
 # ---------------------------------------------------------------------------
-# C4 consumer verb -- compress a flexyBayes posterior into a proxy
+# Consumer verb -- compress an external posterior into a proxy
 # ---------------------------------------------------------------------------
 
-#' Compile a flexyBayes posterior into a Gaussian-mixture proxy
+#' Compile an external Bayesian posterior into a Gaussian-mixture proxy
 #'
-#' The C4 consumer entry point. Takes a flexyBayes C4 producer -- a fitted
-#' flexyBayes object (when the producer ships), a bare unnormalised
+#' The consumer entry point of the posterior-producer seam. Takes a producer
+#' -- a fitted model object from a producer package, a bare unnormalised
 #' log-posterior callable, or a pre-built [fb_log_posterior_spec()] -- and
 #' returns a closed-form `N`-component Gaussian-mixture proxy that compresses
 #' it, via importance-sampled KLD-EM ([fit_kld_em()], regime (iii)).
 #'
 #' This generalises proxymix's input source: where [from_kde()] compresses a
-#' kernel-density estimate and the PESTO path compresses an ensemble, this
-#' compresses a Bayesian posterior addressed only through its (unnormalised)
-#' log-density. The fitting machinery is unchanged; only the source differs.
-#' The proxy is closed-form marginalisable, conditionable, and samplable -- a
-#' few-component object replacing thousands of MCMC draws -- and, when the
-#' producer supplies a finite `log_normalizer`, carries an absolute (not
-#' shifted) KLD against the posterior.
+#' kernel-density estimate, this compresses a Bayesian posterior addressed
+#' only through its (unnormalised) log-density. The fitting machinery is
+#' unchanged; only the source differs. The proxy is closed-form
+#' marginalisable, conditionable, and samplable -- a few-component object
+#' replacing thousands of MCMC draws -- and, when the producer supplies a
+#' finite `log_normalizer`, carries an absolute (not shifted) KLD against the
+#' posterior.
 #'
-#' Activation. The fitted-object path activates when flexyBayes lands the C4
-#' producer (the `fb_log_posterior` generic) -- the B4 follow-up. Until then,
-#' [fb_producer_available()] returns `FALSE` and a fitted flexyBayes object
-#' raises an informative seam error; the bare-callable and
-#' [mock_fb_posterior()] paths work today with no sibling installed. proxymix
-#' never depends on flexyBayes at runtime (constellation invariant 1).
+#' The fitted-object path activates when an installed producer package
+#' exports the `fb_log_posterior` generic (see [fb_producer_available()]).
+#' Otherwise a fitted model object raises an informative seam error; the
+#' bare-callable and [mock_fb_posterior()] paths work with no producer
+#' installed. proxymix never depends on a producer package at runtime.
 #'
-#' Dimensional scope. As with [from_kde()], importance-sampled KLD-EM is the
-#' wedge: its effective sample size falls sharply in high dimensions. The
-#' guard is `n_dim <= 5` (recommended), `n_dim <= 10` (allowed with a
-#' warning), `n_dim > 10` (rejected). Inspect [ess_summary()] on the result.
+#' Dimensional scope. As with [from_kde()], importance-sampled KLD-EM loses
+#' effective sample size sharply in high dimensions. The guard is
+#' `n_dim <= 5` (recommended), `n_dim <= 10` (allowed with a warning),
+#' `n_dim > 10` (rejected). Inspect [ess_summary()] on the result.
 #'
-#' @param producer A flexyBayes C4 producer: a fitted flexyBayes object (when
-#'   the producer ships), a bare callable satisfying the
-#'   [fb_log_posterior_spec()] contract, or an `fb_log_posterior_spec`.
+#' @param producer A fitted model object from a producer package, a bare
+#'   callable satisfying the [fb_log_posterior_spec()] contract, or an
+#'   `fb_log_posterior_spec`.
 #' @param N Number of mixture components in the proxy.
 #' @param parameter_names Character vector of parameter names, forwarded to
 #'   [fb_log_posterior_spec()] for the bare-callable form. Ignored when
@@ -349,7 +340,7 @@ mock_fb_posterior <- function(shape = c("gaussian", "banana"),
 #' @param canonicalise Logical. If `TRUE`, the fitted mixture is post-processed
 #'   by [gmm_canonicalise()]. Forwarded to [fit_kld_em()].
 #'
-#' @returns A [gmm_fit] with `regime = "kld"` and metadata recording the C4
+#' @returns A [gmm_fit] with `regime = "kld"` and metadata recording the
 #'   source (`from_fb_posterior` with the producer's `name`, `n_dim`,
 #'   `parameter_names`, and `log_normalizer`).
 #' @family fitting
@@ -359,7 +350,7 @@ mock_fb_posterior <- function(shape = c("gaussian", "banana"),
 #'   [fb_producer_available()] for the capability probe.
 #' @export
 #' @examples
-#' ## Compress a synthetic flexyBayes posterior (no sibling package needed).
+#' ## Compress a synthetic posterior (no producer package needed).
 #' spec <- mock_fb_posterior(shape = "banana")
 #' fit <- from_fb_posterior(spec, N = 3L, is_size = 2000L,
 #'                          max_iter = 40L, seed = 1L)
@@ -407,7 +398,7 @@ from_fb_posterior <- function(producer,
     cli::cli_abort("`N` must be a positive integer scalar.")
   }
 
-  # Build the gmm_target from the C4 log-density -------------------------------
+  # Build the gmm_target from the producer's log-density -----------------------
   normalised <- isTRUE(is.finite(spec$log_normalizer) &&
                          spec$log_normalizer == 0)
   tgt <- gmm_target(
@@ -419,8 +410,7 @@ from_fb_posterior <- function(producer,
     name           = spec$name,
     metadata       = list(
       source          = "from_fb_posterior",
-      parameter_names = spec$parameter_names,
-      contract        = "C4"
+      parameter_names = spec$parameter_names
     )
   )
 
@@ -445,8 +435,7 @@ from_fb_posterior <- function(producer,
       producer_name   = spec$name,
       n_dim           = p,
       parameter_names = spec$parameter_names,
-      log_normalizer  = spec$log_normalizer,
-      contract        = "C4"
+      log_normalizer  = spec$log_normalizer
     )
   ))
   fit
@@ -532,20 +521,20 @@ from_fb_posterior <- function(producer,
   result <- tryCatch(log_density(probe), error = function(e) e)
   if (inherits(result, "error")) {
     cli::cli_abort(c(
-      "The supplied C4 log-posterior raised an error on a probe call.",
+      "The supplied log-posterior raised an error on a probe call.",
       "i" = "Contract: {.code function(theta_matrix)} returning a length-{.code nrow(theta)} numeric, vectorised, domain-safe.",
       "x" = conditionMessage(result)
     ))
   }
   if (!is.numeric(result)) {
     cli::cli_abort(c(
-      "The supplied C4 log-posterior returned a {.cls {class(result)[1L]}}, expected numeric.",
+      "The supplied log-posterior returned a {.cls {class(result)[1L]}}, expected numeric.",
       "i" = "Vectorisation contract: {.code function(theta_matrix)} -> {.cls numeric}."
     ))
   }
   if (length(result) != 2L) {
     cli::cli_abort(c(
-      "The supplied C4 log-posterior returned length {length(result)}, expected 2 (one per row).",
+      "The supplied log-posterior returned length {length(result)}, expected 2 (one per row).",
       "i" = "Vectorisation contract: {.code function(theta_matrix)} returns one value per row."
     ))
   }
@@ -611,17 +600,16 @@ from_fb_posterior <- function(producer,
 }
 
 ## Seam error for a producer that is not a callable and not a recognised
-## spec -- the fitted-flexyBayes-object path before the B4 producer ships.
+## spec -- the fitted-model-object path when no producer package is present.
 .fb_abort_no_producer <- function(producer) {
   cls <- class(producer)[1L]
   if (cls == "function") {
     return(invisible(NULL))
   }
   cli::cli_abort(c(
-    "No C4 producer is available for an object of class {.cls {cls}}.",
-    "i" = "The flexyBayes {.fn fb_log_posterior} producer (contract C4) is not yet released.",
-    "i" = "When it ships, a fitted flexyBayes object will compress directly; until then,",
-    "i" = "pass a bare callable via {.code from_fb_posterior(my_log_post, parameter_names = ...)}",
+    "No posterior producer is available for an object of class {.cls {cls}}.",
+    "i" = "No installed package supplies an {.fn fb_log_posterior} method for this class.",
+    "i" = "Pass a bare callable via {.code from_fb_posterior(my_log_post, parameter_names = ...)}",
     "i" = "or a synthetic producer from {.fn mock_fb_posterior} for testing.",
     "i" = "Probe availability with {.fn fb_producer_available}."
   ))

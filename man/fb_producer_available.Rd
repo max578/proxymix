@@ -2,31 +2,32 @@
 % Please edit documentation in R/from_fb_posterior.R
 \name{fb_producer_available}
 \alias{fb_producer_available}
-\title{Is a real flexyBayes C4 producer available?}
+\title{Is an external posterior producer available?}
 \usage{
 fb_producer_available()
 }
 \value{
-A logical scalar: \code{TRUE} when an installed flexyBayes exports
-\code{fb_log_posterior}, \code{FALSE} otherwise.
+A logical scalar: \code{TRUE} when an installed producer package
+exports \code{fb_log_posterior}, \code{FALSE} otherwise.
 }
 \description{
-Capability probe for the C4 seam. Returns \code{TRUE} only when an installed
-flexyBayes exports the \code{fb_log_posterior} generic (the B4 producer). Until
-that producer ships, the probe returns \code{FALSE}, and \code{\link[=from_fb_posterior]{from_fb_posterior()}}
+Capability probe for the posterior-producer seam. Returns \code{TRUE} only when
+the package named by \code{getOption("proxymix.producer_package")} is installed
+and exports the \code{fb_log_posterior} generic. When no producer package is
+named or installed, the probe returns \code{FALSE}, and \code{\link[=from_fb_posterior]{from_fb_posterior()}}
 still works against a bare callable or the synthetic \code{\link[=mock_fb_posterior]{mock_fb_posterior()}}
--- the probe lets a caller branch on whether a live flexyBayes fit can be
+-- the probe lets a caller branch on whether a fitted model object can be
 compressed directly.
 }
 \details{
-The C4 contract is intentionally a soft seam (constellation invariant 1):
-proxymix never \verb{Imports:} flexyBayes and \verb{R CMD check} passes with no
-sibling installed. This probe is the runtime expression of that: it never
-errors, never loads flexyBayes as a side effect of a negative answer, and
-degrades to \code{FALSE} rather than failing.
+The contract is intentionally a soft seam: proxymix never \verb{Imports:} a
+producer package and \verb{R CMD check} passes with none installed. This probe
+is the runtime expression of that: it never errors, never loads the
+producer as a side effect of a negative answer, and degrades to \code{FALSE}
+rather than failing.
 }
 \examples{
-## FALSE on a machine without the (as-yet-unreleased) flexyBayes producer.
+## FALSE on a machine with no producer package configured.
 fb_producer_available()
 }
 \seealso{

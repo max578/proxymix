@@ -36,7 +36,8 @@ fitter:
 \itemize{
 \item \code{"moment"} - closed-form moment matching (\code{\link[=fit_moment_match]{fit_moment_match()}}).
 \item \code{"sample"} - classical EM on i.i.d. samples (\code{\link[=fit_em_samples]{fit_em_samples()}}).
-\item \code{"kld"} - importance-sampled KLD-EM (\code{\link[=fit_kld_em]{fit_kld_em()}}) — the wedge.
+\item \code{"kld"} - importance-sampled KLD-EM (\code{\link[=fit_kld_em]{fit_kld_em()}}) for a target
+that can be evaluated but not sampled.
 }
 
 With \code{regime = "auto"} the choice is made from the shape of the supplied

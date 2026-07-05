@@ -21,19 +21,28 @@
 # returns, per step, the squared standardised innovation z_t' z_t, which is
 # chi-square on ncol(Y) degrees of freedom under the null.
 # ---------------------------------------------------------------------------
-.eos_innovations <- function(prior, A, Q, C, R, Y) {
+.eos_innovations <- function(prior, dynamics, measurement, Y) {
   n <- nrow(Y)
+  p <- gmm_dim(prior)
   z2 <- numeric(n)
   g <- prior
   for (t in seq_len(n)) {
-    pred <- gmm_affine(g, A, noise_cov = Q, ridge_eps = 0)
+    dyn <- .resolve_dynamics(dynamics, t, p)
+    meas <- .resolve_measurement(measurement, t, p)
+    if (S7::S7_inherits(dyn$Q, gmm) || S7::S7_inherits(meas$R, gmm)) {
+      cli::cli_abort(c(
+        "`gmm_eos_test` requires Gaussian noise: `Q` and `R` must be covariance matrices, not {.cls gmm} mixtures.",
+        "i" = "Both calibrations are defined for standardised Gaussian innovations; Gaussian-sum noise makes the innovation non-Gaussian."
+      ))
+    }
+    pred <- gmm_affine(g, dyn$A, b = dyn$b, noise_cov = dyn$Q, ridge_eps = 0)
     mu_pred <- as.numeric(pred@means[[1L]])
     p_pred <- pred@covariances[[1L]]
-    e <- as.numeric(Y[t, ]) - as.numeric(C %*% mu_pred)
-    s_mat <- C %*% p_pred %*% t(C) + R
+    e <- as.numeric(Y[t, ]) - (as.numeric(meas$C %*% mu_pred) + meas$d)
+    s_mat <- meas$C %*% p_pred %*% t(meas$C) + meas$R
     z2[t] <- drop(crossprod(e, solve(s_mat, e)))
-    g <- gmm_observe(pred, A = C, y = as.numeric(Y[t, ]),
-                     noise_cov = R, ridge_eps = 0)
+    g <- gmm_observe(pred, A = meas$C, y = as.numeric(Y[t, ]),
+                     noise_cov = meas$R, b = meas$d, ridge_eps = 0)
   }
   z2
 }
@@ -58,10 +67,15 @@
 #' @param prior A single-component [gmm] giving the state prior (the test is
 #'   defined for a fitted linear-Gaussian model; multi-component priors are not
 #'   yet supported).
-#' @param dynamics A list with `A` (the state-transition matrix) and `Q` (the
-#'   process-noise covariance), as for [gmm_filter()].
-#' @param measurement A list with `C` (the observation matrix) and `R` (the
-#'   observation-noise covariance).
+#' @param dynamics A list with `A` (the state-transition matrix), `Q` (the
+#'   process-noise covariance) and an optional offset `b`, or a function
+#'   `function(t)` returning such a list, exactly as for [gmm_filter()].
+#'   Gaussian-sum (mixture) process noise is rejected: the calibrations
+#'   below are defined for Gaussian innovations only.
+#' @param measurement A list with `C` (the observation matrix), `R` (the
+#'   observation-noise covariance) and an optional offset `d`, or a function
+#'   `function(t)` returning such a list, exactly as for [gmm_filter()].
+#'   Gaussian-sum measurement noise is rejected for the same reason.
 #' @param y A numeric vector or an `n x d` matrix of observations.
 #' @param m Integer; the number of end-of-sample observations to test, `1 <= m <
 #'   nrow(y)`. The tiny-`m` regime (`m = 1, 2, 3`) is the point of the test.
@@ -96,18 +110,17 @@ gmm_eos_test <- function(prior, dynamics, measurement, y, m = 1L,
       i = "End-of-sample testing is defined for a fitted linear-Gaussian model; \\
            the Gaussian-sum extension is not yet implemented."))
   }
-  if (!is.list(dynamics) || !all(c("A", "Q") %in% names(dynamics))) {
-    cli::cli_abort("`dynamics` must be a list with `A` and `Q`.")
-  }
-  if (!is.list(measurement) || !all(c("C", "R") %in% names(measurement))) {
-    cli::cli_abort("`measurement` must be a list with `C` and `R`.")
-  }
   if (!is.numeric(alpha) || length(alpha) != 1L || alpha <= 0 || alpha >= 1) {
     cli::cli_abort("`alpha` must be a single number in (0, 1).")
   }
-  A <- as.matrix(dynamics$A); Q <- as.matrix(dynamics$Q)
-  C <- as.matrix(measurement$C); R <- as.matrix(measurement$R)
+  ## Model specs are validated and normalised by the same resolvers as
+  ## `gmm_filter()`, so offsets (`b`, `d`) and function-valued (time-varying)
+  ## specs are honoured rather than silently dropped.
+  meas1 <- .resolve_measurement(measurement, 1L, gmm_dim(prior))
   Y <- if (is.matrix(y)) y else matrix(as.numeric(y), ncol = 1L)
+  if (ncol(Y) != meas1$m) {
+    cli::cli_abort("`y` must have {meas1$m} column(s) to match `measurement$C` (got {ncol(Y)}).")
+  }
   if (!all(is.finite(Y))) cli::cli_abort("`y` must be finite.")
   n <- nrow(Y)
   m <- as.integer(m)
@@ -115,7 +128,7 @@ gmm_eos_test <- function(prior, dynamics, measurement, y, m = 1L,
     cli::cli_abort("`m` must be a single integer with 1 <= m < nrow(y).")
   }
 
-  z2 <- .eos_innovations(prior, A, Q, C, R, Y)
+  z2 <- .eos_innovations(prior, dynamics, measurement, Y)
   d_obs <- ncol(Y)
   out_idx <- (n - m + 1L):n
   statistic <- sum(z2[out_idx])

@@ -1,3 +1,53 @@
+# proxymix 0.11.6
+
+### Bug fixes
+
+* The regime-(iii) stopping rule is now invariant to the target's normalising
+  constant. `fit_kld_em()` previously judged convergence on the relative change
+  of the importance-sampled KLD trace, whose magnitude carries the arbitrary
+  `-log Z(f)` offset of an unnormalised target -- so the same target, shifted
+  by a constant, could stop after two iterations where the unshifted run used
+  a hundred. Convergence is now judged on the importance-weighted EM objective
+  `Q(theta) = sum_n W_n log g(x_n)`, which never touches the constant.
+  Iteration counts (and therefore fits that previously stopped early or late
+  for this reason) can change; a regression test pins the invariance.
+* `gmm_eos_test()` now resolves its model specification through the same
+  machinery as `gmm_filter()`: dynamics and measurement offsets (`b`, `d`) are
+  honoured (they were previously ignored without notice, silently changing the
+  innovations), function-valued (time-varying) specifications are accepted,
+  and Gaussian-sum (mixture) noise is rejected with an informative error since
+  both calibrations assume Gaussian innovations.
+* The internal log-sum-exp kernel now excludes `NaN` entries from the sum
+  (previously they were neutralised only in the row maximum and could still
+  poison the result) and returns `+Inf` for a row containing `+Inf` (previously
+  `-Inf`, the exact inversion).
+* The smooth-gate moment computation in gated (MNAR) imputation floors its
+  normaliser exactly as the censored path does, so a component conditional
+  sitting deep in the never-missing region can no longer send `NaN` through
+  the M-step and abort the EM with an opaque Cholesky error.
+
+### Documentation
+
+* Documentation, NEWS, and shipped validation scripts have been reworded to
+  remove internal development vocabulary and references to unreleased
+  companion packages; the posterior-producer probe `fb_producer_available()`
+  now reads the producer package name from
+  `getOption("proxymix.producer_package")` instead of hard-coding one.
+* `README` gains a GitHub installation section, a "Why not MCMC?" positioning
+  note with the dimensional limits of regime (iii) stated up front, a
+  "Which function do I need?" routing table, and the full eleven-vignette
+  list; the quick-start example now runs to convergence.
+* The missing-data vignette's scope section now reflects the `mnar()` /
+  `censored()` mechanisms available since 0.11.0 and cross-references the
+  companion vignette.
+* `inst/validation/contract-conformance.R` is now self-contained: a minimal
+  serial sweep driver ships in the file, so the two-sided case set is
+  executable anywhere (an external driver can still be injected via
+  `PROXYMIX_CONFORMANCE_ENGINE`).
+* The pkgdown reference index gains the missing interoperability section and
+  the articles index gains the MNAR vignette (both previously broke the site
+  build).
+
 # proxymix 0.11.5
 
 ### Fixes
@@ -26,9 +76,9 @@
 ### Internal
 
 * Ships the durable two-sided conformance case set in `inst/validation/` (the
-  authored validation cases that the `/pkg-validation` dossier runs to compute the
-  API-coverage gate). No change to package code; this gives the previously
-  local-only validation IP a tracked, travelling home.
+  authored validation cases an external conformance harness executes to measure
+  coverage of the documented function surface). No change to package code; this
+  gives the previously local-only validation material a tracked, travelling home.
 
 # proxymix 0.11.3
 
@@ -326,27 +376,18 @@
 
 ### New features
 
-* **New: the C4 consumer seam -- compress a flexyBayes posterior directly.**
-  `from_fb_posterior()` is the consumer entry point for the constellation's
-  C4 contract (`fb_log_posterior` / `posterior_proxy`, owned by flexyBayes):
-  it takes a flexyBayes posterior addressed only through its (unnormalised)
-  log-density and returns a closed-form Gaussian-mixture proxy via
-  importance-sampled KLD-EM, generalising the input source from a kernel-
-  density estimate (`from_kde()`) or a PESTO ensemble to any Bayesian
-  posterior. The producer interface the seam expects is materialised and
-  documented by `fb_log_posterior_spec()`; `fb_producer_available()` is a
-  capability probe (degrades to `FALSE`, never errors, when no real producer
-  is installed); and `mock_fb_posterior()` is a synthetic producer (known
-  Gaussian or banana log-density) for testing the path with no sibling
-  package present. **Activation:** the fitted-flexyBayes-object path switches
-  on when flexyBayes lands its `fb_log_posterior` producer (the B4 follow-up).
-  Until then, a fitted flexyBayes object raises an informative seam error,
-  and the bare-callable / `mock_fb_posterior()` paths work today.
-  proxymix never `Imports:` flexyBayes -- the seam is a soft contract and
-  `R CMD check` is clean with no flexyBayes installed; the C4 return path
-  (proxymix serving as a `posterior_proxy(type = "gmm")` backend) stays an
-  adapter on the flexyBayes side, so the constellation's acyclic invariant
-  holds.
+* **New: a consumer seam for external Bayesian posteriors.**
+  `from_fb_posterior()` takes a posterior addressed only through its
+  (unnormalised) log-density and returns a closed-form Gaussian-mixture
+  proxy via importance-sampled KLD-EM, generalising the input source from a
+  kernel-density estimate (`from_kde()`) to any Bayesian posterior. The
+  producer interface the seam expects is materialised and documented by
+  `fb_log_posterior_spec()`; `fb_producer_available()` is a capability probe
+  (degrades to `FALSE`, never errors, when no producer package is
+  installed); and `mock_fb_posterior()` is a synthetic producer (known
+  Gaussian or banana log-density) for testing the path with no producer
+  package present. proxymix never `Imports:` a producer package -- the seam
+  is a soft contract and `R CMD check` is clean with none installed.
 
 * **New: `autoplot()` method for `gmm_fit`.** Render a fitted proxy with
   `ggplot2::autoplot(fit)` — a marginal density curve in one dimension, or a
@@ -416,12 +457,11 @@ missing-data conditioning — each closed-form and component-wise.
 
 ## proxymix 0.2.0 (2026-05-14)
 
-First Tier-2 graduation. Two methodological extensions that compose
-cleanly with the regime-(iii) wedge:
+Two methodological extensions that compose cleanly with regime (iii):
 
 ### User-visible changes
 
-* **New: `from_kde()` (Tier-2 graduation).** Compiles a kernel density
+* **New: `from_kde()`.** Compiles a kernel density
   estimate over an `n` by `p` sample matrix into a closed-form
   Gaussian-mixture proxy via regime-(iii) KLD-EM. Supports scalar and
   diagonal bandwidths (`"silverman"`, `"scott"`, numeric scalar, or
@@ -434,7 +474,7 @@ cleanly with the regime-(iii) wedge:
   S3 generic that compiles an (unnormalised) Bayesian posterior into a
   `gmm_target`. The `function` method accepts a bare vectorised callable
   with required `parameter_names`; the `default` method points users at
-  either a registered Bayesian-package method (`flexyBayes`, `brms`,
+  either a registered Bayesian-package method (`brms`,
   `Stan`, ...) or the function-based path. Vectorisation contract is
   enforced at construction by a probe call.
 * **URL and BugReports.** `DESCRIPTION` now ships the canonical GitHub
@@ -462,16 +502,15 @@ cleanly with the regime-(iii) wedge:
 ### Internal
 
 * `gmm_target_from_posterior` registers an S3 generic, paving the way
-  for `flexyBayes::gmm_target_from_posterior.flexybayes` (and analogous
-  methods for `brms`, `Stan`, `pymc`-via-reticulate) without coupling
-  proxymix to any specific Bayesian backend.
+  for class-specific methods registered by Bayesian fitting packages
+  (`brms`, `Stan`, `pymc`-via-reticulate) without coupling proxymix to
+  any specific Bayesian backend.
 * From-KDE log-density evaluation uses chunked matrix builds so that
   peak memory stays bounded for large IS samples.
 
 ## proxymix 0.1.1 (2026-05-14)
 
-Audit-driven scientific hardening pass. No new Tier-2 bodies; the wedge
-is made harder to misuse.
+Scientific hardening pass: regime (iii) is made harder to misuse.
 
 ### User-visible changes
 
@@ -521,8 +560,7 @@ is made harder to misuse.
 * `inst/validation/regime_iii_pinned_fits.R` — a runnable validation
   script that fits the three built-in targets with pinned seeds and
   records final KLD, ESS, max weight, validation KLD, and runtime;
-  intended as the seed of a growing `inst/validation/` corpus per the
-  audit's recommendation.
+  intended as the seed of a growing `inst/validation/` corpus.
 
 ### Tests
 
@@ -533,14 +571,6 @@ is made harder to misuse.
   exact KLD-EM updates, which is a tighter check than the previous
   generic "trace decreases" test.
 
-### Documentation
-
-* `critical_review_20260514.md` — itemised response to the audit.
-* `plan/proxymix_plan_v0.2_methodological.md` — forward methodological
-  plan: v0.2 (`from_kde()` graduation guard-railed), v0.3 (affine-
-  Gaussian operator calculus), and the audit-mandated five-phase
-  protocol for the collider / DAG research branch.
-
 ### Internal
 
 * `gmm_canonicalise()` is the single source of truth for component
@@ -550,7 +580,7 @@ is made harder to misuse.
 
 Initial development release. Local-only; not yet on CRAN.
 
-### Tier 1 — implemented
+### Implemented
 
 * `fit_proxymix()` top-level dispatcher with three fitting regimes:
   `"moment"` (closed-form moment matching), `"sample"` (classical EM on
@@ -574,9 +604,9 @@ Initial development release. Local-only; not yet on CRAN.
   from-function constructors `gmm_target_from_samples()` and
   `gmm_target()`.
 * Four vignettes: `quickstart`, `three_regimes`, `density_shapes`
-  (the wedge demonstration), and `roadmap` (Tier-2 stubs).
+  (the regime-(iii) demonstration), and `roadmap` (planned interfaces).
 
-### Tier 2 — provisioned stubs only
+### Provisioned stubs
 
 The following functions ship with stable signatures, full documentation,
 and signature-stability tests; the body raises a "not yet implemented"
@@ -593,7 +623,7 @@ condition with a pointer to `vignettes/roadmap.Rmd`.
   `gmm_target` via kernel-density or empirical-likelihood
   bridges.
 
-### Tier 3 — deferred (not in scope)
+### Deferred (not in scope)
 
 Adaptive importance sampling, variational boosting, normalising-flow
 proposals, Stan / INLA inter-operation.

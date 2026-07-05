@@ -36,7 +36,7 @@ Rscript inst/validation/regime_iii_pinned_fits.R
 
 Unit tests (`tests/testthat/`) protect API contracts and ensure new code
 does not regress against old code. The validation corpus protects
-**numerical claims**: that the wedge fits the donut to KLD ≲ 1.5 on
+**numerical claims**: that regime (iii) fits the donut to KLD ≲ 1.5 on
 3500 IS draws with a `df = 5` Student-t proposal, that the banana fits
 to KLD ≲ 0.2, and so on. Unit tests can move when the API moves; the
 validation corpus moves only when the *science* moves.

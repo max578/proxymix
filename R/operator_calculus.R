@@ -89,7 +89,6 @@
 #' @returns A [gmm] in `R^m` with the same number of components and the
 #'   same weights as `g`.
 #' @family operators
-#' @family v0_3
 #' @export
 #' @examples
 #' g <- gmm(weights = c(0.5, 0.5),
@@ -168,7 +167,6 @@ gmm_affine <- function(g, A, b = 0, noise_cov = NULL, ridge_eps = 1e-6) {
 #' @returns A [gmm] in `R^p` with the same number of components and the
 #'   reweighted component weights.
 #' @family operators
-#' @family v0_3
 #' @export
 #' @examples
 #' g <- gmm(weights = c(0.5, 0.5),
@@ -283,7 +281,6 @@ gmm_observe <- function(g, A, y, noise_cov, b = 0, ridge_eps = 1e-6) {
 #'
 #' @returns A [gmm] in `R^m`.
 #' @family operators
-#' @family v0_3
 #' @export
 #' @examples
 #' g <- gmm(weights = c(0.5, 0.5),
@@ -320,7 +317,6 @@ gmm_aggregate <- function(g, A, noise_cov = NULL, ridge_eps = 1e-6) {
 #'
 #' @returns A [gmm] in `R^(p - length(observed))`.
 #' @family operators
-#' @family v0_3
 #' @export
 #' @examples
 #' g <- gmm(weights = c(0.4, 0.6),

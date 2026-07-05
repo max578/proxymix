@@ -12,6 +12,7 @@ Fits multivariate Gaussian-mixture proxies that are Kullback-Leibler optimal to 
 Useful links:
 \itemize{
   \item \url{https://github.com/max578/proxymix}
+  \item \url{https://max578.github.io/proxymix/}
   \item Report bugs at \url{https://github.com/max578/proxymix/issues}
 }
 

@@ -22,8 +22,8 @@ gmm_target_from_posterior(model, ...)
 \item{model}{One of:
 \itemize{
 \item a function — a bare callable satisfying the contract above;
-\item a fitted model object whose class registers a method (e.g.
-\code{flexybayes::gmm_target_from_posterior.flexybayes}).
+\item a fitted model object whose class registers a
+\verb{gmm_target_from_posterior.<class>} method in its own package.
 }}
 
 \item{...}{Forwarded to method-specific implementations.}
@@ -45,9 +45,9 @@ A \link{gmm_target} with \code{normalised = FALSE} and the user-supplied
 }
 \description{
 Generic S3 constructor that turns a Bayesian posterior — represented
-either by a fitted model object (e.g. from \code{flexyBayes}, \code{brms},
-\code{Stan}) or by a bare callable — into a \code{gmm_target} suitable for the
-regime (iii) wedge of \code{\link[=fit_proxymix]{fit_proxymix()}} / \code{\link[=fit_kld_em]{fit_kld_em()}}.
+either by a fitted model object (e.g. from \code{brms} or \code{Stan}) or by a
+bare callable — into a \code{gmm_target} suitable for regime (iii) of
+\code{\link[=fit_proxymix]{fit_proxymix()}} / \code{\link[=fit_kld_em]{fit_kld_em()}}.
 }
 \details{
 The contract for the underlying callable is:
@@ -86,9 +86,5 @@ Other interop:
 \code{\link{fb_producer_available}()},
 \code{\link{from_fb_posterior}()},
 \code{\link{mock_fb_posterior}()}
-
-Other v0_2: 
-\code{\link{from_kde}()}
 }
 \concept{interop}
-\concept{v0_2}

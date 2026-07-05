@@ -47,7 +47,11 @@
   Y <- outer(mu, sqrt(2 * s2) * gh$x, `+`)            # length(mu) x Q
   d <- if (link == "logit") stats::plogis(a + b * Y) else stats::pnorm(a + b * Y)
   W <- matrix(gh$w, nrow = length(mu), ncol = length(gh$x), byrow = TRUE)
-  I  <- rowSums(W * d) / sqrt(pi)
+  ## Floor the gate normaliser exactly as the truncated path floors Z: when a
+  ## component's conditional sits deep in the never-missing region, I underflows
+  ## to 0 and an unfloored division would send NaN into the M-step through a
+  ## responsibility that is itself ~0 (0 * NaN = NaN poisons colSums).
+  I  <- pmax(rowSums(W * d) / sqrt(pi), 1e-300)
   m1 <- rowSums(W * Y * d) / sqrt(pi) / I
   m2 <- rowSums(W * Y * Y * d) / sqrt(pi) / I
   list(I = I, m1 = m1, v = pmax(m2 - m1 * m1, 0))

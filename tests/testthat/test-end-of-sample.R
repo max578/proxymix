@@ -27,7 +27,10 @@ test_that("gmm_eos_test validates its inputs", {
   expect_error(gmm_eos_test(gmm(weights = c(.5, .5), means = list(0, 1),
                                 covariances = list(matrix(1), matrix(1))),
                             mdl$dynamics, mdl$measurement, y), "single-component")
-  expect_error(gmm_eos_test(mdl$prior, list(A = matrix(1)), mdl$measurement, y), "Q")
+  ## Specs resolve exactly as for gmm_filter(): `A` is mandatory, `Q` may be
+  ## NULL (a deterministic predict), so the malformed case is a missing `A`.
+  expect_error(gmm_eos_test(mdl$prior, list(Q = matrix(1)), mdl$measurement, y), "A")
+  expect_no_error(gmm_eos_test(mdl$prior, list(A = matrix(1)), mdl$measurement, y))
   expect_error(gmm_eos_test(mdl$prior, mdl$dynamics, mdl$measurement, y, m = 0L),
                "1 <= m")
   expect_error(gmm_eos_test(mdl$prior, mdl$dynamics, mdl$measurement, y, m = 500L),

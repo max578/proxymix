@@ -2,7 +2,7 @@
 % Please edit documentation in R/from_fb_posterior.R
 \name{from_fb_posterior}
 \alias{from_fb_posterior}
-\title{Compile a flexyBayes posterior into a Gaussian-mixture proxy}
+\title{Compile an external Bayesian posterior into a Gaussian-mixture proxy}
 \usage{
 from_fb_posterior(
   producer,
@@ -24,9 +24,9 @@ from_fb_posterior(
 )
 }
 \arguments{
-\item{producer}{A flexyBayes C4 producer: a fitted flexyBayes object (when
-the producer ships), a bare callable satisfying the
-\code{\link[=fb_log_posterior_spec]{fb_log_posterior_spec()}} contract, or an \code{fb_log_posterior_spec}.}
+\item{producer}{A fitted model object from a producer package, a bare
+callable satisfying the \code{\link[=fb_log_posterior_spec]{fb_log_posterior_spec()}} contract, or an
+\code{fb_log_posterior_spec}.}
 
 \item{N}{Number of mixture components in the proxy.}
 
@@ -71,41 +71,40 @@ Forwarded to \code{\link[=fit_kld_em]{fit_kld_em()}}.}
 by \code{\link[=gmm_canonicalise]{gmm_canonicalise()}}. Forwarded to \code{\link[=fit_kld_em]{fit_kld_em()}}.}
 }
 \value{
-A \link{gmm_fit} with \code{regime = "kld"} and metadata recording the C4
+A \link{gmm_fit} with \code{regime = "kld"} and metadata recording the
 source (\code{from_fb_posterior} with the producer's \code{name}, \code{n_dim},
 \code{parameter_names}, and \code{log_normalizer}).
 }
 \description{
-The C4 consumer entry point. Takes a flexyBayes C4 producer -- a fitted
-flexyBayes object (when the producer ships), a bare unnormalised
+The consumer entry point of the posterior-producer seam. Takes a producer
+-- a fitted model object from a producer package, a bare unnormalised
 log-posterior callable, or a pre-built \code{\link[=fb_log_posterior_spec]{fb_log_posterior_spec()}} -- and
 returns a closed-form \code{N}-component Gaussian-mixture proxy that compresses
 it, via importance-sampled KLD-EM (\code{\link[=fit_kld_em]{fit_kld_em()}}, regime (iii)).
 }
 \details{
 This generalises proxymix's input source: where \code{\link[=from_kde]{from_kde()}} compresses a
-kernel-density estimate and the PESTO path compresses an ensemble, this
-compresses a Bayesian posterior addressed only through its (unnormalised)
-log-density. The fitting machinery is unchanged; only the source differs.
-The proxy is closed-form marginalisable, conditionable, and samplable -- a
-few-component object replacing thousands of MCMC draws -- and, when the
-producer supplies a finite \code{log_normalizer}, carries an absolute (not
-shifted) KLD against the posterior.
+kernel-density estimate, this compresses a Bayesian posterior addressed
+only through its (unnormalised) log-density. The fitting machinery is
+unchanged; only the source differs. The proxy is closed-form
+marginalisable, conditionable, and samplable -- a few-component object
+replacing thousands of MCMC draws -- and, when the producer supplies a
+finite \code{log_normalizer}, carries an absolute (not shifted) KLD against the
+posterior.
 
-Activation. The fitted-object path activates when flexyBayes lands the C4
-producer (the \code{fb_log_posterior} generic) -- the B4 follow-up. Until then,
-\code{\link[=fb_producer_available]{fb_producer_available()}} returns \code{FALSE} and a fitted flexyBayes object
-raises an informative seam error; the bare-callable and
-\code{\link[=mock_fb_posterior]{mock_fb_posterior()}} paths work today with no sibling installed. proxymix
-never depends on flexyBayes at runtime (constellation invariant 1).
+The fitted-object path activates when an installed producer package
+exports the \code{fb_log_posterior} generic (see \code{\link[=fb_producer_available]{fb_producer_available()}}).
+Otherwise a fitted model object raises an informative seam error; the
+bare-callable and \code{\link[=mock_fb_posterior]{mock_fb_posterior()}} paths work with no producer
+installed. proxymix never depends on a producer package at runtime.
 
-Dimensional scope. As with \code{\link[=from_kde]{from_kde()}}, importance-sampled KLD-EM is the
-wedge: its effective sample size falls sharply in high dimensions. The
-guard is \code{n_dim <= 5} (recommended), \code{n_dim <= 10} (allowed with a
-warning), \code{n_dim > 10} (rejected). Inspect \code{\link[=ess_summary]{ess_summary()}} on the result.
+Dimensional scope. As with \code{\link[=from_kde]{from_kde()}}, importance-sampled KLD-EM loses
+effective sample size sharply in high dimensions. The guard is
+\code{n_dim <= 5} (recommended), \code{n_dim <= 10} (allowed with a warning),
+\code{n_dim > 10} (rejected). Inspect \code{\link[=ess_summary]{ess_summary()}} on the result.
 }
 \examples{
-## Compress a synthetic flexyBayes posterior (no sibling package needed).
+## Compress a synthetic posterior (no producer package needed).
 spec <- mock_fb_posterior(shape = "banana")
 fit <- from_fb_posterior(spec, N = 3L, is_size = 2000L,
                          max_iter = 40L, seed = 1L)

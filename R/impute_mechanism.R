@@ -34,7 +34,7 @@
 #' unobserved value \eqn{y}, where \eqn{g} is the logistic or normal link. The
 #' slope `beta` is the sensitivity parameter and is supplied, not estimated --
 #' missing-not-at-random departures are not identified from the observed data, so
-#' the honest use is to posit `beta`, propagate it, and report how conclusions
+#' the appropriate use is to posit `beta`, propagate it, and report how conclusions
 #' move with it (see [proxy_mnar_sensitivity()]). The intercept is calibrated to
 #' the observed missingness rate. `beta = 0` is missing at random.
 #'

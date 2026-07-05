@@ -58,11 +58,5 @@ Other operators:
 \code{\link{gmm_intervene}()},
 \code{\link{gmm_missing}()},
 \code{\link{gmm_reduce}()}
-
-Other v0_3: 
-\code{\link{gmm_affine}()},
-\code{\link{gmm_aggregate}()},
-\code{\link{gmm_missing}()}
 }
 \concept{operators}
-\concept{v0_3}

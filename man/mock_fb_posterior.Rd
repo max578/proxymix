@@ -2,7 +2,7 @@
 % Please edit documentation in R/from_fb_posterior.R
 \name{mock_fb_posterior}
 \alias{mock_fb_posterior}
-\title{A synthetic C4 producer for testing the seam}
+\title{A synthetic posterior producer for testing the seam}
 \usage{
 mock_fb_posterior(
   shape = c("gaussian", "banana"),
@@ -28,11 +28,11 @@ normalised and \code{log_normalizer} is \code{0}.}
 An \code{fb_log_posterior_spec}.
 }
 \description{
-Returns a conforming \code{fb_log_posterior_spec} whose log-density is a
-known target, so the C4 consumer path can be exercised end-to-end with no
-flexyBayes installed. It is the stand-in for a fitted flexyBayes object
-until the B4 producer lands: the spec it returns is byte-for-byte the shape
-\code{\link[=from_fb_posterior]{from_fb_posterior()}} expects from the real producer.
+Returns a conforming \code{fb_log_posterior_spec} whose log-density is a known
+target, so the consumer path can be exercised end-to-end with no producer
+package installed. It is the stand-in for a fitted model object: the spec
+it returns is byte-for-byte the shape \code{\link[=from_fb_posterior]{from_fb_posterior()}} expects from a
+real producer.
 }
 \details{
 Two shapes are provided. \code{"gaussian"} is an isotropic \code{n_dim}-dimensional

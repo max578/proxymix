@@ -154,11 +154,11 @@ ggplot() +
 # Scope and limits (v0.2)
 
 * **Dimensional cap.** `from_kde()` is well-tested for `p <= 5`; it warns
-  between `p = 6` and `p = 10`, and refuses `p > 10`.  The wedge of
-  regime (iii) is importance sampling, whose effective sample size falls
-  sharply in high dimensions.  The higher-dimensional path waits for the
-  v0.3 affine-Gaussian operator calculus, which composes a low-`p` proxy
-  with linear operators rather than fitting in the ambient space.
+  between `p = 6` and `p = 10`, and refuses `p > 10`.  Regime (iii) is
+  driven by importance sampling, whose effective sample size falls
+  sharply in high dimensions.  For richer ambient spaces, compose a
+  low-`p` proxy with the affine-Gaussian operator calculus rather than
+  fitting in the ambient space.
 * **Bandwidth shapes.** Only scalar and diagonal bandwidths are
   supported.  A full-matrix bandwidth effectively encodes a covariance
   estimate and blurs the KDE-vs-mixture distinction; if that is what you

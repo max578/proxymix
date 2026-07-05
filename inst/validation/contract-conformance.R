@@ -1,41 +1,134 @@
-## Durable two-sided conformance case set for proxymix (the authored, non-
-## regenerable validation IP). Each function carries POSITIVE cases (valid /
-## extreme-but-valid input runs, checked against a cheap oracle) and NEGATIVE
-## cases (malformed input is REJECTED with a clean error), plus metamorphic
-## invariants. This file is the durable home (ships with the package, tracked on
-## the package remote); it is executed by the /pkg-validation dossier, which adds
-## the verdict engine and writes the api-coverage gate the release relies on.
+## Durable two-sided conformance case set for proxymix. Each function carries
+## POSITIVE cases (valid / extreme-but-valid input runs, checked against a
+## cheap oracle where one exists) and NEGATIVE cases (malformed input is
+## REJECTED with a clean error), plus metamorphic invariants.
 ##
 ## Contract-conformance sweep -- two-sided "corner to corner" over the documented
-## function surface of the sixteen capabilities. For each function:
+## function surface. For each function:
 ##   * POSITIVE cases  -- a valid input (including extreme-but-valid: single
 ##                        component, tiny variance, large N) runs, and where an
 ##                        oracle is cheap the result is checked against it;
 ##   * NEGATIVE cases  -- a malformed, out-of-domain, wrong-type or NA/Inf input is
 ##                        REJECTED with a clean error, never accepted silently.
 ## Plus metamorphic invariants (identity maps, composition, log/exp, reduction
-## mean-preservation, same-seed reproducibility). Writes
-## bench/results/contract-conformance.rds for the AI-auditor dossier
-## (audit_docs.R reads $verdicts/$summary/$metamorphic/$findings/$n_*).
+## mean-preservation, same-seed reproducibility).
 ##
-## Run from report/ :  Rscript bench/contract-conformance.R
-## The independent oracles here are base-R re-derivations and the verdict engine
-## itself (pv_grid/pv_verdict/pv_metamorphic), not the package under study.
+## The file is SELF-CONTAINED: a minimal serial sweep driver is defined below
+## and used whenever no richer external driver is supplied. An external driver
+## (defining pv_grid / pv_metamorphic / pv_assemble_conformance / pv_provenance
+## with compatible signatures) can be injected by pointing the
+## PROXYMIX_CONFORMANCE_ENGINE environment variable at an R file to source
+## before the sweep. Results are persisted under the directory named by
+## PROXYMIX_CONFORMANCE_OUT (default "bench/results"); set it to "" to skip
+## persistence (e.g. when driving the sweep from a test harness).
+##
+## Run standalone:  Rscript contract-conformance.R
 
-## Single-threaded BLAS so the forked sweep is fork-safe: macOS Accelerate (and
-## some OpenBLAS builds) are not fork-safe, and a Cholesky/backsolve in a forked
-## worker can abort the worker. Set before any matrix op or fork.
+## Single-threaded BLAS so a forked external driver is fork-safe: macOS
+## Accelerate (and some OpenBLAS builds) are not fork-safe, and a
+## Cholesky/backsolve in a forked worker can abort the worker.
 Sys.setenv(VECLIB_MAXIMUM_THREADS = "1", OPENBLAS_NUM_THREADS = "1",
            OMP_NUM_THREADS = "1")
 
 if (!"proxymix" %in% loadedNamespaces()) suppressMessages(library(proxymix))
-## The two-sided sweep is driven by the /pkg-validation dossier (which sources the
-## verdict engine: pv_grid / pv_verdict / pv_assemble_conformance). Sourced
-## standalone, this file defines the authored case set for inspection.
-.pv_engine <- path.expand("~/.claude/skills/pkg-validation/engine/conformance.R")
-if (file.exists(.pv_engine)) source(.pv_engine)
+
+## Optional external sweep driver.
+.pv_engine <- Sys.getenv("PROXYMIX_CONFORMANCE_ENGINE", "")
+if (nzchar(.pv_engine) && file.exists(.pv_engine)) source(.pv_engine)
+
+## ---- built-in minimal driver (used when no external driver is present) -----
+## Serial, per-cell seeded, and status-vocabulary compatible: "ok" / "error"
+## are the two expected verdicts; "wrong-result" (ran but failed its oracle),
+## "no-error" (a must-reject input was accepted), and "unexpected-error" (a
+## must-accept input crashed) are the finding statuses.
+if (!exists("pv_grid", mode = "function")) {
+  pv_grid <- function(cases, fn, expect, label, check,
+                      cores = 1L, base_seed = 1L) {
+    rows <- lapply(seq_along(cases), function(i) {
+      cs <- cases[[i]]
+      set.seed(base_seed + i)
+      n_warn <- 0L
+      t0 <- proc.time()[["elapsed"]]
+      res <- withCallingHandlers(
+        tryCatch(list(value = fn(cs), error = NULL),
+                 error = function(e) list(value = NULL,
+                                          error = conditionMessage(e))),
+        warning = function(w) {
+          n_warn <<- n_warn + 1L
+          invokeRestart("muffleWarning")
+        })
+      secs <- proc.time()[["elapsed"]] - t0
+      exp_i <- expect(cs)
+      status <- if (identical(exp_i, "error")) {
+        if (is.null(res$error)) "no-error" else "error"
+      } else if (!is.null(res$error)) {
+        "unexpected-error"
+      } else if (isTRUE(tryCatch(check(res$value, cs),
+                                 error = function(e) FALSE))) {
+        "ok"
+      } else {
+        "wrong-result"
+      }
+      data.frame(idx = i, label = label(cs, i), expect = exp_i,
+                 status = status, seconds = round(secs, 4L),
+                 n_warn = n_warn,
+                 detail = if (is.null(res$error)) "" else
+                   substr(res$error, 1L, 200L),
+                 stringsAsFactors = FALSE)
+    })
+    do.call(rbind, rows)
+  }
+}
+if (!exists("pv_metamorphic", mode = "function")) {
+  pv_metamorphic <- function(a, b, what, tol = 1e-8) {
+    gap <- suppressWarnings(max(abs(as.numeric(a) - as.numeric(b))))
+    pass <- is.finite(gap) && gap <= tol
+    list(what = what, pass = pass, gap = gap,
+         detail = if (pass) "" else
+           sprintf("gap %.3g exceeds tol %.3g", gap, tol))
+  }
+}
+if (!exists("pv_provenance", mode = "function")) {
+  pv_provenance <- function(path = ".") {
+    list(r_version = R.version.string,
+         platform = R.version$platform,
+         package_version = as.character(utils::packageVersion("proxymix")),
+         timestamp = format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z"))
+  }
+}
+if (!exists("pv_assemble_conformance", mode = "function")) {
+  pv_assemble_conformance <- function(verdicts, meta_df, surface,
+                                      master_seed, provenance) {
+    status_levels <- c("ok", "error", "wrong-result", "no-error",
+                       "opaque-error", "unexpected-error")
+    tally <- as.data.frame(table(factor(verdicts$status,
+                                        levels = status_levels)),
+                           stringsAsFactors = FALSE)
+    names(tally) <- c("status", "n")
+    findings <- verdicts[!verdicts$status %in% c("ok", "error"), ,
+                         drop = FALSE]
+    covered <- intersect(surface, unique(verdicts$fn))
+    two_sided <- vapply(covered, function(f) {
+      e <- verdicts$expect[verdicts$fn == f]
+      any(e == "ok") && any(e == "error")
+    }, logical(1L))
+    list(verdicts = verdicts, metamorphic = meta_df,
+         summary = tally, findings = findings,
+         n_cells = nrow(verdicts),
+         n_functions = length(unique(verdicts$fn)),
+         n_findings = nrow(findings),
+         n_meta = nrow(meta_df), n_meta_fail = sum(!meta_df$pass),
+         surface_size = length(surface),
+         n_two_sided = sum(two_sided),
+         two_sided_coverage = if (length(surface))
+           sum(two_sided) / length(surface) else NA_real_,
+         master_seed = master_seed, provenance = provenance)
+  }
+}
+
 set.seed(20260620)
-RESDIR <- "bench/results"; if (!dir.exists(RESDIR)) dir.create(RESDIR, recursive = TRUE)
+RESDIR <- Sys.getenv("PROXYMIX_CONFORMANCE_OUT", "bench/results")
+if (nzchar(RESDIR) && !dir.exists(RESDIR)) dir.create(RESDIR, recursive = TRUE)
 
 ## ---- valid fixtures --------------------------------------------------------
 g1  <- gmm(weights = c(0.6, 0.4), means = list(-1, 2),
@@ -574,14 +667,14 @@ CASES <- list(
            function() fit_kld_em_collider(42, dag = matrix(0, 2, 2)))
 )
 
-## ---- deliberately left without TWO-sided coverage (honest documentation) ----
+## ---- deliberately left without TWO-sided coverage (documented scope) --------
 ## A function counts as two-sided covered only when it carries BOTH an "ok" and
 ## an "error" case. The following are exported but intentionally not two-sided,
 ## and are NOT findings -- there is no rejectable / acceptable counterpart to add
 ## without fabricating one:
 ##
-##   * Tier-2 stubs in R/stubs.R -- from_aggregate_likelihood, from_simulator,
-##     to_apsim_scenarios, fit_kld_em_collider. Every call signals
+##   * Planned-interface stubs in R/stubs.R -- from_aggregate_likelihood,
+##     from_simulator, to_apsim_scenarios, fit_kld_em_collider. Every call signals
 ##     `proxymix_not_yet_implemented`, so there is no valid input that returns
 ##     ok; only the error side is meaningful (see their err_case rows above).
 ##   * gmm_cf_variance / gmm_cf_tail_prob -- by-design refusal accessors. The
@@ -637,16 +730,16 @@ meta_df <- do.call(rbind, lapply(META, function(m) data.frame(
   detail = m$detail, stringsAsFactors = FALSE)))
 
 ## ---- assemble + persist ----------------------------------------------------
-## Assembled by the engine (engine/conformance.R) so the object carries the
-## coverage fields the dossier + pv_api_coverage_gate read; verdicts and the
-## metamorphic results are unchanged.
+## The assembled object carries the per-cell verdicts, the metamorphic results,
+## a status tally, the finding rows, and two-sided-coverage figures over the
+## exported surface.
 out <- pv_assemble_conformance(verdicts, meta_df,
                                surface = getNamespaceExports("proxymix"),
                                master_seed = 20260620L,
                                provenance = pv_provenance("../proxymix"))
 summary_df  <- out$summary
 findings_df <- out$findings
-saveRDS(out, file.path(RESDIR, "contract-conformance.rds"))
+if (nzchar(RESDIR)) saveRDS(out, file.path(RESDIR, "contract-conformance.rds"))
 
 cat(sprintf("contract-conformance: %d cells over %d functions ; %d findings ; metamorphic %d/%d pass\n",
             out$n_cells, out$n_functions, out$n_findings,

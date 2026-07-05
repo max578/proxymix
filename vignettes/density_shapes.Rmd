@@ -1,8 +1,8 @@
 ---
-title: "The wedge: KLD-EM on three density shapes"
+title: "KLD-EM on three density shapes"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{The wedge: KLD-EM on three density shapes}
+  %\VignetteIndexEntry{KLD-EM on three density shapes}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -22,7 +22,7 @@ set.seed(20260513)
 library(proxymix)
 ```
 
-This is the wedge demonstration. The KLD-EM regime fits a Gaussian-mixture proxy to a target whose density we can *evaluate* but cannot easily *sample from*. Existing CRAN packages for Gaussian mixtures — `mclust`, `mixtools`, `flexmix` — all assume i.i.d. samples are available.
+This vignette demonstrates regime (iii) across target shapes. The KLD-EM regime fits a Gaussian-mixture proxy to a target whose density we can *evaluate* but cannot easily *sample from*. Existing CRAN packages for Gaussian mixtures — `mclust`, `mixtools`, `flexmix` — all assume i.i.d. samples are available.
 
 We exercise three quite different non-Gaussian target shapes:
 

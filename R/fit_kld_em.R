@@ -523,8 +523,11 @@ fit_kld_em <- function(target,
     d_v <- vdraws$log_f - log_g_v
     finite_v <- is.finite(d_v) & is.finite(vdraws$W) & vdraws$W > 0
     val_kld <- sum(vdraws$W[finite_v] * d_v[finite_v])
+    val_mc_se <- sqrt(sum(vdraws$W[finite_v]^2 *
+                            (d_v[finite_v] - val_kld)^2))
     list(
       validation_kld = val_kld,
+      validation_mc_se = val_mc_se,
       validation_kld_absolute = if (!kld_is_shifted) val_kld
         else if (is.finite(target@log_normalizer)) val_kld + target@log_normalizer
         else NA_real_,
@@ -538,6 +541,7 @@ fit_kld_em <- function(target,
   } else {
     list(
       validation_kld = NA_real_,
+      validation_mc_se = NA_real_,
       validation_kld_absolute = NA_real_,
       validation_ess = NA_real_,
       validation_ess_relative = NA_real_,

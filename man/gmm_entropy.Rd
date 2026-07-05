@@ -47,10 +47,12 @@ Other diagnostics:
 \code{\link{gmm_anneal_path}()},
 \code{\link{gmm_conditional_entropy}()},
 \code{\link{gmm_evidence}()},
+\code{\link{gmm_fit_ensemble}()},
 \code{\link{gmm_fit_quality}()},
 \code{\link{gmm_independence_graph}()},
 \code{\link{gmm_mutual_information}()},
 \code{\link{hellinger_mc}()},
-\code{\link{kld_trace}()}
+\code{\link{kld_trace}()},
+\code{\link{proxy_functional_ci}()}
 }
 \concept{diagnostics}

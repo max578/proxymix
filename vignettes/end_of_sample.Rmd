@@ -49,6 +49,14 @@ statistic's rank among the in-sample overlapping `m`-blocks of the same
 innovations gives the p-value, which stays calibrated when the innovations are
 not Gaussian.
 
+Two finite-sample cautions apply. The chi-square calibration is exact when the
+model is *given*; with parameters estimated on a short series it over-rejects
+(in our validation study, size 0.068 at $n = 30$ against a nominal 0.05,
+settling to 0.044 by $n = 120$), so prefer `method = "andrews"` when the model
+is estimated on little data. The subsampling calibration has a p-value floor of
+$1 / (n - 2m + 2)$: it can reject at level 0.05 only when $n > 2m + 18$, so
+very short series cannot reach significance by construction.
+
 # A worked example
 
 Take a local-level model, a random walk observed with noise, and simulate a

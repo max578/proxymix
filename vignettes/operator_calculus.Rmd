@@ -433,11 +433,12 @@ The disagreement is at the ridge level — the two routes coincide.
 For a downscaling problem \(g(y) = \mathbb{E}_{x \mid y}[f(x)]\):
 
 * A **Gaussian-process latent** for `f(x)` gives a fully non-parametric,
-  uncertainty-rich representation but does not admit closed-form
-  aggregation under general `A`. Sampling is closed form; integration
-  through a linear operator with additive Gaussian noise *is* closed
-  form for a GP, but mixing GP posteriors across aggregation
-  configurations is heavier than the operator calculus shown here.
+  uncertainty-rich representation, and integration through a linear
+  operator with additive Gaussian noise is closed form for a GP too. What
+  it lacks is the cheap *composition*: repeatedly conditioning,
+  aggregating, and re-mixing GP posteriors across configurations carries
+  a growing kernel-algebra burden, where the mixture calculus stays a
+  finite parameter list.
 * A **finite Gaussian-mixture latent** (what `proxymix` ships) is less
   flexible but admits the full operator calculus on this page. The
   trade-off is bias against algebraic tractability. The choice depends

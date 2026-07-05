@@ -64,6 +64,13 @@
 #' so it stays calibrated when the innovations are non-Gaussian (heavy-tailed
 #' observation noise, say). The model is supplied exactly as for [gmm_filter()].
 #'
+#' Two finite-sample cautions. The chi-square calibration is exact when the
+#' model is given; with parameters estimated on a short series it over-rejects
+#' (size 0.068 at `n = 30` against a nominal 0.05 in the validation study,
+#' settling to 0.044 by `n = 120`), so prefer `method = "andrews"` when the
+#' model is estimated on little data. The subsampling p-value has a floor of
+#' `1 / (n - 2m + 2)`, so it can reject at level 0.05 only when `n > 2m + 18`.
+#'
 #' @param prior A single-component [gmm] giving the state prior (the test is
 #'   defined for a fitted linear-Gaussian model; multi-component priors are not
 #'   yet supported).

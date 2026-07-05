@@ -60,6 +60,13 @@ distribution-free Andrews (2003) subsampling P-test: the statistic's rank among
 the in-sample overlapping \code{m}-blocks of the same innovations gives the p-value,
 so it stays calibrated when the innovations are non-Gaussian (heavy-tailed
 observation noise, say). The model is supplied exactly as for \code{\link[=gmm_filter]{gmm_filter()}}.
+
+Two finite-sample cautions. The chi-square calibration is exact when the
+model is given; with parameters estimated on a short series it over-rejects
+(size 0.068 at \code{n = 30} against a nominal 0.05 in the validation study,
+settling to 0.044 by \code{n = 120}), so prefer \code{method = "andrews"} when the
+model is estimated on little data. The subsampling p-value has a floor of
+\verb{1 / (n - 2m + 2)}, so it can reject at level 0.05 only when \verb{n > 2m + 18}.
 }
 \examples{
 prior <- gmm(weights = 1, means = list(0), covariances = list(matrix(10)))

@@ -36,8 +36,9 @@ analogue of a Kalman-style predict step.
 
 The channel is required to be \strong{affine} in \code{x} and the noise is
 required to be Gaussian. Non-linear channels are not closed form and
-must not be silently approximated; pass them to a Monte Carlo helper
-instead.
+are not silently approximated: push samples through the map instead
+(\code{rgmm()} then the transform) and refit with \code{\link[=fit_em_samples]{fit_em_samples()}} when a
+mixture of the image is needed.
 }
 \examples{
 g <- gmm(weights = c(0.5, 0.5),

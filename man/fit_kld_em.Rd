@@ -202,6 +202,7 @@ Other fitting:
 \code{\link{fit_em_samples}()},
 \code{\link{fit_moment_match}()},
 \code{\link{from_kde}()},
-\code{\link{from_objective}()}
+\code{\link{from_objective}()},
+\code{\link{select_N}()}
 }
 \concept{fitting}

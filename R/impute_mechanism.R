@@ -103,7 +103,18 @@ censored <- function(coord, lower = -Inf, upper = Inf) {
 ## Coerce whatever the user passed as `mechanism` to a gate object. A bare
 ## "mar" string stays valid for backwards compatibility.
 .as_gate <- function(mechanism) {
-  if (inherits(mechanism, "proxymix_gate")) return(mechanism)
+  if (inherits(mechanism, "proxymix_gate")) {
+    ## The mechanism layer is sealed: the engine branches on these types,
+    ## so a third-party gate object would pass construction and then die
+    ## in an unhandled branch. Refuse it here with a clear message.
+    if (!mechanism$type %in% c("mar", "mnar", "censored")) {
+      cli::cli_abort(c(
+        "unknown mechanism type {.val {mechanism$type}}.",
+        "i" = "The mechanism layer is sealed to {.fn mar}, {.fn mnar}, and {.fn censored}."
+      ))
+    }
+    return(mechanism)
+  }
   if (is.character(mechanism) && length(mechanism) == 1L) {
     return(switch(match.arg(mechanism, c("mar")), mar = mar()))
   }

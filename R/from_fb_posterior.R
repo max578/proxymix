@@ -82,7 +82,8 @@
 #' @seealso [from_fb_posterior()] for the consumer verb, [mock_fb_posterior()]
 #'   for a synthetic producer, [fb_producer_available()] for the capability
 #'   probe.
-#' @export
+#' @noRd
+#' @keywords internal
 #' @examples
 #' ## Build a spec from a bare unnormalised log-posterior (a 2-D Gaussian).
 #' log_post <- function(theta) -0.5 * rowSums(theta^2)
@@ -123,7 +124,7 @@ fb_log_posterior_spec <- function(producer,
   spec
 }
 
-#' @export
+#' @noRd
 print.fb_log_posterior_spec <- function(x, ...) {
   cat(sprintf("<fb_log_posterior_spec>: \"%s\" in p = %d dimensions\n",
               x$name, x$n_dim))
@@ -166,7 +167,8 @@ print.fb_log_posterior_spec <- function(x, ...) {
 #'   exports `fb_log_posterior`, `FALSE` otherwise.
 #' @family interop
 #' @seealso [from_fb_posterior()], [fb_log_posterior_spec()].
-#' @export
+#' @noRd
+#' @keywords internal
 #' @examples
 #' ## FALSE on a machine with no producer package configured.
 #' fb_producer_available()
@@ -220,7 +222,8 @@ fb_producer_available <- function() {
 #' @returns An `fb_log_posterior_spec`.
 #' @family interop
 #' @seealso [from_fb_posterior()], [fb_log_posterior_spec()].
-#' @export
+#' @noRd
+#' @keywords internal
 #' @examples
 #' spec <- mock_fb_posterior(shape = "gaussian", n_dim = 2L)
 #' spec
@@ -348,7 +351,8 @@ mock_fb_posterior <- function(shape = c("gaussian", "banana"),
 #' @seealso [fb_log_posterior_spec()] for the producer interface,
 #'   [mock_fb_posterior()] for a synthetic producer,
 #'   [fb_producer_available()] for the capability probe.
-#' @export
+#' @noRd
+#' @keywords internal
 #' @examples
 #' ## Compress a synthetic posterior (no producer package needed).
 #' spec <- mock_fb_posterior(shape = "banana")

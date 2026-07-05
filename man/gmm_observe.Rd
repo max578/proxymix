@@ -53,10 +53,13 @@ gmm_observe(g, A = A, y = 0.8, noise_cov = matrix(0.25, 1, 1))
 Other operators: 
 \code{\link{gmm_affine}()},
 \code{\link{gmm_aggregate}()},
+\code{\link{gmm_convolve}()},
 \code{\link{gmm_counterfactual}()},
 \code{\link{gmm_filter}()},
 \code{\link{gmm_intervene}()},
 \code{\link{gmm_missing}()},
+\code{\link{gmm_mix}()},
+\code{\link{gmm_product}()},
 \code{\link{gmm_reduce}()}
 }
 \concept{operators}

@@ -58,7 +58,9 @@ Other ops:
 \code{\link{gmm_conditionalise}()},
 \code{\link{gmm_divergence}()},
 \code{\link{gmm_marginalise}()},
+\code{\link{gmm_mean}()},
 \code{\link{gmm_modes}()},
+\code{\link{pgmm}()},
 \code{\link{rgmm}()}
 }
 \concept{ops}

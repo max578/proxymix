@@ -42,11 +42,14 @@ q
 \seealso{
 Other classes: 
 \code{\link{autoplot.gmm_fit}},
+\code{\link{glance.gmm_fit}},
 \code{\link{gmm}()},
 \code{\link{gmm_counterfactual_law}()},
 \code{\link{gmm_dim}()},
 \code{\link{gmm_fit}()},
 \code{\link{gmm_n_components}()},
-\code{\link{gmm_target}()}
+\code{\link{gmm_target}()},
+\code{\link{gmm_weights}()},
+\code{\link{tidy.gmm}}
 }
 \concept{classes}

@@ -1,3 +1,9 @@
+## Internal as of v0.13.0; tested through `:::`.
+fb_log_posterior_spec <- proxymix:::fb_log_posterior_spec
+fb_producer_available <- proxymix:::fb_producer_available
+mock_fb_posterior <- proxymix:::mock_fb_posterior
+from_fb_posterior <- proxymix:::from_fb_posterior
+
 ## Tests for the posterior-producer seam: fb_log_posterior_spec(),
 ## fb_producer_available(), mock_fb_posterior(), and from_fb_posterior().
 ## No producer package is assumed to be installed, so every test runs

@@ -116,10 +116,13 @@ Automatic Control} 17(4), 439--448. \doi{10.1109/TAC.1972.1100034}
 Other operators: 
 \code{\link{gmm_affine}()},
 \code{\link{gmm_aggregate}()},
+\code{\link{gmm_convolve}()},
 \code{\link{gmm_counterfactual}()},
 \code{\link{gmm_intervene}()},
 \code{\link{gmm_missing}()},
+\code{\link{gmm_mix}()},
 \code{\link{gmm_observe}()},
+\code{\link{gmm_product}()},
 \code{\link{gmm_reduce}()}
 }
 \concept{operators}

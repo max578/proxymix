@@ -17,4 +17,12 @@
       envir = asNamespace("ggplot2")
     )
   }
+
+  # Broom-style tidiers, against the `generics` generics (Suggests).
+  if (requireNamespace("generics", quietly = TRUE)) {
+    registerS3method("tidy", "proxymix::gmm", .tidy_gmm,
+                     envir = asNamespace("generics"))
+    registerS3method("glance", "proxymix::gmm_fit", .glance_gmm_fit,
+                     envir = asNamespace("generics"))
+  }
 }

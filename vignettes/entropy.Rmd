@@ -159,3 +159,18 @@ gmm_independence_graph(g)
 ```
 
 This is a graphical-model diagnostic, not a causal-discovery method: it returns the undirected Markov skeleton, not edge directions, and being second order it sees only dependence that enters the covariance.
+
+# References
+
+* Biernacki, C., Celeux, G. and Govaert, G. (2000). *Assessing a mixture model
+  for clustering with the integrated completed likelihood.* IEEE Transactions
+  on Pattern Analysis and Machine Intelligence 22(7), 719--725.
+  <doi:10.1109/34.865189>.
+* Hoek, J. van der and Elliott, R. J. (2024). *Mixtures of multivariate
+  Gaussians.* Stochastic Analysis and Applications.
+  <doi:10.1080/07362994.2024.2372605>.
+* Jaynes, E. T. (1957). *Information theory and statistical mechanics.*
+  Physical Review 106(4), 620--630. <doi:10.1103/PhysRev.106.620>.
+* Rose, K. (1998). *Deterministic annealing for clustering, compression,
+  classification, regression, and related optimization problems.* Proceedings
+  of the IEEE 86(11), 2210--2239. <doi:10.1109/5.726788>.

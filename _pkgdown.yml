@@ -65,6 +65,7 @@ articles:
   navbar: ~
   contents:
   - quickstart
+  - posterior_proxy
   - three_regimes
   - density_shapes
   - operator_calculus

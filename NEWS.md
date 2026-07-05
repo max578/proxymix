@@ -16,6 +16,15 @@
   (`validation/ensemble_coverage_study.R`, R = 200 replications):
   nominal 90% intervals cover the two mean coordinates and a tail
   probability at 0.885 / 0.855 / 0.855.
+* **New flagship vignette** *Compressing a Bayesian posterior you can
+  evaluate but not sample*: a real unnormalised logistic posterior
+  compressed end to end -- adaptive fit, quality certificate, evidence
+  with a Laplace cross-check, closed-form tail reads, and bootstrap error
+  bars. Finite-sample cautions for `gmm_eos_test()` (estimated-parameter
+  over-rejection of the chi-square calibration; the subsampling p-value
+  floor) are now stated in the manual and vignette, and the README
+  positions the package against its nearest CRAN neighbour (`AdMit`)
+  and the MCMC-then-fit route explicitly.
 * **`select_N()`: component-count selection across regimes.** With
   samples, the smallest BIC (agreeing with `mclust::mclustBIC` on shared
   data); with an evaluable-only target, each candidate is scored on its

@@ -21,7 +21,14 @@ under one verb:
 Regime (iii) is the reason the package exists. The sample-based mixture
 packages (`mclust`, `mixtools`, `flexmix`) all assume i.i.d. draws from
 the target; `proxymix` fits directly against an evaluable (possibly
-unnormalised) log-density.
+unnormalised) log-density. The nearest CRAN neighbour is `AdMit`, which
+adaptively fits a mixture of Student-t distributions to an evaluable
+kernel as an importance/proposal density; `proxymix` differs in fitting
+a **Gaussian** mixture that is Kullback–Leibler optimal, precisely so
+that the fitted object then supports the closed-form operator calculus
+(marginals, conditionals, Bayes updates, products, convolutions,
+filtering) and carries a fit-quality certificate through every
+operation.
 
 **Why not MCMC?** If you can evaluate the unnormalised density you can
 always run a sampler and then fit a mixture to the draws. The
@@ -66,23 +73,23 @@ fit <- fit_proxymix(banana, N = 3L, regime = "kld",
 print(fit)
 #> <gmm_fit>: regime = "kld", K = 3, p = 2
 #>   target     : banana
-#>   iterations : 41
+#>   iterations : 37
 #>   converged  : TRUE
-#>   [1] w = 0.6451, |mu| = 0.3305, tr(Sigma) = 1.3600
-#>   [2] w = 0.2482, |mu| = 1.2959, tr(Sigma) = 2.2339
-#>   [3] w = 0.1067, |mu| = 1.8934, tr(Sigma) = 4.9070
+#>   [1] w = 0.6456, |mu| = 0.3299, tr(Sigma) = 1.3601
+#>   [2] w = 0.2473, |mu| = 1.2996, tr(Sigma) = 2.2312
+#>   [3] w = 0.1071, |mu| = 1.8882, tr(Sigma) = 4.9044
 
 ## Closed-form operations on the fitted mixture.
 gmm_marginalise(fit, keep = 1L)
-#> <marginal[1] of kld_em[N=3] on banana>: K = 3 components in p = 1 dimensions
-#>   [1] w = 0.6451, |mu| = 0.1833, tr(Sigma) = 0.4616
-#>   [2] w = 0.2482, |mu| = 1.1497, tr(Sigma) = 0.4853
-#>   [3] w = 0.1067, |mu| = 1.5983, tr(Sigma) = 0.6313
+#> <marginalise(kld_em[N=3] on banana)>: K = 3 components in p = 1 dimensions
+#>   [1] w = 0.6456, |mu| = 0.1818, tr(Sigma) = 0.4620
+#>   [2] w = 0.2473, |mu| = 1.1518, tr(Sigma) = 0.4846
+#>   [3] w = 0.1071, |mu| = 1.5954, tr(Sigma) = 0.6321
 gmm_conditionalise(fit, given = c(NA, 0.5))
-#> <conditional of kld_em[N=3] on banana>: K = 3 components in p = 1 dimensions
-#>   [1] w = 0.6726, |mu| = 0.2640, tr(Sigma) = 0.4519
-#>   [2] w = 0.2584, |mu| = 1.1126, tr(Sigma) = 0.2355
-#>   [3] w = 0.0691, |mu| = 1.4202, tr(Sigma) = 0.1195
+#> <conditionalise(kld_em[N=3] on banana)>: K = 3 components in p = 1 dimensions
+#>   [1] w = 0.6730, |mu| = 0.2620, tr(Sigma) = 0.4524
+#>   [2] w = 0.2576, |mu| = 1.1133, tr(Sigma) = 0.2352
+#>   [3] w = 0.0694, |mu| = 1.4188, tr(Sigma) = 0.1199
 ```
 
 ## The unified fitting verb
@@ -133,12 +140,19 @@ and returns a closed-form mixture over its low regions, so a multimodal
 | a time series + state-space model | filtering / stability testing | `gmm_filter()`, `gmm_eos_test()` |
 | a fitted mixture | information-theoretic diagnostics | `gmm_entropy()`, `gmm_divergence()`, `gmm_mutual_information()` |
 | a fitted mixture + treatment data | causal / decision quantities | `gmm_intervene()`, `fit_uplift()`, `proxy_cate()` |
+| an unnormalised posterior | the marginal likelihood | `gmm_evidence()` |
+| a fitted proxy | error bars on any functional | `gmm_fit_ensemble()`, `proxy_functional_ci()` |
+| an evaluable-only target | the component count | `select_N()` |
+| a fit collapsing in high dimension | an adaptive proposal | `fit_kld_em(adapt = "pmc")` |
 
 ## Vignettes
 
-The package ships with eleven vignettes:
+The package ships with twelve vignettes:
 
 - **`quickstart`** — one-page tour.
+- **`posterior_proxy`** — the flagship workflow: a real unnormalised
+  Bayesian posterior compressed to a proxy, with the evidence,
+  closed-form reads, and bootstrap error bars.
 - **`three_regimes`** — a walk-through of regimes (i)–(iii) on toy 2-D
   targets, including the agreement of (i) and (iii) at $N = 1$.
 - **`density_shapes`** — the regime-(iii) demonstration: banana, donut,

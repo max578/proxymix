@@ -75,8 +75,9 @@
 #'
 #' The channel is required to be **affine** in `x` and the noise is
 #' required to be Gaussian. Non-linear channels are not closed form and
-#' must not be silently approximated; pass them to a Monte Carlo helper
-#' instead.
+#' are not silently approximated: push samples through the map instead
+#' (`rgmm()` then the transform) and refit with [fit_em_samples()] when a
+#' mixture of the image is needed.
 #'
 #' @param g A [gmm] (or [gmm_fit]) in `R^p`.
 #' @param A An `m` by `p` numeric matrix.

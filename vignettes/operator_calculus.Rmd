@@ -31,7 +31,7 @@ operations in closed form:
 * **Pushforward** through a linear sensor or aggregation operator
   (`gmm_affine`, `gmm_aggregate`).
 * **Bayesian update** on a noisy linear observation
-  (`gmm_observe` — the finite-mixture analogue of a Kalman update).
+  (`gmm_observe` -- the finite-mixture analogue of a Kalman update).
 * **Marginalisation** over a coordinate subset
   (`gmm_marginalise`, shipped since v0.1).
 * **Conditioning** on fully observed coordinates
@@ -39,7 +39,7 @@ operations in closed form:
 
 Each operator returns a `gmm`, so the operators compose freely without
 ever leaving closed form. This is the algebraic dividend of having
-fitted a *parametric* proxy in the first place — a non-parametric KDE
+fitted a *parametric* proxy in the first place -- a non-parametric KDE
 or a Monte Carlo sample bank cannot do this.
 
 # A worked example
@@ -193,7 +193,7 @@ gmm_missing(g_prior, observed = 2L, values = 0.5)
 This is equivalent to `gmm_conditionalise(g_prior, given = c(NA, 0.5))`
 but with a clearer index-based signature for missing-data pipelines.
 
-# Filtering over time — the Kalman filter as a special case
+# Filtering over time -- the Kalman filter as a special case
 
 The Bayesian update above is a single step. A *filter* alternates two steps over
 time: a **predict** step that pushes the state forward through the dynamics
@@ -276,7 +276,7 @@ at the cost that each `gmm_observe` (under a Gaussian-mixture noise or dynamics
 model) can multiply the component count. Collapsing the mixture back to a fixed
 budget keeps the filter bounded; that collapse is `gmm_reduce()`, next.
 
-# Bounding the filter — mixture reduction
+# Bounding the filter -- mixture reduction
 
 `gmm_reduce()` collapses a mixture to a budget of at most `k_max` components by a
 greedy, moment-preserving pairwise merge: at each step the cheapest pair is
@@ -318,7 +318,7 @@ proxy by annealed EM and keeps it when it improves on the merge. In a
 Gaussian-sum filter, reduction runs after each update, holding the component
 count at the budget.
 
-# A bounded filter in one call — `gmm_filter()`
+# A bounded filter in one call -- `gmm_filter()`
 
 The predict / update / reduce loop is packaged as a single verb. `gmm_filter()`
 takes the prior belief, the linear-Gaussian `dynamics` and `measurement`, the
@@ -414,7 +414,7 @@ list(
 )
 ```
 
-The disagreement is at the ridge level — the two routes coincide.
+The disagreement is at the ridge level -- the two routes coincide.
 
 # When to *not* use the operator calculus
 
@@ -450,7 +450,7 @@ For a downscaling problem \(g(y) = \mathbb{E}_{x \mid y}[f(x)]\):
   Gaussians.* Stochastic Analysis and Applications.
   <doi:10.1080/07362994.2024.2372605>.
 * Kalman, R. E. (1960). *A new approach to linear filtering and
-  prediction problems.* Transactions of the ASME — J. Basic Engineering.
+  prediction problems.* Transactions of the ASME -- J. Basic Engineering.
 * Alspach, D. L. and Sorenson, H. W. (1972). *Nonlinear Bayesian
   estimation using Gaussian sum approximations.* IEEE Transactions on
   Automatic Control 17(4), 439--448.

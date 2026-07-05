@@ -28,7 +28,7 @@ library(proxymix)
 fit_proxymix(target, N, regime = c("auto", "moment", "sample", "kld"))
 ```
 
-— and the three fitting regimes come from Hoek and Elliott (2024):
+-- and the three fitting regimes come from Hoek and Elliott (2024):
 
 | Regime       | When it applies                                | Method                                |
 |--------------|------------------------------------------------|---------------------------------------|
@@ -40,7 +40,7 @@ The `"kld"` regime is the reason the package exists: it fits Gaussian-mixture pr
 
 ## A target you cannot sample from
 
-We use the bundled "banana" target — a non-Gaussian 2-D shape obtained by warping an isotropic Gaussian through a quadratic. Its log-density is exact and normalised; we deliberately do *not* attach samples, so only regime (iii) applies.
+We use the bundled "banana" target -- a non-Gaussian 2-D shape obtained by warping an isotropic Gaussian through a quadratic. Its log-density is exact and normalised; we deliberately do *not* attach samples, so only regime (iii) applies.
 
 ```{r banana}
 tgt <- banana_target()
@@ -128,10 +128,10 @@ head(x)
 
 ## Where to next
 
-* `vignette("three_regimes")` — what each of regimes (i), (ii), (iii) does, with a head-to-head comparison on a target whose ground truth is known.
-* `vignette("density_shapes")` — the regime-(iii) demonstration. KLD-EM fit on three different non-Gaussian targets (banana, donut, three-mixture), with KLD / ESS / Hellinger reported.
-* `vignette("operator_calculus")` — closed-form pushforward, Bayesian update, aggregation and conditioning on a fitted mixture.
-* `vignette("from_kde")` — compressing a kernel density estimate into a Gaussian-mixture proxy.
+* `vignette("three_regimes")` -- what each of regimes (i), (ii), (iii) does, with a head-to-head comparison on a target whose ground truth is known.
+* `vignette("density_shapes")` -- the regime-(iii) demonstration. KLD-EM fit on three different non-Gaussian targets (banana, donut, three-mixture), with KLD / ESS / Hellinger reported.
+* `vignette("operator_calculus")` -- closed-form pushforward, Bayesian update, aggregation and conditioning on a fitted mixture.
+* `vignette("from_kde")` -- compressing a kernel density estimate into a Gaussian-mixture proxy.
 
 ## Reference
 

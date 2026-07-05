@@ -1,21 +1,13 @@
 Package: proxymix
 Type: Package
 Title: KL-Optimal Gaussian Mixture Proxies for Arbitrary Target Densities
-Version: 0.15.0
-Authors@R: c(
+Version: 0.15.1
+Authors@R: 
     person(given = "Max",
            family = "Moldovan",
            role = c("aut", "cre"),
            email = "max.moldovan@gmail.com",
-           comment = c(ORCID = "0000-0001-9680-8474")),
-    person(given = "Johannes",
-           family = "van der Hoek",
-           role = "ctb",
-           comment = "Foundational theory in Hoek & Elliott (2024)."),
-    person(given = "Robert J.",
-           family = "Elliott",
-           role = "ctb",
-           comment = "Foundational theory in Hoek & Elliott (2024)."))
+           comment = c(ORCID = "0000-0001-9680-8474"))
 Description: Fits multivariate Gaussian-mixture proxies that are
     Kullback-Leibler optimal to user-supplied target densities on real
     Euclidean space. Three fitting regimes are unified under one verb:

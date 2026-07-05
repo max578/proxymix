@@ -40,7 +40,7 @@ a sample of `n` points, but with three operational costs:
 mixture proxy (with `N` typically much smaller than `n`) by treating the
 KDE as a normalised, evaluable target and running regime (iii) KLD-EM
 against it.  The proxy then supports the full closed-form operator set
-exposed by the rest of the package — `dgmm()`, `rgmm()`,
+exposed by the rest of the package -- `dgmm()`, `rgmm()`,
 `gmm_marginalise()`, `gmm_conditionalise()`, plus the v0.3 affine-Gaussian
 calculus (`gmm_affine()`, `gmm_observe()`).
 
@@ -86,7 +86,7 @@ fit has ESS close to `is_size` and a max-weight share of a few percent.
 ess_summary(fit)
 ```
 
-The validation block reports a held-out KLD on an independent IS draw —
+The validation block reports a held-out KLD on an independent IS draw --
 a safeguard against in-sample overfitting to one particular IS realisation.
 
 # Bandwidth sensitivity
@@ -178,13 +178,13 @@ If your goal is "find a Gaussian-mixture density given samples", the
 classical EM regime is more direct, fits in linear time, and does not
 incur the regime-(iii) importance-sampling tax.  `from_kde()` only earns
 its place when you specifically want the KDE's smoothing as a step in
-your pipeline — e.g. as part of a sequence such as
+your pipeline -- e.g. as part of a sequence such as
 
 ```
 samples |> from_kde() |> gmm_conditionalise() |> rgmm()
 ```
 
-— or when the KDE's bias-variance trade-off is part of what you are
+-- or when the KDE's bias-variance trade-off is part of what you are
 trying to validate downstream.
 
 # References

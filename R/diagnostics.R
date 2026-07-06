@@ -150,7 +150,12 @@ hellinger_mc <- function(fit, n_mc = 5000L, seed = NULL) {
 #'
 #' @param fit A [gmm_fit].
 #'
-#' @returns A list of numeric scalars (or `NA`s where not applicable).
+#' @returns A list of numeric scalars (or `NA`s where not applicable), plus a
+#'   logical `support_truncated` flag that is `TRUE` when the fit's auto-selected
+#'   proposal replaced an unbounded target-support end with a finite,
+#'   data-derived working box (so `support_fraction` reflects only that finite
+#'   region and the target tail beyond it was not sampled). The finite box
+#'   itself is recorded in `fit@diagnostics$working_bounds`.
 #' @family diagnostics
 #' @export
 #' @examples
@@ -169,6 +174,7 @@ ess_summary <- function(fit) {
     ess_relative              = d$ess_relative %||% NA_real_,
     max_weight                = d$max_weight %||% NA_real_,
     support_fraction          = d$support_fraction %||% NA_real_,
+    support_truncated         = d$support_truncated %||% NA,
     mc_se_kld                 = d$mc_se_kld %||% NA_real_,
     validation_size           = d$validation_size %||% NA_integer_,
     validation_ess            = d$validation_ess %||% NA_real_,
@@ -185,10 +191,15 @@ ess_summary <- function(fit) {
 #' regime, convergence, degeneracy, the effective-sample-size profile of
 #' the importance weights, and (when a validation split was drawn) the
 #' held-out validation gap. The certificate is stamped into the object's
-#' metadata at fit time and carried unchanged through every closed-form
-#' operator, so it can be read off a marginal, a conditional, a filtered
-#' belief, or any other derived mixture -- alongside the `provenance`
-#' vector recording the chain of operations that produced it.
+#' metadata at fit time and carried through every closed-form operator: a
+#' unary operator (marginal, conditional, affine map, Bayes update) preserves
+#' it unchanged, and an operator with several operands (product, convolution,
+#' mixing) combines their certificates conservatively -- worst-case of each
+#' field, with the individual per-operand certificates retained under
+#' `quality_sources` and `regime` set to `"composite"`. It can therefore be
+#' read off a marginal, a conditional, a product, a filtered belief, or any
+#' other derived mixture -- alongside the `provenance` vector recording the
+#' chain of operations that produced it.
 #'
 #' Downstream verbs read the same certificate and raise a one-shot
 #' advisory (class `proxymix_low_quality`) when the source fit is flagged.
@@ -199,7 +210,11 @@ ess_summary <- function(fit) {
 #'   `ess`, `ess_relative`, `min_component_ess`, `max_weight`,
 #'   `support_fraction`, `kld_final`, and `validation_gap` (fields not
 #'   applicable to the regime are `NA`), or `NULL` for a mixture that was
-#'   never fitted (e.g. built directly with [gmm()]).
+#'   never fitted (e.g. built directly with [gmm()]). A certificate produced
+#'   by an operator over several operands has `regime = "composite"`, the
+#'   conservative worst-case value of each numeric field across the operands,
+#'   and an additional `quality_sources` element holding the operands' own
+#'   certificates.
 #' @family diagnostics
 #' @export
 #' @examples

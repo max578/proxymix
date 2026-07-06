@@ -98,6 +98,48 @@ symmetrise <- function(S) 0.5 * (S + t(S))
   utils::modifyList(meta, extra)
 }
 
+## Multi-source metadata policy for binary / n-ary operators. A composite
+## result is only as trustworthy as its weakest operand, so the combined
+## quality certificate takes the conservative value of each field across every
+## operand that carries one (worst-case wins): not-converged if any operand is,
+## degenerate if any operand is, and the min/max of the numeric risk fields.
+## Operands with no certificate (plain mixtures) contribute nothing. Every
+## operand's own certificate is retained under `quality_sources`, so the
+## conservative summary discards no information. Fields that do not combine
+## meaningfully (absolute ESS counts, the final KLD) are `NA` on a composite.
+.op_result_meta_many <- function(gs, op, extra = list()) {
+  quals <- lapply(gs, function(g) g@metadata$quality)
+  present <- quals[!vapply(quals, is.null, logical(1L))]
+  meta <- list()
+  if (length(present) > 0L) {
+    worst <- function(field, reduce, transform = identity) {
+      vals <- transform(vapply(present,
+                               function(q) q[[field]] %||% NA_real_, numeric(1L)))
+      if (all(is.na(vals))) NA_real_ else reduce(vals, na.rm = TRUE)
+    }
+    meta$quality <- list(
+      regime            = "composite",
+      converged         = all(vapply(present,
+                                     function(q) isTRUE(q$converged), logical(1L))),
+      degenerate        = any(vapply(present,
+                                     function(q) isTRUE(q$degenerate), logical(1L))),
+      ess               = NA_real_,
+      ess_relative      = worst("ess_relative", min),
+      min_component_ess = NA_real_,
+      max_weight        = worst("max_weight", max),
+      support_fraction  = worst("support_fraction", min),
+      kld_final         = NA_real_,
+      validation_gap    = worst("validation_gap", max, abs),
+      quality_sources   = lapply(gs, function(g) {
+        list(name = g@name, quality = g@metadata$quality)
+      })
+    )
+  }
+  provs <- unlist(lapply(gs, function(g) g@metadata$provenance %||% character(0L)))
+  meta$provenance <- c(provs, op)
+  utils::modifyList(meta, extra)
+}
+
 ## Operator result names cap their nesting: a chained pipeline previously
 ## grew names like observe(affine(observe(...))) without bound.
 .op_name <- function(op, g) {

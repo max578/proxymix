@@ -118,13 +118,45 @@ test_that("fit_kld_em handles a one-sided Gamma target via the auto uniform", {
   g <- gmm_target(n_dim = 1L, log_density = lf, samples = smp,
                   support = list(lower = 0, upper = Inf),
                   normalised = TRUE, log_normalizer = 0, name = "gamma")
-  expect_message(
-    fit <- fit_kld_em(g, N = 2L, is_size = 4000L, max_iter = 30L, seed = 1L),
-    "support-matched"
+  ## The auto uniform is a finite, data-derived box on a [0, Inf) support, so
+  ## the fit is now flagged as a truncated-target approximation.
+  expect_warning(
+    expect_message(
+      fit <- fit_kld_em(g, N = 2L, is_size = 4000L, max_iter = 30L, seed = 1L),
+      "support-matched"
+    ),
+    class = "proxymix_truncated_support_proposal"
   )
   expect_true(is.finite(fit@diagnostics$kld_final))
   expect_gt(fit@diagnostics$ess, 50)
   expect_false(any(vapply(fit@means, anyNA, logical(1L))))
+})
+
+# ---- truncated-target honesty on one-sided auto proposals (F3) -------------
+
+test_that("a data-derived one-sided auto proposal flags truncation", {
+  lf <- function(x) stats::dlnorm(x[, 1L], meanlog = 0, sdlog = 1, log = TRUE)
+  smp <- withr::with_seed(3L, matrix(stats::rlnorm(2000L, 0, 1), ncol = 1L))
+  g <- gmm_target(n_dim = 1L, log_density = lf, samples = smp,
+                  support = list(lower = 0, upper = Inf),
+                  normalised = TRUE, log_normalizer = 0, name = "lognormal")
+  fit <- suppressMessages(suppressWarnings(
+    fit_kld_em(g, N = 2L, is_size = 3000L, max_iter = 20L, seed = 1L)
+  ))
+  es <- ess_summary(fit)
+  expect_true(isTRUE(es$support_truncated))
+  wb <- fit@diagnostics$working_bounds
+  expect_false(is.null(wb))
+  expect_true(is.finite(wb$upper))
+  expect_gte(wb$lower, 0)
+})
+
+test_that("a two-sided unbounded target does not flag truncation", {
+  fit <- suppressMessages(suppressWarnings(
+    fit_kld_em(banana_target(), N = 2L, is_size = 1500L, max_iter = 10L, seed = 1L)
+  ))
+  expect_false(isTRUE(ess_summary(fit)$support_truncated))
+  expect_null(fit@diagnostics$working_bounds)
 })
 
 # ---- backward compatibility ------------------------------------------------

@@ -1,7 +1,7 @@
 Package: proxymix
 Type: Package
 Title: KL-Optimal Gaussian Mixture Proxies for Arbitrary Target Densities
-Version: 0.15.1
+Version: 0.15.2
 Authors@R: 
     person(given = "Max",
            family = "Moldovan",

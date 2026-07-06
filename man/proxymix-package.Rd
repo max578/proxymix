@@ -20,11 +20,5 @@ Useful links:
 \author{
 \strong{Maintainer}: Max Moldovan \email{max.moldovan@gmail.com} (\href{https://orcid.org/0000-0001-9680-8474}{ORCID})
 
-Other contributors:
-\itemize{
-  \item Johannes van der Hoek (Foundational theory in Hoek & Elliott (2024).) [contributor]
-  \item Robert J. Elliott (Foundational theory in Hoek & Elliott (2024).) [contributor]
-}
-
 }
 \keyword{internal}

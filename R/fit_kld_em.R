@@ -211,6 +211,8 @@ fit_kld_em <- function(target,
     ))
   }
 
+  support_truncated <- FALSE
+  working_bounds <- NULL
   if (is.null(proposal)) {
     proposal <- .support_matched_proposal(target)
     if (is.null(proposal)) {
@@ -223,6 +225,23 @@ fit_kld_em <- function(target,
         "Auto-selected a support-matched proposal ({.val {proposal@name}}) for the declared target support.",
         "i" = "Pass an explicit {.arg proposal} to override."
       ))
+      ## An unbounded support end resolved to a finite, data-derived box means
+      ## the target tail beyond that box is never sampled: the fit is then a
+      ## truncated-target approximation, not exact importance sampling. Flag it
+      ## loudly -- `support_fraction` alone cannot detect this (every draw
+      ## inside the finite box has finite weight, so it reads ~1).
+      if (isTRUE(proposal@metadata$data_derived)) {
+        support_truncated <- TRUE
+        working_bounds <- list(lower = proposal@metadata$lower,
+                               upper = proposal@metadata$upper)
+        cli::cli_warn(c(
+          paste("An unbounded target-support end was replaced by a finite,",
+                "data-derived working box; target mass beyond it is not",
+                "sampled, so the fit is a truncated-target approximation."),
+          "i" = "Working box: lower = {.val {working_bounds$lower}}, upper = {.val {working_bounds$upper}}; {.code support_fraction} then reflects only this finite region.",
+          "i" = "Pass an explicit dominating {.arg proposal} (or a transformed proposal) for exact importance sampling over the full support."
+        ), class = "proxymix_truncated_support_proposal")
+      }
     }
   }
   if (!S7::S7_inherits(proposal, is_proposal)) {
@@ -570,6 +589,8 @@ fit_kld_em <- function(target,
       per_component_ess = per_component_ess,
       max_weight = max_weight,
       support_fraction = support_fraction,
+      support_truncated = support_truncated,
+      working_bounds = working_bounds,
       degenerate = degenerate,
       n_reseeds = n_reseeds,
       adapt = adapt,

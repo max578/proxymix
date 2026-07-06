@@ -10,7 +10,12 @@ ess_summary(fit)
 \item{fit}{A \link{gmm_fit}.}
 }
 \value{
-A list of numeric scalars (or \code{NA}s where not applicable).
+A list of numeric scalars (or \code{NA}s where not applicable), plus a
+logical \code{support_truncated} flag that is \code{TRUE} when the fit's auto-selected
+proposal replaced an unbounded target-support end with a finite,
+data-derived working box (so \code{support_fraction} reflects only that finite
+region and the target tail beyond it was not sampled). The finite box
+itself is recorded in \code{fit@diagnostics$working_bounds}.
 }
 \description{
 Convenience accessor returning the headline IS-quality numbers for a

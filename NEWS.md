@@ -1,4 +1,26 @@
-# proxymix 0.15.1
+# proxymix 0.15.2
+
+### Bug fixes
+
+* The fit-quality certificate now composes across the product, convolution,
+  and mixing operators. `gmm_product()`, `gmm_convolve()`, and `gmm_mix()`
+  previously carried only the first operand's certificate (and `gmm_mix()`
+  carried none); they now combine every operand's certificate conservatively --
+  not-converged if any operand is, degenerate if any operand is, and the
+  worst-case of the numeric fields -- with the individual certificates
+  retained under `quality_sources` and `regime = "composite"`.
+
+### New features
+
+* `fit_proxymix(regime = "kld")` now flags when an auto-selected proposal
+  replaces an unbounded target-support end with a finite, data-derived
+  working box. Because such a box does not sample the target tail beyond it,
+  the fit is a truncated-target approximation rather than exact importance
+  sampling; this is reported with a classed warning
+  (`proxymix_truncated_support_proposal`), a `support_truncated` flag in
+  `ess_summary()`, and the finite box in `fit@diagnostics$working_bounds`.
+  Pass an explicit dominating `proposal` for exact importance sampling over
+  the full support.
 
 ### Housekeeping
 

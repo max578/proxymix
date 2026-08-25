@@ -13,8 +13,8 @@ abstract: >-
   are unified under one verb: closed-form moment matching, classical EM on
   samples, and importance-sampled KLD-EM against an evaluable-only target.
 license: MIT
-version: 0.11.5
-date-released: "2026-06-25"
+version: 0.15.2
+date-released: "2026-07-06"
 references:
   - type: article
     title: "Mixtures of multivariate Gaussians"

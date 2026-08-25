@@ -14,17 +14,26 @@ A list with elements \code{regime}, \code{converged}, \code{degenerate},
 \code{ess}, \code{ess_relative}, \code{min_component_ess}, \code{max_weight},
 \code{support_fraction}, \code{kld_final}, and \code{validation_gap} (fields not
 applicable to the regime are \code{NA}), or \code{NULL} for a mixture that was
-never fitted (e.g. built directly with \code{\link[=gmm]{gmm()}}).
+never fitted (e.g. built directly with \code{\link[=gmm]{gmm()}}). A certificate produced
+by an operator over several operands has \code{regime = "composite"}, the
+conservative worst-case value of each numeric field across the operands,
+and an additional \code{quality_sources} element holding the operands' own
+certificates.
 }
 \description{
 Returns the fit-quality certificate: a small list recording the fitting
 regime, convergence, degeneracy, the effective-sample-size profile of
 the importance weights, and (when a validation split was drawn) the
 held-out validation gap. The certificate is stamped into the object's
-metadata at fit time and carried unchanged through every closed-form
-operator, so it can be read off a marginal, a conditional, a filtered
-belief, or any other derived mixture -- alongside the \code{provenance}
-vector recording the chain of operations that produced it.
+metadata at fit time and carried through every closed-form operator: a
+unary operator (marginal, conditional, affine map, Bayes update) preserves
+it unchanged, and an operator with several operands (product, convolution,
+mixing) combines their certificates conservatively -- worst-case of each
+field, with the individual per-operand certificates retained under
+\code{quality_sources} and \code{regime} set to \code{"composite"}. It can therefore be
+read off a marginal, a conditional, a product, a filtered belief, or any
+other derived mixture -- alongside the \code{provenance} vector recording the
+chain of operations that produced it.
 }
 \details{
 Downstream verbs read the same certificate and raise a one-shot

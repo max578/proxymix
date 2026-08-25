@@ -127,8 +127,8 @@ gmm_product <- function(g1, g2, reduce = NULL) {
     name = sprintf("product(%s, %s)",
                    if (nchar(g1@name) > 20L) "..." else g1@name,
                    if (nchar(g2@name) > 20L) "..." else g2@name),
-    metadata = .op_result_meta(g1, "product",
-                               list(log_integral = log_integral))
+    metadata = .op_result_meta_many(list(g1, g2), "product",
+                                    list(log_integral = log_integral))
   )
   if (!is.null(reduce)) {
     li <- out@metadata$log_integral
@@ -191,7 +191,7 @@ gmm_convolve <- function(g1, g2) {
     name = sprintf("convolve(%s, %s)",
                    if (nchar(g1@name) > 20L) "..." else g1@name,
                    if (nchar(g2@name) > 20L) "..." else g2@name),
-    metadata = .op_result_meta(g1, "convolve")
+    metadata = .op_result_meta_many(list(g1, g2), "convolve")
   )
 }
 
@@ -230,7 +230,10 @@ gmm_mix <- function(gmms, weights = NULL) {
     cli::cli_abort("`weights` must be {B} non-negative numbers with a positive sum.")
   }
   alpha <- weights / sum(weights)
-  .stack_gmms(gmms, log(alpha), name = sprintf("mix[%d]", B))
+  out <- .stack_gmms(gmms, log(alpha), name = sprintf("mix[%d]", B))
+  out@metadata <- utils::modifyList(out@metadata,
+                                    .op_result_meta_many(gmms, "mix"))
+  out
 }
 
 #' Distribution and quantile functions of a one-dimensional mixture

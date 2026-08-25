@@ -201,3 +201,44 @@ test_that("a sealed mechanism rejects unknown gate types", {
   expect_error(gmm_impute(x, mechanism = fake, m = 2L, seed = 1L),
                "sealed")
 })
+
+# ---- quality-certificate composition across binary/n-ary operators (F2) ----
+
+.mk_cert_gmm <- function(nm, degenerate, converged, ess_rel) {
+  gmm(weights = 1, means = list(0), covariances = list(matrix(1)), name = nm,
+      metadata = list(
+        quality = list(regime = "kld", converged = converged,
+                       degenerate = degenerate, ess = NA_real_,
+                       ess_relative = ess_rel, min_component_ess = NA_real_,
+                       max_weight = 0.1, support_fraction = 1,
+                       kld_final = 0.01, validation_gap = NA_real_),
+        provenance = nm))
+}
+
+test_that("binary/n-ary operators combine operand certificates conservatively", {
+  good <- .mk_cert_gmm("good", degenerate = FALSE, converged = TRUE, ess_rel = 0.6)
+  bad  <- .mk_cert_gmm("bad",  degenerate = TRUE,  converged = FALSE, ess_rel = 0.02)
+
+  ops <- list(
+    product_gb = function() gmm_product(good, bad),
+    product_bg = function() gmm_product(bad, good),
+    convolve   = function() gmm_convolve(good, bad),
+    mix        = function() gmm_mix(list(good, bad))
+  )
+  for (nm in names(ops)) {
+    q <- gmm_fit_quality(ops[[nm]]())
+    expect_false(is.null(q), info = nm)
+    expect_identical(q$regime, "composite", info = nm)
+    expect_true(q$degenerate, info = nm)        # any operand degenerate
+    expect_false(q$converged, info = nm)        # not all operands converged
+    expect_equal(q$ess_relative, 0.02, info = nm)  # worst (min) relative ESS
+    expect_length(q$quality_sources, 2L)
+  }
+})
+
+test_that("mixing / multiplying plain (uncertified) mixtures makes no false certificate", {
+  a <- gmm(weights = 1, means = list(-1), covariances = list(matrix(1)))
+  b <- gmm(weights = 1, means = list(2),  covariances = list(matrix(0.5)))
+  expect_null(gmm_fit_quality(gmm_mix(list(a, b))))
+  expect_null(gmm_fit_quality(gmm_product(a, b)))
+})

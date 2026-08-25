@@ -94,7 +94,7 @@ sweep <- proxy_mnar_sensitivity(dat, "y", beta_grid = seq(0, 1.2, by = 0.2),
 sweep[, c("beta", "estimate", "conf.low", "conf.high")]
 ```
 
-```{r tornado, echo = FALSE, fig.alt = "Pooled mean of y against the assumed sensitivity slope, with confidence bands and the complete-data truth marked."}
+```{r tornado, echo = FALSE, fig.cap = "The pooled mean rises with the assumed sensitivity slope and crosses the complete-data truth (dashed line) near the slope that actually generated the data.", fig.alt = "Pooled mean of y against the assumed sensitivity slope, with confidence bands and the complete-data truth marked."}
 op <- par(mar = c(4.2, 4.2, 1, 1))
 plot(sweep$beta, sweep$estimate, type = "n",
      ylim = range(sweep$conf.low, sweep$conf.high, truth),

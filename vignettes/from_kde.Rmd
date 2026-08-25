@@ -114,7 +114,7 @@ data.frame(
 
 Compare the KDE log-density and the proxy log-density on a planar grid.
 
-```{r visualise, fig.height = 4.5}
+```{r visualise, fig.height = 4.5, fig.cap = "The mixture-proxy log-density contours (orange, dashed) track the KDE's contours (blue, solid) closely across the sampled region.", fig.alt = "Contour plot comparing the KDE log-density and the Gaussian-mixture proxy log-density on a planar grid, with sample points overlaid."}
 grid <- expand.grid(
   x = seq(-5, 5, length.out = 80L),
   y = seq(-4, 4, length.out = 60L)
@@ -150,6 +150,10 @@ ggplot() +
         legend.position = "top",
         panel.grid.minor = element_blank())
 ```
+
+The two contour sets nearly coincide: the four-component proxy reproduces
+the KDE's log-density closely enough that the compression from a
+kernel-density object to a closed-form mixture costs little accuracy here.
 
 # Scope and limits (v0.2)
 

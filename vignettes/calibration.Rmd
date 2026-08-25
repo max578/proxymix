@@ -28,7 +28,7 @@ An objective $f(x)$ to be minimised over a box defines an unnormalised
 density, the Gibbs measure $\exp(-f(x) / T)$, whose mass concentrates on the
 low regions of $f$ as the temperature $T$ falls. That density can be
 evaluated point-wise but not directly sampled, which is exactly regime (iii)
-of Hoek and Elliott (2024). `from_objective()` fits a
+of van der Hoek and Elliott (2024). `from_objective()` fits a
 Gaussian-mixture proxy to $\exp(-f / T)$ by cooling a short temperature
 ladder through the same importance-sampled KLD-EM that `fit_kld_em()` runs,
 warm-starting each step from the previous fit.
@@ -88,7 +88,7 @@ $(-3.78, -3.28)$ and $(3.58, -1.85)$ -- the known optima. The figure below
 overlays the recovered modes (orange) and the analytic truth (red crosses)
 on the log-objective surface.
 
-```{r himmelblau-map, fig.alt = "Log-objective surface of Himmelblau's function with the four recovered modes and the analytic optima overlaid."}
+```{r himmelblau-map, fig.cap = "The recovered modes sit on the four analytic optima of Himmelblau's function, one per basin of the log-objective surface.", fig.alt = "Log-objective surface of Himmelblau's function with the four recovered modes and the analytic optima overlaid."}
 truth <- rbind(c(3, 2), c(-2.805118, 3.131312),
                c(-3.779310, -3.283186), c(3.584428, -1.848126))
 
@@ -109,6 +109,10 @@ legend("topright", bg = "white",
        pch = c(4, 19), col = c("red", "#D95F0E"),
        pt.cex = c(1.4, 1.2), pt.lwd = c(3, 1))
 ```
+
+The orange points sit on all four red crosses: `from_objective()` located
+every basin in one fit rather than converging on whichever optimum the
+starting point happened to favour.
 
 # Notes on use
 

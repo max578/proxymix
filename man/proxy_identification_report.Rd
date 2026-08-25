@@ -4,7 +4,7 @@
 \alias{proxy_identification_report}
 \title{The identification report (an executive one-pager)}
 \usage{
-proxy_identification_report(model, newdata, t1 = 1, t0 = 0)
+proxy_identification_report(model, newdata, t1 = NULL, t0 = NULL)
 }
 \arguments{
 \item{model}{An \link{uplift_model}.}
@@ -12,7 +12,7 @@ proxy_identification_report(model, newdata, t1 = 1, t0 = 0)
 \item{newdata}{A data frame carrying the covariate columns -- the population
 the report is computed over.}
 
-\item{t1, t0}{The treated and control treatment values. Default \code{1} and \code{0}.}
+\item{t1, t0}{The treated and control treatment values. Default the treatment levels observed at fit time (\code{model@treatment_levels}); a value matching neither observed level aborts.}
 }
 \value{
 An S7 object of class \code{uplift_identification} with a \code{print} method.

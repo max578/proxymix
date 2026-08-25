@@ -9,8 +9,8 @@
 
 `proxymix` fits multivariate Gaussian-mixture proxies that are
 **Kullback–Leibler optimal** to user-supplied target densities on
-$\mathbb{R}^p$. Three regimes from Hoek and Elliott (2024) are unified
-under one verb:
+$\mathbb{R}^p$. Three regimes from van der Hoek and Elliott (2024) are
+unified under one verb:
 
 | Regime | When it applies | Method |
 |----|----|----|
@@ -62,12 +62,12 @@ Documentation site: <https://max578.github.io/proxymix/>.
 ``` r
 library(proxymix)
 
-## A target you can evaluate but not sample from — a 2D "banana".
+## A target you can evaluate but not sample from -- a 2D "banana".
 banana <- banana_target()
 
 ## Fit a 3-component Gaussian mixture proxy via KLD-EM with importance sampling.
 fit <- fit_proxymix(banana, N = 3L, regime = "kld",
-                    proposal = is_mvt(n_dim = 2L, df = 5),
+                    proposal = proposal_mvt(n_dim = 2L, df = 5),
                     is_size = 2000L, max_iter = 60L, seed = 1L)
 
 print(fit)
@@ -122,7 +122,7 @@ gmm_conditionalise(fit, given = c(NA, 0.5))
     gmm_modes(fit)$modes                               # the distinct optima
 
 `from_objective()` treats an objective `f` as the Gibbs measure
-`exp(-f / T)` — a regime-(iii) target you can evaluate but not sample —
+`exp(-f / T)` – a regime-(iii) target you can evaluate but not sample –
 and returns a closed-form mixture over its low regions, so a multimodal
 `f` is recovered as a whole rather than one optimum at a time.
 `gmm_modes()` resolves the fitted map into the recovered optima.
@@ -149,29 +149,29 @@ and returns a closed-form mixture over its low regions, so a multimodal
 
 The package ships with twelve vignettes:
 
-- **`quickstart`** — one-page tour.
-- **`posterior_proxy`** — the flagship workflow: a real unnormalised
+- **`quickstart`** – one-page tour.
+- **`posterior_proxy`** – the flagship workflow: a real unnormalised
   Bayesian posterior compressed to a proxy, with the evidence,
   closed-form reads, and bootstrap error bars.
-- **`three_regimes`** — a walk-through of regimes (i)–(iii) on toy 2-D
+- **`three_regimes`** – a walk-through of regimes (i)–(iii) on toy 2-D
   targets, including the agreement of (i) and (iii) at $N = 1$.
-- **`density_shapes`** — the regime-(iii) demonstration: banana, donut,
+- **`density_shapes`** – the regime-(iii) demonstration: banana, donut,
   three-mixture targets fit by importance-sampled KLD-EM.
-- **`operator_calculus`** — closed-form pushforward, Bayesian update,
+- **`operator_calculus`** – closed-form pushforward, Bayesian update,
   aggregation and conditioning on a fitted mixture.
-- **`from_kde`** — compressing a kernel density estimate into a
+- **`from_kde`** – compressing a kernel density estimate into a
   Gaussian-mixture proxy.
-- **`many_methods`** — one fitted mixture in place of regression,
+- **`many_methods`** – one fitted mixture in place of regression,
   clustering, PCA and ridge regression.
-- **`entropy`** — closed-form entropy, divergence and mutual-information
+- **`entropy`** – closed-form entropy, divergence and mutual-information
   diagnostics.
-- **`calibration`** — mapping the optima of an objective via its Gibbs
+- **`calibration`** – mapping the optima of an objective via its Gibbs
   measure.
-- **`missing_data`** — multiple imputation by conditioning the fitted
+- **`missing_data`** – multiple imputation by conditioning the fitted
   mixture (missing at random).
-- **`missing_data_mnar`** — imputation under value-dependent missingness
+- **`missing_data_mnar`** – imputation under value-dependent missingness
   and censoring, with sensitivity analysis.
-- **`end_of_sample`** — testing whether the last few observations of a
+- **`end_of_sample`** – testing whether the last few observations of a
   series are consistent with a fitted state-space model.
 
 ## Interactive tutorial

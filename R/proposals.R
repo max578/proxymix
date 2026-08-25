@@ -250,6 +250,10 @@ is_mvt <- function(n_dim, mean = rep(0, n_dim), sigma = diag(n_dim), df = 5) {
 #' @param sigma,df Forwarded to [is_mvt()].
 #' @returns An [is_proposal] object.
 #' @family proposals
+#' @examples
+#' proposal_uniform(n_dim = 2L, lower = -5, upper = 5)
+#' proposal_mvn(n_dim = 2L, mean = c(0, 0), cov = diag(2))
+#' proposal_mvt(n_dim = 2L, df = 5)   # heavier tails; a robust default
 #' @export
 proposal_uniform <- is_uniform
 

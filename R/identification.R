@@ -21,7 +21,7 @@
 #'
 #' @param model An [uplift_model].
 #' @param newdata A data frame carrying the covariate columns.
-#' @param t1,t0 The treated and control treatment values. Default `1` and `0`.
+#' @param t1,t0 The treated and control treatment values. Default the treatment levels observed at fit time (`model@treatment_levels`); a value matching neither observed level aborts.
 #'
 #' @returns A [data.table::data.table] with columns `id`, `tau_obs`, `tau_do`,
 #'   `gap`, `overlap_flag`.
@@ -38,10 +38,13 @@
 #' m <- fit_uplift(dat, "y", "t", "x", N = 2L, regime = "sample",
 #'                 max_iter = 80L, seed = 1L)
 #' proxy_confounding_gap(m, data.frame(x = c(-1, 0, 1)))
-proxy_confounding_gap <- function(model, newdata, t1 = 1, t0 = 0) {
+proxy_confounding_gap <- function(model, newdata, t1 = NULL, t0 = NULL) {
   if (!S7::S7_inherits(model, uplift_model)) {
     cli::cli_abort("`model` must be an {.cls uplift_model}.")
   }
+  resolved <- .resolve_treatment_arms(model, t1, t0)
+  t1 <- resolved$t1
+  t0 <- resolved$t0
   g <- model@fit
   z_idx <- c(model@roles$treatment, model@roles$covariate)
   x_idx <- model@roles$covariate
@@ -113,7 +116,7 @@ proxy_confounding_gap <- function(model, newdata, t1 = 1, t0 = 0) {
 #'   or one of the strings `"all"`, `"none"`, `"optimal"`.
 #' @param value Numeric scalar -- the value of one unit of outcome.
 #' @param cost Numeric scalar -- the cost of treating one unit. Default `0`.
-#' @param t1,t0 The treated and control treatment values. Default `1` and `0`.
+#' @param t1,t0 The treated and control treatment values. Default the treatment levels observed at fit time (`model@treatment_levels`); a value matching neither observed level aborts.
 #' @param exclude_low_overlap Logical -- drop overlap-flagged units from the
 #'   average (and report the count). Default `TRUE`.
 #'
@@ -138,8 +141,8 @@ proxy_policy_value <- function(model,
                                policy,
                                value,
                                cost = 0,
-                               t1 = 1,
-                               t0 = 0,
+                               t1 = NULL,
+                               t0 = NULL,
                                exclude_low_overlap = TRUE) {
   if (!S7::S7_inherits(model, uplift_model)) {
     cli::cli_abort("`model` must be an {.cls uplift_model}.")
@@ -147,6 +150,9 @@ proxy_policy_value <- function(model,
   if (length(value) != 1L || !is.numeric(value)) {
     cli::cli_abort("`value` must be a numeric scalar.")
   }
+  resolved <- .resolve_treatment_arms(model, t1, t0)
+  t1 <- resolved$t1
+  t0 <- resolved$t0
   g <- model@fit
   z_idx <- c(model@roles$treatment, model@roles$covariate)
   x_idx <- model@roles$covariate
@@ -194,7 +200,7 @@ proxy_policy_value <- function(model,
 #' @param model An [uplift_model].
 #' @param observed A data frame carrying the outcome, treatment, and covariate
 #'   columns of the observed units.
-#' @param t1,t0 The treated and control treatment values. Default `1` and `0`.
+#' @param t1,t0 The treated and control treatment values. Default the treatment levels observed at fit time (`model@treatment_levels`); a value matching neither observed level aborts.
 #'
 #' @returns A [data.table::data.table] with columns `id`, `y_obs`, `t_obs`,
 #'   `cf_mean_t1`, `retro_uplift`.
@@ -211,10 +217,13 @@ proxy_policy_value <- function(model,
 #' m <- fit_uplift(dat, "y", "t", "x", N = 2L, regime = "sample",
 #'                 max_iter = 80L, seed = 1L)
 #' proxy_retrospective_uplift(m, observed = dat[1:5, ])
-proxy_retrospective_uplift <- function(model, observed, t1 = 1, t0 = 0) {
+proxy_retrospective_uplift <- function(model, observed, t1 = NULL, t0 = NULL) {
   if (!S7::S7_inherits(model, uplift_model)) {
     cli::cli_abort("`model` must be an {.cls uplift_model}.")
   }
+  resolved <- .resolve_treatment_arms(model, t1, t0)
+  t1 <- resolved$t1
+  t0 <- resolved$t0
   g <- model@fit
   r <- model@roles
   p <- gmm_dim(g)
@@ -272,7 +281,7 @@ proxy_retrospective_uplift <- function(model, observed, t1 = 1, t0 = 0) {
 #'
 #' @param model An [uplift_model].
 #' @param t1,t0 The treated and control treatment values used to scale the
-#'   within-segment effect. Default `1` and `0`.
+#'   within-segment effect. Default the treatment levels observed at fit time (`model@treatment_levels`).
 #'
 #' @returns A [data.table::data.table] with columns `regime`, `weight`,
 #'   `effect`, `sigma`, and one column per covariate centre.
@@ -288,10 +297,13 @@ proxy_retrospective_uplift <- function(model, observed, t1 = 1, t0 = 0) {
 #' m <- fit_uplift(dat, "y", "t", "x", N = 2L, regime = "sample",
 #'                 max_iter = 80L, seed = 1L)
 #' proxy_regime_segments(m)
-proxy_regime_segments <- function(model, t1 = 1, t0 = 0) {
+proxy_regime_segments <- function(model, t1 = NULL, t0 = NULL) {
   if (!S7::S7_inherits(model, uplift_model)) {
     cli::cli_abort("`model` must be an {.cls uplift_model}.")
   }
+  resolved <- .resolve_treatment_arms(model, t1, t0)
+  t1 <- resolved$t1
+  t0 <- resolved$t0
   g <- model@fit
   r <- model@roles
   cache <- .uplift_cache(model)
@@ -330,7 +342,7 @@ proxy_regime_segments <- function(model, t1 = 1, t0 = 0) {
 #' @param model An [uplift_model].
 #' @param newdata A data frame carrying the covariate columns -- the population
 #'   the report is computed over.
-#' @param t1,t0 The treated and control treatment values. Default `1` and `0`.
+#' @param t1,t0 The treated and control treatment values. Default the treatment levels observed at fit time (`model@treatment_levels`); a value matching neither observed level aborts.
 #'
 #' @returns An S7 object of class `uplift_identification` with a `print` method.
 #' @family decision
@@ -346,7 +358,7 @@ proxy_regime_segments <- function(model, t1 = 1, t0 = 0) {
 #' m <- fit_uplift(dat, "y", "t", "x", N = 2L, regime = "sample",
 #'                 max_iter = 80L, seed = 1L)
 #' proxy_identification_report(m, data.frame(x = stats::rnorm(100)))
-proxy_identification_report <- function(model, newdata, t1 = 1, t0 = 0) {
+proxy_identification_report <- function(model, newdata, t1 = NULL, t0 = NULL) {
   if (!S7::S7_inherits(model, uplift_model)) {
     cli::cli_abort("`model` must be an {.cls uplift_model}.")
   }

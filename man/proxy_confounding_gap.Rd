@@ -4,14 +4,14 @@
 \alias{proxy_confounding_gap}
 \title{Confounding gap: the sensitivity of the effect to the latent regime}
 \usage{
-proxy_confounding_gap(model, newdata, t1 = 1, t0 = 0)
+proxy_confounding_gap(model, newdata, t1 = NULL, t0 = NULL)
 }
 \arguments{
 \item{model}{An \link{uplift_model}.}
 
 \item{newdata}{A data frame carrying the covariate columns.}
 
-\item{t1, t0}{The treated and control treatment values. Default \code{1} and \code{0}.}
+\item{t1, t0}{The treated and control treatment values. Default the treatment levels observed at fit time (\code{model@treatment_levels}); a value matching neither observed level aborts.}
 }
 \value{
 A \link[data.table:data.table]{data.table::data.table} with columns \code{id}, \code{tau_obs}, \code{tau_do},

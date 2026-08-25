@@ -8,6 +8,34 @@
 ## (`se_method = "mc"`) captures the regime-gate uncertainty the delta method
 ## holds fixed.
 
+## Treatment-arm resolution ---------------------------------------------------
+
+## Resolves t1/t0 against the treatment levels `fit_uplift()` observed in the
+## data (`model@treatment_levels`), rather than a fixed {0, 1} default that
+## silently mis-scales an effect on any other coding (PX-01). `NULL` takes the
+## observed arm. The model targets a binary treatment (`R/uplift.R`), so a
+## supplied value that matches neither observed level aborts instead of being
+## silently read on the wrong scale -- e.g. `t1 = 1` against a model fitted on
+## `{0, 100}`.
+.resolve_treatment_arms <- function(model, t1, t0) {
+  lv <- model@treatment_levels
+  if (is.null(t1)) t1 <- lv[2L]
+  if (is.null(t0)) t0 <- lv[1L]
+  matches_level <- function(v) any(abs(v - lv) < 1e-8)
+  if (!matches_level(t1) || !matches_level(t0)) {
+    cli::cli_abort(
+      c(
+        "`t1`/`t0` do not match the treatment levels observed at fit time.",
+        "i" = "Observed treatment levels: {lv[1L]} and {lv[2L]}.",
+        "i" = "Supplied: t1 = {t1}, t0 = {t0}.",
+        "i" = "Omit `t1`/`t0` to use the observed arms, or pass one of the observed levels."
+      ),
+      class = c("proxymix_treatment_scale_error", "orchestra_refusal")
+    )
+  }
+  list(t1 = t1, t0 = t0)
+}
+
 ## Per-component cache -------------------------------------------------------
 
 ## Pre-computes, once per model, every per-component quantity the scoring loop
@@ -275,7 +303,7 @@
 #'
 #' @param model An [uplift_model].
 #' @param newdata A data frame carrying the covariate columns.
-#' @param t1,t0 The treated and control treatment values. Default `1` and `0`.
+#' @param t1,t0 The treated and control treatment values. Default the treatment levels observed at fit time (`model@treatment_levels`); a value matching neither observed level aborts.
 #' @param se Logical -- compute standard errors and confidence intervals.
 #' @param se_method One of `"delta"` (closed form, the default) or `"mc"`
 #'   (resampling).
@@ -306,8 +334,8 @@
 #' proxy_cate(m, newdata = data.frame(x = c(-1, 0, 1)))
 proxy_cate <- function(model,
                        newdata,
-                       t1 = 1,
-                       t0 = 0,
+                       t1 = NULL,
+                       t0 = NULL,
                        se = TRUE,
                        se_method = c("delta", "mc"),
                        level = 0.95,
@@ -318,6 +346,9 @@ proxy_cate <- function(model,
   if (!S7::S7_inherits(model, uplift_model)) {
     cli::cli_abort("`model` must be an {.cls uplift_model}.")
   }
+  arms <- .resolve_treatment_arms(model, t1, t0)
+  t1 <- arms$t1
+  t0 <- arms$t0
   se_method <- rlang::arg_match(se_method)
   scale <- rlang::arg_match(scale)
   response_binary <- identical(scale, "response") &&
@@ -469,7 +500,7 @@ proxy_predict <- function(model, newdata, t,
 #'
 #' @param model An [uplift_model].
 #' @param newdata A data frame carrying the covariate columns.
-#' @param t1,t0 The treated and control treatment values. Default `1` and `0`.
+#' @param t1,t0 The treated and control treatment values. Default the treatment levels observed at fit time (`model@treatment_levels`); a value matching neither observed level aborts.
 #' @param floor Coverage probability below which a unit is flagged. Default
 #'   `0.01`.
 #'
@@ -483,10 +514,13 @@ proxy_predict <- function(model, newdata, t,
 #'                   x = stats::rnorm(200))
 #' m <- fit_uplift(dat, "y", "t", "x", N = 1L, regime = "moment")
 #' proxy_overlap(m, newdata = data.frame(x = c(0, 8)))
-proxy_overlap <- function(model, newdata, t1 = 1, t0 = 0, floor = 0.01) {
+proxy_overlap <- function(model, newdata, t1 = NULL, t0 = NULL, floor = 0.01) {
   if (!S7::S7_inherits(model, uplift_model)) {
     cli::cli_abort("`model` must be an {.cls uplift_model}.")
   }
+  arms0 <- .resolve_treatment_arms(model, t1, t0)
+  t1 <- arms0$t1
+  t0 <- arms0$t0
   g <- model@fit
   z_idx <- c(model@roles$treatment, model@roles$covariate)
   X <- .newdata_x(model, newdata)
@@ -515,7 +549,7 @@ proxy_overlap <- function(model, newdata, t1 = 1, t0 = 0, floor = 0.01) {
 #' @param newdata A data frame carrying the covariate columns.
 #' @param value Numeric scalar -- the value of one unit of outcome.
 #' @param cost Numeric scalar -- the cost of treating one unit. Default `0`.
-#' @param t1,t0 The treated and control treatment values. Default `1` and `0`.
+#' @param t1,t0 The treated and control treatment values. Default the treatment levels observed at fit time (`model@treatment_levels`); a value matching neither observed level aborts.
 #' @param se_method One of `"delta"` (default) or `"mc"`.
 #' @param ... Forwarded to [proxy_cate()].
 #'
@@ -538,8 +572,8 @@ proxy_decide <- function(model,
                          newdata,
                          value,
                          cost = 0,
-                         t1 = 1,
-                         t0 = 0,
+                         t1 = NULL,
+                         t0 = NULL,
                          se_method = c("delta", "mc"),
                          ...) {
   if (length(value) != 1L || !is.numeric(value)) {

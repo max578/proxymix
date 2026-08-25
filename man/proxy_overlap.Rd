@@ -4,14 +4,14 @@
 \alias{proxy_overlap}
 \title{Per-unit overlap / positivity diagnostic}
 \usage{
-proxy_overlap(model, newdata, t1 = 1, t0 = 0, floor = 0.01)
+proxy_overlap(model, newdata, t1 = NULL, t0 = NULL, floor = 0.01)
 }
 \arguments{
 \item{model}{An \link{uplift_model}.}
 
 \item{newdata}{A data frame carrying the covariate columns.}
 
-\item{t1, t0}{The treated and control treatment values. Default \code{1} and \code{0}.}
+\item{t1, t0}{The treated and control treatment values. Default the treatment levels observed at fit time (\code{model@treatment_levels}); a value matching neither observed level aborts.}
 
 \item{floor}{Coverage probability below which a unit is flagged. Default
 \code{0.01}.}

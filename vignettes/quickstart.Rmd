@@ -28,7 +28,7 @@ library(proxymix)
 fit_proxymix(target, N, regime = c("auto", "moment", "sample", "kld"))
 ```
 
--- and the three fitting regimes come from Hoek and Elliott (2024):
+-- and the three fitting regimes come from van der Hoek and Elliott (2024):
 
 | Regime       | When it applies                                | Method                                |
 |--------------|------------------------------------------------|---------------------------------------|
@@ -71,7 +71,7 @@ if (requireNamespace("ggplot2", quietly = TRUE)) {
 We fit a 3-component proxy by KLD-EM with importance sampling against a multivariate-Student-t proposal. The fit runs in a fraction of a second.
 
 ```{r fit}
-proposal <- is_mvt(n_dim = 2L, mean = c(0, 0),
+proposal <- proposal_mvt(n_dim = 2L, mean = c(0, 0),
                    sigma = 4 * diag(2), df = 5)
 
 fit <- fit_proxymix(tgt, N = 3L, regime = "kld",

@@ -1,3 +1,19 @@
+# proxymix (development version)
+
+### Bug fixes
+
+* The decision family (`proxy_cate()`, `proxy_uplift()`, `proxy_overlap()`,
+  `proxy_decide()`, `proxy_confounding_gap()`, `proxy_policy_value()`,
+  `proxy_retrospective_uplift()`, `proxy_regime_segments()`,
+  `proxy_identification_report()`) previously defaulted the treatment
+  contrast to `t1 = 1, t0 = 0` regardless of the treatment coding
+  `fit_uplift()` observed, silently returning an effect on the wrong scale
+  for any treatment not coded `{0, 1}` (e.g. a `{0, 100}`-coded dose). The
+  default now reads `model@treatment_levels`, the arms actually observed at
+  fit time; a `t1`/`t0` matching neither observed level now aborts with a
+  classed `proxymix_treatment_scale_error` instead of returning a silently
+  mis-scaled effect.
+
 # proxymix 0.15.2
 
 ### Bug fixes

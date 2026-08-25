@@ -4,7 +4,7 @@
 \alias{proxy_retrospective_uplift}
 \title{Retrospective (counterfactual-mean) uplift for observed units}
 \usage{
-proxy_retrospective_uplift(model, observed, t1 = 1, t0 = 0)
+proxy_retrospective_uplift(model, observed, t1 = NULL, t0 = NULL)
 }
 \arguments{
 \item{model}{An \link{uplift_model}.}
@@ -12,7 +12,7 @@ proxy_retrospective_uplift(model, observed, t1 = 1, t0 = 0)
 \item{observed}{A data frame carrying the outcome, treatment, and covariate
 columns of the observed units.}
 
-\item{t1, t0}{The treated and control treatment values. Default \code{1} and \code{0}.}
+\item{t1, t0}{The treated and control treatment values. Default the treatment levels observed at fit time (\code{model@treatment_levels}); a value matching neither observed level aborts.}
 }
 \value{
 A \link[data.table:data.table]{data.table::data.table} with columns \code{id}, \code{y_obs}, \code{t_obs},

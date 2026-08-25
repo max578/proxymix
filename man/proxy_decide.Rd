@@ -9,8 +9,8 @@ proxy_decide(
   newdata,
   value,
   cost = 0,
-  t1 = 1,
-  t0 = 0,
+  t1 = NULL,
+  t0 = NULL,
   se_method = c("delta", "mc"),
   ...
 )
@@ -24,7 +24,7 @@ proxy_decide(
 
 \item{cost}{Numeric scalar -- the cost of treating one unit. Default \code{0}.}
 
-\item{t1, t0}{The treated and control treatment values. Default \code{1} and \code{0}.}
+\item{t1, t0}{The treated and control treatment values. Default the treatment levels observed at fit time (\code{model@treatment_levels}); a value matching neither observed level aborts.}
 
 \item{se_method}{One of \code{"delta"} (default) or \code{"mc"}.}
 

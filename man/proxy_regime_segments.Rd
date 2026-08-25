@@ -4,13 +4,13 @@
 \alias{proxy_regime_segments}
 \title{The fitted regimes as an interpretable segment table}
 \usage{
-proxy_regime_segments(model, t1 = 1, t0 = 0)
+proxy_regime_segments(model, t1 = NULL, t0 = NULL)
 }
 \arguments{
 \item{model}{An \link{uplift_model}.}
 
 \item{t1, t0}{The treated and control treatment values used to scale the
-within-segment effect. Default \code{1} and \code{0}.}
+within-segment effect. Default the treatment levels observed at fit time (\code{model@treatment_levels}).}
 }
 \value{
 A \link[data.table:data.table]{data.table::data.table} with columns \code{regime}, \code{weight},

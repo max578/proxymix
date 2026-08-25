@@ -263,6 +263,12 @@
 #'
 #' @returns An S7 object of class `gmm_imputation`.
 #' @family imputation
+#' @examples
+#' x1 <- rnorm(60)
+#' x2 <- x1 + rnorm(60, sd = 0.4)
+#' x2[sample(60, 10)] <- NA
+#' imp <- gmm_impute(cbind(x1, x2), N = 1L, m = 10L, seed = 1L)
+#' imp   # an S7 object of class gmm_imputation
 #' @export
 gmm_imputation <- S7::new_class(
   name = "gmm_imputation",
@@ -498,6 +504,15 @@ gmm_impute <- function(data, N = NULL, m = 20L, mechanism = mar(),
 #' @returns When `which` selects one completion, a single completed dataset
 #'   (matrix, or data frame if the input was one); otherwise a list of them.
 #' @family imputation
+#' @examples
+#' x1 <- rnorm(60)
+#' x2 <- x1 + rnorm(60, sd = 0.4)
+#' x2[sample(60, 10)] <- NA
+#' imp <- gmm_impute(cbind(x1, x2), N = 1L, m = 10L, seed = 1L)
+#' first <- gmm_complete(imp, which = 1L)   # one completed dataset
+#' anyNA(first)
+#' all_completions <- gmm_complete(imp, which = "all")   # a list of ten
+#' length(all_completions)
 #' @export
 gmm_complete <- function(object, which = 1L) {
   if (!S7::S7_inherits(object, gmm_imputation)) {

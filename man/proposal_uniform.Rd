@@ -35,6 +35,11 @@ historical \verb{is_*} prefix reads as a logical predicate, which these
 constructors are not. The \verb{is_*} names remain available as aliases and
 are not scheduled for removal.
 }
+\examples{
+proposal_uniform(n_dim = 2L, lower = -5, upper = 5)
+proposal_mvn(n_dim = 2L, mean = c(0, 0), cov = diag(2))
+proposal_mvt(n_dim = 2L, df = 5)   # heavier tails; a robust default
+}
 \seealso{
 Other proposals: 
 \code{\link{is_mvn}()},

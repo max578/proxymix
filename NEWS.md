@@ -14,6 +14,27 @@
   classed `proxymix_treatment_scale_error` instead of returning a silently
   mis-scaled effect.
 
+### Documentation
+
+* Every figure chunk across the vignette set now carries a `fig.cap` stating
+  what the figure shows, and the four uncaptioned or under-interpreted plots
+  (`calibration`, `from_kde`, `missing_data`, `operator_calculus`) gained a
+  trailing prose sentence reading the result off the plot.
+* `entropy.Rmd`'s order-2 Renyi entropy formula is now typeset as LaTeX
+  (`\(H_2(\mathcal{N}(\mu, \Sigma)) = \dots\)`) rather than as inline code.
+* The in-text short-form citation "Hoek and Elliott (2024)" is now
+  "van der Hoek and Elliott (2024)" in `README.Rmd` and the three vignettes
+  that used the short form (`quickstart`, `three_regimes`, `calibration`);
+  the surname was silently dropped when the co-author's `Authors@R` entry
+  was removed at 0.15.1.
+* `README.Rmd` and the two vignettes still calling the deprecated `is_mvt()`
+  alias (`quickstart`, `three_regimes`) now use the preferred `proposal_mvt()`
+  name introduced at 0.13.0.
+* `README.Rmd`'s stray Unicode em/en dashes are now the LaTeX `--` convention
+  used throughout the rest of the package's prose.
+* `gmm_complete()`, `proposal_uniform()`/`proposal_mvn()`/`proposal_mvt()`,
+  and the `gmm_imputation` class gained `@examples`.
+
 # proxymix 0.15.2
 
 ### Bug fixes

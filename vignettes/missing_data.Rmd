@@ -77,7 +77,7 @@ Do the imputed values follow the two clusters, or do they pile up in the
 empty middle? Overlaying the imputed `x2` on the values that were actually
 missing shows the mixture imputer reproducing both modes.
 
-```{r modes, fig.alt = "Density of the missing x2 values against the mixture-imputed values; both are bimodal and overlap."}
+```{r modes, fig.cap = "The mixture-imputed x2 values (green) reproduce both modes of the held-out truth (grey), rather than collapsing onto a single peak.", fig.alt = "Density of the missing x2 values against the mixture-imputed values; both are bimodal and overlap."}
 imputed <- done[missing, "x2"]
 hidden  <- truth[missing, "x2"]
 
@@ -93,7 +93,7 @@ A single Gaussian fitted to the same holes has one centre and one spread, so
 it fills the empty middle and erases the two clusters. Forcing one component
 (`N = 1L`) shows the contrast:
 
-```{r single, fig.alt = "A single-Gaussian imputation places mass in the empty middle, unlike the bimodal truth."}
+```{r single, fig.cap = "Forcing a single Gaussian component fills the empty middle between the two clusters, erasing the bimodal structure the mixture imputer preserved above.", fig.alt = "A single-Gaussian imputation places mass in the empty middle, unlike the bimodal truth."}
 imp1 <- gmm_impute(X, N = 1L, m = 20L, seed = 1L)
 imputed1 <- gmm_complete(imp1, 1L)[missing, "x2"]
 
@@ -104,6 +104,10 @@ lines(density(imputed1), lwd = 2, col = "#d95f02")
 legend("topright", c("held-out truth", "single-Gaussian imputation"),
        col = c("grey30", "#d95f02"), lwd = 2, bty = "n")
 ```
+
+The single-Gaussian fit places its one centre between the two clusters and
+so imputes values where there was never any true mass -- the failure mode
+the mixture imputer above avoids by keeping two components.
 
 # Pooling an estimand
 

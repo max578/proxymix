@@ -22,7 +22,7 @@ set.seed(20260513)
 library(proxymix)
 ```
 
-This vignette walks through the three KL-optimal regimes of Hoek and Elliott (2024). For each, we show what information the regime needs about the target, the M-step update it implements, and an end-to-end fit on a target whose ground truth we know.
+This vignette walks through the three KL-optimal regimes of van der Hoek and Elliott (2024). For each, we show what information the regime needs about the target, the M-step update it implements, and an end-to-end fit on a target whose ground truth we know.
 
 We use the bundled three-component mixture target -- its log-density is known exactly, and (because the target is itself a Gaussian mixture) so are its true samples.
 
@@ -109,11 +109,11 @@ The algorithm:
 2. Compute self-normalised importance weights \(W_n \propto f(x_n) / q(x_n)\).
 3. Run EM iterations using the IS weights -- the M-step minimises \(\mathrm{KL}(f \Vert g_\theta)\) by re-weighting responsibilities with `W`.
 
-The proposal `q` is the only free knob beyond the usual mixture configuration; `is_mvt()` with `df = 5` is a robust default.
+The proposal `q` is the only free knob beyond the usual mixture configuration; `proposal_mvt()` with `df = 5` is a robust default.
 
 ```{r kld}
 k_fit <- fit_proxymix(tgt, N = 3L, regime = "kld",
-                      proposal = is_mvt(n_dim = 2L,
+                      proposal = proposal_mvt(n_dim = 2L,
                                         mean = c(0, 0),
                                         sigma = 6 * diag(2),
                                         df = 5),
@@ -183,7 +183,7 @@ When `N = 1`, the KL-optimal Gaussian is the moment-matched one. Regime (iii) --
 banana <- banana_target(with_samples = TRUE, n = 2000L, seed = 1L)
 m_b <- fit_proxymix(banana, N = 1L, regime = "moment")
 k_b <- fit_proxymix(banana, N = 1L, regime = "kld",
-                    proposal = is_mvt(n_dim = 2L,
+                    proposal = proposal_mvt(n_dim = 2L,
                                       sigma = 4 * diag(2),
                                       df = 5),
                     is_size = 3000L, max_iter = 50L, seed = 1L)

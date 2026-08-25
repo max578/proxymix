@@ -57,6 +57,13 @@ pooling in \code{\link[=proxy_pool]{proxy_pool()}}), the mixture fitted to the f
 record of the missingness. Pass it to \code{\link[=gmm_complete]{gmm_complete()}} to extract the
 completed datasets and to \code{\link[=proxy_pool]{proxy_pool()}} / \code{\link[=proxy_fmi]{proxy_fmi()}} for inference.
 }
+\examples{
+x1 <- rnorm(60)
+x2 <- x1 + rnorm(60, sd = 0.4)
+x2[sample(60, 10)] <- NA
+imp <- gmm_impute(cbind(x1, x2), N = 1L, m = 10L, seed = 1L)
+imp   # an S7 object of class gmm_imputation
+}
 \seealso{
 Other imputation: 
 \code{\link{as_mids}()},

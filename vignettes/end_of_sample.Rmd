@@ -91,7 +91,7 @@ gmm_eos_test(prior, dynamics, measurement, y_break, m = 1L, method = "andrews")
 The break inflates the statistic and the test rejects. The picture shows why:
 the broken point falls far outside the band the filter predicts for it.
 
-```{r figure, fig.alt = "A local-level series with its final observation pushed five standard deviations away; the broken point sits far outside the path of the underlying state."}
+```{r figure, fig.cap = "The pushed final observation (red point) sits far outside the band the filtered state predicts for it, which is what triggers the test's rejection.", fig.alt = "A local-level series with its final observation pushed five standard deviations away; the broken point sits far outside the path of the underlying state."}
 plot(y_stable, type = "l", col = "grey60", xlab = "time", ylab = "observation",
      main = "End-of-sample break in the last observation")
 lines(level, col = "#1b7837", lwd = 2)

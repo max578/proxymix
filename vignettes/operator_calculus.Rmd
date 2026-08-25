@@ -97,7 +97,7 @@ means and covariances have been Kalman-updated component-wise.
 
 Visualise the prior and the posterior on a planar grid:
 
-```{r, fig.height = 4}
+```{r, fig.height = 4, fig.cap = "The posterior (right) concentrates around the observed value and is narrower than the prior (left), the visible effect of the Kalman update in the previous chunk.", fig.alt = "Faceted raster plot comparing the prior and posterior densities on a planar grid, with the posterior visibly more concentrated."}
 grid <- expand.grid(x = seq(-4, 5, length.out = 80L),
                     y = seq(-3, 3, length.out = 60L))
 gm <- as.matrix(grid)
@@ -124,6 +124,10 @@ ggplot(long, aes(x, y)) +
         panel.grid = element_blank(),
         legend.position = "right")
 ```
+
+The posterior panel is visibly tighter than the prior and shifted toward
+the observed value \(y_1 = 0.8\), exactly the contraction the closed-form
+update above computed component-wise.
 
 ## Kalman parity check
 

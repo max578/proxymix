@@ -33,7 +33,7 @@ g <- gmm(weights = c(0.5, 0.5),
 gmm_entropy(g)
 ```
 
-For a single Gaussian the value is exact and matches the analytic form `H2(N(mu, S)) = (p / 2) log(4 pi) + (1 / 2) log det(S)`:
+For a single Gaussian the value is exact and matches the analytic form \(H_2(\mathcal{N}(\mu, \Sigma)) = \tfrac{p}{2}\log(4\pi) + \tfrac{1}{2}\log\det\Sigma\):
 
 ```{r}
 S <- matrix(c(1, 0.3, 0.3, 1), 2, 2)

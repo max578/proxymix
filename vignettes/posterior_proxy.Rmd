@@ -7,35 +7,82 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
+<!-- Render time: ~3 s under rmarkdown::render() with ggplot2 installed;
+     macOS arm64 (Apple silicon), R 4.5.2, one core. -->
+
+```{r setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  fig.width = 6,
-  fig.height = 4,
+  fig.width = 7,
+  fig.height = 4.5,
+  dpi = 150,
   out.width = "100%"
 )
-set.seed(20260705)
 ```
 
-```{r setup}
+```{r library}
 library(proxymix)
 ```
 
-This is the workflow the package exists for, end to end on real data: you
-have an *unnormalised* log-posterior -- a likelihood times a prior, the
-normalising constant unknown -- and you want a compact object you can
-marginalise, condition, integrate, and put error bars on, without running
-and tuning a Markov chain.
+```{r engines}
+has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
+```
 
-# A real unnormalised posterior
+## Why
+
+A modeller has written down a likelihood and a prior, can evaluate their
+product at any parameter value, and does not want to spend the afternoon
+tuning a sampler to get four numbers out of it. The question is: *I have an
+unnormalised log-posterior I can evaluate and no appetite for tuning a
+sampler -- can I get the marginal, the tail probability, the evidence and an
+error bar out of it?*
+
+This is the workflow the package exists for, end to end: an unnormalised
+log-posterior in, and a compact object out that can be marginalised,
+conditioned, integrated, and given error bars, with no Markov chain in
+between.
+
+## What
+
+[`gmm_target()`] wraps a log-density into the object the fitting verbs
+consume. Declaring `normalised = FALSE` records that the normalising
+constant is unknown, which is what an unnormalised posterior is.
+
+[`fit_proxymix()`] with `regime = "kld"` runs the importance-sampled KLD-EM
+of van der Hoek and Elliott (2024) against that target. Its `proposal`
+argument takes the importance proposal, and `adapt = "pmc"` refreshes that
+proposal from the current fit as the run proceeds, so the initial proposal
+only has to be survivable rather than good. [`proposal_mvt()`] builds a
+multivariate Student-t proposal, whose heavy tails are the robust default.
+
+[`gmm_fit_quality()`] returns the certificate that travels with the fit: the
+effective sample size of the importance weights, a degeneracy flag, the
+support fraction, and a held-out validation gap. It is the part to read
+before anything else.
+
+[`gmm_evidence()`] estimates the log marginal likelihood, using the fitted
+proxy as its own importance proposal. [`gmm_marginalise()`], [`pgmm()`] and
+[`qgmm()`] read marginals, tail probabilities and quantiles off the fitted
+mixture in closed form, with no further target evaluations.
+
+[`gmm_fit_ensemble()`] and [`proxy_functional_ci()`] price the fit's own
+sampling variability: the ensemble re-weights the fit's cached importance
+draws, so a bootstrap interval on any functional of the mixture costs no new
+posterior evaluations at all.
+
+## Do
+
+### A real unnormalised posterior
 
 A Bayesian logistic regression of transmission type on weight for the
 built-in `mtcars` data, under a flat prior. The log-posterior is the
-log-likelihood, known only up to its normalising constant (the model
-evidence):
+log-likelihood, known only up to its normalising constant, which is the
+model evidence.
 
 ```{r posterior}
+set.seed(20260705)
+
 y <- mtcars$am
 w <- mtcars$wt
 
@@ -53,88 +100,295 @@ tgt <- gmm_target(
 )
 ```
 
-# Fit the proxy
+### Fit the proxy
 
-A cheap point fit locates the proposal (the usual workflow: any rough
-guess of location and scale will do -- with `adapt = "pmc"` the proposal
-is refreshed from the fit itself, so it only has to be survivable, not
-good):
+A cheap point fit locates the proposal. This is the usual workflow: any
+rough guess of location and scale will do, because with `adapt = "pmc"` the
+proposal is refreshed from the fit itself.
+
+Population Monte Carlo re-estimates the fitting objective on a refreshed
+importance sample at each refresh, so consecutive values of that objective
+are not measured against the same draws and the run's monotonicity check
+reports the jump. The handler below captures that notice so it can be read
+alongside the certificate rather than passing unremarked.
 
 ```{r fit}
 mle <- stats::glm(am ~ wt, data = mtcars, family = stats::binomial())
 q0 <- proposal_mvt(2L, mean = stats::coef(mle),
                    sigma = 9 * stats::vcov(mle), df = 5)
 
-fit <- fit_proxymix(tgt, N = 2L, regime = "kld", proposal = q0,
-                    is_size = 3000L, max_iter = 60L, seed = 1L,
-                    adapt = "pmc")
-gmm_fit_quality(fit)
+fit_notes <- character(0)
+fit <- withCallingHandlers(
+  fit_proxymix(tgt, N = 2L, regime = "kld", proposal = q0,
+               is_size = 3000L, max_iter = 60L, seed = 1L,
+               adapt = "pmc"),
+  proxymix_nonmonotone = function(cond) {
+    fit_notes <<- c(fit_notes, conditionMessage(cond))
+    invokeRestart("muffleWarning")
+  }
+)
+
+cert <- gmm_fit_quality(fit)
+n_refresh <- fit@diagnostics$n_refresh
+cat(fit_notes, sep = "\n")
 ```
 
-The certificate above is the part to read before anything else: the
-effective sample size of the importance weights, the degeneracy flag, and
-the held-out validation gap travel with the fit through every operation
-below.
+```{r fit-quality-table, echo = FALSE}
+knitr::kable(
+  data.frame(
+    quantity = c("regime", "converged", "degenerate",
+                 "effective sample size", "effective sample size, relative",
+                 "smallest per-component effective size", "largest weight",
+                 "support fraction", "importance-sampled divergence",
+                 "held-out validation gap"),
+    value = c(cert$regime, cert$converged, cert$degenerate,
+              round(cert$ess, 1), round(cert$ess_relative, 3),
+              round(cert$min_component_ess, 1),
+              signif(cert$max_weight, 3), cert$support_fraction,
+              round(cert$kld_final, 3), signif(cert$validation_gap, 3))
+  ),
+  row.names = FALSE,
+  col.names = c("Certificate entry", "Value"),
+  caption = paste0(
+    "The fit-quality certificate that travels with the proxy through every ",
+    "operation below."
+  )
+)
+```
 
-# The evidence, with an independent check
+### The evidence, with an independent check
 
-The fitted proxy doubles as the importance proposal for the model
-evidence (the log marginal likelihood under the flat prior). A Laplace
-approximation computed directly from the MLE gives an independent
-first-order check:
+The fitted proxy doubles as the importance proposal for the model evidence,
+the log marginal likelihood under the flat prior. A Laplace approximation
+computed directly from the maximum-likelihood fit gives an independent
+first-order check that shares none of the importance machinery.
 
 ```{r evidence}
 ev <- gmm_evidence(fit, n = 4000L, seed = 2L)
-ev
 
 ## Laplace approximation: log f(theta_hat) + (d/2) log(2 pi)
 ## - (1/2) log det(-Hessian).
 H <- -solve(stats::vcov(mle))
-log_post(matrix(stats::coef(mle), nrow = 1L)) + log(2 * pi) -
+log_z_laplace <- log_post(matrix(stats::coef(mle), nrow = 1L)) +
+  log(2 * pi) -
   0.5 * as.numeric(determinant(-H, logarithm = TRUE)$modulus)
+
+evidence_gap <- abs(ev$log_z - log_z_laplace)
+c(importance = round(ev$log_z, 3), se = signif(ev$se_log_z, 3),
+  laplace = round(log_z_laplace, 3), gap = round(evidence_gap, 3))
 ```
 
-# Closed-form reads off the proxy
+### Closed-form reads off the proxy
 
-Everything below is exact algebra on the fitted mixture -- no chains, no
+Everything below is exact algebra on the fitted mixture: no chains, no
 further target evaluations. The marginal posterior of the slope, the
-probability the slope is negative, and a central 90% interval:
+probability that the slope is negative, and a central 90 per cent interval.
 
 ```{r reads}
 slope <- gmm_marginalise(fit, keep = 2L)
-pgmm(0, slope)                 # P(beta_wt < 0 | data)
-qgmm(c(0.05, 0.95), slope)     # central 90% credible interval
+p_negative <- pgmm(0, slope)
+interval <- qgmm(c(0.05, 0.95), slope)
+c(p_slope_negative = round(p_negative, 5),
+  lower = round(interval[1L], 3), upper = round(interval[2L], 3))
 ```
 
-# Error bars on the proxy itself
+### An independent reference for the marginal
+
+The reads above are all functions of the fitted mixture, so on their own
+they cannot say whether the mixture is right. In two dimensions the exact
+posterior can be integrated on a grid instead, which uses the log-posterior
+directly and never touches the fit. Exponentiating against the grid maximum
+keeps the sum numerically stable; summing over the intercept axis leaves the
+slope marginal, which the trapezoid rule then normalises.
+
+```{r quadrature}
+a_grid <- seq(2, 30, length.out = 220L)      # intercept
+b_grid <- seq(-11, -1, length.out = 260L)    # slope
+quad <- as.matrix(expand.grid(a = a_grid, b = b_grid))
+
+log_dens <- log_post(quad)
+dens <- matrix(exp(log_dens - max(log_dens)), nrow = length(a_grid))
+da <- a_grid[2L] - a_grid[1L]
+db <- b_grid[2L] - b_grid[1L]
+
+marg_quad <- colSums(dens) * da
+marg_quad <- marg_quad / (sum(marg_quad) * db)
+marg_proxy <- dgmm(matrix(b_grid, ncol = 1L), slope)
+
+curve_gap <- max(abs(marg_quad - marg_proxy))
+c(peak_density = signif(max(marg_quad), 3),
+  max_curve_gap = signif(curve_gap, 3),
+  gap_pct_of_peak = round(100 * curve_gap / max(marg_quad), 1))
+```
+
+```{r marginal-figure, eval = has_ggplot2, echo = has_ggplot2, fig.height = 4.2, fig.cap = "The slope marginal read off the fitted mixture in closed form (orange, dashed) against the same marginal obtained by numerical quadrature of the exact log-posterior (blue, solid). The quadrature curve uses the log-posterior directly and never touches the fit, so the agreement is an independent check rather than a self-consistency check.", fig.alt = "Two nearly coincident density curves for the slope parameter, one from the fitted Gaussian-mixture proxy and one from numerical quadrature of the exact posterior."}
+marg_df <- rbind(
+  data.frame(slope = b_grid, density = marg_quad,
+             source = "Quadrature of the exact posterior"),
+  data.frame(slope = b_grid, density = marg_proxy,
+             source = "Mixture proxy, closed form")
+)
+
+ggplot2::ggplot(marg_df,
+                ggplot2::aes(slope, density, colour = source,
+                             linetype = source)) +
+  ggplot2::geom_line(linewidth = 0.8) +
+  ggplot2::scale_colour_manual(
+    name = NULL,
+    values = c("Quadrature of the exact posterior" = "#0072B2",
+               "Mixture proxy, closed form" = "#D55E00")
+  ) +
+  ggplot2::scale_linetype_manual(
+    name = NULL,
+    values = c("Quadrature of the exact posterior" = "solid",
+               "Mixture proxy, closed form" = "dashed")
+  ) +
+  ggplot2::labs(
+    title = "The slope marginal, two ways",
+    x = expression(paste("slope ", beta[wt], " (log-odds per 1000 lb)")),
+    y = "posterior density"
+  ) +
+  ggplot2::theme_minimal(base_size = 11) +
+  ggplot2::theme(plot.title = ggplot2::element_text(face = "bold"),
+                 legend.position = "top")
+```
+
+```{r marginal-figure-skip, eval = !has_ggplot2, echo = FALSE, results = "asis"}
+cat("ggplot2 is not installed on this build, so the marginal-comparison",
+    "figure is skipped.\n")
+```
+
+### Error bars on the proxy itself
 
 The numbers above condition on the fitted mixture. The bootstrap ensemble
-prices the fit's own sampling variability -- at zero new posterior
+prices the fit's own sampling variability, at zero new posterior
 evaluations, because the replicates re-weight the fit's cached importance
-draws:
+draws.
 
 ```{r ensemble}
 ens <- gmm_fit_ensemble(fit, B = 80L, seed = 3L)
-proxy_functional_ci(ens, gmm_mean, level = 0.9)
-proxy_functional_ci(ens, function(g) pgmm(0, gmm_marginalise(g, keep = 2L)),
-                    level = 0.9)
+ci_mean <- proxy_functional_ci(ens, gmm_mean, level = 0.9)
+ci_tail <- proxy_functional_ci(
+  ens, function(g) pgmm(0, gmm_marginalise(g, keep = 2L)), level = 0.9
+)
 ```
 
-# When to use this, and when not to
+```{r ensemble-table, echo = FALSE}
+knitr::kable(
+  data.frame(
+    functional = c("posterior mean, intercept", "posterior mean, slope",
+                   "P(slope < 0)"),
+    estimate = signif(c(ci_mean$estimate, ci_tail$estimate), 5),
+    conf_low = signif(c(ci_mean$conf.low, ci_tail$conf.low), 5),
+    conf_high = signif(c(ci_mean$conf.high, ci_tail$conf.high), 5)
+  ),
+  row.names = FALSE,
+  col.names = c("Functional", "Estimate", "Lower 5%", "Upper 95%"),
+  caption = paste0(
+    "Bootstrap intervals over ", ens$B, " ensemble replicates, ",
+    "obtained by re-weighting the fit's cached importance draws."
+  )
+)
+```
 
-If you can evaluate the unnormalised posterior you can always run MCMC
-and fit a sample-based mixture to the draws. Reach for the direct fit
-when what you want *is* the compact closed-form object -- deterministic
-given the seed, no chain tuning, evidence and error bars included -- and
-the dimension is moderate (the effective sample size of importance
-sampling falls sharply beyond roughly $p = 5$--$10$; every fit reports
-it). For high-dimensional posteriors, sample first and use regime (ii)
-on the draws. The nearest CRAN neighbour, `AdMit`, adaptively fits a
-mixture of Student-t densities to an evaluable kernel for use as a
-proposal; the Gaussian family here is what buys the closed-form operator
-calculus and the certificate that travel with the result.
+## Read
 
-# References
+The certificate is the first thing to read, and it clears the fit. The
+effective sample size is `r round(cert$ess)` out of 3000 importance draws,
+or `r round(100 * cert$ess_relative)` per cent, with the leanest single
+component still carrying `r round(cert$min_component_ess)` effective draws
+and no single weight above `r sprintf("%.5f", cert$max_weight)`. The fit is not
+flagged degenerate, and the held-out validation gap of
+`r signif(cert$validation_gap, 2)` says the fit does not depend on the
+particular importance realisation it was estimated from. The proposal was
+refreshed `r n_refresh` times over the run, which is what lifted the
+effective sample size to that level from a proposal that was only ever a
+rough guess. The certificate's divergence entry, `r round(cert$kld_final, 2)`,
+is negative because the target is unnormalised: for such a target the
+importance-sampled divergence is offset by the unknown $\log Z$, which the
+fit records rather than hides, and the entry is read as a relative quantity
+across fits of the same target rather than as an absolute divergence.
+
+The evidence comes out at `r round(ev$log_z, 3)`, with a Monte Carlo
+standard error of `r signif(ev$se_log_z, 2)`. The Laplace approximation,
+which shares none of the importance machinery, gives
+`r round(log_z_laplace, 3)`, a gap of `r round(evidence_gap, 3)` on the log
+scale. A first-order approximation and an importance estimate agreeing to
+within a tenth of a log unit is the check passing.
+
+The closed-form reads answer the substantive question. The posterior
+probability that the slope is negative is
+`r round(100 * p_negative, 3)` per cent, and the central 90 per cent interval
+for the slope runs from `r round(interval[1L], 2)` to
+`r round(interval[2L], 2)` log-odds per 1000 lb: heavier cars are close to
+certain to be automatics, and the effect size is not small.
+
+The quadrature reference confirms that those reads are reads of the
+posterior and not merely of the fit. The two marginal curves differ by at
+most `r signif(curve_gap, 2)` in density, against a peak density of
+`r signif(max(marg_quad), 3)`, so the largest disagreement anywhere on the
+curve is about `r round(100 * curve_gap / max(marg_quad))` per cent of the
+peak, and the figure shows it sitting at the mode where a two-component
+mixture rounds off the exact posterior's slight asymmetry. The tails, which
+are what the interval and the tail probability depend on, track closely.
+
+The ensemble prices the remaining uncertainty in the fit itself. Over
+`r ens$B` replicates the posterior mean of the slope is pinned to a 90 per
+cent interval of width
+`r signif(ci_mean$conf.high[2L] - ci_mean$conf.low[2L], 2)`, and the tail
+probability to the interval
+`r sprintf("%.5f", ci_tail$conf.low[1L])` to
+`r sprintf("%.5f", ci_tail$conf.high[1L])`, both at no further evaluations of
+the posterior.
+
+So the answer to the question is yes, on all four counts, and the four
+numbers arrive with a certificate saying how far they can be trusted.
+
+## Limits
+
+If the unnormalised posterior can be evaluated then a Markov chain can
+always be run against it and a sample-based mixture fitted to the draws. The
+direct fit earns its place when what is wanted *is* the compact closed-form
+object -- deterministic given the seed, no chain tuning, evidence and error
+bars included -- and not otherwise.
+
+The dimension is the binding constraint. The effective sample size of
+importance sampling falls sharply beyond roughly five to ten parameters, and
+every fit reports it, so the certificate rather than the method's advertising
+is what should decide. The posterior here has two parameters, which is the
+comfortable end of that range. For high-dimensional posteriors, sample first
+and use the classical expectation-maximisation regime on the draws.
+
+The quadrature check above is available only because the posterior is
+two-dimensional. It is not part of the workflow and does not scale: at four
+or more parameters the grid becomes the expensive object it was introduced
+to avoid, and the certificate and the held-out validation gap are what
+remain.
+
+The prior here is flat, and the evidence reported is therefore the marginal
+likelihood under that flat prior. A proper prior changes the target, the
+evidence and the interval, and nothing in this vignette speaks to how the
+conclusions move under a different one.
+
+The nearest CRAN neighbour, `AdMit`, adaptively fits a mixture of Student-t
+densities to an evaluable kernel for use as a proposal. The Gaussian family
+used here is what buys the closed-form operator calculus and the certificate
+that travel with the result; a Student-t mixture would fit heavier tails
+more naturally and give up that algebra.
+
+## What to read next
+
+*Fitting a proxy to a density you cannot sample* is the shorter first pass
+over the same fitting verb, on a target whose shape is known in advance.
+*Choosing between the three fitting regimes* explains why an unnormalised
+posterior lands in regime (iii) and what the other two regimes need instead.
+*The closed-form operator calculus on a mixture* covers the operators that
+make the compressed posterior worth having: pushforward, observation update,
+marginalisation and conditioning. *Reading the entropy of a fitted mixture*
+adds the entropy and divergence diagnostics that summarise a fitted
+posterior's spread.
+
+## References
 
 * Cappé, O., Douc, R., Guillin, A., Marin, J.-M. and Robert, C. P.
   (2008). *Adaptive importance sampling in general mixture classes.*
@@ -147,3 +401,14 @@ calculus and the certificate that travel with the result.
   <doi:10.1080/01621459.2000.10473909>.
 * Rubin, D. B. (1981). *The Bayesian bootstrap.* The Annals of Statistics
   9(1), 130--134. <doi:10.1214/aos/1176345338>.
+
+## Reproduce
+
+The ambient seed is 20260705. Each stochastic step additionally carries its
+own seed, so none of them depends on the ambient random-number state: the
+fit uses `seed = 1L`, the evidence estimate `seed = 2L`, and the bootstrap
+ensemble `seed = 3L`. The quadrature reference is deterministic.
+
+```{r session-info}
+sessionInfo()
+```

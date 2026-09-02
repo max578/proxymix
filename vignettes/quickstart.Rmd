@@ -1,138 +1,296 @@
 ---
-title: "Quickstart"
+title: "Fitting a proxy to a density you cannot sample"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Quickstart}
+  %\VignetteIndexEntry{Fitting a proxy to a density you cannot sample}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
+<!-- Render time: ~2 s under rmarkdown::render() with ggplot2 installed;
+     macOS arm64 (Apple silicon), R 4.5.2, one core. -->
+
+```{r setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  fig.width = 6,
-  fig.height = 4,
+  fig.width = 7,
+  fig.height = 4.5,
+  dpi = 150,
   out.width = "100%"
 )
-set.seed(20260513)
 ```
 
-```{r setup}
+```{r library}
 library(proxymix)
 ```
 
-`proxymix` fits Gaussian-mixture *proxies* to user-supplied target densities. The unified verb is
-
-```r
-fit_proxymix(target, N, regime = c("auto", "moment", "sample", "kld"))
+```{r engines}
+has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
 ```
 
--- and the three fitting regimes come from van der Hoek and Elliott (2024):
+## Why
 
-| Regime       | When it applies                                | Method                                |
-|--------------|------------------------------------------------|---------------------------------------|
-| `"moment"`   | `N == 1` and the target carries samples        | Closed-form moment matching           |
-| `"sample"`   | `N >= 2` and the target carries samples        | Classical EM                          |
-| `"kld"`      | The target carries `log_density` only          | **Importance-sampled KLD-EM**         |
+An analyst arrives with a function and no sampler. *I can write down a
+function that returns the log-density of the thing I care about, and I have
+no way to draw from it. Can I get a compact object I am able to sample,
+marginalise and condition -- and how would I know the fit is any good?*
+Both halves matter. The first is what the package does; the second is what
+stops a plausible-looking mixture being trusted when the numerical
+machinery behind it has quietly failed.
 
-The `"kld"` regime is the reason the package exists: it fits Gaussian-mixture proxies when you can evaluate `f(x)` but cannot (cheaply) sample from it -- the setting the sample-based mixture packages (`mclust`, `mixtools`, `flexmix`) do not address.
+## What
 
-## A target you cannot sample from
+A `gmm_target()` is the target: a dimension, a `log_density` callable, and
+optionally samples. The built-in `banana_target()` used below carries an
+exact, normalised log-density and deliberately no samples, so only the
+evaluate-only regime applies to it.
 
-We use the bundled "banana" target -- a non-Gaussian 2-D shape obtained by warping an isotropic Gaussian through a quadratic. Its log-density is exact and normalised; we deliberately do *not* attach samples, so only regime (iii) applies.
+`fit_proxymix()` is the single fitting verb. It routes to one of three
+regimes on what the target can supply, and the table in *Do* below states
+the routing rule. The regime that gives the package its reason to exist is
+`"kld"`: importance-sampled KLD-EM, which needs only point-wise evaluation
+of the target.
+
+A `proposal_mvt()` is the importance proposal that regime feeds on: a
+multivariate Student-t whose heavy tails keep the self-normalised weights
+from collapsing onto a handful of draws.
+
+`gmm_fit_quality()` is the fit's certificate: whether the iteration
+converged, whether the importance sample degenerated, the effective sample
+size, the largest single weight, and the held-out validation gap. It
+answers the second half of the question, and it travels with the fit
+through every operation downstream.
+
+`dgmm()`, `rgmm()`, `gmm_marginalise()` and `gmm_conditionalise()` are the
+closed-form reads off the fitted mixture: density, sampling, integrating a
+coordinate out, and fixing one to a value. None of them re-evaluates the
+target.
+
+## Do
+
+### The routing rule
+
+```{r regime-table, echo = FALSE}
+regime_tbl <- data.frame(
+  Regime = c("`\"moment\"`", "`\"sample\"`", "`\"kld\"`"),
+  Applies = c(
+    "`N == 1` and the target carries samples",
+    "`N >= 2` and the target carries samples",
+    "the target carries `log_density` only"
+  ),
+  Method = c(
+    "Closed-form moment matching",
+    "Classical expectation-maximisation",
+    "Importance-sampled KLD-EM"
+  ),
+  stringsAsFactors = FALSE
+)
+knitr::kable(
+  regime_tbl,
+  caption = paste(
+    "How `fit_proxymix()` routes under `regime = \"auto\"`. The three",
+    "regimes are those of van der Hoek and Elliott (2024)."
+  )
+)
+```
+
+Only the third row is available for a target that cannot be sampled, and
+that is the setting the sample-based mixture packages on CRAN (`mclust`,
+`mixtools`, `flexmix`) do not address: all three of them require
+independent draws.
+
+### A target with no sampler
+
+The bundled banana target is a non-Gaussian shape in the plane, obtained by
+warping an isotropic Gaussian through a quadratic. Its log-density is exact
+and normalised. Samples are not attached, so the routing table leaves one
+option.
 
 ```{r banana}
 tgt <- banana_target()
 tgt
 ```
 
-A quick look at the target as a contour grid:
+### Fit the proxy
 
-```{r banana-contour, fig.cap = "The banana target density."}
-grid_x <- seq(-3, 3, length.out = 120)
-grid_y <- seq(-3, 3, length.out = 120)
-G <- expand.grid(x1 = grid_x, x2 = grid_y)
-G$f <- exp(tgt@log_density(as.matrix(G)))
-
-if (requireNamespace("ggplot2", quietly = TRUE)) {
-  library(ggplot2)
-  ggplot(G, aes(x1, x2, z = f)) +
-    geom_contour_filled(bins = 12L) +
-    scale_fill_viridis_d(option = "mako", guide = "none") +
-    coord_equal() +
-    labs(title = "Banana target", x = expression(x[1]), y = expression(x[2])) +
-    theme_minimal(base_size = 12)
-}
-```
-
-## Fit a Gaussian-mixture proxy
-
-We fit a 3-component proxy by KLD-EM with importance sampling against a multivariate-Student-t proposal. The fit runs in a fraction of a second.
+A three-component proxy by KLD-EM against a Student-t proposal with five
+degrees of freedom.
 
 ```{r fit}
 proposal <- proposal_mvt(n_dim = 2L, mean = c(0, 0),
-                   sigma = 4 * diag(2), df = 5)
-
+                         sigma = 4 * diag(2), df = 5)
 fit <- fit_proxymix(tgt, N = 3L, regime = "kld",
                     proposal = proposal,
                     is_size = 2000L,
-                    max_iter = 30L,
+                    max_iter = 60L,
                     seed = 1L)
 fit
 ```
 
-Diagnostics:
+### Read the certificate before anything else
 
-```{r diagnostics}
-data.frame(
-  iter = seq_along(kld_trace(fit)),
-  kld  = kld_trace(fit)
+```{r certificate}
+quality <- gmm_fit_quality(fit)
+```
+
+```{r certificate-table, echo = FALSE}
+cert_tbl <- data.frame(
+  Field = c("regime", "converged", "degenerate", "effective sample size",
+            "ESS as a fraction of draws", "smallest per-component ESS",
+            "largest single weight", "final KL estimate",
+            "held-out validation gap"),
+  Value = c(
+    quality$regime,
+    as.character(quality$converged),
+    as.character(quality$degenerate),
+    format(round(quality$ess, 1L), nsmall = 1L),
+    format(round(quality$ess_relative, 3L), nsmall = 3L),
+    format(round(quality$min_component_ess, 1L), nsmall = 1L),
+    format(signif(quality$max_weight, 3L)),
+    format(signif(quality$kld_final, 3L)),
+    format(signif(quality$validation_gap, 3L))
+  ),
+  stringsAsFactors = FALSE
 )
-ess_trace(fit)
+knitr::kable(
+  cert_tbl,
+  caption = paste(
+    "The fit certificate returned by `gmm_fit_quality()`. It is the first",
+    "thing to read and the last thing to discard."
+  )
+)
 ```
 
-## Overlay the proxy on the target
+### Overlay the proxy on the target
 
-```{r overlay, fig.cap = "Banana target (filled) with the 3-component proxy overlaid (dashed contours)."}
-G$g <- exp(dgmm(as.matrix(G[, c("x1", "x2")]), fit, log = TRUE))
-
-if (requireNamespace("ggplot2", quietly = TRUE)) {
-  ggplot(G, aes(x1, x2)) +
-    geom_contour_filled(aes(z = f), bins = 10L, alpha = 0.8) +
-    geom_contour(aes(z = g), colour = "white", linetype = "dashed",
-                 linewidth = 0.4, bins = 8L) +
-    scale_fill_viridis_d(option = "mako", guide = "none") +
-    coord_equal() +
-    labs(title = "Target (filled) and proxy (dashed)",
-         x = expression(x[1]), y = expression(x[2])) +
-    theme_minimal(base_size = 12)
-}
+```{r overlay-grid}
+grid_x <- seq(-3, 3, length.out = 120L)
+grid_g <- expand.grid(x1 = grid_x, x2 = grid_x)
+grid_mat <- as.matrix(grid_g)
+grid_g$target <- exp(tgt@log_density(grid_mat))
+grid_g$proxy <- dgmm(grid_mat, fit)
 ```
 
-## Closed-form mixture operations
+```{r overlay, eval = has_ggplot2, echo = has_ggplot2, fig.cap = sprintf("The banana target (filled contours) with the fitted three-component proxy overlaid as dashed contours. The proxy bends along the ridge rather than covering it with one blob: the fit reached an estimated KL of %s from an effective sample size of %s draws out of %d.", format(signif(fit@diagnostics$kld_final, 2L)), format(round(fit@diagnostics$ess, 0L)), fit@diagnostics$is_size), fig.alt = "Filled contour map of the curved banana density with dashed contours of the three-component Gaussian-mixture proxy following the same ridge."}
+ggplot2::ggplot(grid_g, ggplot2::aes(x1, x2)) +
+  ggplot2::geom_contour_filled(ggplot2::aes(z = target), bins = 10L,
+                               alpha = 0.85) +
+  ggplot2::geom_contour(ggplot2::aes(z = proxy), colour = "white",
+                        linetype = "dashed", linewidth = 0.45, bins = 8L) +
+  ggplot2::scale_fill_viridis_d(option = "mako", guide = "none") +
+  ggplot2::coord_equal() +
+  ggplot2::labs(
+    title = "Target (filled) and fitted proxy (dashed)",
+    x = expression(x[1]), y = expression(x[2])
+  ) +
+  ggplot2::theme_minimal(base_size = 11)
+```
 
-Because the fit is a Gaussian mixture, marginals and conditionals are closed-form and exact:
+```{r overlay-skip, eval = !has_ggplot2, echo = FALSE, results = "asis"}
+cat("ggplot2 is not installed on this build, so the target-and-proxy",
+    "overlay figure is skipped.\n")
+```
 
-```{r ops}
+### The closed-form reads
+
+Because the fit is a Gaussian mixture, integrating a coordinate out and
+fixing one to a value are exact algebra, not further target evaluations.
+
+```{r operations}
 gmm_marginalise(fit, keep = 1L)
 gmm_conditionalise(fit, given = c(NA, 0.5))
 ```
 
-You can sample from the proxy directly:
+Sampling from the proxy is direct, and unlike the target it costs nothing.
 
 ```{r sample}
-x <- rgmm(500L, fit)
-head(x)
+draws <- rgmm(500L, fit)
+dim(draws)
 ```
 
-## Where to next
+## Read
 
-* `vignette("three_regimes")` -- what each of regimes (i), (ii), (iii) does, with a head-to-head comparison on a target whose ground truth is known.
-* `vignette("density_shapes")` -- the regime-(iii) demonstration. KLD-EM fit on three different non-Gaussian targets (banana, donut, three-mixture), with KLD / ESS / Hellinger reported.
-* `vignette("operator_calculus")` -- closed-form pushforward, Bayesian update, aggregation and conditioning on a fitted mixture.
-* `vignette("from_kde")` -- compressing a kernel density estimate into a Gaussian-mixture proxy.
+The fit answers the first half of the question. The proxy is a
+`r gmm_n_components(fit)`-component mixture in
+`r gmm_dim(fit)` dimensions, reached in
+`r length(kld_trace(fit))` KLD-EM iterations, and it supports sampling,
+marginalisation and conditioning with no further access to the target at
+all. The overlay shows the three components strung along the ridge rather
+than one component sitting across it, which is the whole reason for
+fitting a mixture instead of a single Gaussian.
 
-## Reference
+The certificate answers the second half. The iteration converged, and the
+fit is not flagged as degenerate. The importance sample retained an
+effective size of `r round(fit@diagnostics$ess, 0L)` out of
+`r fit@diagnostics$is_size` draws, a retention of
+`r round(100 * fit@diagnostics$ess_relative, 1L)` per cent, and the largest
+single self-normalised weight is
+`r format(signif(fit@diagnostics$max_weight, 2L))`, so no individual draw
+is carrying the fit. The smallest per-component effective sample size is
+`r round(quality$min_component_ess, 0L)`, so every one of the three
+components was estimated from a substantial share of the draws rather than
+from a handful. The final KL estimate is
+`r format(signif(fit@diagnostics$kld_final, 2L))` with a Monte Carlo
+standard error of `r format(signif(fit@diagnostics$mc_se_kld, 2L))`, and the
+held-out validation gap is
+`r format(signif(quality$validation_gap, 2L))`: the fit does no better on
+the draws it was trained on than on an independent set, which is what rules
+out the proxy having chased one particular importance sample.
 
-Hoek, J. van der and Elliott, R. J. (2024). *Mixtures of multivariate Gaussians.* Stochastic Analysis and Applications. <https://doi.org/10.1080/07362994.2024.2372605>.
+Read the certificate in that order -- converged, degenerate, effective
+sample size, largest weight, validation gap -- and a fit that has failed
+announces itself before any downstream number is taken seriously.
+
+## Limits
+
+This vignette fits one target in two dimensions and reads the fit that
+results. It does not choose the number of components, which is left at
+three by hand here; `select_N()` and `bic_aic()` do that job, and a
+component count too low for the shape shows up as a residual KL that more
+importance draws will not reduce. It also says nothing about how the choice
+of proposal changes the answer. The Student-t proposal used above is wide
+enough to cover the banana and heavy-tailed enough to keep the weights
+spread, and a proposal that misses the target's mass produces a fit whose
+certificate is worthless even though the printed mixture looks ordinary.
+
+The effective sample size reported here is a two-dimensional number.
+Importance sampling degrades quickly with dimension, and a proxy of the
+same nominal quality in five or ten dimensions demands far more draws for
+the same retention. The certificate is what makes that degradation visible
+rather than silent, and it is reported on every regime-(iii) fit.
+
+## What to read next
+
+*Choosing between the three fitting regimes* takes the routing table above
+and works all three regimes end to end on a target whose ground truth is
+known, so the cost of choosing the wrong one is visible.
+
+*How well a mixture proxies four awkward shapes* pushes regime (iii) across
+a bent ridge, an annulus, a well-separated mixture and a compactly
+supported density, and shows the package refusing a fit whose importance
+sample has collapsed.
+
+*The closed-form operator calculus on a mixture* takes the marginalisation
+and conditioning shown above and adds pushforward through a linear sensor,
+the Bayesian update on a noisy observation, and filtering over time.
+
+*Compressing a Bayesian posterior you can evaluate but not sample* is this
+workflow applied to an unnormalised log-posterior, with the model evidence
+and error bars on the fit itself.
+
+## References
+
+Hoek, J. van der and Elliott, R. J. (2024). *Mixtures of multivariate
+Gaussians.* Stochastic Analysis and Applications.
+<https://doi.org/10.1080/07362994.2024.2372605>.
+
+## Reproduce
+
+Every fit above is seeded through `fit_proxymix(seed = 1L)`, and the draws
+in the sampling chunk come from that same fit, so the whole vignette is a
+deterministic function of the package and the shipped target.
+
+```{r session-info}
+sessionInfo()
+```

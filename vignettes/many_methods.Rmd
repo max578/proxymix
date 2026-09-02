@@ -7,243 +7,335 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
+<!-- Render time: ~5 s under rmarkdown::render() with ggplot2 installed;
+     macOS arm64 (Apple silicon), R 4.5.2, one core. Every fit here is a
+     sample-regime EM or a closed-form moment match, so the time is
+     dominated by the six figures rather than by the fitting. -->
+
+```{r setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  fig.width = 6,
-  fig.height = 4,
+  fig.width = 7,
+  fig.height = 4.5,
+  dpi = 150,
   out.width = "100%"
 )
-set.seed(20260617)
 ```
 
-```{r setup}
+```{r library}
 library(proxymix)
 ```
 
-A fitted Gaussian mixture over your data is a single object, and several
-classical analyses follow from it in closed form -- because conditioning,
-marginalisation, and eigendecomposition are all exact on a Gaussian mixture.
-This vignette shows `proxymix` standing in for five familiar tools. Each
-section keeps the same shape: the **problem**, the **usual tool**, the
-**`proxymix` route**, the **idea** behind the substitution, and **what it does
-and does not** replace. The point is one fitted object serving several jobs,
-with the trade-offs in plain view -- not that the mixture always wins.
-
-## Regression -- from `lm()` to a conditioned mixture
-
-**Problem.** Predict an outcome \(y\) from a predictor \(x\). **Usual tool.**
-`lm()` / `glm()` -- one global line. **`proxymix` route.** Fit a mixture over
-the joint \((y, x)\), then read \(E[y \mid x]\) by conditioning. At \(K = 1\)
-this *is* least squares; at \(K > 1\) the gate bends the line.
-
-```{r reg-fit}
-n <- 400L
-x <- runif(n, -3, 3)
-y <- 0.3 * x + 1.2 * pmax(x, 0) + rnorm(n, sd = 0.4)   # a bent relationship
-dat <- data.frame(y = y, x = x)
-
-joint <- gmm_target_from_samples(cbind(y, x))
-fit1  <- fit_proxymix(joint, N = 1L, regime = "moment", ridge_eps = 0)   # = OLS
-fit3  <- fit_proxymix(joint, N = 3L, regime = "sample", max_iter = 150L)
-
-## At K = 1 the conditional slope equals the lm coefficient, exactly.
-slope_mix <- gmm_conditionalise(fit1, given = c(NA, 1))@means[[1L]] -
-  gmm_conditionalise(fit1, given = c(NA, 0))@means[[1L]]
-c(proxymix = slope_mix, lm = unname(coef(lm(y ~ x, dat))["x"]))
+```{r engines}
+has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
 ```
 
-```{r reg-plot, fig.cap = "One global line (K = 1, = OLS) versus a conditioned mixture (K = 3).", fig.alt = "Scatter of y against x with the OLS line and the curved mixture conditional mean."}
-.cond_mean <- function(fit, xv) {
+## Why
+
+An analyst has fitted a Gaussian mixture over a table of data, and now has a
+week of ordinary work in front of her: a regression, a smoother, a
+clustering, a principal-components plot, a shrunk coefficient, and a
+treatment effect that she suspects varies from unit to unit. Each of those
+normally means reaching for a different package. Her question is: *I already
+have one fitted mixture over these columns -- which of the tools I would
+otherwise reach for does it actually replace, how do I know the answer is
+the same one, and what do I give up by using it instead?*
+
+The short answer is that conditioning, marginalisation and
+eigendecomposition are all exact on a Gaussian mixture, so six familiar
+analyses fall out of one object in closed form, four of them reproducing the
+classical answer to machine precision. The rest of this vignette shows each
+substitution, checks it against the tool it stands in for, and states the
+cost.
+
+## What
+
+A [`gmm`] is a finite Gaussian mixture: weights, means and covariances.
+[`gmm_target_from_samples()`] wraps a data matrix as a target and
+[`fit_proxymix()`] fits the mixture to it, in the closed-form `"moment"`
+regime at one component or the classical expectation-maximisation
+`"sample"` regime at more than one.
+
+[`gmm_conditionalise()`] returns the conditional mixture given values on
+some coordinates, in closed form by the Schur complement. That single
+operator carries the regression, the kernel smoother, the imputation and the
+ridge estimator below: a conditional mean read off a joint fit is a
+prediction, and which classical estimator it coincides with depends only on
+how many components the mixture has and how wide they are.
+
+[`bic_aic()`] scores a component count. The `ridge_eps` argument of the
+fitting verbs adds a multiple of the identity to each component covariance,
+which is where the penalised-regression section comes from.
+
+The decision family reads one joint fit as a causal object.
+[`fit_uplift()`] assembles a mixture over outcome, treatment and covariates
+and records the roles and the treatment arms it observed;
+[`proxy_cate()`] reads the conditional average treatment effect per unit,
+[`proxy_decide()`] turns it into an action under a value and a cost, and
+[`proxy_identification_report()`] states what the reading assumes and what
+it cannot deliver.
+
+## Do
+
+Each section below keeps the same shape: the **problem**, the **usual
+tool**, the **proxymix route**, the code, and the **idea** behind the
+substitution. The trade-offs are gathered in *Read*.
+
+```{r shared-helpers}
+## The conditional mean of the outcome coordinate, gated across components:
+## sum_k pi_k(x) mu_k^{y|x}. This one helper serves the regression, the
+## kernel-regression and the ridge sections.
+cond_mean <- function(fit, xv) {
   vapply(xv, function(xx) {
     g <- gmm_conditionalise(fit, given = c(NA, xx))
     sum(g@weights * vapply(g@means, function(m) m[1L], numeric(1L)))
   }, numeric(1L))
 }
-if (requireNamespace("ggplot2", quietly = TRUE)) {
-  library(ggplot2)
-  grid <- data.frame(x = seq(-3, 3, length.out = 200L))
-  grid$ols <- as.numeric(predict(lm(y ~ x, dat), newdata = grid))
-  grid$mix <- .cond_mean(fit3, grid$x)
-  ggplot() +
-    geom_point(data = dat, aes(x, y), colour = "grey60", alpha = 0.4, size = 0.7) +
-    geom_line(data = grid, aes(x, ols, colour = "lm (K = 1)"), linewidth = 0.9) +
-    geom_line(data = grid, aes(x, mix, colour = "mixture (K = 3)"), linewidth = 0.9) +
-    scale_colour_manual(name = NULL,
-                        values = c("lm (K = 1)" = "#2C7FB8",
-                                   "mixture (K = 3)" = "#D95F0E")) +
-    labs(title = "Regression: one global line vs a conditioned mixture",
-         x = expression(x), y = expression(y)) +
-    theme_minimal(base_size = 11) +
-    theme(legend.position = "top", plot.title = element_text(face = "bold"))
+```
+
+```{r sci-notation, include = FALSE}
+## Differences at the double-precision floor are typeset as LaTeX powers of
+## ten, so that an inline value reads as mathematics rather than as R's
+## own exponent notation.
+sci <- function(v, digits = 2L) {
+  e <- floor(log10(abs(v)))
+  paste0("$", signif(v / 10^e, digits), " \\times 10^{", e, "}$")
 }
+sci_plain <- function(v) formatC(v, format = "e", digits = 1L)
+```
+
+### Regression: from `lm()` to a conditioned mixture
+
+**Problem.** Predict an outcome $y$ from a predictor $x$. **Usual tool.**
+`lm()` or `glm()`, one global line. **proxymix route.** Fit a mixture over
+the joint $(y, x)$, then read $E[y \mid x]$ by conditioning. At $K = 1$ this
+*is* least squares; at $K > 1$ the gate bends the line.
+
+```{r reg-fit}
+set.seed(20260617)
+n <- 400L
+x <- runif(n, -3, 3)
+y <- 0.3 * x + 1.2 * pmax(x, 0) + rnorm(n, sd = 0.4)  # a bent relationship
+dat <- data.frame(y = y, x = x)
+
+joint <- gmm_target_from_samples(cbind(y, x))
+fit1 <- fit_proxymix(joint, N = 1L, regime = "moment", ridge_eps = 0)
+fit3 <- fit_proxymix(joint, N = 3L, regime = "sample", max_iter = 150L)
+
+## At K = 1 the conditional slope should equal the lm coefficient exactly.
+slope_mix <- gmm_conditionalise(fit1, given = c(NA, 1))@means[[1L]] -
+  gmm_conditionalise(fit1, given = c(NA, 0))@means[[1L]]
+slope_lm <- unname(coef(lm(y ~ x, dat))["x"])
+diff_reg <- abs(slope_mix - slope_lm)
+```
+
+```{r fig-reg, eval = has_ggplot2, echo = has_ggplot2, fig.cap = "One global line (K = 1, which is ordinary least squares) against a conditioned three-component mixture (K = 3) on data whose true relationship is bent at the origin. The mixture follows the bend; the single line cannot.", fig.alt = "Scatter of y against x with a straight ordinary-least-squares line and a curved mixture conditional mean that follows a bend in the data."}
+grid_reg <- data.frame(x = seq(-3, 3, length.out = 200L))
+grid_reg$ols <- as.numeric(predict(lm(y ~ x, dat), newdata = grid_reg))
+grid_reg$mix <- cond_mean(fit3, grid_reg$x)
+ggplot2::ggplot() +
+  ggplot2::geom_point(data = dat, ggplot2::aes(x, y), colour = "grey60",
+                      alpha = 0.4, size = 0.7) +
+  ggplot2::geom_line(data = grid_reg,
+                     ggplot2::aes(x, ols, colour = "lm (K = 1)"),
+                     linewidth = 0.9) +
+  ggplot2::geom_line(data = grid_reg,
+                     ggplot2::aes(x, mix, colour = "mixture (K = 3)"),
+                     linewidth = 0.9) +
+  ggplot2::scale_colour_manual(
+    name = NULL,
+    values = c("lm (K = 1)" = "#0072B2", "mixture (K = 3)" = "#D55E00")
+  ) +
+  ggplot2::labs(
+    x = "x", y = "y",
+    title = "Regression: a global line against a conditioned mixture"
+  ) +
+  ggplot2::theme_minimal(base_size = 11) +
+  ggplot2::theme(legend.position = "top")
+```
+
+```{r fig-reg-skip, eval = !has_ggplot2, echo = FALSE, results = "asis"}
+cat("ggplot2 is not installed on this build, so the regression figure is",
+    "skipped.\n")
 ```
 
 **Idea.** Each component supplies an affine conditional mean
-\(\mu_k^{y \mid x}\); the responsibilities \(\pi_k(x)\) gate them, so the global
-mean \(\sum_k \pi_k(x)\, \mu_k^{y \mid x}\) is nonlinear -- Gaussian-mixture
-regression.
+$\mu_k^{y \mid x}$; the responsibilities $\pi_k(x)$ gate them, so the global
+mean $\sum_k \pi_k(x)\, \mu_k^{y \mid x}$ is nonlinear. This is
+Gaussian-mixture regression.
 
-**Does / does not.** Captures nonlinear, heteroscedastic, even multimodal
-conditional *densities*, not just the mean. It does not return classical
-inference (standard errors, \(p\)-values) by default, and it assumes Gaussian
-components.
+### Kernel regression: from Nadaraya-Watson to a conditioned KDE
 
-## Kernel regression -- from Nadaraya--Watson to a conditioned KDE
-
-**Problem.** Predict \(y\) from \(x\) with no global functional form -- a purely
-local smoother. **Usual tool.** Nadaraya--Watson kernel regression
+**Problem.** Predict $y$ from $x$ with no global functional form, a purely
+local smoother. **Usual tool.** Nadaraya-Watson kernel regression
 (`stats::ksmooth`, package `np`): a kernel-weighted local average of the
-responses. **`proxymix` route.** Place one Gaussian per data point over the
-joint \((y, x)\) -- a kernel density estimate -- and read \(E[y \mid x]\) by
+responses. **proxymix route.** Place one Gaussian per data point over the
+joint $(y, x)$ -- a kernel density estimate -- and read $E[y \mid x]$ by
 conditioning. With a Gaussian kernel that conditional mean *is* the
-Nadaraya--Watson estimator, exactly. Where `lm()` sat at \(K = 1\) (one global
-line), Nadaraya--Watson sits at \(K = n\) (one component per datum, fully
-local), and `from_kde()` lands anywhere in between -- a single axis with
-least squares at one end and kernel smoothing at the other.
+Nadaraya-Watson estimator, exactly. Where `lm()` sat at $K = 1$, one global
+line, Nadaraya-Watson sits at $K = n$, one component per datum and fully
+local, and `from_kde()` lands anywhere in between: a single axis with least
+squares at one end and kernel smoothing at the other.
 
 ```{r nw-fit}
-h <- 0.4                                       # kernel bandwidth
-nw <- function(xq) vapply(xq, function(q) {
-  w <- dnorm(q, x, h); sum(w * y) / sum(w)     # Nadaraya--Watson, Gaussian kernel
-}, numeric(1L))
+h <- 0.4                                     # kernel bandwidth
+nw <- function(xq) {
+  vapply(xq, function(q) {
+    w <- dnorm(q, x, h)                      # Nadaraya-Watson, Gaussian kernel
+    sum(w * y) / sum(w)
+  }, numeric(1L))
+}
 
 ## One Gaussian per datum -- a kernel density estimate of the joint (y, x) --
 ## then condition on x and read the conditional mean.
 kde <- gmm(weights = rep(1 / n, n),
            means = lapply(seq_len(n), function(i) c(y[i], x[i])),
            covariances = rep(list(diag(c(h^2, h^2))), n))
-xq <- c(-2, -0.5, 1, 2.2)
-c(max_abs_diff = max(abs(nw(xq) - .cond_mean(kde, xq))))   # equal to NW
+xq <- seq(-2.5, 2.5, length.out = 21L)
+diff_nw <- max(abs(nw(xq) - cond_mean(kde, xq)))
 ```
 
-```{r nw-plot, fig.cap = "One axis, two endpoints: the global line (K = 1, OLS) and the fully local kernel smoother (K = n, Nadaraya-Watson).", fig.alt = "Scatter of y against x with the straight OLS line and the curved Nadaraya-Watson kernel-regression line."}
-if (requireNamespace("ggplot2", quietly = TRUE)) {
-  grid_nw <- data.frame(x = seq(-3, 3, length.out = 200L))
-  grid_nw$ols <- as.numeric(predict(lm(y ~ x, dat), newdata = grid_nw))
-  grid_nw$nw  <- nw(grid_nw$x)
-  ggplot() +
-    geom_point(data = dat, aes(x, y), colour = "grey60", alpha = 0.4, size = 0.7) +
-    geom_line(data = grid_nw, aes(x, ols, colour = "OLS (K = 1)"), linewidth = 0.9) +
-    geom_line(data = grid_nw, aes(x, nw, colour = "kernel (K = n)"), linewidth = 0.9) +
-    scale_colour_manual(name = NULL,
-                        values = c("OLS (K = 1)" = "#2C7FB8",
-                                   "kernel (K = n)" = "#D95F0E")) +
-    labs(title = "From global line to local kernel, one conditioning operation",
-         x = expression(x), y = expression(y)) +
-    theme_minimal(base_size = 11) +
-    theme(legend.position = "top", plot.title = element_text(face = "bold"))
-}
+```{r fig-nw, eval = has_ggplot2, echo = has_ggplot2, fig.cap = "One axis, two endpoints: the global line at K = 1 (ordinary least squares) and the fully local kernel smoother at K = n (Nadaraya-Watson), both read off a mixture by the same conditioning operation.", fig.alt = "Scatter of y against x with the straight ordinary-least-squares line and the curved Nadaraya-Watson kernel-regression line."}
+grid_nw <- data.frame(x = seq(-3, 3, length.out = 200L))
+grid_nw$ols <- as.numeric(predict(lm(y ~ x, dat), newdata = grid_nw))
+grid_nw$nw <- nw(grid_nw$x)
+ggplot2::ggplot() +
+  ggplot2::geom_point(data = dat, ggplot2::aes(x, y), colour = "grey60",
+                      alpha = 0.4, size = 0.7) +
+  ggplot2::geom_line(data = grid_nw,
+                     ggplot2::aes(x, ols, colour = "OLS (K = 1)"),
+                     linewidth = 0.9) +
+  ggplot2::geom_line(data = grid_nw,
+                     ggplot2::aes(x, nw, colour = "kernel (K = n)"),
+                     linewidth = 0.9) +
+  ggplot2::scale_colour_manual(
+    name = NULL,
+    values = c("OLS (K = 1)" = "#0072B2", "kernel (K = n)" = "#D55E00")
+  ) +
+  ggplot2::labs(
+    x = "x", y = "y",
+    title = "From global line to local kernel, one conditioning step"
+  ) +
+  ggplot2::theme_minimal(base_size = 11) +
+  ggplot2::theme(legend.position = "top")
 ```
 
-**Idea.** Conditioning a per-point KDE gives responsibilities
-\(\pi_i(x) \propto \mathcal{N}(x \mid x_i, h^2)\) and per-component means \(y_i\),
-so \(E[y \mid x] = \sum_i \pi_i(x)\, y_i\) -- the Nadaraya--Watson ratio. Kernel
-regression is therefore Gaussian-mixture regression with one component per datum,
-a diagonal bandwidth, and only the conditional mean read off. The bandwidth
-\(h\) plays the role of the component covariance.
+```{r fig-nw-skip, eval = !has_ggplot2, echo = FALSE, results = "asis"}
+cat("ggplot2 is not installed on this build, so the kernel-regression",
+    "figure is skipped.\n")
+```
 
-**Does / does not.** The same operation returns the full conditional *density*
-(predictive variance, quantiles, multimodality), and `gmm_conditional_entropy()`
-scores its uncertainty -- neither available from the bare Nadaraya--Watson mean.
-It also works in regime (iii), where you can evaluate the joint density but have
-no points to average, so a literal kernel estimator does not exist. The price is
-that the one-per-datum estimate costs \(O(n)\) per query; `from_kde()` compresses
-it to a \(K\)-component mixture for \(O(K)\) queries, and -- as with any kernel
-method -- the bandwidth must be chosen.
+**Idea.** Conditioning a per-point kernel density estimate gives
+responsibilities $\pi_i(x) \propto \mathcal{N}(x \mid x_i, h^2)$ and
+per-component means $y_i$, so
+$E[y \mid x] = \sum_i \pi_i(x)\, y_i$, the Nadaraya-Watson ratio. Kernel
+regression is therefore Gaussian-mixture regression with one component per
+datum, a diagonal bandwidth, and only the conditional mean read off. The
+bandwidth $h$ plays the role of the component covariance.
 
-## Clustering -- from `kmeans()` to the mixture components
+### Clustering: from `kmeans()` to the mixture components
 
-**Problem.** Group rows by similarity. **Usual tool.** `kmeans()`, or `mclust`
-(which fits exactly this model). **`proxymix` route.**
-`fit_proxymix(N = K, regime = "sample")` -- the components *are* the clusters
+**Problem.** Group rows by similarity. **Usual tool.** `kmeans()`, or
+`mclust`, which fits exactly this model. **proxymix route.**
+`fit_proxymix(N = K, regime = "sample")`: the components *are* the clusters
 and the responsibilities are soft assignments.
 
 ```{r clust-fit}
-X <- rbind(
+set.seed(20260617)
+x_clust <- rbind(
   mvnfast::rmvn(150L, c(-2, -1), 0.5 * diag(2)),
-  mvnfast::rmvn(150L, c( 2,  0), matrix(c(0.6, 0.3, 0.3, 0.4), 2L)),
-  mvnfast::rmvn(150L, c( 0,  2.5), 0.3 * diag(2))
+  mvnfast::rmvn(150L, c(2, 0), matrix(c(0.6, 0.3, 0.3, 0.4), 2L)),
+  mvnfast::rmvn(150L, c(0, 2.5), 0.3 * diag(2))
 )
-colnames(X) <- c("V1", "V2")
-ct   <- gmm_target_from_samples(X)
-fitc <- fit_proxymix(ct, N = 3L, regime = "sample", max_iter = 150L)
+colnames(x_clust) <- c("V1", "V2")
+target_clust <- gmm_target_from_samples(x_clust)
+fitc <- fit_proxymix(target_clust, N = 3L, regime = "sample",
+                     max_iter = 150L)
 
 ## Soft assignment = posterior responsibility of each component.
-.responsibilities <- function(fit, x) {
+responsibilities <- function(fit, xx) {
   comp <- vapply(seq_len(gmm_n_components(fit)), function(k) {
     fit@weights[k] *
-      mvnfast::dmvn(x, mu = fit@means[[k]], sigma = fit@covariances[[k]])
-  }, numeric(nrow(x)))
+      mvnfast::dmvn(xx, mu = fit@means[[k]], sigma = fit@covariances[[k]])
+  }, numeric(nrow(xx)))
   comp / rowSums(comp)
 }
-resp <- .responsibilities(fitc, X)
-head(round(resp, 3L), 3L)
+resp <- responsibilities(fitc, x_clust)
+mean_confidence <- mean(apply(resp, 1L, max))
 ```
 
-**Idea.** Soft, model-based clustering: a point's assignment to cluster \(k\) is
-its posterior responsibility
-\(\pi_k\,\mathcal{N}(x \mid \mu_k, \Sigma_k) / \sum_j \pi_j\,\mathcal{N}(x \mid \mu_j, \Sigma_j)\).
+```{r clust-table, echo = FALSE}
+knitr::kable(
+  head(round(resp, 3L), 4L),
+  col.names = paste("component", seq_len(3L)),
+  caption = paste0(
+    "Soft cluster assignments for the first four rows: the posterior ",
+    "responsibility of each of the three components."
+  )
+)
+```
 
-**Does / does not.** Gives soft, full-covariance, density-aware clusters
-(ellipsoidal, not spherical like \(k\)-means), and it doubles as a density
-estimate. It does not choose \(K\) for you (use `bic_aic()`), and `kmeans()` is
-faster at very large \(n\).
+**Idea.** Soft, model-based clustering: a point's assignment to cluster $k$
+is its posterior responsibility
+$\pi_k\,\mathcal{N}(x \mid \mu_k, \Sigma_k) /
+\sum_j \pi_j\,\mathcal{N}(x \mid \mu_j, \Sigma_j)$.
 
-## Principal components -- from `prcomp()` to the fitted covariance
+### Principal components: from `prcomp()` to the fitted covariance
 
 **Problem.** Find the directions of greatest variation. **Usual tool.**
-`prcomp()`. **`proxymix` route.** Fit a single Gaussian (`N = 1`,
+`prcomp()`. **proxymix route.** Fit a single Gaussian (`N = 1`,
 `regime = "moment"`) and eigendecompose its covariance.
 
 ```{r pca}
-fit_pca <- fit_proxymix(ct, N = 1L, regime = "moment", ridge_eps = 0)
+fit_pca <- fit_proxymix(target_clust, N = 1L, regime = "moment",
+                        ridge_eps = 0)
 ev <- eigen(fit_pca@covariances[[1L]])$vectors
-pr <- prcomp(X)$rotation
+pr <- prcomp(x_clust)$rotation
 ## Identical to the prcomp rotation, up to the sign convention of each axis.
-max(abs(abs(ev) - abs(unname(pr))))
+diff_pca <- max(abs(abs(ev) - abs(unname(pr))))
 ```
 
-```{r clust-pca-plot, fig.cap = "Clustering (colour) and the principal axes (arrows) read off one mixture.", fig.alt = "Three coloured point clusters with two principal-axis arrows from the centroid."}
-if (requireNamespace("ggplot2", quietly = TRUE)) {
-  vals <- eigen(fit_pca@covariances[[1L]])$values
-  mu   <- fit_pca@means[[1L]]
-  axes <- data.frame(
-    x = mu[1L], y = mu[2L],
-    xend = mu[1L] + 2 * sqrt(vals) * ev[1L, ],
-    yend = mu[2L] + 2 * sqrt(vals) * ev[2L, ]
-  )
-  pts <- data.frame(X, cluster = factor(max.col(resp)))
-  ggplot() +
-    geom_point(data = pts, aes(V1, V2, colour = cluster), alpha = 0.6, size = 0.9) +
-    geom_segment(data = axes, aes(x = x, y = y, xend = xend, yend = yend),
-                 arrow = grid::arrow(length = grid::unit(0.2, "cm")),
-                 linewidth = 0.8) +
-    scale_colour_viridis_d(name = "cluster", end = 0.85) +
-    coord_equal() +
-    labs(title = "Clustering and principal axes from one mixture",
-         x = expression(x[1]), y = expression(x[2])) +
-    theme_minimal(base_size = 11) +
-    theme(plot.title = element_text(face = "bold"))
-}
+```{r fig-pca, eval = has_ggplot2, echo = has_ggplot2, fig.cap = "Clustering (colour) and the principal axes (arrows) read off the same data by two different component counts: three components give the clusters, one component gives the covariance whose eigenvectors are the principal axes.", fig.alt = "Three coloured point clusters with two principal-axis arrows drawn from the overall centroid."}
+vals <- eigen(fit_pca@covariances[[1L]])$values
+mu_pca <- fit_pca@means[[1L]]
+axes <- data.frame(
+  x = mu_pca[1L], y = mu_pca[2L],
+  xend = mu_pca[1L] + 2 * sqrt(vals) * ev[1L, ],
+  yend = mu_pca[2L] + 2 * sqrt(vals) * ev[2L, ]
+)
+pts <- data.frame(x_clust, cluster = factor(max.col(resp)))
+ggplot2::ggplot() +
+  ggplot2::geom_point(data = pts,
+                      ggplot2::aes(V1, V2, colour = cluster),
+                      alpha = 0.6, size = 0.9) +
+  ggplot2::geom_segment(
+    data = axes, ggplot2::aes(x = x, y = y, xend = xend, yend = yend),
+    arrow = grid::arrow(length = grid::unit(0.2, "cm")), linewidth = 0.8
+  ) +
+  ggplot2::scale_colour_viridis_d(name = "cluster", end = 0.85) +
+  ggplot2::coord_equal() +
+  ggplot2::labs(x = expression(x[1]), y = expression(x[2]),
+                title = "Clustering and principal axes from one mixture") +
+  ggplot2::theme_minimal(base_size = 11)
 ```
 
-**Idea.** PCA is the eigendecomposition of the covariance. The moment-matched
-single Gaussian carries the sample covariance exactly, so its eigenvectors are
-the principal components; with \(K > 1\) you get a local PCA inside each
-cluster.
+```{r fig-pca-skip, eval = !has_ggplot2, echo = FALSE, results = "asis"}
+cat("ggplot2 is not installed on this build, so the clustering and",
+    "principal-axes figure is skipped.\n")
+```
 
-**Does / does not.** Recovers PCA exactly at \(K = 1\) and a local PCA at
-\(K > 1\). For a one-off linear projection `prcomp()` is more direct -- loadings,
-scree plots, and biplots come for free there.
+**Idea.** Principal-component analysis is the eigendecomposition of the
+covariance. The moment-matched single Gaussian carries the sample
+covariance exactly, so its eigenvectors are the principal components; with
+$K > 1$ the same read gives a local analysis inside each cluster.
 
-## Penalised regression -- ridge as a covariance ridge
+### Penalised regression: ridge as a covariance ridge
 
 **Problem.** Stabilise a regression when predictors are collinear. **Usual
-tool.** `glmnet` (ridge / lasso), `MASS::lm.ridge`. **`proxymix` route.** The
-`ridge_eps` argument adds \(\lambda I\) to the component covariance, which
-shrinks the conditional regression -- exactly an \(L_2\) (ridge) penalty.
+tool.** `glmnet` (ridge or lasso), `MASS::lm.ridge`. **proxymix route.** The
+`ridge_eps` argument adds $\lambda I$ to the component covariance, which
+shrinks the conditional regression: exactly an $L_2$ penalty.
 
 ```{r ridge}
 lambda <- c(0, 0.5, 2, 8)
@@ -252,67 +344,383 @@ slope_pm <- vapply(lambda, function(lam) {
   gmm_conditionalise(f, given = c(NA, 1))@means[[1L]] -
     gmm_conditionalise(f, given = c(NA, 0))@means[[1L]]
 }, numeric(1L))
-data.frame(
-  lambda          = lambda,
-  proxymix_slope  = round(slope_pm, 4L),
-  ridge_formula   = round(cov(x, y) / (var(x) + lambda), 4L)
+slope_formula <- cov(x, y) / (var(x) + lambda)
+diff_ridge <- max(abs(slope_pm - slope_formula))
+```
+
+```{r ridge-table, echo = FALSE}
+knitr::kable(
+  data.frame(lambda = lambda, proxymix = slope_pm,
+             ridge_formula = slope_formula),
+  digits = 4L,
+  col.names = c("Penalty (lambda)", "proxymix slope",
+                "Ridge closed form"),
+  caption = paste0(
+    "The conditional slope under a covariance ridge, against the ridge ",
+    "estimator cov(x, y) / (var(x) + lambda)."
+  )
 )
 ```
 
-**Idea.** Conditioning gives \(\beta = \Sigma_{xx}^{-1}\Sigma_{xy}\). Ridging
-\(\Sigma_{xx} \to \Sigma_{xx} + \lambda I\) yields
-\((\Sigma_{xx} + \lambda I)^{-1}\Sigma_{xy}\) -- the ridge estimator -- so the
-slope shrinks toward zero as \(\lambda\) grows.
+**Idea.** Conditioning gives $\beta = \Sigma_{xx}^{-1}\Sigma_{xy}$. Ridging
+$\Sigma_{xx} \to \Sigma_{xx} + \lambda I$ yields
+$(\Sigma_{xx} + \lambda I)^{-1}\Sigma_{xy}$, the ridge estimator, so the
+slope shrinks toward zero as $\lambda$ grows.
 
-**Does / does not.** Delivers ridge-style shrinkage and numerical stability.
-There is no Gaussian-mixture analogue of the lasso: \(L_2\) shrinkage matches a
-Gaussian prior, \(L_1\) sparsity a Laplace prior that lies outside the Gaussian
-family -- so `proxymix` does not perform variable selection.
+### Treatment effects: from a two-model learner to one joint fit
 
-## A few more, in one line each
+**Problem.** Estimate a treatment effect that varies from unit to unit, and
+then act on it. **Usual tool.** A two-model T-learner, fitting the treated
+and control arms separately and subtracting, or a causal forest (`grf`) or
+`DoubleML`. **proxymix route.** `fit_uplift()` fits one joint mixture over
+(outcome, treatment, covariates), and every decision verb reads that single
+fit in closed form. Nothing re-fits per query.
 
-- **Imputation** -- `gmm_conditionalise()` on the observed coordinates gives the
-  conditional-mean (or, via `rgmm()`, a sampled) fill-in.
-- **Density estimation** -- the native use; `from_kde()` compresses a kernel
-  estimate into a closed-form mixture (see `vignette("from_kde")`).
-- **Kalman filtering** -- `gmm_observe()` is the mixture Kalman update (see
-  `vignette("operator_calculus")`).
+The design below is synthetic, chosen so that the truth is available as an
+oracle: the treatment effect is the known linear function
+$\tau(x) = 0.5 + x$, so the estimate can be scored rather than admired.
 
-## Summary
+```{r uplift-fit}
+set.seed(20260902)
+n_up <- 600L
+x_up <- rnorm(n_up)
+t_up <- rbinom(n_up, 1L, 0.5)
+tau_true <- function(v) 0.5 + v
+y_up <- 1 + tau_true(x_up) * t_up + rnorm(n_up, sd = 0.5)
+dat_up <- data.frame(y = y_up, t = t_up, x = x_up)
 
-| Method | Usual tool | `proxymix` route | What you gain | What you give up |
-|---|---|---|---|---|
-| Regression | `lm` / `glm` | mixture over \((y, x)\) + `gmm_conditionalise()` | nonlinear, heteroscedastic, multimodal conditional densities | built-in inference; Gaussian components |
-| Kernel regression | `ksmooth` / `np` (Nadaraya--Watson) | per-point KDE + `gmm_conditionalise()`; compress with `from_kde()` | full conditional density, uncertainty, the evaluate-only regime | \(O(n)\) per query unless compressed; bandwidth choice |
-| Clustering | `kmeans` / `mclust` | `fit_proxymix(regime = "sample")` | soft, ellipsoidal, density-aware clusters | automatic \(K\); speed at huge \(n\) |
-| PCA | `prcomp` | `eigen()` of the `N = 1` covariance | local PCA per cluster at \(K > 1\) | loadings / scree / biplot conveniences |
-| Ridge | `glmnet` / `lm.ridge` | `ridge_eps` on the covariance | \(L_2\) shrinkage from one object | \(L_1\) sparsity / variable selection |
+model <- fit_uplift(dat_up, "y", "t", "x", N = 2L, regime = "sample",
+                    max_iter = 80L, seed = 1L)
+model
+```
 
-## When to reach for the specialised tool
+`proxy_cate()` reads the conditional average treatment effect, with a
+standard error and an interval, at whatever units are handed to it.
 
-Use the purpose-built tool when its strengths are exactly what you need:
-high-dimensional sparse problems suit `glmnet`; very large-\(n\) clustering suits
-`kmeans`; a single linear projection suits `prcomp`; classical inferential
-guarantees suit `lm` / `glm`. `proxymix` earns its place when you want **one
-fitted object** to serve several of these at once, in closed form, and when the
-Gaussian-mixture assumptions fit your data.
+```{r uplift-cate}
+grid_up <- data.frame(x = seq(-2, 2, length.out = 41L))
+cate <- proxy_cate(model, grid_up)
+err_cate <- max(abs(cate$tau - tau_true(grid_up$x)))
+cover_cate <- mean(tau_true(grid_up$x) >= cate$ci_lo &
+                     tau_true(grid_up$x) <= cate$ci_hi)
+```
+
+```{r fig-cate, eval = has_ggplot2, echo = has_ggplot2, fig.cap = "The conditional average treatment effect read off one joint mixture, with its delta-method interval, against the analytic truth that generated the data. The estimate tracks the true effect across the covariate and is shrunk slightly toward zero at both tails.", fig.alt = "Estimated conditional average treatment effect against the covariate, shown as a line with a shaded confidence band, overlaid with a dashed line for the analytic truth; the two nearly coincide and separate slightly at the extremes."}
+cate_df <- as.data.frame(cate)
+cate_df$x <- grid_up$x
+cate_df$truth <- tau_true(grid_up$x)
+ggplot2::ggplot(cate_df, ggplot2::aes(x)) +
+  ggplot2::geom_ribbon(ggplot2::aes(ymin = ci_lo, ymax = ci_hi),
+                       fill = "#56B4E9", alpha = 0.35) +
+  ggplot2::geom_line(ggplot2::aes(y = tau, colour = "proxymix estimate"),
+                     linewidth = 0.9) +
+  ggplot2::geom_line(ggplot2::aes(y = truth, colour = "analytic truth"),
+                     linewidth = 0.9, linetype = "dashed") +
+  ggplot2::geom_hline(yintercept = 0, colour = "grey60",
+                      linewidth = 0.3) +
+  ggplot2::scale_colour_manual(
+    name = NULL,
+    values = c("proxymix estimate" = "#0072B2",
+               "analytic truth" = "#D55E00")
+  ) +
+  ggplot2::labs(
+    x = "covariate x", y = "treatment effect on y",
+    title = "A conditional treatment-effect surface from one joint fit"
+  ) +
+  ggplot2::theme_minimal(base_size = 11) +
+  ggplot2::theme(legend.position = "top")
+```
+
+```{r fig-cate-skip, eval = !has_ggplot2, echo = FALSE, results = "asis"}
+cat("ggplot2 is not installed on this build, so the treatment-effect",
+    "figure is skipped.\n")
+```
+
+Acting on the estimate is `proxy_decide()`, which turns an effect into a
+recommended arm under a value per unit of outcome and a cost of treating.
+
+```{r uplift-decide}
+decision <- proxy_decide(model, grid_up, value = 1, cost = 0.5)
+switch_x <- grid_up$x[min(which(decision$action == 1L))]
+```
+
+```{r uplift-decide-table, echo = FALSE}
+sel <- c(1L, 11L, 21L, 31L, 41L)
+knitr::kable(
+  data.frame(
+    x = grid_up$x[sel],
+    tau = cate$tau[sel],
+    truth = tau_true(grid_up$x[sel]),
+    action = decision$action[sel],
+    expected_value = decision$expected_value[sel]
+  ),
+  digits = 3L,
+  col.names = c("Covariate x", "Estimated effect", "True effect",
+                "Recommended arm", "Expected value"),
+  caption = paste0(
+    "Five points of the decision surface at a value of 1 per unit of ",
+    "outcome and a treatment cost of 0.5, so treating pays when the ",
+    "effect exceeds 0.5."
+  )
+)
+```
+
+**A refusal rather than a wrong scale.** The model recorded the treatment
+arms it actually saw. Asking for a contrast between arms the data never
+contained is refused, with a typed condition, instead of being answered on a
+silently rescaled axis.
+
+```{r uplift-refusal}
+refusal <- tryCatch(
+  proxy_cate(model, grid_up, t1 = 100, t0 = 0),
+  error = function(e) e
+)
+class(refusal)
+conditionMessage(refusal)
+```
+
+The identification report is the artefact that travels with a decision: it
+names the estimand, the assumption it rests on, the overlap of the units
+supplied, the magnitude at risk if a latent regime confounds the effect, and
+what the model explicitly does not identify.
+
+```{r uplift-report}
+proxy_identification_report(model, grid_up)
+```
+
+**Idea.** Under ignorability the conditional treatment effect is a contrast
+of two conditional means of the same joint mixture, $E[y \mid t_1, x]$ minus
+$E[y \mid t_0, x]$, so the operator that produced the regression above
+produces the causal contrast as well. What changes is not the algebra but
+the assumption the reader is asked to accept, which is why the family ships
+a report that states it.
+
+### A few more, in one line each
+
+Imputation is `gmm_conditionalise()` on the observed coordinates, giving a
+conditional-mean or, through `rgmm()`, a sampled fill-in. Density
+estimation is the native use, and `from_kde()` compresses a kernel estimate
+into a closed-form mixture. Kalman filtering is `gmm_observe()`, the mixture
+form of the Kalman update.
+
+## Read
+
+Four of the six substitutions reproduce the classical answer to machine
+precision, which is the part worth checking rather than assuming.
+
+```{r equality-table, echo = FALSE}
+knitr::kable(
+  data.frame(
+    claim = c(
+      "K = 1 conditional slope equals the lm coefficient",
+      "Per-point KDE conditional mean equals Nadaraya-Watson",
+      "N = 1 eigenvectors equal the prcomp rotation",
+      "Ridged conditional slope equals the ridge closed form"
+    ),
+    difference = sci_plain(c(diff_reg, diff_nw, diff_pca, diff_ridge)),
+    stringsAsFactors = FALSE
+  ),
+  col.names = c("Claim", "Maximum absolute difference"),
+  caption = paste0(
+    "Each equality claim checked against the tool it stands in for, on ",
+    "the data fitted above."
+  )
+)
+```
+
+**Regression.** At one component the conditional slope and the `lm`
+coefficient differ by `r sci(diff_reg)`, which is the double-precision
+floor: the substitution is an identity, not an approximation. At three
+components the same conditioning operation follows the bend in the figure
+that the single line cannot. What this buys is nonlinear, heteroscedastic,
+even multimodal conditional *densities* rather than only a mean. What it
+costs is classical inference: no standard errors or $p$-values come back by
+default, and the components are Gaussian.
+
+**Kernel regression.** The conditioned per-point kernel density estimate and
+the Nadaraya-Watson smoother agree to `r sci(diff_nw)` over the
+`r length(xq)` query points. The same operation also returns the full
+conditional density -- predictive variance, quantiles, multimodality --
+which the bare Nadaraya-Watson mean does not, and it works in the
+evaluate-only regime where there are no points to average and so no literal
+kernel estimator exists. The price is that the one-per-datum estimate costs
+$O(n)$ per query, which `from_kde()` compresses to $O(K)$, and that the
+bandwidth must still be chosen.
+
+**Clustering.** The three components recover the three generated clouds, and
+the assignments are nearly hard: the mean largest responsibility across the
+`r nrow(x_clust)` rows is `r round(mean_confidence, 3)`, so on
+well-separated data the soft assignment is decisive. The gain over
+`kmeans()` is ellipsoidal rather than spherical clusters, a soft assignment
+that carries its own uncertainty, and a density estimate as a by-product.
+The cost is that the component count is not chosen for you, which is what
+`bic_aic()` is for, and that `kmeans()` is faster at very large $n$.
+
+**Principal components.** The eigenvectors of the one-component covariance
+and the `prcomp` rotation differ by `r sci(diff_pca)` once the sign
+convention of each axis is accounted for. At $K > 1$ the same read gives a
+local analysis inside each cluster, which `prcomp()` does not offer. For a
+single linear projection `prcomp()` remains more direct, since loadings,
+scree plots and biplots come with it.
+
+**Ridge.** The slope under a covariance ridge matches the closed-form ridge
+estimator to `r sci(diff_ridge)` across all
+`r length(lambda)` penalties, and shrinks from
+`r round(slope_pm[1], 3)` at no penalty to
+`r round(slope_pm[length(lambda)], 3)` at the largest. What is delivered is
+$L_2$ shrinkage and numerical stability from the object already in hand.
+What is not available is the lasso: $L_2$ shrinkage matches a Gaussian
+prior, $L_1$ sparsity a Laplace prior outside the Gaussian family, so this
+route does not perform variable selection.
+
+**Treatment effects.** This is the one substitution that is an
+approximation rather than an identity, and the figure shows how good an
+approximation. Across the covariate range the estimated effect departs from
+the analytic truth by at most `r round(err_cate, 3)`, on an effect that runs
+from `r round(tau_true(min(grid_up$x)), 1)` to
+`r round(tau_true(max(grid_up$x)), 1)`, with the estimate shrunk slightly
+toward zero at both tails because two Gaussian components stand in for a
+linear interaction. Turned into an action at a value of 1 and a cost of 0.5,
+the recommendation switches from control to treatment at
+`r round(switch_x, 2)`, against the true break-even at 0. The delta-method
+interval covers the truth at `r round(100 * cover_cate)` per cent of the
+grid points, short of its nominal 95 per cent, because it prices sampling
+variability and not the approximation bias just described.
+
+The refusal is the other half of that section. Asking for a contrast
+between treatment values of 100 and 0, on a model fitted to arms 0 and 1,
+returns a condition of class `proxymix_treatment_scale_error` and
+`orchestra_refusal` rather than a number. The contract is that a decision
+verb declines a question the fit cannot support instead of answering it on
+an axis the data never contained, which is the difference between an effect
+that is wrong and an effect that is absent.
+
+```{r summary-table, echo = FALSE}
+knitr::kable(
+  data.frame(
+    method = c("Regression", "Kernel regression", "Clustering",
+               "Principal components", "Ridge", "Treatment effects"),
+    usual = c("lm / glm", "ksmooth / np", "kmeans / mclust", "prcomp",
+              "glmnet / lm.ridge", "T-learner / grf / DoubleML"),
+    route = c("mixture over (y, x) plus gmm_conditionalise()",
+              "per-point KDE plus gmm_conditionalise()",
+              "fit_proxymix(regime = 'sample')",
+              "eigen() of the N = 1 covariance",
+              "ridge_eps on the covariance",
+              "fit_uplift() plus proxy_cate()"),
+    gain = c("nonlinear, heteroscedastic, multimodal conditionals",
+             "full conditional density; the evaluate-only regime",
+             "soft, ellipsoidal, density-aware clusters",
+             "a local analysis per cluster",
+             "L2 shrinkage from one object",
+             "one fit, plus a stated identification contract"),
+    give_up = c("built-in inference; Gaussian components",
+                "O(n) per query unless compressed; bandwidth choice",
+                "automatic component count; speed at huge n",
+                "loadings, scree and biplot conveniences",
+                "L1 sparsity and variable selection",
+                "exactness; the interval under-covers"),
+    stringsAsFactors = FALSE
+  ),
+  col.names = c("Method", "Usual tool", "proxymix route", "What you gain",
+                "What you give up"),
+  caption = "Six analyses from one fitted object, and the cost of each."
+)
+```
+
+The answer to the opening question, then: one fitted mixture genuinely
+replaces the linear model, the kernel smoother, the clustering, the
+principal-components step and the ridge penalty, four of them exactly, and
+it additionally supplies a treatment-effect reading that specialised causal
+packages would otherwise provide. What is given up is inference machinery,
+the freedom of a non-Gaussian component shape, and, in the causal case,
+exactness.
+
+## Limits
+
+Nothing here shows the mixture beating the specialised tool. Four of the
+substitutions are identities, so they cannot be better, only more
+convenient; the remaining two trade accuracy for having one object serve
+several jobs. Use the purpose-built tool where its strengths are what is
+needed: high-dimensional sparse problems suit `glmnet`, very large-$n$
+clustering suits `kmeans()`, a single linear projection suits `prcomp()`,
+and classical inferential guarantees suit `lm()` or `glm()`. The mixture
+earns its place when one fitted object should serve several of these at
+once, in closed form, and when Gaussian components fit the data.
+
+Every fit on this page is in the sample regime, with samples available and
+component counts supplied by hand rather than selected. Choosing $K$ is a
+real decision that `bic_aic()` informs and this vignette sidesteps, and a
+count much above the number of genuine structures will fit noise into the
+conditional law.
+
+The treatment-effect section carries two further limits. First, the
+interval under-covers, as the reading above records, because the
+delta-method standard error holds the regime gate fixed and prices sampling
+variability only; a resampling alternative is available through
+`se_method = "mc"` and does not remove the approximation bias, which is what
+the shortfall here reflects. Second, with a binary treatment the fitted
+mixture separates on the treatment arm itself, so within any one regime the
+treatment does not vary and the within-regime treatment slope is zero. This
+means `proxy_regime_segments()` returns an effect of zero in every regime on
+data of this shape: the effect modification is carried *across* regimes, by
+the gate, and is read correctly by `proxy_cate()` but not by the segment
+table. A reader wanting interpretable per-segment effects needs a design
+where the components separate on the covariate rather than on the arm.
+
+Everything causal here also rests on ignorability, which no goodness-of-fit
+statistic can certify, on data generated to satisfy it. The identification
+report states the assumption and the magnitude at risk if it fails, and
+declines the individual counterfactual law outright; it does not make the
+assumption true.
+
+## What to read next
+
+*Choosing between the three fitting regimes* explains what the `"moment"`,
+`"sample"` and `"kld"` arguments used throughout this page actually do, and
+when each applies.
+
+*Compressing a kernel density estimate into a mixture* is the compression
+step that turns the $O(n)$ kernel smoother above into an $O(K)$ one.
+
+*The closed-form operator calculus on a mixture* covers the pushforward and
+Kalman-update operators that the one-line extras above only name.
+
+*Imputing missing data with a mixture* takes the conditioning operator used
+throughout this page and applies it to holes in the data.
 
 ## References
 
+* Athey, S. and Imbens, G. (2016). *Recursive partitioning for
+  heterogeneous causal effects.* Proceedings of the National Academy of
+  Sciences 113(27), 7353--7360. <doi:10.1073/pnas.1510489113>.
 * de Veaux, R. D. (1989). *Mixtures of linear regressions.* Computational
   Statistics & Data Analysis 8(3), 227--245.
-* Fraley, C. and Raftery, A. E. (2002). *Model-based clustering, discriminant
-  analysis, and density estimation.* Journal of the American Statistical
-  Association 97(458), 611--631.
+* Fraley, C. and Raftery, A. E. (2002). *Model-based clustering,
+  discriminant analysis, and density estimation.* Journal of the American
+  Statistical Association 97(458), 611--631.
 * Jolliffe, I. T. (2002). *Principal Component Analysis*, 2nd ed. Springer.
-* Nadaraya, E. A. (1964). *On estimating regression.* Theory of Probability and
-  Its Applications 9(1), 141--142.
+* Nadaraya, E. A. (1964). *On estimating regression.* Theory of Probability
+  and Its Applications 9(1), 141--142.
 * Watson, G. S. (1964). *Smooth regression analysis.* Sankhya A 26(4),
   359--372.
-* Tipping, M. E. and Bishop, C. M. (1999). *Probabilistic principal component
-  analysis.* Journal of the Royal Statistical Society B 61(3), 611--622.
-* Hoerl, A. E. and Kennard, R. W. (1970). *Ridge regression: biased estimation
-  for nonorthogonal problems.* Technometrics 12(1), 55--67.
+* Tipping, M. E. and Bishop, C. M. (1999). *Probabilistic principal
+  component analysis.* Journal of the Royal Statistical Society B 61(3),
+  611--622.
+* Hoerl, A. E. and Kennard, R. W. (1970). *Ridge regression: biased
+  estimation for nonorthogonal problems.* Technometrics 12(1), 55--67.
 * Hoek, J. van der and Elliott, R. J. (2024). *Mixtures of multivariate
   Gaussians.* Stochastic Analysis and Applications.
   <doi:10.1080/07362994.2024.2372605>.
+
+## Reproduce
+
+Two seeds are used: `20260617` for the regression, clustering and
+principal-components data, set in the chunk that builds each, and
+`20260902` for the treatment-effect design. `fit_uplift()` is additionally
+given `seed = 1L` so its expectation-maximisation start is reproducible
+without disturbing the ambient random-number state.
+
+```{r session-info}
+sessionInfo()
+```

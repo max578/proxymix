@@ -1,78 +1,120 @@
 ---
-title: "Three regimes: moment, sample, and KLD-EM"
+title: "Choosing between the three fitting regimes"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Three regimes: moment, sample, and KLD-EM}
+  %\VignetteIndexEntry{Choosing between the three fitting regimes}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
+<!-- Render time: ~2 s under rmarkdown::render() with ggplot2 installed;
+     macOS arm64 (Apple silicon), R 4.5.2, one core. -->
+
+```{r setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  fig.width = 6,
-  fig.height = 4,
+  fig.width = 7,
+  fig.height = 4.5,
+  dpi = 150,
   out.width = "100%"
 )
-set.seed(20260513)
 ```
 
-```{r setup}
+```{r library}
 library(proxymix)
 ```
 
-This vignette walks through the three KL-optimal regimes of van der Hoek and Elliott (2024). For each, we show what information the regime needs about the target, the M-step update it implements, and an end-to-end fit on a target whose ground truth we know.
+```{r engines}
+has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
+```
 
-We use the bundled three-component mixture target -- its log-density is known exactly, and (because the target is itself a Gaussian mixture) so are its true samples.
+## Why
+
+A modeller with a target in hand and three regimes on offer asks the
+practical question: *which of the three does my problem actually need, and
+what do I give up if I pick the wrong one?* The routing rule is easy to
+state and easy to over-trust, because two of the regimes will happily run
+on the same target and return visibly similar mixtures while answering
+subtly different questions.
+
+## What
+
+The three regimes are those of van der Hoek and Elliott (2024), and they
+differ in what they need to know about the target rather than in what they
+return. All three return a `gmm_fit`.
+
+`fit_moment_match()` is regime (i). At `N == 1` the KL-optimal Gaussian
+proxy is the one that shares the target's mean and covariance, so the fit
+is closed form and needs no iteration at all. It reads moments, which in
+practice means it reads the samples the target carries.
+
+`fit_em_samples()` is regime (ii): textbook expectation-maximisation on
+independent draws, maximising the likelihood of the samples under an
+`N`-component mixture. It needs samples and nothing else.
+
+`fit_kld_em()` is regime (iii): importance-sampled KLD-EM, which minimises
+$\mathrm{KL}(f \Vert g_\theta)$ using only point-wise evaluations of the
+target's log-density, re-weighted by self-normalised importance weights
+against a `proposal_mvt()` proposal. It needs no samples.
+
+`fit_proxymix()` dispatches across all three, and `bic_aic()` and
+`select_N()` choose the component count, which none of the three does for
+you.
+
+## Do
+
+The bundled three-component mixture target is the right test bench: its
+log-density is known exactly, and because the target is itself a Gaussian
+mixture its true samples are available too. That is the one setting in
+which all three regimes can be run on the same object and compared.
 
 ```{r target}
 tgt <- mixture_target(with_samples = TRUE, n = 1500L, seed = 1L)
 tgt
 ```
 
-```{r target-plot, fig.cap = "Three-mixture target with overlaid samples."}
-if (requireNamespace("ggplot2", quietly = TRUE)) {
-  library(ggplot2)
-  grid_x <- seq(-4.5, 4.5, length.out = 100)
-  G <- expand.grid(x1 = grid_x, x2 = grid_x)
-  G$f <- exp(tgt@log_density(as.matrix(G)))
-  ggplot(G, aes(x1, x2)) +
-    geom_contour_filled(aes(z = f), bins = 10L, alpha = 0.9) +
-    geom_point(data = as.data.frame(tgt@samples[1:500, ]),
-               aes(V1, V2), alpha = 0.15, size = 0.6) +
-    scale_fill_viridis_d(option = "mako", guide = "none") +
-    coord_equal() +
-    labs(x = expression(x[1]), y = expression(x[2])) +
-    theme_minimal(base_size = 12)
-}
-```
+### Regime (i): closed-form moment matching
 
-## Regime (i): closed-form moment matching
-
-When `N == 1`, the KL-optimal Gaussian proxy has the same mean and covariance as the target. That is regime (i). The function is `fit_moment_match()`, and the dispatcher chooses it under `regime = "auto"` when `N == 1` and samples (or moments) are available.
+At `N == 1` the KL-optimal Gaussian proxy has the same mean and covariance
+as the target. There is nothing to iterate.
 
 ```{r moment}
 m_fit <- fit_proxymix(tgt, N = 1L, regime = "moment")
 m_fit
 ```
 
-Recovered mean and covariance match the target's empirical moments to within sampling error:
+The recovered moments are the empirical moments of the samples the target
+carries, not an approximation to them. The only discrepancy is the
+diagonal ridge `ridge_eps` that keeps the covariance positive-definite,
+and setting it to zero removes even that.
 
 ```{r moment-recover}
-m_fit@means[[1L]]
-m_fit@covariances[[1L]]
+m_fit_bare <- fit_proxymix(tgt, N = 1L, regime = "moment", ridge_eps = 0)
+moment_gap <- c(
+  mean = max(abs(m_fit@means[[1L]] - colMeans(tgt@samples))),
+  covariance = max(abs(m_fit@covariances[[1L]] - cov(tgt@samples))),
+  covariance_no_ridge = max(abs(m_fit_bare@covariances[[1L]] -
+                                  cov(tgt@samples)))
+)
+signif(moment_gap, 3L)
 ```
 
-A single Gaussian is, of course, a bad fit to a three-mode mixture -- but it is the *KL-optimal* single Gaussian. Regime (i) is most useful when used as a deterministic *seed* for regimes (ii) or (iii) at `N > 1`.
+A single Gaussian is a poor description of a three-mode mixture, but it is
+the KL-optimal single Gaussian, and it makes a deterministic seed for the
+two iterative regimes at `N > 1`.
 
-## Regime (ii): classical EM on samples
+### Regime (ii): classical EM on samples
 
-When the target carries samples, the textbook EM algorithm fits an `N`-component Gaussian mixture by maximum likelihood. That is regime (ii). The algorithm is the standard iterate-until-convergence:
+When the target carries samples, the textbook algorithm applies:
 
-* **E-step** -- \(\gamma_{nk} = \pi_k \mathcal{N}(x_n \mid \mu_k, \Sigma_k) / \sum_j \pi_j \mathcal{N}(x_n \mid \mu_j, \Sigma_j)\).
-* **M-step** -- re-weight \(\pi_k, \mu_k, \Sigma_k\) by the responsibilities, with a diagonal ridge `epsilon_cov` to keep \(\Sigma_k\) positive-definite.
-* **Convergence** -- relative change in the empirical log-likelihood below `tol`.
+* **E-step** -- \(\gamma_{nk} = \pi_k \mathcal{N}(x_n \mid \mu_k, \Sigma_k) /
+  \sum_j \pi_j \mathcal{N}(x_n \mid \mu_j, \Sigma_j)\).
+* **M-step** -- re-weight \(\pi_k, \mu_k, \Sigma_k\) by the
+  responsibilities, with a diagonal ridge `epsilon_cov` keeping
+  \(\Sigma_k\) positive-definite.
+* **Convergence** -- relative change in the empirical log-likelihood below
+  `tol`.
 
 ```{r em}
 s_fit <- fit_proxymix(tgt, N = 3L, regime = "sample",
@@ -80,125 +122,285 @@ s_fit <- fit_proxymix(tgt, N = 3L, regime = "sample",
 s_fit
 ```
 
-The log-likelihood trace is monotone-up:
+### Regime (iii): importance-sampled KLD-EM
 
-```{r em-trace, fig.cap = "Sample-EM log-likelihood trace (monotone-up)."}
-trace <- s_fit@diagnostics$loglik_trace
-if (requireNamespace("ggplot2", quietly = TRUE)) {
-  ggplot(data.frame(iter = seq_along(trace), loglik = trace),
-         aes(iter, loglik)) +
-    geom_line() + geom_point(size = 1) +
-    labs(x = "EM iteration", y = "log-likelihood") +
-    theme_minimal(base_size = 12)
-}
-```
+Regime (iii) is the reason the package exists: it fits a proxy when the
+target's `log_density` is evaluable but no samples are available, which is
+the situation for Bayesian posteriors, intractable likelihoods, expensive
+simulators, and downscaling targets in spatial statistics. The algorithm
+draws `is_size` points from the proposal $q$, forms self-normalised weights
+\(W_n \propto f(x_n) / q(x_n)\), and runs EM iterations in which the M-step
+minimises \(\mathrm{KL}(f \Vert g_\theta)\) by re-weighting the
+responsibilities with $W$.
 
-Information criteria are populated:
-
-```{r em-bic}
-bic_aic(s_fit)
-```
-
-## Regime (iii): importance-sampled KLD-EM
-
-Regime (iii) is the reason `proxymix` exists: it fits a Gaussian-mixture proxy when the target's `log_density` is evaluable but **no samples are available**. Examples include posterior distributions in Bayesian models, intractable likelihoods, expensive simulators, and downscaling targets in spatial statistics.
-
-The algorithm:
-
-1. Draw `is_size` samples from a user-supplied importance proposal `q`.
-2. Compute self-normalised importance weights \(W_n \propto f(x_n) / q(x_n)\).
-3. Run EM iterations using the IS weights -- the M-step minimises \(\mathrm{KL}(f \Vert g_\theta)\) by re-weighting responsibilities with `W`.
-
-The proposal `q` is the only free knob beyond the usual mixture configuration; `proposal_mvt()` with `df = 5` is a robust default.
+The proposal is the only free knob beyond the usual mixture configuration,
+and a Student-t with five degrees of freedom is a robust default.
 
 ```{r kld}
 k_fit <- fit_proxymix(tgt, N = 3L, regime = "kld",
                       proposal = proposal_mvt(n_dim = 2L,
-                                        mean = c(0, 0),
-                                        sigma = 6 * diag(2),
-                                        df = 5),
+                                              mean = c(0, 0),
+                                              sigma = 6 * diag(2),
+                                              df = 5),
                       is_size = 3000L,
                       max_iter = 60L,
                       seed = 1L)
 k_fit
 ```
 
-Diagnostics:
+### The three fits side by side
 
-```{r kld-trace, fig.cap = "KLD-EM convergence trace."}
-trace <- kld_trace(k_fit)
-if (requireNamespace("ggplot2", quietly = TRUE)) {
-  ggplot(data.frame(iter = seq_along(trace), kld = trace),
-         aes(iter, kld)) +
-    geom_line() + geom_point(size = 1) +
-    labs(x = "KLD-EM iteration", y = expression(widehat(KL)(f * "||" * g))) +
-    theme_minimal(base_size = 12)
+```{r overlay-grid}
+grid_x <- seq(-4.5, 4.5, length.out = 100L)
+grid_base <- expand.grid(x1 = grid_x, x2 = grid_x)
+grid_mat <- as.matrix(grid_base)
+target_d <- exp(tgt@log_density(grid_mat))
+panel_of <- function(fit, label) {
+  data.frame(
+    x1 = grid_base$x1, x2 = grid_base$x2,
+    target = target_d,
+    proxy = dgmm(grid_mat, fit),
+    regime = label,
+    stringsAsFactors = FALSE
+  )
 }
+overlay_df <- rbind(
+  panel_of(m_fit, "(i) moment, N = 1"),
+  panel_of(s_fit, "(ii) sample EM, N = 3"),
+  panel_of(k_fit, "(iii) KLD-EM, N = 3")
+)
+overlay_df$regime <- factor(overlay_df$regime,
+                            levels = unique(overlay_df$regime))
 ```
 
-Effective sample size of the importance weights:
-
-```{r kld-ess}
-ess_trace(k_fit)
+```{r overlay, eval = has_ggplot2, echo = has_ggplot2, fig.height = 3.4, fig.cap = "The three-mixture target (filled contours, identical in all three panels) with each regime's fitted proxy overlaid as dashed contours. Regime (i) is one Gaussian spread across all three modes; regimes (ii) and (iii) both place one component per mode and are visually indistinguishable, despite reading entirely different information about the target.", fig.alt = "Three side-by-side contour panels of the same three-mode target, overlaid with the single-Gaussian moment fit, the sample-EM fit and the KLD-EM fit."}
+ggplot2::ggplot(overlay_df, ggplot2::aes(x1, x2)) +
+  ggplot2::geom_contour_filled(ggplot2::aes(z = target), bins = 10L,
+                               alpha = 0.85) +
+  ggplot2::geom_contour(ggplot2::aes(z = proxy), colour = "white",
+                        linetype = "dashed", linewidth = 0.4, bins = 5L) +
+  ggplot2::scale_fill_viridis_d(option = "mako", guide = "none") +
+  ggplot2::facet_wrap(~ regime) +
+  ggplot2::coord_equal() +
+  ggplot2::labs(x = expression(x[1]), y = expression(x[2])) +
+  ggplot2::theme_minimal(base_size = 11)
 ```
 
-## Side-by-side overlay
-
-The three fits -- moment (N = 1), classical EM (N = 3), KLD-EM (N = 3) -- overlaid on the target:
-
-```{r overlay, fig.height = 4.5, fig.cap = "Target (filled) overlaid with the three regimes' fits (dashed)."}
-if (requireNamespace("ggplot2", quietly = TRUE) &&
-    requireNamespace("patchwork", quietly = TRUE)) {
-  grid_x <- seq(-4.5, 4.5, length.out = 100)
-  G <- expand.grid(x1 = grid_x, x2 = grid_x)
-  G$f  <- exp(tgt@log_density(as.matrix(G)))
-  G$mm <- exp(dgmm(as.matrix(G[, c("x1", "x2")]), m_fit, log = TRUE))
-  G$ss <- exp(dgmm(as.matrix(G[, c("x1", "x2")]), s_fit, log = TRUE))
-  G$kk <- exp(dgmm(as.matrix(G[, c("x1", "x2")]), k_fit, log = TRUE))
-
-  base <- ggplot(G, aes(x1, x2)) +
-    geom_contour_filled(aes(z = f), bins = 10L, alpha = 0.85) +
-    scale_fill_viridis_d(option = "mako", guide = "none") +
-    coord_equal() + theme_minimal(base_size = 11)
-
-  p1 <- base + geom_contour(aes(z = mm), bins = 5L, colour = "white",
-                            linetype = "dashed") +
-    labs(title = "Regime (i) moment, N = 1", x = NULL, y = NULL)
-  p2 <- base + geom_contour(aes(z = ss), bins = 5L, colour = "white",
-                            linetype = "dashed") +
-    labs(title = "Regime (ii) sample EM, N = 3", x = NULL, y = NULL)
-  p3 <- base + geom_contour(aes(z = kk), bins = 5L, colour = "white",
-                            linetype = "dashed") +
-    labs(title = "Regime (iii) KLD-EM, N = 3", x = NULL, y = NULL)
-
-  patchwork::wrap_plots(p1, p2, p3, nrow = 1)
-}
+```{r overlay-skip, eval = !has_ggplot2, echo = FALSE, results = "asis"}
+cat("ggplot2 is not installed on this build, so the three-panel overlay",
+    "figure is skipped.\n")
 ```
 
-## A sanity check: (i) and (iii) agree at N = 1
+### What each iterative regime is driving down
 
-When `N = 1`, the KL-optimal Gaussian is the moment-matched one. Regime (iii) -- a numerical optimiser -- should converge to that same Gaussian (up to Monte Carlo error). Let us check this on the banana target where regime (iii) is the *only* available regime if we ignore samples:
+```{r traces}
+trace_df <- rbind(
+  data.frame(
+    iteration = seq_along(s_fit@diagnostics$loglik_trace),
+    value = s_fit@diagnostics$loglik_trace,
+    panel = "(ii) sample EM: log-likelihood (up)",
+    stringsAsFactors = FALSE
+  ),
+  data.frame(
+    iteration = seq_along(kld_trace(k_fit)),
+    value = kld_trace(k_fit),
+    panel = "(iii) KLD-EM: estimated KL (down)",
+    stringsAsFactors = FALSE
+  )
+)
+```
 
-```{r agreement}
+```{r traces-plot, eval = has_ggplot2, echo = has_ggplot2, fig.height = 3.2, fig.cap = "The two iterative regimes optimise different objectives and take different numbers of steps to do it. Sample EM climbs the empirical log-likelihood; KLD-EM drives down the importance-sampled Kullback-Leibler divergence.", fig.alt = "Two panels of iteration traces: a monotone increasing log-likelihood curve for sample EM and a decreasing Kullback-Leibler curve for KLD-EM."}
+ggplot2::ggplot(trace_df, ggplot2::aes(iteration, value)) +
+  ggplot2::geom_line(colour = "#0072B2", linewidth = 0.8) +
+  ggplot2::geom_point(colour = "#0072B2", size = 1.1) +
+  ggplot2::facet_wrap(~ panel, scales = "free") +
+  ggplot2::labs(x = "iteration", y = "objective") +
+  ggplot2::theme_minimal(base_size = 11)
+```
+
+```{r traces-skip, eval = !has_ggplot2, echo = FALSE, results = "asis"}
+cat("ggplot2 is not installed on this build, so the two-panel iteration",
+    "trace figure is skipped.\n")
+```
+
+### Regimes (i) and (iii) at N = 1, against an exact oracle
+
+At `N = 1` both regime (i) and regime (iii) target the KL-optimal single
+Gaussian, so they should agree. They are compared here on the banana
+target, where regime (iii) would be the only option if the samples were
+withheld, and both are compared against a third quantity neither of them
+produced: the exact mean and covariance of the banana density, obtained by
+deterministic quadrature on a fine grid.
+
+```{r n1-fits}
 banana <- banana_target(with_samples = TRUE, n = 2000L, seed = 1L)
 m_b <- fit_proxymix(banana, N = 1L, regime = "moment")
 k_b <- fit_proxymix(banana, N = 1L, regime = "kld",
                     proposal = proposal_mvt(n_dim = 2L,
-                                      sigma = 4 * diag(2),
-                                      df = 5),
+                                            sigma = 4 * diag(2),
+                                            df = 5),
                     is_size = 3000L, max_iter = 50L, seed = 1L)
-rbind(
-  moment_mean = m_b@means[[1L]],
-  kld_mean    = k_b@means[[1L]]
+```
+
+```{r n1-oracle}
+## Exact moments of the banana density by grid quadrature -- an oracle
+## neither regime used, and independent of both the attached samples and
+## the importance sampler.
+quad_x <- seq(-8, 8, length.out = 400L)
+quad_g <- as.matrix(expand.grid(x1 = quad_x, x2 = quad_x))
+quad_cell <- (quad_x[2L] - quad_x[1L])^2
+quad_f <- exp(banana@log_density(quad_g))
+quad_mass <- sum(quad_f) * quad_cell
+quad_mean <- c(sum(quad_f * quad_g[, 1L]),
+               sum(quad_f * quad_g[, 2L])) * quad_cell / quad_mass
+quad_trace <- sum(quad_f * ((quad_g[, 1L] - quad_mean[1L])^2 +
+                              (quad_g[, 2L] - quad_mean[2L])^2)) *
+  quad_cell / quad_mass
+```
+
+```{r n1-compare}
+tr_of <- function(f) sum(diag(f@covariances[[1L]]))
+n1 <- list(
+  mean_gap = max(abs(m_b@means[[1L]] - k_b@means[[1L]])),
+  trace_gap = tr_of(m_b) - tr_of(k_b),
+  moment_error = abs(tr_of(m_b) - quad_trace),
+  kld_error = abs(tr_of(k_b) - quad_trace),
+  sample_error = abs(sum(diag(cov(banana@samples))) - quad_trace)
 )
-rbind(
-  moment_tr   = sum(diag(m_b@covariances[[1L]])),
-  kld_tr      = sum(diag(k_b@covariances[[1L]]))
+n1$closer <- n1$moment_error / n1$kld_error
+signif(unlist(n1), 3L)
+```
+
+```{r n1-table, echo = FALSE}
+n1_tbl <- data.frame(
+  Source = c("regime (i), moment match", "regime (iii), KLD-EM",
+             "attached samples", "exact density (quadrature)"),
+  Reads = c("the attached samples", "the log-density",
+            "the attached samples", "the log-density"),
+  `Trace of covariance` = round(
+    c(tr_of(m_b), tr_of(k_b), sum(diag(cov(banana@samples))), quad_trace),
+    3L
+  ),
+  `Error against oracle` = round(
+    c(tr_of(m_b), tr_of(k_b), sum(diag(cov(banana@samples))), quad_trace) -
+      quad_trace,
+    3L
+  ),
+  check.names = FALSE,
+  stringsAsFactors = FALSE
+)
+knitr::kable(
+  n1_tbl,
+  caption = paste(
+    "The single-Gaussian proxy at `N = 1`, fitted two ways and scored",
+    "against the exact moments of the banana density. The final row is",
+    "the oracle, so its error is zero by construction."
+  )
 )
 ```
 
-The means and trace-covariances agree to within Monte Carlo error.
+## Read
 
-## Reference
+The moment fit is exact rather than approximate. It reproduces the
+empirical mean of the target's samples with a gap of
+`r format(signif(moment_gap[["mean"]], 2L))`, and the empirical covariance
+with a gap of `r format(signif(moment_gap[["covariance"]], 2L))` -- which is
+not a fitting error but the diagonal ridge itself, since removing the ridge
+closes that gap to
+`r format(signif(moment_gap[["covariance_no_ridge"]], 2L))` as well. Regime
+(i) does not approximate the moments; it copies them.
 
-Hoek, J. van der and Elliott, R. J. (2024). *Mixtures of multivariate Gaussians.* Stochastic Analysis and Applications. <https://doi.org/10.1080/07362994.2024.2372605>.
+The two iterative regimes land in the same place by different routes.
+Sample EM took `r length(s_fit@diagnostics$loglik_trace)` iterations to
+converge and KLD-EM took `r length(kld_trace(k_fit))`, and the fitted
+weights agree to
+`r format(signif(max(abs(sort(s_fit@weights) - sort(k_fit@weights))), 2L))`.
+The overlay shows why they look alike here: both put one component on each
+mode, which is the correct answer for a target that is itself a
+three-component Gaussian mixture. The KLD-EM fit retained an effective
+sample size of `r round(k_fit@diagnostics$ess, 0L)` out of
+`r k_fit@diagnostics$is_size` importance draws, so it reached that answer
+without leaning on a few high-weight points.
+
+The `N = 1` comparison is where the cost of the choice becomes visible, and
+it does not favour the regime that looks safer. The two fits differ in
+mean by `r format(signif(n1$mean_gap, 2L))` and in trace-covariance by
+`r format(signif(n1$trace_gap, 2L))`, which is larger than
+importance-sampling noise alone would explain. The oracle column says why.
+Regime (i) matches the moments of the `r nrow(banana@samples)` samples the
+target happens to carry, and those samples overstate the exact
+trace-covariance by `r format(signif(n1$sample_error, 2L))`. Regime (iii)
+never sees those samples; it reads the density, and its trace-covariance is
+out by only `r format(signif(n1$kld_error, 2L))`, about
+`r round(n1$closer, 1L)` times closer to the truth.
+
+So the answer to the opening question is that regime (iii) is not merely
+the fallback when samples are missing. When the log-density is available,
+it is fitting to the density itself, while regimes (i) and (ii) are fitting
+to whatever finite sample was drawn from it. With plentiful samples the
+distinction is immaterial; with a modest sample it is the difference
+between the two answers above. What you give up by choosing regime (iii)
+when samples are plentiful is speed and simplicity: it needs a proposal, it
+costs `r k_fit@diagnostics$n_target_evals` target evaluations here, and it
+carries an importance-sampling diagnostic that has to be read.
+
+## Limits
+
+This vignette does not choose the number of components. Every fit above
+was told `N` by hand, and the three-mixture target was picked precisely
+because the right answer is known to be three. On a real target the
+component count is the first thing that has to be settled, and `bic_aic()`
+and `select_N()` are what settle it; a count set too low shows up as a
+residual divergence that more importance draws will not reduce.
+
+The comparison between regimes (ii) and (iii) is flattering to both here
+for a reason worth stating. The target is itself a Gaussian mixture with
+the same number of components as the proxies, so the model is correctly
+specified and there is no approximation error for either regime to trade
+against the other. On a target outside the Gaussian-mixture family the two
+regimes minimise genuinely different objectives, and the fits separate.
+
+The `N = 1` oracle applies to two dimensions and to a target whose density
+integrates to one on the grid used. Grid quadrature of this kind is a
+reliable independent check in two or three dimensions and stops being one
+well before the dimension at which importance sampling itself becomes the
+binding constraint.
+
+## What to read next
+
+*Fitting a proxy to a density you cannot sample* is the shorter route into
+regime (iii) alone, and reads the fit certificate that this vignette only
+glances at.
+
+*How well a mixture proxies four awkward shapes* takes regime (iii) to
+targets outside the Gaussian-mixture family, where the correctly-specified
+comfort of this vignette's test bench no longer holds.
+
+*Reading the entropy of a fitted mixture* covers the component-count
+question this vignette defers, including the annealed path that discovers a
+count rather than being told one.
+
+*One mixture, many methods* shows what a single fitted mixture replaces
+once the regime question is settled.
+
+*Mapping the optima of an objective* points regime (iii) at a function that
+is not a density at all: an objective read as a Gibbs measure, so that the
+fitted mixture returns every basin of a multimodal landscape at once rather
+than the one a local optimiser happened to reach.
+
+## References
+
+Hoek, J. van der and Elliott, R. J. (2024). *Mixtures of multivariate
+Gaussians.* Stochastic Analysis and Applications.
+<https://doi.org/10.1080/07362994.2024.2372605>.
+
+## Reproduce
+
+The target carries `seed = 1L`, both regime-(iii) fits are seeded with
+`seed = 1L`, and the quadrature oracle is deterministic, so every number
+above is reproducible from the package alone.
+
+```{r session-info}
+sessionInfo()
+```

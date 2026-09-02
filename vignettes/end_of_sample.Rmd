@@ -7,118 +7,450 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
+<!-- Render time: ~13 s under rmarkdown::render() with ggplot2 installed,
+     dominated by the two size studies; macOS arm64 (Apple silicon),
+     R 4.5.2, one core. -->
+
+```{r setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  fig.width = 6,
-  fig.height = 4.2,
+  fig.width = 7,
+  fig.height = 4.5,
+  dpi = 150,
   out.width = "100%"
 )
-set.seed(20260621)
 ```
 
-```{r setup}
+```{r library}
 library(proxymix)
 ```
 
-# The end-of-sample question
+```{r engines}
+has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
+```
 
-A model is fitted to a series and one more observation arrives. Is it
-consistent with the model, or has something just changed? When the suspect
-window is tiny -- a single point, or a handful -- the usual structural-break
-tests (Chow, sup-Wald) are undefined, because the parameters of the post-break
-regime cannot be estimated from so few observations. `gmm_eos_test()` answers
-the question in exactly this regime by scoring the last `m` one-step filter
-innovations and calibrating the score, following Andrews (2003).
+## Why
 
-# The statistic
+An analyst monitoring a series has a model fitted to everything up to
+yesterday, and this morning one more observation arrived. The question is
+narrow and awkward: *one more observation has just arrived -- is it
+consistent with the model I fitted, or has something just changed?* It is
+awkward because the suspect window is tiny. With a single new point, or a
+handful, the usual structural-break tests (Chow, sup-Wald) are undefined:
+the parameters of the post-break regime cannot be estimated from so few
+observations. [`gmm_eos_test()`] answers the question in exactly this
+regime, following Andrews (2003).
 
-Run the Gaussian-sum filter implied by the operator calculus over the series.
-At each step it returns a one-step predictive mean and an innovation covariance
-$S_t$, so the standardised innovation
+## What
+
+[`gmm_eos_test()`] runs the Gaussian-sum filter implied by the operator
+calculus over the series, scores the last `m` one-step filter innovations,
+and calibrates that score. It takes the model exactly as
+[`gmm_filter()`] does: a single-component [`gmm()`] prior, a `dynamics`
+list carrying the state-transition and process-noise matrices, and a
+`measurement` list carrying the observation and observation-noise matrices.
+
+The statistic is built from the filter's own output. At each step the filter
+returns a one-step predictive mean and an innovation covariance $S_t$, so
+the standardised innovation
 $z_t = S_t^{-1/2}(y_t - C\hat{x}_{t\mid t-1})$ is standard normal under a
-correct, stable, linear-Gaussian model. The statistic sums the last `m` squared
-standardised innovations,
+correct, stable, linear-Gaussian model. The statistic sums the last `m`
+squared standardised innovations,
 $$ \mathrm{EoS}_m = \sum_{t = n-m+1}^{n} z_t^{\top} z_t, $$
-which a break inflates. Two calibrations are offered. `method = "chisq"` refers
-the statistic to a $\chi^2$ distribution on `m` times the observation dimension
-degrees of freedom, exact when the innovations are Gaussian. `method =
-"andrews"` is the distribution-free subsampling test of Andrews (2003): the
-statistic's rank among the in-sample overlapping `m`-blocks of the same
-innovations gives the p-value, which stays calibrated when the innovations are
-not Gaussian.
+which a break inflates.
 
-Two finite-sample cautions apply. The chi-square calibration is exact when the
-model is *given*; with parameters estimated on a short series it over-rejects
-(in our validation study, size 0.068 at $n = 30$ against a nominal 0.05,
-settling to 0.044 by $n = 120$), so prefer `method = "andrews"` when the model
-is estimated on little data. The subsampling calibration has a p-value floor of
-$1 / (n - 2m + 2)$: it can reject at level 0.05 only when $n > 2m + 18$, so
-very short series cannot reach significance by construction.
+Two calibrations are offered. `method = "chisq"` refers the statistic to a
+$\chi^2$ distribution on `m` times the observation dimension degrees of
+freedom, exact when the innovations are Gaussian and the model is given.
+`method = "andrews"` is the distribution-free subsampling test of Andrews
+(2003): the statistic's rank among the in-sample overlapping `m`-blocks of
+the same innovations gives the p-value, which stays calibrated when the
+innovations are not Gaussian. The returned object also carries those
+in-sample block statistics, so the calibration can be inspected directly.
 
-# A worked example
+## Do
 
-Take a local-level model, a random walk observed with noise, and simulate a
-stable series from it.
+```{r seed}
+set.seed(20260621)
+```
+
+### The model and a stable series
+
+A local-level model: a random walk observed with noise.
 
 ```{r model}
-prior       <- gmm(weights = 1, means = list(0), covariances = list(matrix(10)))
-dynamics    <- list(A = matrix(1), Q = matrix(0.04))   # the state random walk
-measurement <- list(C = matrix(1), R = matrix(1))      # the noisy observation
+prior <- gmm(weights = 1, means = list(0), covariances = list(matrix(10)))
+dynamics <- list(A = matrix(1), Q = matrix(0.04))  # the state random walk
+measurement <- list(C = matrix(1), R = matrix(1))  # the noisy observation
 
-n <- 120
-level <- cumsum(c(0, rnorm(n - 1, 0, sqrt(0.04))))
+n <- 120L
+level <- cumsum(c(0, rnorm(n - 1L, 0, sqrt(0.04))))
 y_stable <- level + rnorm(n, 0, 1)
 ```
 
-A stable series is not flagged: the last observation sits where the filter
-expects it.
+### The same series with a broken final observation
 
-```{r stable}
-gmm_eos_test(prior, dynamics, measurement, y_stable, m = 1L, method = "andrews")
-```
-
-Now copy the series and push the final observation away by five standard
+Copy the series and push the final observation away by five standard
 deviations of the observation noise.
 
 ```{r break}
 y_break <- y_stable
 y_break[n] <- y_break[n] + 5
-gmm_eos_test(prior, dynamics, measurement, y_break, m = 1L, method = "andrews")
 ```
 
-The break inflates the statistic and the test rejects. The picture shows why:
-the broken point falls far outside the band the filter predicts for it.
-
-```{r figure, fig.cap = "The pushed final observation (red point) sits far outside the band the filtered state predicts for it, which is what triggers the test's rejection.", fig.alt = "A local-level series with its final observation pushed five standard deviations away; the broken point sits far outside the path of the underlying state."}
-plot(y_stable, type = "l", col = "grey60", xlab = "time", ylab = "observation",
-     main = "End-of-sample break in the last observation")
-lines(level, col = "#1b7837", lwd = 2)
-points(n, y_break[n], pch = 19, col = "#b2182b")
-legend("topleft", c("observed (stable)", "underlying state", "broken final point"),
-       col = c("grey60", "#1b7837", "#b2182b"), lwd = c(1, 2, NA),
-       pch = c(NA, NA, 19), bty = "n")
+```{r tests}
+test_stable <- gmm_eos_test(
+  prior, dynamics, measurement, y_stable, m = 1L, method = "andrews"
+)
+test_break <- gmm_eos_test(
+  prior, dynamics, measurement, y_break, m = 1L, method = "andrews"
+)
 ```
 
-# Robustness to non-Gaussian noise
+The returned object is a list whose `in_sample_blocks` element holds one
+number per in-sample block, so the six scalar fields are tabulated rather
+than printed.
 
-The two calibrations agree when the innovations are Gaussian. They part company
-when the observation noise is heavy-tailed: the parametric $\chi^2$ reference is
-then mis-specified, while the subsampling test, which judges the end-of-sample
-block only against the other blocks of the same series, keeps its size. The
-`method = "andrews"` option is the one to reach for when normality is in doubt.
+```{r tests-kable, echo = FALSE}
+eos_row <- function(x) {
+  c(
+    round(x$statistic, 3L), round(x$p_value, 4L), x$reject,
+    x$method, x$m, x$df
+  )
+}
+knitr::kable(
+  data.frame(
+    field = c("statistic", "p-value", "reject at 0.05", "calibration",
+              "window m", "degrees of freedom"),
+    stable = eos_row(test_stable),
+    broken = eos_row(test_break)
+  ),
+  col.names = c("Field", "Stable series", "Broken final point"),
+  caption = paste(
+    "The end-of-sample test on the same series before and after the",
+    "final observation is pushed five observation-noise standard",
+    "deviations away."
+  )
+)
+```
 
-# Scope
+### What the filter expected
+
+The filter's own path shows why the broken point is surprising. The band
+below is the filtered state and two of its standard deviations, taken from
+`gmm_filter()` on the stable series, with the broken final observation
+marked against it.
+
+```{r filter-path}
+filtered <- gmm_filter(
+  prior, dynamics, measurement, y_stable, ridge_eps = 0
+)
+path <- filtered$summary
+break_gap <- abs(y_break[n] - path$mean_1[n]) / path$sd_1[n]
+```
+
+```{r fig-series, eval = has_ggplot2, echo = has_ggplot2, fig.height = 4, fig.cap = "The local-level series, the latent state that generated it, and the filtered state with two standard deviations either side. The broken final observation sits far outside the band the filter had built from the stable history, which is what inflates the statistic.", fig.alt = "A time series of noisy observations in grey with the latent state and the filtered state overlaid and a shaded uncertainty band, and a single isolated point at the right-hand end sitting well above the band."}
+series_df <- data.frame(
+  t = seq_len(n),
+  observed = y_stable,
+  truth = level,
+  filtered = path$mean_1,
+  lo = path$mean_1 - 2 * path$sd_1,
+  hi = path$mean_1 + 2 * path$sd_1
+)
+break_df <- data.frame(t = n, y = y_break[n])
+ggplot2::ggplot(series_df, ggplot2::aes(t)) +
+  ggplot2::geom_ribbon(
+    ggplot2::aes(ymin = lo, ymax = hi), fill = "#0072B2", alpha = 0.18
+  ) +
+  ggplot2::geom_point(
+    ggplot2::aes(y = observed, colour = "observed (stable)"),
+    size = 1.1, alpha = 0.7
+  ) +
+  ggplot2::geom_line(
+    ggplot2::aes(y = truth, colour = "latent state"), linewidth = 0.8
+  ) +
+  ggplot2::geom_line(
+    ggplot2::aes(y = filtered, colour = "filtered state"), linewidth = 0.8
+  ) +
+  ggplot2::geom_point(
+    data = break_df, ggplot2::aes(t, y, colour = "broken final point"),
+    size = 2.6
+  ) +
+  ggplot2::scale_colour_manual(
+    name = NULL,
+    values = c(
+      "observed (stable)" = "grey60",
+      "latent state" = "#009E73",
+      "filtered state" = "#0072B2",
+      "broken final point" = "#D55E00"
+    )
+  ) +
+  ggplot2::labs(
+    x = "time step", y = "observation",
+    title = "An end-of-sample break in the last observation"
+  ) +
+  ggplot2::theme_minimal(base_size = 11) +
+  ggplot2::theme(legend.position = "top")
+```
+
+```{r fig-series-skip, eval = !has_ggplot2, echo = FALSE, results = "asis"}
+cat("ggplot2 is not installed on this build, so the filtered-series figure",
+    "is skipped.\n")
+```
+
+### How the subsampling p-value is reached
+
+The subsampling calibration compares the end-of-sample statistic with the
+in-sample blocks of the same series, so the p-value can be read straight off
+the empirical distribution of those blocks.
+
+```{r fig-blocks, eval = has_ggplot2, echo = has_ggplot2, fig.height = 4, fig.cap = "The empirical distribution of the in-sample block statistics for each series, with the end-of-sample statistic marked. The subsampling p-value is the fraction of blocks lying at or beyond the rule, so the stable statistic sits inside the bulk while the broken one clears every block in the series.", fig.alt = "Two panels, each showing a rising step function of the cumulative share of in-sample block statistics against a logarithmic axis, annotated with a vertical rule; in the left panel the rule falls inside the curve, in the right panel it lies far beyond its right-hand end."}
+blocks_df <- rbind(
+  data.frame(
+    block = test_stable$in_sample_blocks, series = "stable series"
+  ),
+  data.frame(
+    block = test_break$in_sample_blocks, series = "broken final point"
+  )
+)
+blocks_df$series <- factor(
+  blocks_df$series, levels = c("stable series", "broken final point")
+)
+rule_df <- data.frame(
+  series = factor(
+    c("stable series", "broken final point"),
+    levels = c("stable series", "broken final point")
+  ),
+  statistic = c(test_stable$statistic, test_break$statistic)
+)
+ggplot2::ggplot(blocks_df, ggplot2::aes(block)) +
+  ggplot2::stat_ecdf(geom = "step", linewidth = 0.8, colour = "#0072B2") +
+  ggplot2::geom_vline(
+    data = rule_df, ggplot2::aes(xintercept = statistic),
+    colour = "#D55E00", linetype = "dashed", linewidth = 0.8
+  ) +
+  ggplot2::facet_wrap(~ series) +
+  ggplot2::scale_x_log10() +
+  ggplot2::labs(
+    x = "in-sample block statistic (log scale)",
+    y = "cumulative share of blocks",
+    title = "The end-of-sample statistic against its own in-sample blocks"
+  ) +
+  ggplot2::theme_minimal(base_size = 11)
+```
+
+```{r fig-blocks-skip, eval = !has_ggplot2, echo = FALSE, results = "asis"}
+cat("ggplot2 is not installed on this build, so the block-calibration",
+    "figure is skipped.\n")
+```
+
+### What size the two calibrations actually hold
+
+The chi-square calibration is exact when the model is given. Applied with a
+diffuse prior on a short series it need not be, so the size is worth
+measuring rather than assuming. The study below simulates from the same
+local-level model under the null and records the rejection rate at a nominal
+0.05, with the Monte Carlo standard error the replicate count supports.
+
+```{r size-study}
+simulate_null <- function(n_obs) {
+  lv <- cumsum(c(0, rnorm(n_obs - 1L, 0, sqrt(0.04))))
+  lv + rnorm(n_obs, 0, 1)
+}
+empirical_size <- function(n_obs, method, n_rep) {
+  p <- vapply(seq_len(n_rep), function(i1) {
+    gmm_eos_test(
+      prior, dynamics, measurement, simulate_null(n_obs),
+      m = 1L, method = method
+    )$p_value
+  }, numeric(1L))
+  size <- mean(p < 0.05)
+  c(size = size, se = sqrt(size * (1 - size) / n_rep), n_rep = n_rep)
+} # ends empirical_size, one row of the size study
+
+n_rep_short <- 250L
+n_rep_long <- 150L
+size_chisq_30 <- empirical_size(30L, "chisq", n_rep_short)
+size_chisq_120 <- empirical_size(120L, "chisq", n_rep_long)
+size_andrews_30 <- empirical_size(30L, "andrews", n_rep_short)
+
+chisq_sizes <- c(size_chisq_30[["size"]], size_chisq_120[["size"]])
+chisq_ses <- c(size_chisq_30[["se"]], size_chisq_120[["se"]])
+chisq_worst_se <- max(abs(chisq_sizes - 0.05) / chisq_ses)
+```
+
+The subsampling p-value takes only the values $(1 + k) / (2 + n - 2m)$ for
+$k = 0, 1, \ldots$, so its attainable size at a nominal level is fixed by
+that grid and can be computed exactly, without simulation.
+
+```{r attainable}
+attainable_size <- function(n_obs, m = 1L, alpha = 0.05) {
+  n_block <- n_obs - 2L * m + 1L
+  p_grid <- (1L + seq.int(0L, n_block)) / (1L + n_block)
+  mean(p_grid < alpha)
+} # ends attainable_size, the discrete ceiling on the subsampling size
+
+floor_30 <- 1 / (30L - 2L + 2L)
+floor_120 <- 1 / (120L - 2L + 2L)
+attainable_30 <- attainable_size(30L)
+attainable_120 <- attainable_size(120L)
+andrews_ses_from_ceiling <- abs(size_andrews_30[["size"]] - attainable_30) /
+  size_andrews_30[["se"]]
+```
+
+```{r size-kable, echo = FALSE}
+knitr::kable(
+  data.frame(
+    calibration = c(
+      "chi-square", "chi-square", "subsampling", "subsampling",
+      "subsampling"
+    ),
+    series_length = c("30", "120", "30", "30", "120"),
+    quantity = c(
+      "simulated size", "simulated size", "simulated size",
+      "attainable size (exact)", "attainable size (exact)"
+    ),
+    value = round(
+      c(
+        size_chisq_30[["size"]], size_chisq_120[["size"]],
+        size_andrews_30[["size"]], attainable_30, attainable_120
+      ), 4L
+    ),
+    std_error = c(
+      round(size_chisq_30[["se"]], 4L), round(size_chisq_120[["se"]], 4L),
+      round(size_andrews_30[["se"]], 4L), NA_real_, NA_real_
+    ),
+    replicates = c(
+      n_rep_short, n_rep_long, n_rep_short, NA_integer_, NA_integer_
+    )
+  ),
+  col.names = c("Calibration", "n", "Quantity", "Value", "Std. error",
+                "Replicates"),
+  caption = paste(
+    "Rejection rate against a nominal 0.05 under the null, simulated",
+    "where the calibration is continuous and computed exactly where the",
+    "p-value grid is discrete."
+  )
+)
+```
+
+## Read
+
+On the stable series the statistic is
+`r round(test_stable$statistic, 2L)` with a subsampling p-value of
+`r round(test_stable$p_value, 3L)`, and the test does not reject: the last
+observation sits where the filter expects it. Pushing that same observation
+five observation-noise standard deviations away lifts the statistic to
+`r round(test_break$statistic, 1L)`, a p-value of
+`r round(test_break$p_value, 4L)`, and a rejection. That is the answer to
+the opening question in the form the analyst needs it: on this series, the
+arriving observation is flagged as inconsistent with the fitted model, and
+the same machinery leaves the unbroken series alone.
+
+The first figure shows why. The broken point sits
+`r round(break_gap, 1L)` filtered standard deviations from the state the
+filter had reconstructed from the preceding
+`r n - 1L` observations, well outside the two-standard-deviation band drawn
+around it. The second figure shows how that surprise becomes a p-value: for
+the stable series the statistic falls inside the bulk of the in-sample
+blocks, so a substantial share of blocks lie beyond it, while for the broken
+series it clears every one of the
+`r length(test_break$in_sample_blocks)` blocks, which drives the p-value to
+its floor.
+
+That floor is the first thing the size table makes concrete. At $n = 120$
+and $m = 1$ the smallest attainable p-value is
+`r round(floor_120, 4L)`, and the broken series attains it exactly. On a
+much shorter series the floor bites: at $n = 30$ the smallest attainable
+p-value is `r round(floor_30, 3L)`, so the test can reject at the 0.05 level
+only when the end-of-sample block is the single largest in the series. The
+consequence is that the subsampling test cannot hold a size of 0.05 at these
+lengths even in principle. Its attainable size is
+`r round(attainable_30, 4L)` at $n = 30$ and `r round(attainable_120, 4L)`
+at $n = 120$, and the simulated size at $n = 30$,
+`r round(size_andrews_30[["size"]], 3L)` over
+`r n_rep_short` replicates with a standard error of
+`r round(size_andrews_30[["se"]], 3L)`, sits
+`r round(andrews_ses_from_ceiling, 1L)` standard errors from that exact
+ceiling. The subsampling calibration is therefore conservative by
+construction on short series, not by accident.
+
+The chi-square calibration is continuous and carries no such floor. Its
+simulated size is `r round(size_chisq_30[["size"]], 3L)` at $n = 30$
+(standard error `r round(size_chisq_30[["se"]], 3L)`, `r n_rep_short`
+replicates) and `r round(size_chisq_120[["size"]], 3L)` at $n = 120$
+(standard error `r round(size_chisq_120[["se"]], 3L)`, `r n_rep_long`
+replicates). Both sit within about
+`r round(chisq_worst_se, 1L)`
+standard errors of the nominal 0.05, so at these replicate counts the study
+resolves no departure from nominal for either length. What it does resolve
+is the contrast between the two calibrations: the chi-square test spends its
+nominal level, and the subsampling test cannot.
+
+## Limits
+
+The size study above is small on purpose, and its replicate counts bound
+what it can settle. A rejection rate estimated from `r n_rep_short`
+replicates carries a standard error near
+`r round(sqrt(0.05 * 0.95 / n_rep_short), 3L)`, so a departure from nominal
+of one or two percentage points is beyond its resolution. The study
+establishes the order of the size and the qualitative contrast between the
+two calibrations; a claim about the exact size at a given series length
+needs a study several orders larger than a vignette can carry, and the
+figures here are not that study.
+
+The two calibrations agree when the innovations are Gaussian. They part
+company when the observation noise is heavy-tailed: the parametric $\chi^2$
+reference is then mis-specified, while the subsampling test, which judges
+the end-of-sample block only against the other blocks of the same series,
+keeps its size. This vignette simulates Gaussian noise throughout and so
+does not exercise that divergence; `method = "andrews"` is the option to
+reach for when normality is in doubt, at the cost of the discreteness
+documented above. Which calibration is preferable therefore depends on
+which failure the analyst minds more: a mis-specified reference
+distribution, or a test that cannot spend its nominal level.
 
 The test is defined for a fitted linear-Gaussian state-space model, supplied
-exactly as for `gmm_filter()`: a single-component `gmm` prior, a `dynamics` list
-with the state-transition and process-noise matrices, and a `measurement` list
-with the observation and observation-noise matrices. The small-`m` regime
-(`m = 1, 2, 3`) is the point of the test, and `m` must be smaller than the
-series length.
+exactly as for `gmm_filter()`: a single-component `gmm` prior, a `dynamics`
+list with the state-transition and process-noise matrices, and a
+`measurement` list with the observation and observation-noise matrices.
+Gaussian-sum process or measurement noise is rejected rather than
+approximated, because neither calibration is defined for it. The small-`m`
+regime (`m = 1, 2, 3`) is the point of the test, and `m` must be smaller
+than the series length.
 
-# Reference
+One further caution belongs to the model rather than the test. The band in
+the first figure is the filtered state and its standard deviation, which is
+what `gmm_filter()` returns; the statistic is built from the one-step
+*predictive* innovation, a slightly wider quantity. The figure therefore
+shows the geometry of the surprise, not the exact scale the test divides by.
+A model whose noise covariances are themselves estimated on the same short
+series will understate both, and the test then inherits that optimism: it is
+a test of the last observation against the model, not a test of the model.
+
+## What to read next
+
+*The closed-form operator calculus on a mixture* builds the predict-and-update
+recursion this test runs internally, and covers `gmm_filter()` and the
+mixture reduction that bounds it. *Reading the entropy of a fitted mixture*
+covers the diagnostics that describe a fitted mixture once it is in hand.
+*Fitting a proxy to a density you cannot sample* is the entry point to the
+fitting machinery if the state-space model here is your first contact with
+the package.
+
+## References
 
 Andrews, D. W. K. (2003). End-of-Sample Instability Tests. *Econometrica*,
 71(6), 1661--1694.
+
+## Reproduce
+
+The vignette sets `set.seed(20260621)` once, before the series is
+simulated, and every later result -- the two tests, the filter path and both
+size studies -- is a deterministic function of that stream.
+
+```{r session-info}
+sessionInfo()
+```

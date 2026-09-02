@@ -7,144 +7,349 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
+<!-- Render time: ~18 s under rmarkdown::render() with ggplot2 installed;
+     macOS arm64 (Apple silicon), R 4.5.2, one core. The sensitivity sweep
+     is the cost: five slope values at m = 10 completions each. -->
+
+```{r setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  fig.width = 6,
-  fig.height = 4.2,
+  fig.width = 7,
+  fig.height = 4.5,
+  dpi = 150,
   out.width = "100%"
 )
-set.seed(20260622)
 ```
 
-```{r setup}
+```{r library}
 library(proxymix)
 ```
 
-# Imputation is conditioning on a gate
-
-In proxymix you do not impute a missing entry so much as condition the fitted
-mixture on what its being missing tells you. For an entry missing at random that
-is nothing beyond the other coordinates, so the imputation law is the plain
-mixture conditional. Two common situations carry more information than that. An
-entry can be missing because it fell in a known interval -- below a detection
-limit, above a ceiling -- which is *censoring*. Or it can be missing with a
-probability that depends on its own unobserved value, larger values dropping out
-more often, which is *missing not at random*. Each is a gate $\delta(y)$
-multiplying the mixture conditional before the value is drawn.
-
-```{r gate-table, echo = FALSE}
-knitr::kable(data.frame(
-  Mechanism = c("missing at random", "censored", "missing not at random"),
-  Gate = c("constant", "indicator of an interval", "selection probability"),
-  Constructor = c("mar()", "censored()", "mnar()")), align = "lll")
+```{r engines}
+has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
 ```
 
-# A value-dependent mechanism biases the ordinary fit
+## Why
 
-Consider a two-component mixture where the second coordinate `y` is missing with a
-probability that grows with `y` itself, so the larger values are
-under-represented among the observed.
+An analyst has a column where the large values are the ones that went
+missing: an assay that saturates, a yield that was never recorded on the
+paddocks that did badly, a follow-up that the worst cases did not attend.
+The question is: *the bigger values are exactly the ones I did not get, so
+the mean I am about to report is too small -- by how much, and how do I put
+a defensible number on that when the data I would need to check is the data
+I do not have?*
+
+This vignette answers it on a synthetic toy where the deleted values are
+retained, so every estimate can be scored against the complete-data truth
+it was hiding.
+
+## What
+
+In proxymix you do not impute a missing entry so much as condition the
+fitted mixture on what its being missing tells you. For an entry missing at
+random that is nothing beyond the other coordinates, so the imputation law
+is the plain mixture conditional. Two common situations carry more
+information than that. An entry can be missing because it fell in a known
+interval -- below a detection limit, above a ceiling -- which is
+*censoring*. Or it can be missing with a probability that depends on its own
+unobserved value, larger values dropping out more often, which is *missing
+not at random*. Each is a gate $\delta(y)$ multiplying the mixture
+conditional before the value is drawn.
+
+[`mar()`], [`censored()`] and [`mnar()`] build those three gates, and
+[`gmm_impute()`] takes one through its `mechanism` argument.
+[`proxy_pool()`] combines an estimand across the completions.
+[`proxy_mnar_sensitivity()`] is the verb for the case that is not
+identified: it sweeps the assumed selection slope and reports the pooled
+estimate with its interval at each value, so the reader sees the whole
+curve rather than one number that hides its own assumption.
+
+```{r gate-table, echo = FALSE}
+knitr::kable(
+  data.frame(
+    Mechanism = c("missing at random", "censored",
+                  "missing not at random"),
+    Gate = c("constant", "indicator of an interval",
+             "selection probability"),
+    Constructor = c("mar()", "censored()", "mnar()"),
+    Identified = c("yes, given the model", "yes, the bound is known",
+                   "no, the slope is assumed"),
+    stringsAsFactors = FALSE
+  ),
+  align = "llll",
+  caption = paste0(
+    "The three missingness gates, the shape each one multiplies into the ",
+    "mixture conditional, and whether the data can identify it."
+  )
+)
+```
+
+## Do
+
+### A value-dependent mechanism biases the ordinary fit
+
+A synthetic two-component mixture in which the second coordinate `y` goes
+missing with a probability that grows with `y` itself, so the larger values
+are under-represented among the observed. The complete data is generated
+first and kept, so the truth is available to score against.
 
 ```{r dgp}
-n <- 1200
+set.seed(20260622)
+n <- 600L
 comp <- sample(1:2, n, replace = TRUE)
 mu <- rbind(c(0, 0), c(1.5, 0.5))
-L <- chol(matrix(c(1, 0.6, 0.6, 1), 2))
-Z <- matrix(rnorm(2 * n), n, 2) %*% L + mu[comp, ]
-colnames(Z) <- c("x1", "y")
-truth <- mean(Z[, 2])                                  # the complete-data mean
+chol_r <- chol(matrix(c(1, 0.6, 0.6, 1), 2L))
+z_full <- matrix(rnorm(2 * n), n, 2L) %*% chol_r + mu[comp, ]
+colnames(z_full) <- c("x1", "y")
+truth <- mean(z_full[, 2L])
 
-miss <- runif(n) < plogis(-0.5 + 0.7 * Z[, 2])         # larger y, more missing
-dat <- Z
+beta_true <- 0.7
+miss <- runif(n) < plogis(-0.5 + beta_true * z_full[, 2L])
+dat <- z_full
 dat[miss, "y"] <- NA
 ```
 
-An imputer that assumes the data are missing at random fills the gap from the
-conditional of the observed, which is itself short of the large values, so it
-stays biased. Supplying the selection slope to `mnar()` lets the fit account for
-the mechanism and recover the mean.
+An imputer that assumes the data are missing at random fills the gap from
+the conditional of the observed, which is itself short of the large values,
+so it stays biased. Supplying the selection slope to `mnar()` lets the fit
+account for the mechanism. Both fits use `m` = 10 completions, which is
+enough to separate the two mechanisms at this sample size and keeps the
+vignette fast.
 
 ```{r recover}
-mar_fit  <- gmm_impute(dat, N = 2, m = 20, mechanism = mar(), seed = 1)
-mnar_fit <- gmm_impute(dat, N = 2, m = 20, mechanism = mnar("y", beta = 0.7), seed = 1)
-
-c(truth        = truth,
-  available    = mean(dat[!miss, "y"]),
-  mar          = proxy_pool(mar_fit, "y")$estimate,
-  mnar         = proxy_pool(mnar_fit, "y")$estimate)
+m_draws <- 10L
+mar_fit <- gmm_impute(dat, N = 2L, m = m_draws, mechanism = mar(),
+                      seed = 1L)
+mnar_fit <- gmm_impute(dat, N = 2L, m = m_draws,
+                       mechanism = mnar("y", beta = beta_true), seed = 1L)
+mar_est <- proxy_pool(mar_fit, "y")$estimate
+mnar_est <- proxy_pool(mnar_fit, "y")$estimate
 ```
 
-The slope `beta` is the strength of the dependence on the log-odds scale, and
-`beta = 0` is the missing-at-random case. The intercept is not supplied -- it is
-calibrated to the observed fraction missing.
+Analytic pooling is defined for the plain conditional but not for a gated
+one, so the gated fits fall back to Rubin's rules and say so; the returned
+`method` attribute records which was used.
 
-# The slope is a sensitivity parameter
+```{r recover-table, echo = FALSE}
+rec_tbl <- data.frame(
+  estimator = c("complete-data truth", "available cases only",
+                "missing at random", "missing not at random"),
+  estimate = c(truth, mean(dat[!miss, "y"]), mar_est, mnar_est),
+  stringsAsFactors = FALSE
+)
+rec_tbl$bias <- rec_tbl$estimate - truth
+knitr::kable(
+  rec_tbl, digits = 3L,
+  col.names = c("Estimator of the mean of y", "Estimate", "Bias"),
+  caption = paste0(
+    "The mean of y recovered four ways, against the complete-data truth ",
+    "the deletion hid. ", sum(miss), " of ", n, " values are missing."
+  )
+)
+```
 
-A missing-not-at-random departure cannot be identified from the observed data, so
-a single estimate would overstate what the data support. The appropriate summary is
-a curve: `proxy_mnar_sensitivity()` sweeps the slope and reports the pooled mean
-with its interval at each value, and the analyst reads off where a conclusion
-would change.
+The slope `beta` is the strength of the dependence on the log-odds scale,
+and `beta = 0` is the missing-at-random case. The intercept is not supplied:
+it is calibrated to the observed fraction missing.
+
+### The slope is a sensitivity parameter
+
+A missing-not-at-random departure cannot be identified from the observed
+data, so a single estimate would overstate what the data support. The
+appropriate summary is a curve. `proxy_mnar_sensitivity()` sweeps the slope
+and reports the pooled mean with its interval at each value, and the analyst
+reads off where a conclusion would change. Five slope values from 0 to 1.2
+are enough to show the shape.
 
 ```{r sweep}
-sweep <- proxy_mnar_sensitivity(dat, "y", beta_grid = seq(0, 1.2, by = 0.2),
-                                N = 2, m = 20, seed = 1)
-sweep[, c("beta", "estimate", "conf.low", "conf.high")]
+sweep <- proxy_mnar_sensitivity(dat, "y",
+                                beta_grid = seq(0, 1.2, by = 0.3),
+                                N = 2L, m = m_draws, seed = 1L)
+covers <- sweep$conf.low <= truth & sweep$conf.high >= truth
+beta_first <- sweep$beta[min(which(covers))]
 ```
 
-```{r tornado, echo = FALSE, fig.cap = "The pooled mean rises with the assumed sensitivity slope and crosses the complete-data truth (dashed line) near the slope that actually generated the data.", fig.alt = "Pooled mean of y against the assumed sensitivity slope, with confidence bands and the complete-data truth marked."}
-op <- par(mar = c(4.2, 4.2, 1, 1))
-plot(sweep$beta, sweep$estimate, type = "n",
-     ylim = range(sweep$conf.low, sweep$conf.high, truth),
-     xlab = expression("sensitivity slope " * beta),
-     ylab = "pooled mean of y")
-polygon(c(sweep$beta, rev(sweep$beta)),
-        c(sweep$conf.low, rev(sweep$conf.high)),
-        col = "grey85", border = NA)
-lines(sweep$beta, sweep$estimate, lwd = 2)
-points(sweep$beta, sweep$estimate, pch = 19)
-abline(h = truth, lty = 2)
-text(min(sweep$beta), truth, "truth", pos = 3, cex = 0.8)
-par(op)
+```{r sweep-table, echo = FALSE}
+knitr::kable(
+  as.data.frame(sweep)[, c("beta", "estimate", "conf.low", "conf.high")],
+  digits = 3L,
+  col.names = c("Assumed slope", "Pooled mean", "CI lower", "CI upper"),
+  caption = paste0(
+    "The pooled mean of y at each assumed selection slope. The ",
+    "complete-data truth is ", round(truth, 3), "."
+  )
+)
 ```
 
-The estimate rises monotonically with the assumed slope and crosses the
-complete-data truth near the slope that generated the data, which is the value
-proposition of a sensitivity analysis -- without knowing the slope, sweeping it
-brackets the truth.
+```{r fig-tornado, eval = has_ggplot2, echo = has_ggplot2, fig.cap = "The pooled mean of y rises with the assumed sensitivity slope, and its interval reaches the complete-data truth near the slope that actually generated the data. Sweeping the slope brackets an answer the observed data cannot identify on its own.", fig.alt = "Pooled mean of y against the assumed sensitivity slope, with a shaded confidence band, a marked point at each swept value, a dashed horizontal line at the complete-data truth, and a vertical rule at the generating slope."}
+sweep_df <- as.data.frame(sweep)
+ggplot2::ggplot(sweep_df, ggplot2::aes(beta, estimate)) +
+  ggplot2::geom_ribbon(
+    ggplot2::aes(ymin = conf.low, ymax = conf.high),
+    fill = "#56B4E9", alpha = 0.3
+  ) +
+  ggplot2::geom_line(colour = "#0072B2", linewidth = 0.9) +
+  ggplot2::geom_point(colour = "#0072B2", size = 2) +
+  ggplot2::geom_hline(yintercept = truth, linetype = "dashed",
+                      colour = "#000000") +
+  ggplot2::geom_vline(xintercept = beta_true, linetype = "dotted",
+                      colour = "#D55E00") +
+  ggplot2::annotate("text", x = min(sweep_df$beta), y = truth,
+                    label = "complete-data truth", hjust = 0, vjust = -0.6,
+                    size = 3.2) +
+  ggplot2::annotate("text", x = beta_true, y = min(sweep_df$conf.low),
+                    label = "generating slope", hjust = 1.05, vjust = 0,
+                    size = 3.2, colour = "#D55E00") +
+  ggplot2::labs(
+    x = "assumed selection slope (log-odds per unit of y)",
+    y = "pooled mean of y",
+    title = "A sensitivity curve, not a single estimate"
+  ) +
+  ggplot2::theme_minimal(base_size = 11)
+```
 
-# Censoring is the exact, identifiable case
+```{r fig-tornado-skip, eval = !has_ggplot2, echo = FALSE, results = "asis"}
+cat("ggplot2 is not installed on this build, so the sensitivity-curve",
+    "figure is skipped; the swept values are in the table above.\n")
+```
 
-When the reason for missingness is a known bound, the mechanism is identified and
-there is no sensitivity parameter. A detection limit that hides values of `y`
-below a threshold is `censored("y", upper = threshold)`, and proxymix draws from
-the mixture conditional truncated to the censored interval rather than
-substituting a constant such as half the limit.
+### Censoring is the exact, identifiable case
+
+When the reason for missingness is a known bound, the mechanism is
+identified and there is no sensitivity parameter. A detection limit that
+hides values of `y` below a threshold is `censored("y", upper = threshold)`,
+and proxymix draws from the mixture conditional truncated to the censored
+interval rather than substituting a constant such as half the limit.
 
 ```{r censor}
 thr <- 0.3
-cmiss <- Z[, 2] < thr
-cdat <- Z
+cmiss <- z_full[, 2L] < thr
+cdat <- z_full
 cdat[cmiss, "y"] <- NA
-
-cfit <- gmm_impute(cdat, N = 2, m = 20, mechanism = censored("y", upper = thr), seed = 1)
-c(truth      = mean(Z[, 2]),
-  available  = mean(cdat[!cmiss, "y"]),
-  half_limit = mean(ifelse(cmiss, thr / 2, Z[, 2])),
-  proxymix   = proxy_pool(cfit, "y")$estimate)
+cfit <- gmm_impute(cdat, N = 2L, m = m_draws,
+                   mechanism = censored("y", upper = thr), seed = 1L)
+cens_est <- proxy_pool(cfit, "y")$estimate
 ```
 
-# Scope and references
+```{r censor-table, echo = FALSE}
+cens_tbl <- data.frame(
+  estimator = c("complete-data truth", "available cases only",
+                "half the detection limit", "proxymix, truncated draw"),
+  estimate = c(truth, mean(cdat[!cmiss, "y"]),
+               mean(ifelse(cmiss, thr / 2, z_full[, 2L])), cens_est),
+  stringsAsFactors = FALSE
+)
+cens_tbl$bias <- cens_tbl$estimate - truth
+knitr::kable(
+  cens_tbl, digits = 3L,
+  col.names = c("Estimator of the mean of y", "Estimate", "Bias"),
+  caption = paste0(
+    "The mean of y under a detection limit at ", thr, ", which hides ",
+    sum(cmiss), " of ", n, " values."
+  )
+)
+```
+
+## Read
+
+`r sum(miss)` of the `r n` values of `y` went missing, and because the
+larger ones dropped out preferentially the available cases give
+`r round(mean(dat[!miss, "y"]), 3)` against a complete-data truth of
+`r round(truth, 3)`, understating it by
+`r round(truth - mean(dat[!miss, "y"]), 3)`. Assuming missingness at random
+recovers only part of that: the pooled mean is `r round(mar_est, 3)`, still
+`r round(truth - mar_est, 3)` low, because the conditional it imputes from
+is itself built on the shortened observed values. Supplying the generating
+slope to `mnar()` brings the pooled mean to `r round(mnar_est, 3)`, within
+`r round(abs(mnar_est - truth), 3)` of the truth. That is the answer to the
+first half of the opening question: the bias is real, it is about
+`r round(truth - mean(dat[!miss, "y"]), 1)` on this scale, and assuming it
+away does not remove it.
+
+The second half is the sensitivity curve. The pooled mean rises
+monotonically across the swept slopes, from `r round(sweep$estimate[1], 3)`
+at slope 0 to `r round(sweep$estimate[nrow(sweep)], 3)` at slope
+`r max(sweep$beta)`, and its interval first reaches the complete-data truth
+at an assumed slope of `r beta_first`, against the
+`r beta_true` that generated the data. Nothing in the observed data picks
+the slope out; sweeping it is what converts an unidentified quantity into a
+stated range, and what belongs in a report is the curve itself, with the
+reader's own view of a plausible slope applied to it.
+
+Censoring is the case where no sweep is needed. With `r sum(cmiss)` values
+hidden below a limit of `r thr`, the available cases give
+`r round(mean(cdat[!cmiss, "y"]), 3)`, overstating the truth by
+`r round(mean(cdat[!cmiss, "y"]) - truth, 3)`. The common substitution of
+half the detection limit gives `r round(mean(ifelse(cmiss, thr / 2,
+z_full[, 2L])), 3)`, still `r round(mean(ifelse(cmiss, thr / 2,
+z_full[, 2L])) - truth, 3)` high. Drawing from the mixture conditional
+truncated to the censored interval gives `r round(cens_est, 3)`, within
+`r round(abs(cens_est - truth), 3)` of the truth, because the bound is
+known and so the gate is exact rather than assumed.
+
+## Limits
 
 The interval and value-dependent gates act on a single coordinate, and a row
-missing that coordinate is assumed to have its other coordinates observed, which
-is the detection-limit or single-outcome setting. A model estimand other than a
+missing that coordinate is assumed to have its other coordinates observed,
+which is the detection-limit or single-outcome setting rather than a general
+pattern of holes across many columns. A model estimand other than a
 coordinate mean is pooled by handing the completions to `mice` through
-`as_mids()`.
+`as_mids()`, and inherits Rubin's large-sample assumptions.
+
+The sensitivity sweep prices one departure at a time: the selection
+probability is a logistic function of the missing coordinate alone, with the
+intercept calibrated to the observed missing fraction, so a mechanism that
+depends jointly on the missing value and an unobserved third variable is
+outside what the sweep brackets. The sweep is also not a test. It cannot
+tell an analyst which slope is right, because that is precisely what the
+observed data does not carry; it converts one unstated assumption into a
+displayed range, and the range is only as wide as the grid the analyst
+chose.
+
+The numbers here come from one synthetic realisation at `n` = `r n` with
+`m` = `r m_draws` completions, and would move under a different seed. What
+would change the answer most is the component count and the assumed slope:
+a mixture with too few components cannot represent the two clusters that
+make the conditional informative, and a slope far from the truth moves the
+pooled mean roughly linearly, which is what the sensitivity table shows.
+
+## What to read next
+
+*Imputing missing data with a mixture* is the companion case this vignette
+assumes away, where missingness depends only on what was observed, and it
+shows why the mixture conditional beats a single Gaussian on the shape of
+the imputations.
+
+*The closed-form operator calculus on a mixture* covers the conditioning
+step that every gate multiplies into, and what else it buys.
+
+## References
 
 The selection-model formulation follows Diggle and Kenward (1994) and the
 sensitivity-analysis posture follows Little (1993) and the missing-data
-literature it anchors. The truncated-Gaussian algebra behind the censored path is
-standard, and the closed-form moments are evaluated directly.
+literature it anchors. The truncated-Gaussian algebra behind the censored
+path is standard, and the closed-form moments are evaluated directly.
+
+* Diggle, P. and Kenward, M. G. (1994). *Informative drop-out in
+  longitudinal data analysis.* Journal of the Royal Statistical Society C
+  43(1), 49--93. <doi:10.2307/2986113>.
+* Little, R. J. A. (1993). *Pattern-mixture models for multivariate
+  incomplete data.* Journal of the American Statistical Association
+  88(421), 125--134. <doi:10.1080/01621459.1993.10594302>.
+* Rubin, D. B. (1987). *Multiple Imputation for Nonresponse in Surveys.*
+  Wiley.
+* Hoek, J. van der and Elliott, R. J. (2024). *Mixtures of multivariate
+  Gaussians.* Stochastic Analysis and Applications.
+  <doi:10.1080/07362994.2024.2372605>.
+
+## Reproduce
+
+The data-generating seed is `20260622`, set in the chunk that builds the
+toy; every call to `gmm_impute()` and `proxy_mnar_sensitivity()` is given
+`seed = 1L`, which makes the completions reproducible without disturbing the
+ambient random-number state.
+
+```{r session-info}
+sessionInfo()
+```

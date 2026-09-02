@@ -1,258 +1,422 @@
 ---
-title: "KLD-EM on three density shapes"
+title: "How well a mixture proxies four awkward shapes"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{KLD-EM on three density shapes}
+  %\VignetteIndexEntry{How well a mixture proxies four awkward shapes}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
+<!-- Render time: ~3 s under rmarkdown::render() with ggplot2 installed;
+     macOS arm64 (Apple silicon), R 4.5.2, one core. -->
+
+```{r setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  fig.width = 6,
-  fig.height = 4,
+  fig.width = 7,
+  fig.height = 4.5,
+  dpi = 150,
   out.width = "100%"
 )
-set.seed(20260513)
 ```
 
-```{r setup}
+```{r library}
 library(proxymix)
 ```
 
-This vignette demonstrates regime (iii) across target shapes. The KLD-EM regime fits a Gaussian-mixture proxy to a target whose density we can *evaluate* but cannot easily *sample from*. Existing CRAN packages for Gaussian mixtures -- `mclust`, `mixtools`, `flexmix` -- all assume i.i.d. samples are available.
+```{r engines}
+has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
+```
 
-We exercise three quite different non-Gaussian target shapes:
+## Why
 
-* the **banana** -- a Rosenbrock-style 2-D bent ridge;
-* the **donut** -- a rotationally symmetric annulus;
-* the **three-mixture** -- well-separated 2-D Gaussian components.
+Someone with a genuinely awkward target asks the question the routing table
+does not answer: *my density is nothing like a Gaussian, and I can only
+evaluate it. Where does a mixture proxy actually work, and where does it
+stop?* The regime is settled before the question is asked. What is not
+settled is whether the answer that comes back deserves to be used.
 
-For each, we
+## What
 
-1. plot the target;
-2. fit by `fit_proxymix(regime = "kld")` with a `df = 5` multivariate-t proposal;
-3. report the importance-sample effective size, the final IS-estimated KLD, and a Monte-Carlo Hellinger sanity check;
-4. overlay the proxy on the target.
+Four bundled targets stand in for four kinds of awkwardness.
+`banana_target()` is a Rosenbrock-style bent ridge, curved but simply
+connected. `donut_target()` is a rotationally symmetric annulus, whose
+modes form a continuous ring rather than a finite set of points.
+`mixture_target()` is three well-separated Gaussian components, which is
+awkward only in being multimodal. `epanechnikov_target()` is compactly
+supported: exactly zero outside a bounded interval, which no mixture of
+full-support Gaussians can reproduce.
 
-## Banana
+`fit_kld_em()` fits all four, through `fit_proxymix(regime = "kld")`. Its
+proposal argument is what the fit feeds on, and `proposal_mvt()` supplies
+the Student-t default. A target that declares a `support` causes the fit to
+select a support-matched `proposal_uniform()` instead, announced in a
+message, because a Student-t would place draws where the target's
+log-density is minus infinity.
 
-```{r banana-target, fig.cap = "Banana target."}
-banana <- banana_target()
+Three diagnostics grade the result. `ess_summary()` and the fit's own
+`ess` report how many of the importance draws are effectively carrying the
+answer. The `kld_final` diagnostic is the importance-sampled estimate of
+\(\mathrm{KL}(f \Vert g_\theta)\) at the fitted parameters, and it comes
+with a Monte Carlo standard error. `hellinger_mc()` estimates the squared
+Hellinger distance \(H^2(f, g)\) by Monte Carlo, which is bounded in
+\([0, 1]\) when both densities are normalised.
 
-grid_x <- seq(-3.5, 3.5, length.out = 120)
-G_b <- expand.grid(x1 = grid_x, x2 = grid_x)
-G_b$f <- exp(banana@log_density(as.matrix(G_b)))
+`gmm_fit_quality()` carries the refusal contract. When the importance
+sample collapses, the fit does not return a mixture that looks ordinary
+and is worthless; under `on_low_ess = "abort"` it raises a typed condition
+instead.
 
-if (requireNamespace("ggplot2", quietly = TRUE)) {
-  library(ggplot2)
-  ggplot(G_b, aes(x1, x2, z = f)) +
-    geom_contour_filled(bins = 12L) +
-    scale_fill_viridis_d(option = "mako", guide = "none") +
-    coord_equal() +
-    labs(title = "Banana target",
-         x = expression(x[1]), y = expression(x[2])) +
-    theme_minimal(base_size = 11)
+## Do
+
+### Fitting the three plane-supported shapes
+
+Each target gets a Student-t proposal wide enough to cover it, and a
+component count chosen for its shape: four along the banana's ridge, six
+around the donut's ring, three for the three-mode mixture.
+
+```{r fits}
+fit_b <- fit_proxymix(banana_target(), N = 4L, regime = "kld",
+                      proposal = proposal_mvt(n_dim = 2L,
+                                              sigma = 4 * diag(2),
+                                              df = 5),
+                      is_size = 3000L, max_iter = 50L, seed = 1L)
+fit_d <- fit_proxymix(donut_target(), N = 6L, regime = "kld",
+                      proposal = proposal_mvt(n_dim = 2L,
+                                              sigma = 9 * diag(2),
+                                              df = 5),
+                      is_size = 3500L, max_iter = 60L, seed = 1L)
+fit_m <- fit_proxymix(mixture_target(), N = 3L, regime = "kld",
+                      proposal = proposal_mvt(n_dim = 2L,
+                                              sigma = 6 * diag(2),
+                                              df = 5),
+                      is_size = 3000L, max_iter = 50L, seed = 1L)
+```
+
+```{r overlay-grid}
+shape_panel <- function(target, fit, label, lim) {
+  gx <- seq(-lim, lim, length.out = 110L)
+  base <- expand.grid(x1 = gx, x2 = gx)
+  gm <- as.matrix(base)
+  data.frame(
+    x1 = base$x1, x2 = base$x2,
+    target = exp(target@log_density(gm)),
+    proxy = dgmm(gm, fit),
+    shape = label,
+    stringsAsFactors = FALSE
+  )
 }
+overlay_df <- rbind(
+  shape_panel(banana_target(), fit_b, "banana, N = 4", 3.5),
+  shape_panel(donut_target(), fit_d, "donut, N = 6", 4.0),
+  shape_panel(mixture_target(), fit_m, "three-mixture, N = 3", 4.5)
+)
+overlay_df$shape <- factor(overlay_df$shape,
+                           levels = unique(overlay_df$shape))
 ```
 
-```{r banana-fit}
-fit_b <- fit_proxymix(banana, N = 4L, regime = "kld",
-                      proposal = is_mvt(n_dim = 2L,
-                                        sigma = 4 * diag(2),
-                                        df = 5),
-                      is_size = 3000L,
-                      max_iter = 50L,
-                      seed = 1L)
-fit_b
+```{r overlay, eval = has_ggplot2, echo = has_ggplot2, fig.height = 3.4, fig.cap = "Each target (filled contours) with its fitted proxy overlaid as dashed contours. The banana and the three-mixture are tracked closely; the donut's proxy is a ring of six ellipses approximating a continuous annulus, and the dashed contours break into lobes where the ellipses meet.", fig.alt = "Three contour panels showing the banana, donut and three-mixture densities, each overlaid with dashed contours of its Gaussian-mixture proxy."}
+ggplot2::ggplot(overlay_df, ggplot2::aes(x1, x2)) +
+  ggplot2::geom_contour_filled(ggplot2::aes(z = target), bins = 10L,
+                               alpha = 0.85) +
+  ggplot2::geom_contour(ggplot2::aes(z = proxy), colour = "white",
+                        linetype = "dashed", linewidth = 0.4, bins = 8L) +
+  ggplot2::scale_fill_viridis_d(option = "mako", guide = "none") +
+  ggplot2::facet_wrap(~ shape, scales = "free") +
+  ggplot2::labs(x = expression(x[1]), y = expression(x[2])) +
+  ggplot2::theme_minimal(base_size = 11)
 ```
 
-```{r banana-overlay, fig.cap = "Banana target (filled) with 4-component proxy (dashed)."}
-G_b$g <- exp(dgmm(as.matrix(G_b[, c("x1", "x2")]), fit_b, log = TRUE))
-if (requireNamespace("ggplot2", quietly = TRUE)) {
-  ggplot(G_b, aes(x1, x2)) +
-    geom_contour_filled(aes(z = f), bins = 10L, alpha = 0.85) +
-    geom_contour(aes(z = g), colour = "white", linetype = "dashed",
-                 linewidth = 0.4, bins = 8L) +
-    scale_fill_viridis_d(option = "mako", guide = "none") +
-    coord_equal() +
-    labs(title = "Banana with proxy",
-         x = expression(x[1]), y = expression(x[2])) +
-    theme_minimal(base_size = 11)
+```{r overlay-skip, eval = !has_ggplot2, echo = FALSE, results = "asis"}
+cat("ggplot2 is not installed on this build, so the three-shape overlay",
+    "figure is skipped.\n")
+```
+
+### Grading the three fits
+
+The importance-sampled `kld_final` is an estimate and carries Monte Carlo
+error, so a second, deterministic measurement is worth having. In two
+dimensions the divergence can be integrated directly on a grid, using
+nothing the fit produced.
+
+```{r kl-grid}
+## KL(f || g) by deterministic grid quadrature -- independent of the
+## importance sampler whose estimate it is checking.
+kl_grid <- function(target, fit, lim, n_grid = 300L) {
+  gx <- seq(-lim, lim, length.out = n_grid)
+  gm <- as.matrix(expand.grid(x1 = gx, x2 = gx))
+  cell <- (gx[2L] - gx[1L])^2
+  log_f <- target@log_density(gm)
+  log_g <- dgmm(gm, fit, log = TRUE)
+  dens_f <- exp(log_f)
+  ok <- is.finite(log_f) & is.finite(log_g) & dens_f > 1e-300
+  sum(dens_f[ok] * (log_f[ok] - log_g[ok])) * cell
 }
+kl_quad <- c(
+  banana = kl_grid(banana_target(), fit_b, 6),
+  donut = kl_grid(donut_target(), fit_d, 7),
+  mixture = kl_grid(mixture_target(), fit_m, 8)
+)
 ```
 
-## Donut
-
-```{r donut-target, fig.cap = "Donut target (rotationally symmetric annulus)."}
-donut <- donut_target()
-
-grid_x <- seq(-4, 4, length.out = 120)
-G_d <- expand.grid(x1 = grid_x, x2 = grid_x)
-G_d$f <- exp(donut@log_density(as.matrix(G_d)))
-
-if (requireNamespace("ggplot2", quietly = TRUE)) {
-  ggplot(G_d, aes(x1, x2, z = f)) +
-    geom_contour_filled(bins = 12L) +
-    scale_fill_viridis_d(option = "mako", guide = "none") +
-    coord_equal() +
-    labs(title = "Donut target",
-         x = expression(x[1]), y = expression(x[2])) +
-    theme_minimal(base_size = 11)
-}
+```{r summary-table, echo = FALSE}
+fits <- list(fit_b, fit_d, fit_m)
+hell <- lapply(fits, hellinger_mc, n_mc = 2000L, seed = 1L)
+summary_tbl <- data.frame(
+  Target = c("banana", "donut", "three-mixture"),
+  N = vapply(fits, gmm_n_components, integer(1L)),
+  `IS draws` = vapply(fits, function(f) f@diagnostics$is_size, numeric(1L)),
+  ESS = round(vapply(fits, function(f) f@diagnostics$ess, numeric(1L)), 0L),
+  `KL (sampled)` = round(
+    vapply(fits, function(f) f@diagnostics$kld_final, numeric(1L)), 4L
+  ),
+  `Monte Carlo SE` = round(
+    vapply(fits, function(f) f@diagnostics$mc_se_kld, numeric(1L)), 4L
+  ),
+  `KL (quadrature)` = round(unname(kl_quad), 4L),
+  `Squared Hellinger` = round(
+    vapply(hell, function(h) h$h2, numeric(1L)), 4L
+  ),
+  check.names = FALSE,
+  stringsAsFactors = FALSE
+)
+knitr::kable(
+  summary_tbl,
+  caption = paste(
+    "Fit quality on the three plane-supported shapes. The sampled and",
+    "quadrature columns estimate the same Kullback-Leibler divergence,",
+    "the first by importance sampling and the second deterministically."
+  )
+)
 ```
 
-A donut is genuinely hard for a Gaussian mixture -- the modes are *infinitely many* (along the ring). With `N = 6` components, KLD-EM finds a balanced ring-approximation:
+### How much of the donut's residual is structural
 
-```{r donut-fit}
-fit_d <- fit_proxymix(donut, N = 6L, regime = "kld",
-                      proposal = is_mvt(n_dim = 2L,
-                                        sigma = 9 * diag(2),
-                                        df = 5),
-                      is_size = 3500L,
-                      max_iter = 60L,
-                      seed = 1L)
-fit_d
+A Gaussian mixture cannot reproduce an annulus exactly, however many
+components it is given. Sweeping the component count separates the part of
+the residual divergence that more components remove from the part that
+they do not.
+
+```{r donut-sweep}
+donut_n <- c(3L, 4L, 6L, 10L)
+donut_kl <- vapply(donut_n, function(k) {
+  f <- fit_proxymix(donut_target(), N = k, regime = "kld",
+                    proposal = proposal_mvt(n_dim = 2L,
+                                            sigma = 9 * diag(2),
+                                            df = 5),
+                    is_size = 3500L, max_iter = 60L, seed = 1L)
+  kl_grid(donut_target(), f, 7)
+}, numeric(1L))
 ```
 
-```{r donut-overlay, fig.cap = "Donut target (filled) with 6-component proxy (dashed)."}
-G_d$g <- exp(dgmm(as.matrix(G_d[, c("x1", "x2")]), fit_d, log = TRUE))
-if (requireNamespace("ggplot2", quietly = TRUE)) {
-  ggplot(G_d, aes(x1, x2)) +
-    geom_contour_filled(aes(z = f), bins = 10L, alpha = 0.85) +
-    geom_contour(aes(z = g), colour = "white", linetype = "dashed",
-                 linewidth = 0.4, bins = 8L) +
-    scale_fill_viridis_d(option = "mako", guide = "none") +
-    coord_equal() +
-    labs(title = "Donut with proxy",
-         x = expression(x[1]), y = expression(x[2])) +
-    theme_minimal(base_size = 11)
-}
+```{r donut-sweep-table, echo = FALSE}
+knitr::kable(
+  data.frame(
+    `Components` = donut_n,
+    `KL (quadrature)` = round(donut_kl, 4L),
+    check.names = FALSE
+  ),
+  caption = paste(
+    "Residual divergence of the donut proxy against the component count,",
+    "measured by grid quadrature. The fall from three to six components",
+    "is the approximation improving; the flat step from six to ten is the",
+    "structural floor a Gaussian mixture cannot cross."
+  )
+)
 ```
 
-## Three-mixture
+### Bounded support
 
-```{r mixture-target, fig.cap = "Three-component mixture target."}
-mt <- mixture_target()
+The three targets above live on the whole plane. A compactly supported
+target is different in kind: the Epanechnikov density
+\(K(u) = \tfrac{3}{4}(1 - u^2)\) on \([-1, 1]\) is exactly zero outside the
+interval, and the default Student-t proposal is actively unsafe against it
+because it places draws where the target's log-density is minus infinity,
+producing non-finite weights.
 
-grid_x <- seq(-4.5, 4.5, length.out = 120)
-G_m <- expand.grid(x1 = grid_x, x2 = grid_x)
-G_m$f <- exp(mt@log_density(as.matrix(G_m)))
-
-if (requireNamespace("ggplot2", quietly = TRUE)) {
-  ggplot(G_m, aes(x1, x2, z = f)) +
-    geom_contour_filled(bins = 12L) +
-    scale_fill_viridis_d(option = "mako", guide = "none") +
-    coord_equal() +
-    labs(title = "Three-mixture target",
-         x = expression(x[1]), y = expression(x[2])) +
-    theme_minimal(base_size = 11)
-}
-```
-
-```{r mixture-fit}
-fit_m <- fit_proxymix(mt, N = 3L, regime = "kld",
-                      proposal = is_mvt(n_dim = 2L,
-                                        sigma = 6 * diag(2),
-                                        df = 5),
-                      is_size = 3000L,
-                      max_iter = 50L,
-                      seed = 1L)
-fit_m
-```
-
-```{r mixture-overlay, fig.cap = "Three-mixture target (filled) with 3-component proxy (dashed)."}
-G_m$g <- exp(dgmm(as.matrix(G_m[, c("x1", "x2")]), fit_m, log = TRUE))
-if (requireNamespace("ggplot2", quietly = TRUE)) {
-  ggplot(G_m, aes(x1, x2)) +
-    geom_contour_filled(aes(z = f), bins = 10L, alpha = 0.85) +
-    geom_contour(aes(z = g), colour = "white", linetype = "dashed",
-                 linewidth = 0.4, bins = 8L) +
-    scale_fill_viridis_d(option = "mako", guide = "none") +
-    coord_equal() +
-    labs(title = "Three-mixture with proxy",
-         x = expression(x[1]), y = expression(x[2])) +
-    theme_minimal(base_size = 11)
-}
-```
-
-## Bounded support
-
-The three targets above all live on the whole plane. Some targets are instead **compactly supported** -- exactly zero outside a bounded region. The textbook example is the Epanechnikov density \(K(u) = \tfrac{3}{4}(1 - u^2)\) on \([-1, 1]\). No mixture of full-support Gaussians can be exactly zero on an interval, so regime (iii) is the only viable route -- and the default \(t\)-proposal is actively unsafe here, since it places importance draws where the target log-density is \(-\infty\), producing non-finite weights.
-
-`proxymix` handles this safely. A target can declare its `support`, and `fit_kld_em()` then selects a *support-matched* `is_uniform()` proposal automatically instead of the crashing default. `epanechnikov_target()` is a built-in compact-support fixture that declares its support:
+A target may declare its `support`, and the fit then selects a
+support-matched `proposal_uniform()` on its own, announced in a message.
 
 ```{r epan-target}
 epan <- epanechnikov_target(n_dim = 1L)
 epan
 ```
 
-Fitting needs no hand-chosen proposal -- the declared support drives the choice, announced in a one-line message:
-
 ```{r epan-fit}
 fit_e <- fit_proxymix(epan, N = 3L, regime = "kld",
-                      is_size = 4000L, max_iter = 60L, seed = 1L)
-fit_e@diagnostics$proposal_name
-c(ess = round(fit_e@diagnostics$ess, 1L),
+                      is_size = 4000L, max_iter = 300L, seed = 1L)
+c(proposal = fit_e@diagnostics$proposal_name,
   support_fraction = fit_e@diagnostics$support_fraction,
-  kld_final = round(fit_e@diagnostics$kld_final, 4L))
+  iterations = length(kld_trace(fit_e)),
+  converged = gmm_fit_quality(fit_e)$converged)
 ```
 
-Every importance draw receives a finite weight (the support fraction is 1), and the three-component proxy tracks the inverted-parabola shape closely:
-
-```{r epan-overlay, fig.cap = "Epanechnikov target (solid) with 3-component proxy (dashed)."}
-xs <- seq(-1.4, 1.4, length.out = 400L)
-df_e <- data.frame(
-  x = xs,
-  f = exp(epan@log_density(matrix(xs, ncol = 1L))),
-  g = exp(dgmm(matrix(xs, ncol = 1L), fit_e, log = TRUE))
+```{r epan-grid}
+epan_x <- seq(-1.4, 1.4, length.out = 400L)
+epan_df <- rbind(
+  data.frame(x = epan_x, density = exp(epan@log_density(
+    matrix(epan_x, ncol = 1L))), series = "target", stringsAsFactors = FALSE),
+  data.frame(x = epan_x, density = dgmm(matrix(epan_x, ncol = 1L), fit_e),
+             series = "mixture proxy", stringsAsFactors = FALSE)
 )
-if (requireNamespace("ggplot2", quietly = TRUE)) {
-  ggplot(df_e, aes(x)) +
-    geom_line(aes(y = f), linewidth = 0.8) +
-    geom_line(aes(y = g), linetype = "dashed", linewidth = 0.6,
-              colour = "#2c7fb8") +
-    labs(title = "Epanechnikov with proxy", y = "density") +
-    theme_minimal(base_size = 11)
-}
 ```
 
-## Summary
+```{r epan-plot, eval = has_ggplot2, echo = has_ggplot2, fig.height = 3.4, fig.cap = "The compactly supported Epanechnikov target and its three-component proxy. The proxy tracks the inverted parabola across the interval and leaks a little mass past the boundary at plus and minus one, which is the one thing a mixture of full-support Gaussians can never avoid.", fig.alt = "Line plot of the inverted-parabola Epanechnikov density and its dashed Gaussian-mixture proxy, which extends slightly beyond the support boundary."}
+ggplot2::ggplot(epan_df, ggplot2::aes(x, density, colour = series,
+                                      linetype = series)) +
+  ggplot2::geom_line(linewidth = 0.8) +
+  ggplot2::geom_vline(xintercept = c(-1, 1), colour = "grey60",
+                      linewidth = 0.3) +
+  ggplot2::scale_colour_manual(
+    name = NULL, values = c("target" = "#0072B2",
+                            "mixture proxy" = "#D55E00")
+  ) +
+  ggplot2::scale_linetype_manual(
+    name = NULL, values = c("target" = "solid", "mixture proxy" = "dashed")
+  ) +
+  ggplot2::labs(x = expression(x), y = "density") +
+  ggplot2::theme_minimal(base_size = 11) +
+  ggplot2::theme(legend.position = "top")
+```
 
-```{r summary}
-summary_tbl <- data.frame(
-  target      = c("banana", "donut", "three-mixture"),
-  N           = c(gmm_n_components(fit_b),
-                  gmm_n_components(fit_d),
-                  gmm_n_components(fit_m)),
-  is_size     = c(fit_b@diagnostics$is_size,
-                  fit_d@diagnostics$is_size,
-                  fit_m@diagnostics$is_size),
-  ESS         = round(c(fit_b@diagnostics$ess,
-                        fit_d@diagnostics$ess,
-                        fit_m@diagnostics$ess), 1L),
-  kld_final   = round(c(fit_b@diagnostics$kld_final,
-                        fit_d@diagnostics$kld_final,
-                        fit_m@diagnostics$kld_final), 4L),
-  hellinger2  = round(c(
-    hellinger_mc(fit_b, n_mc = 2000L, seed = 1L)$h2,
-    hellinger_mc(fit_d, n_mc = 2000L, seed = 1L)$h2,
-    hellinger_mc(fit_m, n_mc = 2000L, seed = 1L)$h2
-  ), 4L)
+```{r epan-plot-skip, eval = !has_ggplot2, echo = FALSE, results = "asis"}
+cat("ggplot2 is not installed on this build, so the bounded-support",
+    "figure is skipped.\n")
+```
+
+### When the proposal misses the target
+
+Every number above rests on the importance sample being informative about
+the target. When it is not, the arithmetic still produces a mixture, and
+that mixture is worthless. The package treats this as a refusal rather
+than a result: a proposal placed far from the target's mass, with
+`on_low_ess = "abort"`, raises a typed condition instead of returning.
+
+```{r refusal}
+bad <- tryCatch(
+  fit_kld_em(
+    mixture_target(), N = 3L,
+    proposal = proposal_mvn(n_dim = 2L, mean = c(25, 25), cov = diag(2)),
+    is_size = 2000L, max_iter = 10L, seed = 1L,
+    min_ess = 50, on_low_ess = "abort"
+  ),
+  error = function(e) e
 )
-summary_tbl
+class(bad)[1L]
+conditionMessage(bad)
 ```
 
-Interpretation:
+## Read
 
-* **`ESS`** -- the effective sample size of the importance-sampling weights, out of `is_size`. ESS well below `is_size` means the proposal is wasteful (heavy weight on few draws); ESS near `is_size` means the proposal is close to the target.
-* **`kld_final`** -- the importance-sampled estimate of \(\mathrm{KL}(f \Vert g_\theta)\) at the final parameters. *Small is good.*
-* **`hellinger2`** -- a Monte-Carlo estimate of the squared Hellinger distance \(H^2(f, g)\). Bounded in \([0, 1]\) when both densities are normalised; a small value confirms the proxy reproduces the target's mass *and* shape.
+The three plane-supported shapes divide into two groups, and the table says
+which. The banana proxy reaches a quadrature divergence of
+`r format(signif(kl_quad[["banana"]], 2L))` and the three-mixture
+`r format(signif(kl_quad[["mixture"]], 2L))`, from effective sample sizes of
+`r round(fit_b@diagnostics$ess)` and `r round(fit_m@diagnostics$ess)` draws
+respectively. The donut sits materially higher at
+`r format(signif(kl_quad[["donut"]], 2L))`, roughly
+`r round(kl_quad[["donut"]] / kl_quad[["banana"]], 1L)` times the banana's,
+and that gap is the answer to the question.
 
-The three-mixture is fit nearly exactly (the proxy lives in the same parametric family as the target). The banana is well-approximated by four Gaussians along the ridge. The donut -- a topology a Gaussian mixture cannot reproduce exactly -- is approximated by a ring of 6 components, with a non-trivial residual KLD reflecting the structural mismatch.
+The sweep says the gap is structural rather than a matter of budget. Going
+from `r donut_n[1L]` to `r donut_n[3L]` components cuts the donut's
+divergence from `r format(signif(donut_kl[1L], 3L))` to
+`r format(signif(donut_kl[3L], 3L))`, a fall of
+`r round(100 * (1 - donut_kl[3L] / donut_kl[1L]))` per cent. Going on to
+`r donut_n[4L]` components buys only
+`r format(signif(donut_kl[3L] - donut_kl[4L], 2L))` more. Components are
+solving the approximation problem right up to the point where they stop,
+and what remains is a mixture of finitely many ellipses being asked to be a
+continuous ring.
 
-## Reference
+The two estimates of the same divergence disagree in a way worth reading.
+The importance-sampled column returns
+`r format(signif(fit_d@diagnostics$kld_final, 2L))` for the donut against a
+Monte Carlo standard error of
+`r format(signif(fit_d@diagnostics$mc_se_kld, 2L))`, while the quadrature
+column returns `r format(signif(kl_quad[["donut"]], 2L))`. The sampled
+estimate is within about one standard error of zero and of the quadrature
+value alike, so on these fits it is not sharp enough to separate a good
+proxy from a structurally limited one. The same holds for the squared
+Hellinger column, whose entries sit within a few thousandths of zero. The
+deterministic measurement is what makes the donut's floor visible.
 
-Hoek, J. van der and Elliott, R. J. (2024). *Mixtures of multivariate Gaussians.* Stochastic Analysis and Applications. <https://doi.org/10.1080/07362994.2024.2372605>.
+The compactly supported target is the fourth kind of awkwardness and the
+one that never fully resolves. The declared support routed the fit onto a
+support-matched proposal automatically, every draw landed inside the
+support, and the fit converged after `r length(kld_trace(fit_e))`
+iterations, far more than the tens the plane-supported shapes needed. The
+figure shows why the iteration works so hard: the proxy must approximate a
+hard boundary with densities that are positive everywhere, so it pays at
+the edges no matter how long it runs.
+
+So the answer is that a mixture proxy works well on curvature and on
+multimodality, degrades gracefully and measurably on a topology it cannot
+represent, and on a bounded support converges slowly to a fit that always
+leaks a little mass past the boundary. And when the importance sample
+carries no information at all, nothing is returned: the refusal above is a
+`r class(bad)[1L]` condition, raised in place of a fit whose printed
+summary would have looked entirely ordinary. The default is
+`on_low_ess = "warn"`, which downgrades the same check to a warning and
+lets the caller decide; `"abort"` is what turns it into a contract.
+
+## Limits
+
+The two divergence estimates in the table are measurements, not exact
+quantities, and neither is a certificate on its own. The importance-sampled
+estimate is a Monte Carlo quantity that can come out slightly negative on a
+near-exact fit, as it does for two of the three shapes here, and a
+negative estimate of a non-negative divergence means only that the
+estimator's error exceeds the quantity being estimated. The squared
+Hellinger estimates behave the same way, and `hellinger_mc()` does not
+always return a usable standard error alongside them. The grid quadrature
+avoids both problems and introduces a different one: it is reliable in two
+or three dimensions and becomes intractable well before the dimension at
+which importance sampling itself gives out.
+
+The component counts here were chosen by hand, one per shape, to make the
+comparison across shapes a comparison of shapes. Choosing the count is a
+separate problem, and the donut sweep is the only place this vignette
+touches it.
+
+Nothing here establishes that the mixture proxy is the right tool for the
+downstream job, only that it reproduces these densities to a measured
+accuracy. Whether a divergence of the size found for the donut matters
+depends entirely on what is computed from the proxy afterwards, and a
+quantity that depends on the tails will be far less forgiving than one that
+depends on the bulk.
+
+## What to read next
+
+*Fitting a proxy to a density you cannot sample* is the shorter introduction
+to the regime this vignette stress-tests, and reads the fit certificate in
+full.
+
+*Choosing between the three fitting regimes* explains why regime (iii) is
+the only option for three of the four targets here, and what it costs when
+the other regimes are available.
+
+*Reading the entropy of a fitted mixture* takes up the component-count
+question the donut sweep only touches, and discovers a count by cooling
+rather than by sweeping.
+
+*The closed-form operator calculus on a mixture* is what the proxies fitted
+here are for: the exact operations that follow once the shape has been
+captured.
+
+## References
+
+Hoek, J. van der and Elliott, R. J. (2024). *Mixtures of multivariate
+Gaussians.* Stochastic Analysis and Applications.
+<https://doi.org/10.1080/07362994.2024.2372605>.
+
+## Reproduce
+
+Every fit above is seeded with `seed = 1L`, the Monte Carlo Hellinger
+estimates with `seed = 1L`, and the grid quadrature is deterministic, so
+the whole vignette is reproducible from the package alone.
+
+```{r session-info}
+sessionInfo()
+```

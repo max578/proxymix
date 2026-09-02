@@ -7,62 +7,107 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
+<!-- Render time: ~4 s under rmarkdown::render() with ggplot2 and mice
+     installed; macOS arm64 (Apple silicon), R 4.5.2, one core. -->
+
+```{r setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  fig.width = 6,
-  fig.height = 4.2,
+  fig.width = 7,
+  fig.height = 4.5,
+  dpi = 150,
   out.width = "100%"
 )
-set.seed(20260620)
 ```
 
-```{r setup}
+```{r library}
 library(proxymix)
 ```
 
-# Imputation is conditioning
+```{r engines}
+has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
+has_mice <- requireNamespace("mice", quietly = TRUE)
+```
 
-When a value is missing, what we know about it is its conditional
-distribution given everything we did observe. If the joint distribution of
-the data is a Gaussian mixture, that conditional is itself a Gaussian
-mixture, available in closed form by the Schur-complement algebra of
-`gmm_conditionalise()`. `gmm_impute()` fits a mixture to a dataset that
-contains holes and draws completed datasets from these per-row conditionals.
+## Why
 
-A mixture can be multimodal and heteroscedastic. That is the point: it
-represents shapes a single-Gaussian model (the multivariate-normal
-assumption) and a linear-Gaussian conditional (a normal regression imputation)
-cannot, so the imputations -- and the inference pooled from them -- stay
-faithful to data those models mis-specify.
+An analyst has two measurements per unit. The scatter falls into two clear
+clusters with almost nothing between them, and a good half of the second
+measurement never came back from the field. The question is not whether an
+imputer will run. It is: *my data has two clusters and an empty gap between
+them, so if I let a standard imputer fill the holes, will it put values in
+the gap where I know there is no mass, and will that move the mean I am
+going to report?*
 
-# A two-cluster example
+This vignette answers both halves on a synthetic two-cluster toy where the
+values that went missing are retained, so every imputation can be scored
+against the truth it was hiding.
+
+## What
+
+Imputation here is conditioning. If the joint distribution of the data is a
+Gaussian mixture, the conditional distribution of a missing entry given the
+observed entries of its own row is itself a Gaussian mixture, available in
+closed form through the Schur-complement algebra of
+[`gmm_conditionalise()`]. Nothing is simulated to get it.
+
+[`gmm_impute()`] fits that mixture to a matrix containing holes and draws `m`
+completed datasets from the per-row conditionals. Its `N` argument is the
+number of mixture components, chosen by the Bayesian information criterion
+when left at its default. A mixture can be multimodal and heteroscedastic,
+which is the point: it represents shapes that a single-Gaussian model, or a
+linear-Gaussian conditional such as normal regression imputation, cannot,
+so the imputations stay faithful to data those models mis-specify.
+
+[`gmm_complete()`] extracts one completed dataset. [`proxy_pool()`] combines
+an estimand across the completions, and [`proxy_fmi()`] reports the fraction
+of missing information. For a column mean the pooling is closed form -- the
+exact large-sample limit of the between-imputation variance -- so no Monte
+Carlo noise enters at the pooling step. For any other estimand,
+[`as_mids()`] packages the completions as a `mice` object so the joint
+mixture imputations flow into `mice::pool()` unchanged: proxymix supplies
+the imputation model, `mice` the pooling.
+
+## Do
+
+### A two-cluster toy with the truth retained
 
 Two groups, each a tight cloud, with a positive within-group association
-between `x1` and `x2`. Roughly forty per cent of `x2` is then made missing at
-random, with the chance of being missing depending on the observed `x1`.
+between `x1` and `x2`. This is a synthetic toy: the complete data is
+generated first and kept, then part of `x2` is deleted, so the held-out
+values are available to score against. The chance of an entry going missing
+depends on the observed `x1` and not on the hidden `x2` itself, which is the
+missing-at-random setting.
 
 ```{r data}
-n <- 600
+set.seed(20260620)
+n <- 600L
 lab <- sample(c(-1, 1), n, replace = TRUE)
 x1 <- 2 * lab + rnorm(n, 0, 0.6)
 x2 <- 2 * lab + 0.5 * (x1 - 2 * lab) + rnorm(n, 0, 0.6)
 truth <- cbind(x1 = x1, x2 = x2)
 
-X <- truth
-missing <- runif(n) < plogis(0.6 * x1)        # missing at random, depends on x1
-X[missing, "x2"] <- NA
-round(mean(missing), 2)
+x_holes <- truth
+missing <- runif(n) < plogis(0.6 * x1)
+x_holes[missing, "x2"] <- NA
+frac_missing <- mean(missing)
 ```
 
-The marginal distribution of `x2` is bimodal: one cluster near $-2$, one near
-$+2$, with little mass between them.
+The marginal distribution of `x2` is bimodal, one cluster near $-2$ and one
+near $+2$, with little mass between them. Writing the empty middle as the
+interval $|x_2| < 1$, the values that were deleted put only a small share of
+their mass there.
 
-# Impute, then look at the shape
+```{r gap-truth}
+in_gap <- function(v) mean(abs(v) < 1)
+gap_truth <- in_gap(truth[missing, "x2"])
+```
+
+### Impute with a mixture, and with a single Gaussian
 
 ```{r impute}
-imp <- gmm_impute(X, N = 2L, m = 20L, seed = 1L)
+imp <- gmm_impute(x_holes, N = 2L, m = 20L, seed = 1L)
 imp
 ```
 
@@ -73,73 +118,235 @@ done <- gmm_complete(imp, 1L)
 anyNA(done)
 ```
 
-Do the imputed values follow the two clusters, or do they pile up in the
-empty middle? Overlaying the imputed `x2` on the values that were actually
-missing shows the mixture imputer reproducing both modes.
+Forcing one component reproduces the multivariate-normal assumption, which
+is the contrast this vignette is built around.
 
-```{r modes, fig.cap = "The mixture-imputed x2 values (green) reproduce both modes of the held-out truth (grey), rather than collapsing onto a single peak.", fig.alt = "Density of the missing x2 values against the mixture-imputed values; both are bimodal and overlap."}
-imputed <- done[missing, "x2"]
-hidden  <- truth[missing, "x2"]
-
-plot(density(hidden), lwd = 2, col = "grey30",
-     main = "Missing x2: truth vs mixture imputation",
-     xlab = expression(x[2]), ylim = c(0, 0.5))
-lines(density(imputed), lwd = 2, col = "#1b7837")
-legend("topright", c("held-out truth", "mixture imputation"),
-       col = c("grey30", "#1b7837"), lwd = 2, bty = "n")
+```{r single}
+imp1 <- gmm_impute(x_holes, N = 1L, m = 20L, seed = 1L)
+done1 <- gmm_complete(imp1, 1L)
 ```
 
-A single Gaussian fitted to the same holes has one centre and one spread, so
-it fills the empty middle and erases the two clusters. Forcing one component
-(`N = 1L`) shows the contrast:
-
-```{r single, fig.cap = "Forcing a single Gaussian component fills the empty middle between the two clusters, erasing the bimodal structure the mixture imputer preserved above.", fig.alt = "A single-Gaussian imputation places mass in the empty middle, unlike the bimodal truth."}
-imp1 <- gmm_impute(X, N = 1L, m = 20L, seed = 1L)
-imputed1 <- gmm_complete(imp1, 1L)[missing, "x2"]
-
-plot(density(hidden), lwd = 2, col = "grey30",
-     main = "A single Gaussian fills the gap",
-     xlab = expression(x[2]), ylim = c(0, 0.5))
-lines(density(imputed1), lwd = 2, col = "#d95f02")
-legend("topright", c("held-out truth", "single-Gaussian imputation"),
-       col = c("grey30", "#d95f02"), lwd = 2, bty = "n")
+```{r gap-table, echo = FALSE}
+gap_tbl <- data.frame(
+  source = c("held-out truth", "mixture imputation (N = 2)",
+             "single-Gaussian imputation (N = 1)"),
+  gap_share = c(gap_truth, in_gap(done[missing, "x2"]),
+                in_gap(done1[missing, "x2"])),
+  stringsAsFactors = FALSE
+)
+knitr::kable(
+  gap_tbl, digits = 3L,
+  col.names = c("Source", "Share of values with |x2| < 1"),
+  caption = paste0(
+    "How much mass each imputer places in the empty middle between the ",
+    "two clusters, over the ", sum(missing), " deleted entries."
+  )
+)
 ```
 
-The single-Gaussian fit places its one centre between the two clusters and
-so imputes values where there was never any true mass -- the failure mode
-the mixture imputer above avoids by keeping two components.
+### The shape of the imputations
 
-# Pooling an estimand
+```{r fig-modes, eval = has_ggplot2, echo = has_ggplot2, fig.cap = "Density of the deleted x2 values against the values each imputer supplied in their place. The mixture imputation reproduces both clusters; the single-Gaussian imputation collapses onto one central peak and fills the empty middle, where the truth has almost no mass.", fig.alt = "Three density curves over x2: the held-out truth and the mixture imputation are both bimodal and overlap closely, while the single-Gaussian imputation is unimodal and centred on the gap between the two modes."}
+dens_df <- function(v, label) {
+  d <- density(v)
+  data.frame(x2 = d$x, density = d$y, source = label,
+             stringsAsFactors = FALSE)
+}
+plot_df <- rbind(
+  dens_df(truth[missing, "x2"], "held-out truth"),
+  dens_df(done[missing, "x2"], "mixture (N = 2)"),
+  dens_df(done1[missing, "x2"], "single Gaussian (N = 1)")
+)
+plot_df$source <- factor(
+  plot_df$source,
+  levels = c("held-out truth", "mixture (N = 2)",
+             "single Gaussian (N = 1)")
+)
+ggplot2::ggplot(plot_df, ggplot2::aes(x2, density, colour = source)) +
+  ggplot2::geom_line(linewidth = 0.9) +
+  ggplot2::annotate("rect", xmin = -1, xmax = 1, ymin = -Inf, ymax = Inf,
+                    fill = "grey60", alpha = 0.18) +
+  ggplot2::scale_colour_manual(
+    name = NULL,
+    values = c("held-out truth" = "#000000",
+               "mixture (N = 2)" = "#009E73",
+               "single Gaussian (N = 1)" = "#D55E00")
+  ) +
+  ggplot2::labs(
+    x = expression(x[2]), y = "density",
+    title = "What each imputer put where the data was deleted",
+    subtitle = "Shaded band marks the empty middle, |x2| < 1"
+  ) +
+  ggplot2::theme_minimal(base_size = 11) +
+  ggplot2::theme(legend.position = "top")
+```
 
-A column mean is pooled in closed form -- the exact large-sample limit of the
-between-imputation variance, so there is no Monte-Carlo noise in the pooling
-step -- reporting the estimate, a standard error, a confidence interval, and
-the fraction of missing information.
+```{r fig-modes-skip, eval = !has_ggplot2, echo = FALSE, results = "asis"}
+cat("ggplot2 is not installed on this build, so the imputation-density",
+    "figure is skipped.\n")
+```
+
+### Pooling a column mean
 
 ```{r pool-mean}
-proxy_pool(imp, "x2")
-proxy_fmi(imp, "x2")
+pooled <- proxy_pool(imp, "x2")
+pooled1 <- proxy_pool(imp1, "x2")
+fmi_mix <- proxy_fmi(imp, "x2")
+mean_truth <- mean(truth[, "x2"])
+err_mix <- abs(pooled$estimate - mean_truth)
+err_one <- abs(pooled1$estimate - mean_truth)
 ```
 
-For a regression or any other model, the established place to combine an
-estimand across imputations is `mice`. `as_mids()` packages the completions as
-a `mice` object, so the joint mixture imputations flow into `mice::pool()`
-unchanged -- proxymix supplies the imputation model, `mice` the pooling.
-
-```{r pool-mice, eval = requireNamespace("mice", quietly = TRUE)}
-library(mice)
-fit <- with(as_mids(imp), lm(x2 ~ x1))
-summary(pool(fit))
+```{r fixed-notation, include = FALSE}
+## Small errors are written as plain decimals rather than in the
+## scientific notation knitr's inline hook would otherwise typeset.
+fixed <- function(v, digits) {
+  format(round(v, digits), nsmall = digits, scientific = FALSE)
+}
 ```
 
-# Scope
+```{r pool-table, echo = FALSE}
+pool_tbl <- data.frame(
+  model = c("complete-data truth", "available cases only",
+            "mixture imputation (N = 2)",
+            "single-Gaussian imputation (N = 1)"),
+  estimate = c(mean(truth[, "x2"]), mean(x_holes[!missing, "x2"]),
+               pooled$estimate, pooled1$estimate),
+  std_error = c(NA_real_, NA_real_, pooled$std.error, pooled1$std.error),
+  conf_low = c(NA_real_, NA_real_, pooled$conf.low, pooled1$conf.low),
+  conf_high = c(NA_real_, NA_real_, pooled$conf.high, pooled1$conf.high),
+  stringsAsFactors = FALSE
+)
+pool_tbl$abs_error <- abs(pool_tbl$estimate - mean(truth[, "x2"]))
+knitr::kable(
+  pool_tbl, digits = 4L,
+  col.names = c("Estimate of the mean of x2", "Estimate", "SE",
+                "CI lower", "CI upper", "Absolute error"),
+  caption = paste0(
+    "The mean of x2 recovered four ways, scored against the ",
+    "complete-data truth that the deletion hid."
+  )
+)
+```
+
+### Any other estimand, through `mice`
+
+```{r pool-mice, eval = has_mice, echo = has_mice}
+mice_fit <- mice::pool(with(as_mids(imp), lm(x2 ~ x1)))
+```
+
+```{r pool-mice-table, eval = has_mice, echo = FALSE}
+knitr::kable(
+  summary(mice_fit), digits = 3L,
+  caption = paste0(
+    "The regression of x2 on x1, fitted in each of the ", imp@m,
+    " completions and pooled by mice::pool()."
+  )
+)
+```
+
+```{r pool-mice-skip, eval = !has_mice, echo = FALSE, results = "asis"}
+cat("mice is not installed on this build, so the pooled regression is",
+    "skipped; the closed-form column-mean pooling above does not need it.\n")
+```
+
+## Read
+
+`r round(100 * frac_missing)` per cent of `x2` was deleted, which is
+`r sum(missing)` of the `r n` rows. Over those deleted entries the truth
+placed `r round(100 * gap_truth, 1)` per cent of its mass in the empty
+middle $|x_2| < 1$. The mixture imputer put
+`r round(100 * in_gap(done[missing, "x2"]), 1)` per cent there, close to the
+truth. Forcing a single Gaussian put
+`r round(100 * in_gap(done1[missing, "x2"]), 1)` per cent there, roughly
+`r round(in_gap(done1[missing, "x2"]) / gap_truth, 1)` times as much as the
+data ever had: the answer to the opening question is that a single-Gaussian
+imputer does fill the gap, and a mixture does not.
+
+The figure shows why. A single Gaussian has one centre and one spread, so
+fitted to a bimodal column it places its centre between the two clusters and
+imputes values where there was never any true mass. The mixture keeps two
+components and reproduces both modes.
+
+That shape error reaches the number an analyst would report. The
+complete-data mean of `x2` is `r fixed(mean_truth, 3)`. Using only the rows
+that came back gives `r fixed(mean(x_holes[!missing, "x2"]), 3)`, which is
+out by `r fixed(abs(mean(x_holes[!missing, "x2"]) - mean_truth), 3)`,
+because missingness here is tied to `x1` and `x1` is tied to `x2`. The
+mixture imputation recovers the mean to within `r fixed(err_mix, 4)`; the
+single-Gaussian imputation is out by `r fixed(err_one, 4)`, about
+`r round(err_one / err_mix)` times further. Both imputed intervals cover the
+truth, so on this estimand the single Gaussian is inefficient rather than
+misleading; the damage it does is to the shape, which the figure makes
+visible and the mean does not.
+
+The fraction of missing information is
+`r round(unname(fmi_mix), 3)`: although
+`r round(100 * frac_missing)` per cent of the column is absent, the
+observed `x1` carries enough about `x2` that only about
+`r round(100 * unname(fmi_mix))` per cent of the information about the mean
+is lost.
+
+## Limits
 
 This vignette covers numeric data that is missing at random: the probability
 that an entry is missing may depend on the observed entries but not on the
-missing value itself. Value-dependent missingness (`mnar()`) and censoring at
-a known bound (`censored()`) are supported through the `mechanism` argument
-and are the subject of the companion vignette *Imputation when the mechanism
-depends on the value* (`vignette("missing_data_mnar")`). The number of mixture
-components is chosen by the Bayesian information criterion when `N` is left at
-its default, and a supplied `seed` makes the result reproducible without
-disturbing the ambient random-number state.
+missing value itself. That assumption is what makes the conditional of the
+observed the right law to impute from, and it is not testable from the data
+in hand. Value-dependent missingness and censoring at a known bound break
+it, and both are supported through the `mechanism` argument rather than
+being outside the package.
+
+The comparison here is against a single Gaussian, which is the
+multivariate-normal imputation model. It is not a comparison against a
+well-specified alternative such as predictive mean matching or a
+classification-and-regression-tree imputer, either of which can also
+represent two clusters, so nothing here establishes that a mixture beats
+every competitor -- only that it beats the Gaussian assumption on data the
+Gaussian assumption mis-specifies. A second limit is scale: one column of
+one bivariate toy at `n` = `r n`, with the component count supplied rather
+than selected, so the result speaks to the shape of the imputation law and
+not to behaviour in wide data or with many incomplete columns at once.
+
+The estimand shown in closed form is a column mean. Anything else is pooled
+by `mice`, whose rules are the Rubin large-sample rules and inherit their
+assumptions. What would change the answer most is the number of components:
+at `N` = 1 the imputer is the Gaussian model this vignette argues against,
+and a component count chosen well above the number of genuine clusters
+would fit noise into the conditional law.
+
+## What to read next
+
+*Missing data that depends on the missing value* takes up the two
+mechanisms this vignette assumes away, censoring at a known bound and
+missingness whose probability depends on the hidden value itself, and shows
+how a sensitivity sweep brackets an answer that the data alone cannot
+identify.
+
+*The closed-form operator calculus on a mixture* is the algebra underneath
+`gmm_conditionalise()`, and shows what else the same conditioning step buys
+once a mixture is in hand.
+
+*One mixture, many methods* places imputation beside the other classical
+analyses that fall out of a single fitted mixture.
+
+## References
+
+* Rubin, D. B. (1987). *Multiple Imputation for Nonresponse in Surveys.*
+  Wiley.
+* van Buuren, S. and Groothuis-Oudshoorn, K. (2011). *mice: Multivariate
+  imputation by chained equations in R.* Journal of Statistical Software
+  45(3), 1--67. <doi:10.18637/jss.v045.i03>.
+* Hoek, J. van der and Elliott, R. J. (2024). *Mixtures of multivariate
+  Gaussians.* Stochastic Analysis and Applications.
+  <doi:10.1080/07362994.2024.2372605>.
+
+## Reproduce
+
+The data-generating seed is `20260620`, set in the chunk that builds the
+toy; `gmm_impute()` is given `seed = 1L`, which makes the completions
+reproducible without disturbing the ambient random-number state.
+
+```{r session-info}
+sessionInfo()
+```

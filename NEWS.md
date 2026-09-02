@@ -16,6 +16,25 @@
 
 ### Documentation
 
+* All twelve vignettes were brought to a common quality bar: each now
+  opens with the question it answers, carries a Why / What / Do / Read /
+  Limits / What to read next / Reproduce shape, states every number in
+  prose from a chunk or inline code rather than by hand, draws its figures
+  with `ggplot2` on a colourblind-safe palette with captions and alt text,
+  tabulates through `knitr::kable()`, refers to its companions by title,
+  and closes with its seed and `sessionInfo()`. *One mixture, many
+  methods* gains a section on the decision family (`fit_uplift()`,
+  `proxy_cate()`, `proxy_decide()`, `proxy_identification_report()`), which
+  no vignette previously covered and which shows the
+  `proxymix_treatment_scale_error` refusal of an unobserved treatment
+  contrast; *How well a mixture proxies four awkward shapes* shows the
+  `proxymix_degenerate_fit` refusal of a collapsed importance sample.
+  Claims that had never been computed are now computed, and three that did
+  not survive the computation were corrected: the regime (i) and regime
+  (iii) fits at `N = 1` do not agree to within Monte Carlo error, the
+  donut's residual divergence needed a grid-quadrature oracle to be stated
+  at all, and the fraction of `x2` deleted in the imputation example was
+  near a half rather than the two fifths claimed.
 * Every figure chunk across the vignette set now carries a `fig.cap` stating
   what the figure shows, and the four uncaptioned or under-interpreted plots
   (`calibration`, `from_kde`, `missing_data`, `operator_calculus`) gained a

@@ -26,9 +26,9 @@ q <- is_mvn(n_dim = 2L, mean = c(0, 0), cov = 4 * diag(2))
 q
 }
 \seealso{
-Other proposals: 
-\code{\link{is_mvt}()},
-\code{\link{is_uniform}()},
-\code{\link{proposal_uniform}()}
+Other proposals:
+\code{\link[=is_mvt]{is_mvt()}},
+\code{\link[=is_uniform]{is_uniform()}},
+\code{\link[=proposal_uniform]{proposal_uniform()}}
 }
 \concept{proposals}

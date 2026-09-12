@@ -40,19 +40,19 @@ gmm_entropy(g, order = "shannon", n_mc = 2000L, seed = 1L)
 \seealso{
 \code{\link[=gmm_divergence]{gmm_divergence()}}, \code{\link[=gmm_kld]{gmm_kld()}}
 
-Other diagnostics: 
-\code{\link{bic_aic}()},
-\code{\link{ess_summary}()},
-\code{\link{ess_trace}()},
-\code{\link{gmm_anneal_path}()},
-\code{\link{gmm_conditional_entropy}()},
-\code{\link{gmm_evidence}()},
-\code{\link{gmm_fit_ensemble}()},
-\code{\link{gmm_fit_quality}()},
-\code{\link{gmm_independence_graph}()},
-\code{\link{gmm_mutual_information}()},
-\code{\link{hellinger_mc}()},
-\code{\link{kld_trace}()},
-\code{\link{proxy_functional_ci}()}
+Other diagnostics:
+\code{\link[=bic_aic]{bic_aic()}},
+\code{\link[=ess_summary]{ess_summary()}},
+\code{\link[=ess_trace]{ess_trace()}},
+\code{\link[=gmm_anneal_path]{gmm_anneal_path()}},
+\code{\link[=gmm_conditional_entropy]{gmm_conditional_entropy()}},
+\code{\link[=gmm_evidence]{gmm_evidence()}},
+\code{\link[=gmm_fit_ensemble]{gmm_fit_ensemble()}},
+\code{\link[=gmm_fit_quality]{gmm_fit_quality()}},
+\code{\link[=gmm_independence_graph]{gmm_independence_graph()}},
+\code{\link[=gmm_mutual_information]{gmm_mutual_information()}},
+\code{\link[=hellinger_mc]{hellinger_mc()}},
+\code{\link[=kld_trace]{kld_trace()}},
+\code{\link[=proxy_functional_ci]{proxy_functional_ci()}}
 }
 \concept{diagnostics}

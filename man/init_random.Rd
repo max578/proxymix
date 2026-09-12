@@ -40,10 +40,10 @@ best-of strategy.
 init_random(N = 3L, p = 2L, seed = 1L)
 }
 \seealso{
-Other init: 
-\code{\link{init_kmeans}()},
-\code{\link{init_moment_seed}()},
-\code{\link{init_warm_start}()},
-\code{\link{multi_start_best_of}()}
+Other init:
+\code{\link[=init_kmeans]{init_kmeans()}},
+\code{\link[=init_moment_seed]{init_moment_seed()}},
+\code{\link[=init_warm_start]{init_warm_start()}},
+\code{\link[=multi_start_best_of]{multi_start_best_of()}}
 }
 \concept{init}

@@ -33,16 +33,16 @@ g <- gmm(weights = c(0.4, 0.6),
 gmm_missing(g, observed = 2L, values = 0.5)
 }
 \seealso{
-Other operators: 
-\code{\link{gmm_affine}()},
-\code{\link{gmm_aggregate}()},
-\code{\link{gmm_convolve}()},
-\code{\link{gmm_counterfactual}()},
-\code{\link{gmm_filter}()},
-\code{\link{gmm_intervene}()},
-\code{\link{gmm_mix}()},
-\code{\link{gmm_observe}()},
-\code{\link{gmm_product}()},
-\code{\link{gmm_reduce}()}
+Other operators:
+\code{\link[=gmm_affine]{gmm_affine()}},
+\code{\link[=gmm_aggregate]{gmm_aggregate()}},
+\code{\link[=gmm_convolve]{gmm_convolve()}},
+\code{\link[=gmm_counterfactual]{gmm_counterfactual()}},
+\code{\link[=gmm_filter]{gmm_filter()}},
+\code{\link[=gmm_intervene]{gmm_intervene()}},
+\code{\link[=gmm_mix]{gmm_mix()}},
+\code{\link[=gmm_observe]{gmm_observe()}},
+\code{\link[=gmm_product]{gmm_product()}},
+\code{\link[=gmm_reduce]{gmm_reduce()}}
 }
 \concept{operators}

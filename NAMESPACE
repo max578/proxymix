@@ -107,13 +107,17 @@ export(select_N)
 export(uplift_identification)
 export(uplift_model)
 import(S7)
-importFrom(rlang,"%||%")
-importFrom(rlang,.data)
-importFrom(stats,cov)
-importFrom(stats,dnorm)
-importFrom(stats,kmeans)
-importFrom(stats,pnorm)
-importFrom(stats,rnorm)
-importFrom(stats,runif)
-importFrom(stats,var)
+importFrom(rlang,
+  "%||%",
+  .data
+)
+importFrom(stats,
+  cov,
+  dnorm,
+  kmeans,
+  pnorm,
+  rnorm,
+  runif,
+  var
+)
 importFrom(utils,modifyList)

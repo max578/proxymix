@@ -30,10 +30,10 @@ x <- matrix(stats::rnorm(200), ncol = 2)
 init_kmeans(x, N = 3L)
 }
 \seealso{
-Other init: 
-\code{\link{init_moment_seed}()},
-\code{\link{init_random}()},
-\code{\link{init_warm_start}()},
-\code{\link{multi_start_best_of}()}
+Other init:
+\code{\link[=init_moment_seed]{init_moment_seed()}},
+\code{\link[=init_random]{init_random()}},
+\code{\link[=init_warm_start]{init_warm_start()}},
+\code{\link[=multi_start_best_of]{multi_start_best_of()}}
 }
 \concept{init}

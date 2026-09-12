@@ -26,11 +26,11 @@ tgt <- gmm_target_from_samples(x)
 tgt
 }
 \seealso{
-Other targets: 
-\code{\link{banana_target}()},
-\code{\link{donut_target}()},
-\code{\link{epanechnikov_target}()},
-\code{\link{maxent_target}()},
-\code{\link{mixture_target}()}
+Other targets:
+\code{\link[=banana_target]{banana_target()}},
+\code{\link[=donut_target]{donut_target()}},
+\code{\link[=epanechnikov_target]{epanechnikov_target()}},
+\code{\link[=maxent_target]{maxent_target()}},
+\code{\link[=mixture_target]{mixture_target()}}
 }
 \concept{targets}

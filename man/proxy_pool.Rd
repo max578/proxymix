@@ -44,13 +44,13 @@ proxy_pool(imp, "x2")                       # analytic column mean
 \seealso{
 \code{\link[=proxy_fmi]{proxy_fmi()}}, \code{\link[=as_mids]{as_mids()}} to pool models with \code{\link[mice:pool]{mice::pool()}}.
 
-Other imputation: 
-\code{\link{as_mids}()},
-\code{\link{gmm_complete}()},
-\code{\link{gmm_imputation}()},
-\code{\link{gmm_impute}()},
+Other imputation:
+\code{\link[=as_mids]{as_mids()}},
+\code{\link[=gmm_complete]{gmm_complete()}},
+\code{\link[=gmm_imputation]{gmm_imputation()}},
+\code{\link[=gmm_impute]{gmm_impute()}},
 \code{\link{mechanism}},
-\code{\link{proxy_fmi}()},
-\code{\link{proxy_mnar_sensitivity}()}
+\code{\link[=proxy_fmi]{proxy_fmi()}},
+\code{\link[=proxy_mnar_sensitivity]{proxy_mnar_sensitivity()}}
 }
 \concept{imputation}

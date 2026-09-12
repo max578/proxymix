@@ -51,11 +51,11 @@ e
 e@log_density(matrix(c(0, 0.5, 1.5), ncol = 1L)) # finite, finite, -Inf
 }
 \seealso{
-Other targets: 
-\code{\link{banana_target}()},
-\code{\link{donut_target}()},
-\code{\link{gmm_target_from_samples}()},
-\code{\link{maxent_target}()},
-\code{\link{mixture_target}()}
+Other targets:
+\code{\link[=banana_target]{banana_target()}},
+\code{\link[=donut_target]{donut_target()}},
+\code{\link[=gmm_target_from_samples]{gmm_target_from_samples()}},
+\code{\link[=maxent_target]{maxent_target()}},
+\code{\link[=mixture_target]{mixture_target()}}
 }
 \concept{targets}

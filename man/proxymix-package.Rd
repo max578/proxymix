@@ -20,5 +20,10 @@ Useful links:
 \author{
 \strong{Maintainer}: Max Moldovan \email{max.moldovan@gmail.com} (\href{https://orcid.org/0000-0001-9680-8474}{ORCID})
 
+Authors:
+\itemize{
+  \item Max Moldovan \email{max.moldovan@gmail.com} (\href{https://orcid.org/0000-0001-9680-8474}{ORCID})
+}
+
 }
 \keyword{internal}

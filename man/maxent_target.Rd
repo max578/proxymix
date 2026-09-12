@@ -75,11 +75,11 @@ Jaynes, E. T. (1957) Information theory and statistical mechanics.
 \emph{Physical Review} 106(4), 620--630. \doi{10.1103/PhysRev.106.620}
 }
 \seealso{
-Other targets: 
-\code{\link{banana_target}()},
-\code{\link{donut_target}()},
-\code{\link{epanechnikov_target}()},
-\code{\link{gmm_target_from_samples}()},
-\code{\link{mixture_target}()}
+Other targets:
+\code{\link[=banana_target]{banana_target()}},
+\code{\link[=donut_target]{donut_target()}},
+\code{\link[=epanechnikov_target]{epanechnikov_target()}},
+\code{\link[=gmm_target_from_samples]{gmm_target_from_samples()}},
+\code{\link[=mixture_target]{mixture_target()}}
 }
 \concept{targets}

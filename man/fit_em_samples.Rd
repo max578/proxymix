@@ -72,11 +72,11 @@ fit <- fit_em_samples(tgt, N = 2L, max_iter = 30L, n_starts = 2L)
 fit@diagnostics$loglik_final
 }
 \seealso{
-Other fitting: 
-\code{\link{fit_kld_em}()},
-\code{\link{fit_moment_match}()},
-\code{\link{from_kde}()},
-\code{\link{from_objective}()},
-\code{\link{select_N}()}
+Other fitting:
+\code{\link[=fit_kld_em]{fit_kld_em()}},
+\code{\link[=fit_moment_match]{fit_moment_match()}},
+\code{\link[=from_kde]{from_kde()}},
+\code{\link[=from_objective]{from_objective()}},
+\code{\link[=select_N]{select_N()}}
 }
 \concept{fitting}

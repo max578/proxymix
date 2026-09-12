@@ -33,16 +33,16 @@ gmm_means(g)
 \code{\link[=gmm_mean]{gmm_mean()}} / \code{\link[=gmm_cov]{gmm_cov()}} for the moments of the mixture as a
 whole, \code{\link[=gmm_fit_quality]{gmm_fit_quality()}} for the fit-quality certificate.
 
-Other classes: 
+Other classes:
 \code{\link{autoplot.gmm_fit}},
 \code{\link{glance.gmm_fit}},
-\code{\link{gmm}()},
-\code{\link{gmm_counterfactual_law}()},
-\code{\link{gmm_dim}()},
-\code{\link{gmm_fit}()},
-\code{\link{gmm_n_components}()},
-\code{\link{gmm_target}()},
-\code{\link{is_proposal}()},
+\code{\link[=gmm]{gmm()}},
+\code{\link[=gmm_counterfactual_law]{gmm_counterfactual_law()}},
+\code{\link[=gmm_dim]{gmm_dim()}},
+\code{\link[=gmm_fit]{gmm_fit()}},
+\code{\link[=gmm_n_components]{gmm_n_components()}},
+\code{\link[=gmm_target]{gmm_target()}},
+\code{\link[=is_proposal]{is_proposal()}},
 \code{\link{tidy.gmm}}
 }
 \concept{classes}

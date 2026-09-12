@@ -31,9 +31,9 @@ q <- is_mvt(n_dim = 2L, df = 5)
 q
 }
 \seealso{
-Other proposals: 
-\code{\link{is_mvn}()},
-\code{\link{is_uniform}()},
-\code{\link{proposal_uniform}()}
+Other proposals:
+\code{\link[=is_mvn]{is_mvn()}},
+\code{\link[=is_uniform]{is_uniform()}},
+\code{\link[=proposal_uniform]{proposal_uniform()}}
 }
 \concept{proposals}

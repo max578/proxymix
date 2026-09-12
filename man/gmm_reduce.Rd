@@ -89,16 +89,16 @@ mixture reduction. \emph{IEEE Transactions on Aerospace and Electronic Systems}
 43(3), 989--999. \doi{10.1109/TAES.2007.4383588}
 }
 \seealso{
-Other operators: 
-\code{\link{gmm_affine}()},
-\code{\link{gmm_aggregate}()},
-\code{\link{gmm_convolve}()},
-\code{\link{gmm_counterfactual}()},
-\code{\link{gmm_filter}()},
-\code{\link{gmm_intervene}()},
-\code{\link{gmm_missing}()},
-\code{\link{gmm_mix}()},
-\code{\link{gmm_observe}()},
-\code{\link{gmm_product}()}
+Other operators:
+\code{\link[=gmm_affine]{gmm_affine()}},
+\code{\link[=gmm_aggregate]{gmm_aggregate()}},
+\code{\link[=gmm_convolve]{gmm_convolve()}},
+\code{\link[=gmm_counterfactual]{gmm_counterfactual()}},
+\code{\link[=gmm_filter]{gmm_filter()}},
+\code{\link[=gmm_intervene]{gmm_intervene()}},
+\code{\link[=gmm_missing]{gmm_missing()}},
+\code{\link[=gmm_mix]{gmm_mix()}},
+\code{\link[=gmm_observe]{gmm_observe()}},
+\code{\link[=gmm_product]{gmm_product()}}
 }
 \concept{operators}

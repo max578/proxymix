@@ -49,11 +49,11 @@ sel$table
 sel$best_n
 }
 \seealso{
-Other fitting: 
-\code{\link{fit_em_samples}()},
-\code{\link{fit_kld_em}()},
-\code{\link{fit_moment_match}()},
-\code{\link{from_kde}()},
-\code{\link{from_objective}()}
+Other fitting:
+\code{\link[=fit_em_samples]{fit_em_samples()}},
+\code{\link[=fit_kld_em]{fit_kld_em()}},
+\code{\link[=fit_moment_match]{fit_moment_match()}},
+\code{\link[=from_kde]{from_kde()}},
+\code{\link[=from_objective]{from_objective()}}
 }
 \concept{fitting}

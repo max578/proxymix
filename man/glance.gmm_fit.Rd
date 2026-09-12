@@ -25,16 +25,16 @@ generics::glance(fit)
 \dontshow{\}) # examplesIf}
 }
 \seealso{
-Other classes: 
+Other classes:
 \code{\link{autoplot.gmm_fit}},
-\code{\link{gmm}()},
-\code{\link{gmm_counterfactual_law}()},
-\code{\link{gmm_dim}()},
-\code{\link{gmm_fit}()},
-\code{\link{gmm_n_components}()},
-\code{\link{gmm_target}()},
-\code{\link{gmm_weights}()},
-\code{\link{is_proposal}()},
+\code{\link[=gmm]{gmm()}},
+\code{\link[=gmm_counterfactual_law]{gmm_counterfactual_law()}},
+\code{\link[=gmm_dim]{gmm_dim()}},
+\code{\link[=gmm_fit]{gmm_fit()}},
+\code{\link[=gmm_n_components]{gmm_n_components()}},
+\code{\link[=gmm_target]{gmm_target()}},
+\code{\link[=gmm_weights]{gmm_weights()}},
+\code{\link[=is_proposal]{is_proposal()}},
 \code{\link{tidy.gmm}}
 }
 \concept{classes}

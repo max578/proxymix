@@ -27,11 +27,11 @@ m <- mixture_target(with_samples = TRUE, n = 100L)
 m
 }
 \seealso{
-Other targets: 
-\code{\link{banana_target}()},
-\code{\link{donut_target}()},
-\code{\link{epanechnikov_target}()},
-\code{\link{gmm_target_from_samples}()},
-\code{\link{maxent_target}()}
+Other targets:
+\code{\link[=banana_target]{banana_target()}},
+\code{\link[=donut_target]{donut_target()}},
+\code{\link[=epanechnikov_target]{epanechnikov_target()}},
+\code{\link[=gmm_target_from_samples]{gmm_target_from_samples()}},
+\code{\link[=maxent_target]{maxent_target()}}
 }
 \concept{targets}

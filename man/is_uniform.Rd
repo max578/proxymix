@@ -30,9 +30,9 @@ q
 q@sample(3L)
 }
 \seealso{
-Other proposals: 
-\code{\link{is_mvn}()},
-\code{\link{is_mvt}()},
-\code{\link{proposal_uniform}()}
+Other proposals:
+\code{\link[=is_mvn]{is_mvn()}},
+\code{\link[=is_mvt]{is_mvt()}},
+\code{\link[=proposal_uniform]{proposal_uniform()}}
 }
 \concept{proposals}

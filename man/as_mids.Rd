@@ -34,13 +34,13 @@ if (requireNamespace("mice", quietly = TRUE)) {
 \code{\link[=gmm_impute]{gmm_impute()}}, \code{\link[=proxy_pool]{proxy_pool()}} for the closed-form column-mean
 pooling.
 
-Other imputation: 
-\code{\link{gmm_complete}()},
-\code{\link{gmm_imputation}()},
-\code{\link{gmm_impute}()},
+Other imputation:
+\code{\link[=gmm_complete]{gmm_complete()}},
+\code{\link[=gmm_imputation]{gmm_imputation()}},
+\code{\link[=gmm_impute]{gmm_impute()}},
 \code{\link{mechanism}},
-\code{\link{proxy_fmi}()},
-\code{\link{proxy_mnar_sensitivity}()},
-\code{\link{proxy_pool}()}
+\code{\link[=proxy_fmi]{proxy_fmi()}},
+\code{\link[=proxy_mnar_sensitivity]{proxy_mnar_sensitivity()}},
+\code{\link[=proxy_pool]{proxy_pool()}}
 }
 \concept{imputation}

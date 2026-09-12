@@ -51,15 +51,15 @@ gmm_modes(g)$modes
 \seealso{
 \code{\link[=from_objective]{from_objective()}}, whose fitted map this resolves into optima.
 
-Other ops: 
-\code{\link{dgmm}()},
-\code{\link{gmm_canonicalise}()},
-\code{\link{gmm_conditionalise}()},
-\code{\link{gmm_divergence}()},
-\code{\link{gmm_kld}()},
-\code{\link{gmm_marginalise}()},
-\code{\link{gmm_mean}()},
-\code{\link{pgmm}()},
-\code{\link{rgmm}()}
+Other ops:
+\code{\link[=dgmm]{dgmm()}},
+\code{\link[=gmm_canonicalise]{gmm_canonicalise()}},
+\code{\link[=gmm_conditionalise]{gmm_conditionalise()}},
+\code{\link[=gmm_divergence]{gmm_divergence()}},
+\code{\link[=gmm_kld]{gmm_kld()}},
+\code{\link[=gmm_marginalise]{gmm_marginalise()}},
+\code{\link[=gmm_mean]{gmm_mean()}},
+\code{\link[=pgmm]{pgmm()}},
+\code{\link[=rgmm]{rgmm()}}
 }
 \concept{ops}

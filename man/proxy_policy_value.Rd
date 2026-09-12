@@ -60,23 +60,23 @@ proxy_policy_value(m, nd, policy = "optimal", value = 1, cost = 0.3)
 \seealso{
 \code{\link[=proxy_decide]{proxy_decide()}}, \code{\link[=proxy_overlap]{proxy_overlap()}}
 
-Other decision: 
-\code{\link{fit_uplift}()},
-\code{\link{gmm_cf_mean}()},
-\code{\link{gmm_cf_tail_prob}()},
-\code{\link{gmm_cf_variance}()},
-\code{\link{gmm_counterfactual}()},
-\code{\link{gmm_intervene}()},
-\code{\link{proxy_cate}()},
-\code{\link{proxy_confounding_gap}()},
-\code{\link{proxy_decide}()},
-\code{\link{proxy_identification_report}()},
-\code{\link{proxy_overlap}()},
-\code{\link{proxy_predict}()},
-\code{\link{proxy_regime_segments}()},
-\code{\link{proxy_retrospective_uplift}()},
-\code{\link{proxy_uplift}()},
-\code{\link{uplift_identification}()},
-\code{\link{uplift_model}()}
+Other decision:
+\code{\link[=fit_uplift]{fit_uplift()}},
+\code{\link[=gmm_cf_mean]{gmm_cf_mean()}},
+\code{\link[=gmm_cf_tail_prob]{gmm_cf_tail_prob()}},
+\code{\link[=gmm_cf_variance]{gmm_cf_variance()}},
+\code{\link[=gmm_counterfactual]{gmm_counterfactual()}},
+\code{\link[=gmm_intervene]{gmm_intervene()}},
+\code{\link[=proxy_cate]{proxy_cate()}},
+\code{\link[=proxy_confounding_gap]{proxy_confounding_gap()}},
+\code{\link[=proxy_decide]{proxy_decide()}},
+\code{\link[=proxy_identification_report]{proxy_identification_report()}},
+\code{\link[=proxy_overlap]{proxy_overlap()}},
+\code{\link[=proxy_predict]{proxy_predict()}},
+\code{\link[=proxy_regime_segments]{proxy_regime_segments()}},
+\code{\link[=proxy_retrospective_uplift]{proxy_retrospective_uplift()}},
+\code{\link[=proxy_uplift]{proxy_uplift()}},
+\code{\link[=uplift_identification]{uplift_identification()}},
+\code{\link[=uplift_model]{uplift_model()}}
 }
 \concept{decision}

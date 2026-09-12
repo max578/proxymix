@@ -30,13 +30,13 @@ all_completions <- gmm_complete(imp, which = "all")   # a list of ten
 length(all_completions)
 }
 \seealso{
-Other imputation: 
-\code{\link{as_mids}()},
-\code{\link{gmm_imputation}()},
-\code{\link{gmm_impute}()},
+Other imputation:
+\code{\link[=as_mids]{as_mids()}},
+\code{\link[=gmm_imputation]{gmm_imputation()}},
+\code{\link[=gmm_impute]{gmm_impute()}},
 \code{\link{mechanism}},
-\code{\link{proxy_fmi}()},
-\code{\link{proxy_mnar_sensitivity}()},
-\code{\link{proxy_pool}()}
+\code{\link[=proxy_fmi]{proxy_fmi()}},
+\code{\link[=proxy_mnar_sensitivity]{proxy_mnar_sensitivity()}},
+\code{\link[=proxy_pool]{proxy_pool()}}
 }
 \concept{imputation}

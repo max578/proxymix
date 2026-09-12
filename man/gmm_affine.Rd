@@ -48,16 +48,16 @@ A <- matrix(c(1, 0, 0, 1, 1, -1), nrow = 3L, byrow = TRUE)
 gmm_affine(g, A, b = c(0, 0, 0), noise_cov = 0.01 * diag(3))
 }
 \seealso{
-Other operators: 
-\code{\link{gmm_aggregate}()},
-\code{\link{gmm_convolve}()},
-\code{\link{gmm_counterfactual}()},
-\code{\link{gmm_filter}()},
-\code{\link{gmm_intervene}()},
-\code{\link{gmm_missing}()},
-\code{\link{gmm_mix}()},
-\code{\link{gmm_observe}()},
-\code{\link{gmm_product}()},
-\code{\link{gmm_reduce}()}
+Other operators:
+\code{\link[=gmm_aggregate]{gmm_aggregate()}},
+\code{\link[=gmm_convolve]{gmm_convolve()}},
+\code{\link[=gmm_counterfactual]{gmm_counterfactual()}},
+\code{\link[=gmm_filter]{gmm_filter()}},
+\code{\link[=gmm_intervene]{gmm_intervene()}},
+\code{\link[=gmm_missing]{gmm_missing()}},
+\code{\link[=gmm_mix]{gmm_mix()}},
+\code{\link[=gmm_observe]{gmm_observe()}},
+\code{\link[=gmm_product]{gmm_product()}},
+\code{\link[=gmm_reduce]{gmm_reduce()}}
 }
 \concept{operators}

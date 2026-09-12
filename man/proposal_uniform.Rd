@@ -41,9 +41,9 @@ proposal_mvn(n_dim = 2L, mean = c(0, 0), cov = diag(2))
 proposal_mvt(n_dim = 2L, df = 5)   # heavier tails; a robust default
 }
 \seealso{
-Other proposals: 
-\code{\link{is_mvn}()},
-\code{\link{is_mvt}()},
-\code{\link{is_uniform}()}
+Other proposals:
+\code{\link[=is_mvn]{is_mvn()}},
+\code{\link[=is_mvt]{is_mvt()}},
+\code{\link[=is_uniform]{is_uniform()}}
 }
 \concept{proposals}

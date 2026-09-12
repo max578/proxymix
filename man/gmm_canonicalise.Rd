@@ -34,15 +34,15 @@ g <- gmm(weights = c(0.1, 0.6, 0.3),
 gmm_canonicalise(g)
 }
 \seealso{
-Other ops: 
-\code{\link{dgmm}()},
-\code{\link{gmm_conditionalise}()},
-\code{\link{gmm_divergence}()},
-\code{\link{gmm_kld}()},
-\code{\link{gmm_marginalise}()},
-\code{\link{gmm_mean}()},
-\code{\link{gmm_modes}()},
-\code{\link{pgmm}()},
-\code{\link{rgmm}()}
+Other ops:
+\code{\link[=dgmm]{dgmm()}},
+\code{\link[=gmm_conditionalise]{gmm_conditionalise()}},
+\code{\link[=gmm_divergence]{gmm_divergence()}},
+\code{\link[=gmm_kld]{gmm_kld()}},
+\code{\link[=gmm_marginalise]{gmm_marginalise()}},
+\code{\link[=gmm_mean]{gmm_mean()}},
+\code{\link[=gmm_modes]{gmm_modes()}},
+\code{\link[=pgmm]{pgmm()}},
+\code{\link[=rgmm]{rgmm()}}
 }
 \concept{ops}

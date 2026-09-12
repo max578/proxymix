@@ -39,10 +39,10 @@ best <- multi_start_best_of(
 best@diagnostics$loglik_final
 }
 \seealso{
-Other init: 
-\code{\link{init_kmeans}()},
-\code{\link{init_moment_seed}()},
-\code{\link{init_random}()},
-\code{\link{init_warm_start}()}
+Other init:
+\code{\link[=init_kmeans]{init_kmeans()}},
+\code{\link[=init_moment_seed]{init_moment_seed()}},
+\code{\link[=init_random]{init_random()}},
+\code{\link[=init_warm_start]{init_warm_start()}}
 }
 \concept{init}

@@ -113,16 +113,16 @@ estimation using Gaussian sum approximations. \emph{IEEE Transactions on
 Automatic Control} 17(4), 439--448. \doi{10.1109/TAC.1972.1100034}
 }
 \seealso{
-Other operators: 
-\code{\link{gmm_affine}()},
-\code{\link{gmm_aggregate}()},
-\code{\link{gmm_convolve}()},
-\code{\link{gmm_counterfactual}()},
-\code{\link{gmm_intervene}()},
-\code{\link{gmm_missing}()},
-\code{\link{gmm_mix}()},
-\code{\link{gmm_observe}()},
-\code{\link{gmm_product}()},
-\code{\link{gmm_reduce}()}
+Other operators:
+\code{\link[=gmm_affine]{gmm_affine()}},
+\code{\link[=gmm_aggregate]{gmm_aggregate()}},
+\code{\link[=gmm_convolve]{gmm_convolve()}},
+\code{\link[=gmm_counterfactual]{gmm_counterfactual()}},
+\code{\link[=gmm_intervene]{gmm_intervene()}},
+\code{\link[=gmm_missing]{gmm_missing()}},
+\code{\link[=gmm_mix]{gmm_mix()}},
+\code{\link[=gmm_observe]{gmm_observe()}},
+\code{\link[=gmm_product]{gmm_product()}},
+\code{\link[=gmm_reduce]{gmm_reduce()}}
 }
 \concept{operators}

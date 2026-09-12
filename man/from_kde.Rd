@@ -98,11 +98,11 @@ fit
 ess_summary(fit)
 }
 \seealso{
-Other fitting: 
-\code{\link{fit_em_samples}()},
-\code{\link{fit_kld_em}()},
-\code{\link{fit_moment_match}()},
-\code{\link{from_objective}()},
-\code{\link{select_N}()}
+Other fitting:
+\code{\link[=fit_em_samples]{fit_em_samples()}},
+\code{\link[=fit_kld_em]{fit_kld_em()}},
+\code{\link[=fit_moment_match]{fit_moment_match()}},
+\code{\link[=from_objective]{from_objective()}},
+\code{\link[=select_N]{select_N()}}
 }
 \concept{fitting}

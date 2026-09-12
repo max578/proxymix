@@ -62,13 +62,13 @@ mnar("y", beta = 0.8)                  # larger y more likely missing
 \seealso{
 \code{\link[=gmm_impute]{gmm_impute()}}, \code{\link[=proxy_mnar_sensitivity]{proxy_mnar_sensitivity()}}.
 
-Other imputation: 
-\code{\link{as_mids}()},
-\code{\link{gmm_complete}()},
-\code{\link{gmm_imputation}()},
-\code{\link{gmm_impute}()},
-\code{\link{proxy_fmi}()},
-\code{\link{proxy_mnar_sensitivity}()},
-\code{\link{proxy_pool}()}
+Other imputation:
+\code{\link[=as_mids]{as_mids()}},
+\code{\link[=gmm_complete]{gmm_complete()}},
+\code{\link[=gmm_imputation]{gmm_imputation()}},
+\code{\link[=gmm_impute]{gmm_impute()}},
+\code{\link[=proxy_fmi]{proxy_fmi()}},
+\code{\link[=proxy_mnar_sensitivity]{proxy_mnar_sensitivity()}},
+\code{\link[=proxy_pool]{proxy_pool()}}
 }
 \concept{imputation}

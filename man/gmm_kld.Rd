@@ -52,15 +52,15 @@ q <- gmm(weights = 1,
 gmm_kld(p, q, n_mc = 500L)
 }
 \seealso{
-Other ops: 
-\code{\link{dgmm}()},
-\code{\link{gmm_canonicalise}()},
-\code{\link{gmm_conditionalise}()},
-\code{\link{gmm_divergence}()},
-\code{\link{gmm_marginalise}()},
-\code{\link{gmm_mean}()},
-\code{\link{gmm_modes}()},
-\code{\link{pgmm}()},
-\code{\link{rgmm}()}
+Other ops:
+\code{\link[=dgmm]{dgmm()}},
+\code{\link[=gmm_canonicalise]{gmm_canonicalise()}},
+\code{\link[=gmm_conditionalise]{gmm_conditionalise()}},
+\code{\link[=gmm_divergence]{gmm_divergence()}},
+\code{\link[=gmm_marginalise]{gmm_marginalise()}},
+\code{\link[=gmm_mean]{gmm_mean()}},
+\code{\link[=gmm_modes]{gmm_modes()}},
+\code{\link[=pgmm]{pgmm()}},
+\code{\link[=rgmm]{rgmm()}}
 }
 \concept{ops}

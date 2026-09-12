@@ -57,13 +57,13 @@ proxy_mnar_sensitivity(dat, "y", beta_grid = c(0, 0.4, 0.8, 1.2), m = 10L, seed 
 \seealso{
 \code{\link[=gmm_impute]{gmm_impute()}}, \code{\link[=mnar]{mnar()}}.
 
-Other imputation: 
-\code{\link{as_mids}()},
-\code{\link{gmm_complete}()},
-\code{\link{gmm_imputation}()},
-\code{\link{gmm_impute}()},
+Other imputation:
+\code{\link[=as_mids]{as_mids()}},
+\code{\link[=gmm_complete]{gmm_complete()}},
+\code{\link[=gmm_imputation]{gmm_imputation()}},
+\code{\link[=gmm_impute]{gmm_impute()}},
 \code{\link{mechanism}},
-\code{\link{proxy_fmi}()},
-\code{\link{proxy_pool}()}
+\code{\link[=proxy_fmi]{proxy_fmi()}},
+\code{\link[=proxy_pool]{proxy_pool()}}
 }
 \concept{imputation}

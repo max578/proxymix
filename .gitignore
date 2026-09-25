@@ -16,3 +16,6 @@ src/*.dll
 critical_review_*.md
 
 docs
+.claude/
+.positai/
+.cursor/

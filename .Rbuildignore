@@ -22,3 +22,6 @@
 ^tools$
 ^texput\.log$
 ^CRAN-SUBMISSION$
+^\.claude$
+^\.positai$
+^\.cursor$

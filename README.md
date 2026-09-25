@@ -193,6 +193,17 @@ Hoek, J. van der and Elliott, R. J. (2024). *Mixtures of multivariate
 Gaussians.* Stochastic Analysis and Applications.
 [doi:10.1080/07362994.2024.2372605](https://doi.org/10.1080/07362994.2024.2372605).
 
+## Contributing
+
+Bug reports and suggestions are welcome through the
+[GitHub issues](https://github.com/max578/proxymix/issues).
+
+## Citation
+
+``` r
+citation("proxymix")
+```
+
 ## Licence
 
 MIT © Max Moldovan.

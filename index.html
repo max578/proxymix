@@ -7,10 +7,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>KL-Optimal Gaussian Mixture Proxies for Arbitrary Target Densities • proxymix</title>
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="KL-Optimal Gaussian Mixture Proxies for Arbitrary Target Densities">
+<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><link href="extra.css" rel="stylesheet">
+<meta property="og:title" content="KL-Optimal Gaussian Mixture Proxies for Arbitrary Target Densities">
 <meta name="description" content="Fits multivariate Gaussian-mixture proxies that are Kullback-Leibler optimal to user-supplied target densities on real Euclidean space. Three fitting regimes are unified under one verb: (i) closed-form moment matching for a single component, (ii) classical expectation-maximisation when independent samples are available, and (iii) importance-sampled KLD-EM when the target can be evaluated point-wise but not (cheaply) sampled. Closed-form Gaussian-mixture operators (density, sampling, marginalisation, conditioning, divergence) round out the toolkit. The conditioning operator drives multiple imputation of data missing at random, covering the multimodal and heteroscedastic cases a single-Gaussian model cannot represent. Implements the regime hierarchy of Hoek and Elliott (2024) &lt;doi:10.1080/07362994.2024.2372605&gt;.">
 <meta property="og:description" content="Fits multivariate Gaussian-mixture proxies that are Kullback-Leibler optimal to user-supplied target densities on real Euclidean space. Three fitting regimes are unified under one verb: (i) closed-form moment matching for a single component, (ii) classical expectation-maximisation when independent samples are available, and (iii) importance-sampled KLD-EM when the target can be evaluated point-wise but not (cheaply) sampled. Closed-form Gaussian-mixture operators (density, sampling, marginalisation, conditioning, divergence) round out the toolkit. The conditioning operator drives multiple imputation of data missing at random, covering the multimodal and heteroscedastic cases a single-Gaussian model cannot represent. Implements the regime hierarchy of Hoek and Elliott (2024) &lt;doi:10.1080/07362994.2024.2372605&gt;.">
 </head>
@@ -22,7 +23,7 @@
 
     <a class="navbar-brand me-2" href="index.html">proxymix</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.15.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.16.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,18 +36,20 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="articles/quickstart.html">Quickstart</a></li>
+<li><a class="dropdown-item" href="articles/quickstart.html">Fitting a proxy to a density you cannot sample</a></li>
     <li><a class="dropdown-item" href="articles/posterior_proxy.html">Compressing a Bayesian posterior you can evaluate but not sample</a></li>
-    <li><a class="dropdown-item" href="articles/three_regimes.html">Three regimes: moment, sample, and KLD-EM</a></li>
-    <li><a class="dropdown-item" href="articles/density_shapes.html">KLD-EM on three density shapes</a></li>
-    <li><a class="dropdown-item" href="articles/operator_calculus.html">Affine-Gaussian operator calculus on a Gaussian mixture</a></li>
-    <li><a class="dropdown-item" href="articles/from_kde.html">From KDE: compressing a kernel density estimate into a Gaussian-mixture proxy</a></li>
+    <li><a class="dropdown-item" href="articles/three_regimes.html">Choosing between the three fitting regimes</a></li>
+    <li><a class="dropdown-item" href="articles/density_shapes.html">How well a mixture proxies four awkward shapes</a></li>
+    <li><a class="dropdown-item" href="articles/operator_calculus.html">The closed-form operator calculus on a mixture</a></li>
+    <li><a class="dropdown-item" href="articles/from_kde.html">Compressing a kernel density estimate into a mixture</a></li>
     <li><a class="dropdown-item" href="articles/many_methods.html">One mixture, many methods</a></li>
-    <li><a class="dropdown-item" href="articles/entropy.html">Entropy diagnostics with proxymix</a></li>
+    <li><a class="dropdown-item" href="articles/entropy.html">Reading the entropy of a fitted mixture</a></li>
     <li><a class="dropdown-item" href="articles/calibration.html">Mapping the optima of an objective</a></li>
     <li><a class="dropdown-item" href="articles/missing_data.html">Imputing missing data with a mixture</a></li>
     <li><a class="dropdown-item" href="articles/missing_data_mnar.html">Missing data that depends on the missing value</a></li>
     <li><a class="dropdown-item" href="articles/end_of_sample.html">Testing the last observation for instability</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item" href="articles/index.html">More articles...</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
@@ -68,7 +71,7 @@
 </h1></div>
 <!-- badges: start -->
 <!-- badges: end -->
-<p><code>proxymix</code> fits multivariate Gaussian-mixture proxies that are <strong>Kullback–Leibler optimal</strong> to user-supplied target densities on <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi mathvariant="double-struck">ℝ</mi><mi>p</mi></msup><annotation encoding="application/x-tex">\mathbb{R}^p</annotation></semantics></math>. Three regimes from Hoek and Elliott (2024) are unified under one verb:</p>
+<p><code>proxymix</code> fits multivariate Gaussian-mixture proxies that are <strong>Kullback–Leibler optimal</strong> to user-supplied target densities on <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi mathvariant="double-struck">ℝ</mi><mi>p</mi></msup><annotation encoding="application/x-tex">\mathbb{R}^p</annotation></semantics></math>. Three regimes from van der Hoek and Elliott (2024) are unified under one verb:</p>
 <table class="table">
 <colgroup>
 <col width="33%">
@@ -118,12 +121,12 @@
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/max578/proxymix" class="external-link">proxymix</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co">## A target you can evaluate but not sample from — a 2D "banana".</span></span>
+<span><span class="co">## A target you can evaluate but not sample from -- a 2D "banana".</span></span>
 <span><span class="va">banana</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/banana_target.html">banana_target</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co">## Fit a 3-component Gaussian mixture proxy via KLD-EM with importance sampling.</span></span>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/fit_proxymix.html">fit_proxymix</a></span><span class="op">(</span><span class="va">banana</span>, N <span class="op">=</span> <span class="fl">3L</span>, regime <span class="op">=</span> <span class="st">"kld"</span>,</span>
-<span>                    proposal <span class="op">=</span> <span class="fu"><a href="reference/is_mvt.html">is_mvt</a></span><span class="op">(</span>n_dim <span class="op">=</span> <span class="fl">2L</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>,</span>
+<span>                    proposal <span class="op">=</span> <span class="fu"><a href="reference/proposal_uniform.html">proposal_mvt</a></span><span class="op">(</span>n_dim <span class="op">=</span> <span class="fl">2L</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>,</span>
 <span>                    is_size <span class="op">=</span> <span class="fl">2000L</span>, max_iter <span class="op">=</span> <span class="fl">60L</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
@@ -177,7 +180,7 @@
 </h2>
 <div class="sourceCode" id="cb6"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>fit   <span class="ot">&lt;-</span> <span class="fu">from_objective</span>(f, lower, upper, <span class="at">N =</span> <span class="dv">10</span><span class="dt">L</span>)  <span class="co"># a mixture map of the optima</span></span>
 <span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="fu">gmm_modes</span>(fit)<span class="sc">$</span>modes                               <span class="co"># the distinct optima</span></span></code></pre></div>
-<p><code><a href="reference/from_objective.html">from_objective()</a></code> treats an objective <code>f</code> as the Gibbs measure <code>exp(-f / T)</code> — a regime-(iii) target you can evaluate but not sample — and returns a closed-form mixture over its low regions, so a multimodal <code>f</code> is recovered as a whole rather than one optimum at a time. <code><a href="reference/gmm_modes.html">gmm_modes()</a></code> resolves the fitted map into the recovered optima.</p>
+<p><code><a href="reference/from_objective.html">from_objective()</a></code> treats an objective <code>f</code> as the Gibbs measure <code>exp(-f / T)</code> – a regime-(iii) target you can evaluate but not sample – and returns a closed-form mixture over its low regions, so a multimodal <code>f</code> is recovered as a whole rather than one optimum at a time. <code><a href="reference/gmm_modes.html">gmm_modes()</a></code> resolves the fitted map into the recovered optima.</p>
 </div>
 <div class="section level2">
 <h2 id="which-function-do-i-need">Which function do I need?<a class="anchor" aria-label="anchor" href="#which-function-do-i-need"></a>
@@ -286,29 +289,29 @@
 <p>The package ships with twelve vignettes:</p>
 <ul>
 <li>
-<strong><code>quickstart</code></strong> — one-page tour.</li>
+<strong><code>quickstart</code></strong> – one-page tour.</li>
 <li>
-<strong><code>posterior_proxy</code></strong> — the flagship workflow: a real unnormalised Bayesian posterior compressed to a proxy, with the evidence, closed-form reads, and bootstrap error bars.</li>
+<strong><code>posterior_proxy</code></strong> – the flagship workflow: a real unnormalised Bayesian posterior compressed to a proxy, with the evidence, closed-form reads, and bootstrap error bars.</li>
 <li>
-<strong><code>three_regimes</code></strong> — a walk-through of regimes (i)–(iii) on toy 2-D targets, including the agreement of (i) and (iii) at <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">N = 1</annotation></semantics></math>.</li>
+<strong><code>three_regimes</code></strong> – a walk-through of regimes (i)–(iii) on toy 2-D targets, including the agreement of (i) and (iii) at <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">N = 1</annotation></semantics></math>.</li>
 <li>
-<strong><code>density_shapes</code></strong> — the regime-(iii) demonstration: banana, donut, three-mixture targets fit by importance-sampled KLD-EM.</li>
+<strong><code>density_shapes</code></strong> – the regime-(iii) demonstration: banana, donut, three-mixture targets fit by importance-sampled KLD-EM.</li>
 <li>
-<strong><code>operator_calculus</code></strong> — closed-form pushforward, Bayesian update, aggregation and conditioning on a fitted mixture.</li>
+<strong><code>operator_calculus</code></strong> – closed-form pushforward, Bayesian update, aggregation and conditioning on a fitted mixture.</li>
 <li>
-<strong><code>from_kde</code></strong> — compressing a kernel density estimate into a Gaussian-mixture proxy.</li>
+<strong><code>from_kde</code></strong> – compressing a kernel density estimate into a Gaussian-mixture proxy.</li>
 <li>
-<strong><code>many_methods</code></strong> — one fitted mixture in place of regression, clustering, PCA and ridge regression.</li>
+<strong><code>many_methods</code></strong> – one fitted mixture in place of regression, clustering, PCA and ridge regression.</li>
 <li>
-<strong><code>entropy</code></strong> — closed-form entropy, divergence and mutual-information diagnostics.</li>
+<strong><code>entropy</code></strong> – closed-form entropy, divergence and mutual-information diagnostics.</li>
 <li>
-<strong><code>calibration</code></strong> — mapping the optima of an objective via its Gibbs measure.</li>
+<strong><code>calibration</code></strong> – mapping the optima of an objective via its Gibbs measure.</li>
 <li>
-<strong><code>missing_data</code></strong> — multiple imputation by conditioning the fitted mixture (missing at random).</li>
+<strong><code>missing_data</code></strong> – multiple imputation by conditioning the fitted mixture (missing at random).</li>
 <li>
-<strong><code>missing_data_mnar</code></strong> — imputation under value-dependent missingness and censoring, with sensitivity analysis.</li>
+<strong><code>missing_data_mnar</code></strong> – imputation under value-dependent missingness and censoring, with sensitivity analysis.</li>
 <li>
-<strong><code>end_of_sample</code></strong> — testing whether the last few observations of a series are consistent with a fitted state-space model.</li>
+<strong><code>end_of_sample</code></strong> – testing whether the last few observations of a series are consistent with a fitted state-space model.</li>
 </ul>
 </div>
 <div class="section level2">
@@ -324,6 +327,17 @@
 <h2 id="reference">Reference<a class="anchor" aria-label="anchor" href="#reference"></a>
 </h2>
 <p>Hoek, J. van der and Elliott, R. J. (2024). <em>Mixtures of multivariate Gaussians.</em> Stochastic Analysis and Applications. <a href="https://doi.org/10.1080/07362994.2024.2372605" class="external-link">doi:10.1080/07362994.2024.2372605</a>.</p>
+</div>
+<div class="section level2">
+<h2 id="contributing">Contributing<a class="anchor" aria-label="anchor" href="#contributing"></a>
+</h2>
+<p>Bug reports and suggestions are welcome through the <a href="https://github.com/max578/proxymix/issues" class="external-link">GitHub issues</a>.</p>
+</div>
+<div class="section level2">
+<h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
+</h2>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/citation.html" class="external-link">citation</a></span><span class="op">(</span><span class="st">"proxymix"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="licence">Licence<a class="anchor" aria-label="anchor" href="#licence"></a>
@@ -373,7 +387,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

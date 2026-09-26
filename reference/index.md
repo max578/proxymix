@@ -281,9 +281,9 @@ KLD trace, ESS, Hellinger MC, information criteria.
 - [`gmm_anneal_path()`](https://max578.github.io/proxymix/reference/gmm_anneal_path.md)
   : Phase-transition component discovery by deterministic annealing
 - [`gmm_conditional_entropy()`](https://max578.github.io/proxymix/reference/gmm_conditional_entropy.md)
-  : Conditional predictive entropy of a Gaussian mixture
+  : Renyi-2 or Shannon entropy of a conditional Gaussian mixture
 - [`gmm_entropy()`](https://max578.github.io/proxymix/reference/gmm_entropy.md)
-  : Differential entropy of a Gaussian mixture
+  : Renyi-2 or Shannon entropy of a Gaussian mixture
 - [`gmm_evidence()`](https://max578.github.io/proxymix/reference/gmm_evidence.md)
   : Estimate the target's normalising constant from a fitted proxy
 - [`gmm_fit_ensemble()`](https://max578.github.io/proxymix/reference/gmm_fit_ensemble.md)

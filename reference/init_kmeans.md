@@ -49,7 +49,7 @@ Other init:
 x <- matrix(stats::rnorm(200), ncol = 2)
 init_kmeans(x, N = 3L)
 #> <init_kmeans>: K = 3 components in p = 2 dimensions
-#>   [1] w = 0.2600, |mu| = 1.4362, tr(Sigma) = 1.0920
-#>   [2] w = 0.4600, |mu| = 0.7757, tr(Sigma) = 0.7767
-#>   [3] w = 0.2800, |mu| = 1.0508, tr(Sigma) = 0.7932
+#>   [1] w = 0.3200, |mu| = 1.0904, tr(Sigma) = 1.0259
+#>   [2] w = 0.4500, |mu| = 0.7372, tr(Sigma) = 0.7710
+#>   [3] w = 0.2300, |mu| = 1.5437, tr(Sigma) = 1.0441
 ```

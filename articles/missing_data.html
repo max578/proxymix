@@ -7,10 +7,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Imputing missing data with a mixture • proxymix</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Imputing missing data with a mixture">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<meta property="og:title" content="Imputing missing data with a mixture">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -20,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">proxymix</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.15.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.16.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,18 +34,20 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/quickstart.html">Quickstart</a></li>
+<li><a class="dropdown-item" href="../articles/quickstart.html">Fitting a proxy to a density you cannot sample</a></li>
     <li><a class="dropdown-item" href="../articles/posterior_proxy.html">Compressing a Bayesian posterior you can evaluate but not sample</a></li>
-    <li><a class="dropdown-item" href="../articles/three_regimes.html">Three regimes: moment, sample, and KLD-EM</a></li>
-    <li><a class="dropdown-item" href="../articles/density_shapes.html">KLD-EM on three density shapes</a></li>
-    <li><a class="dropdown-item" href="../articles/operator_calculus.html">Affine-Gaussian operator calculus on a Gaussian mixture</a></li>
-    <li><a class="dropdown-item" href="../articles/from_kde.html">From KDE: compressing a kernel density estimate into a Gaussian-mixture proxy</a></li>
+    <li><a class="dropdown-item" href="../articles/three_regimes.html">Choosing between the three fitting regimes</a></li>
+    <li><a class="dropdown-item" href="../articles/density_shapes.html">How well a mixture proxies four awkward shapes</a></li>
+    <li><a class="dropdown-item" href="../articles/operator_calculus.html">The closed-form operator calculus on a mixture</a></li>
+    <li><a class="dropdown-item" href="../articles/from_kde.html">Compressing a kernel density estimate into a mixture</a></li>
     <li><a class="dropdown-item" href="../articles/many_methods.html">One mixture, many methods</a></li>
-    <li><a class="dropdown-item" href="../articles/entropy.html">Entropy diagnostics with proxymix</a></li>
+    <li><a class="dropdown-item" href="../articles/entropy.html">Reading the entropy of a fitted mixture</a></li>
     <li><a class="dropdown-item" href="../articles/calibration.html">Mapping the optima of an objective</a></li>
     <li><a class="dropdown-item" href="../articles/missing_data.html">Imputing missing data with a mixture</a></li>
     <li><a class="dropdown-item" href="../articles/missing_data_mnar.html">Missing data that depends on the missing value</a></li>
     <li><a class="dropdown-item" href="../articles/end_of_sample.html">Testing the last observation for instability</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -76,145 +79,611 @@
 
     
     
+<!-- Render time: ~4 s under rmarkdown::render() with ggplot2 and mice
+     installed; macOS arm64 (Apple silicon), R 4.6.1, one core. The
+     comparison with mice and Amelia is read from results/missing_data.rds,
+     built by data-raw/vignette_results/missing_data.R. -->
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/max578/proxymix" class="external-link">proxymix</a></span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">has_ggplot2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ggplot2"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">has_mice</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"mice"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
-<h2 id="imputation-is-conditioning">Imputation is conditioning<a class="anchor" aria-label="anchor" href="#imputation-is-conditioning"></a>
+<h2 id="the-problem">The problem<a class="anchor" aria-label="anchor" href="#the-problem"></a>
 </h2>
-<p>When a value is missing, what we know about it is its conditional
-distribution given everything we did observe. If the joint distribution
-of the data is a Gaussian mixture, that conditional is itself a Gaussian
-mixture, available in closed form by the Schur-complement algebra of
-<code><a href="../reference/gmm_conditionalise.html">gmm_conditionalise()</a></code>. <code><a href="../reference/gmm_impute.html">gmm_impute()</a></code> fits a
-mixture to a dataset that contains holes and draws completed datasets
-from these per-row conditionals.</p>
-<p>A mixture can be multimodal and heteroscedastic. That is the point:
-it represents shapes a single-Gaussian model (the multivariate-normal
-assumption) and a linear-Gaussian conditional (a normal regression
-imputation) cannot, so the imputations – and the inference pooled from
-them – stay faithful to data those models mis-specify.</p>
+<p>Datasets often have holes. A measurement was not taken, a
+questionnaire came back half empty, or a sample was lost. Most analyses
+need complete rows, so the holes have to be filled first. Filling them
+with plausible values is called imputation.</p>
+<p>Multiple imputation fills each hole several times with random values
+drawn from a model of the data (Rubin, 1987). The result is several
+completed datasets. The analysis runs on each of them, and the results
+are combined, or pooled, into one estimate. The interval around that
+estimate then includes the uncertainty about the missing values.</p>
+<p>Imputed values come from a model, and a wrong model gives wrong
+values. Many imputation models assume that the data form one cloud
+shaped like a normal distribution. Real data often fall into groups
+instead, such as species, sites or types of patient, with few values in
+between. A model that ignores the groups imputes values in the gap
+between them. This biases estimates from the completed data.</p>
+<p>This vignette imputes data that form two groups and checks the
+imputed values against the true values that were deleted. It then
+compares proxymix with two established imputation packages,
+<code>mice</code> and <code>Amelia</code>.</p>
 </div>
 <div class="section level2">
-<h2 id="a-two-cluster-example">A two-cluster example<a class="anchor" aria-label="anchor" href="#a-two-cluster-example"></a>
+<h2 id="package-capabilities">Package capabilities<a class="anchor" aria-label="anchor" href="#package-capabilities"></a>
 </h2>
-<p>Two groups, each a tight cloud, with a positive within-group
-association between <code>x1</code> and <code>x2</code>. Roughly forty
-per cent of <code>x2</code> is then made missing at random, with the
-chance of being missing depending on the observed <code>x1</code>.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">600</span></span>
+<ul>
+<li>
+<code><a href="../reference/gmm_impute.html">gmm_impute()</a></code> fits a Gaussian mixture, a sum of a few
+normal distributions, to a data matrix with holes. It returns
+<code>m</code> completed datasets. The argument <code>N</code> sets the
+number of components. If <code>N</code> is left out, the Bayesian
+information criterion (BIC) chooses it.</li>
+<li>
+<code><a href="../reference/gmm_complete.html">gmm_complete()</a></code> extracts one completed dataset.</li>
+<li>
+<code><a href="../reference/proxy_pool.html">proxy_pool()</a></code> pools the mean of a column across the
+completed datasets.</li>
+<li>
+<code><a href="../reference/proxy_fmi.html">proxy_fmi()</a></code> reports the fraction of missing
+information: the share of the information about the mean that the holes
+removed.</li>
+<li>
+<code><a href="../reference/as_mids.html">as_mids()</a></code> converts the completed datasets into the
+format of the <code>mice</code> package. <code><a href="https://amices.org/mice/reference/pool.html" class="external-link">mice::pool()</a></code> can
+then pool any other estimate, such as a regression slope.</li>
+</ul>
+<p>Each missing value is drawn from its conditional distribution, which
+is the distribution of the missing entry given the observed entries in
+the same row. When the data are modelled by a Gaussian mixture, this
+conditional distribution is again a Gaussian mixture (van der Hoek and
+Elliott, 2024). It has an exact formula, so no simulation is needed. A
+mixture can have several peaks and a different spread in each group. A
+single normal distribution cannot.</p>
+<p>For a column mean, <code><a href="../reference/proxy_pool.html">proxy_pool()</a></code> computes the uncertainty
+due to the imputed values exactly from the fitted mixture, instead of
+estimating it from the spread of the completed datasets. That part of
+the standard error therefore has no added noise from the random draws of
+the imputed values.</p>
+</div>
+<div class="section level2">
+<h2 id="addressing-the-problem">Addressing the problem<a class="anchor" aria-label="anchor" href="#addressing-the-problem"></a>
+</h2>
+<div class="section level3">
+<h3 id="data-with-two-groups-and-known-missing-values">Data with two groups and known missing values<a class="anchor" aria-label="anchor" href="#data-with-two-groups-and-known-missing-values"></a>
+</h3>
+<p>The data are simulated, so the deleted values are kept and every
+imputation can be checked against them. There are 600 rows in two groups
+of about equal size. Within each group, <code>x1</code> and
+<code>x2</code> rise together. About half of the <code>x2</code> values
+are then deleted. The chance of deletion rises with the observed
+<code>x1</code> and does not depend on the deleted <code>x2</code>
+itself. This setting is called missing at random.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">20260620</span><span class="op">)</span></span>
+<span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">600L</span></span>
 <span><span class="va">lab</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span>, <span class="va">n</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">x1</span> <span class="op">&lt;-</span> <span class="fl">2</span> <span class="op">*</span> <span class="va">lab</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span>, <span class="fl">0</span>, <span class="fl">0.6</span><span class="op">)</span></span>
 <span><span class="va">x2</span> <span class="op">&lt;-</span> <span class="fl">2</span> <span class="op">*</span> <span class="va">lab</span> <span class="op">+</span> <span class="fl">0.5</span> <span class="op">*</span> <span class="op">(</span><span class="va">x1</span> <span class="op">-</span> <span class="fl">2</span> <span class="op">*</span> <span class="va">lab</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span>, <span class="fl">0</span>, <span class="fl">0.6</span><span class="op">)</span></span>
-<span><span class="va">truth</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span>x1 <span class="op">=</span> <span class="va">x1</span>, x2 <span class="op">=</span> <span class="va">x2</span><span class="op">)</span></span>
+<span><span class="va">truth</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://amices.org/mice/reference/cbind.html" class="external-link">cbind</a></span><span class="op">(</span>x1 <span class="op">=</span> <span class="va">x1</span>, x2 <span class="op">=</span> <span class="va">x2</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">X</span> <span class="op">&lt;-</span> <span class="va">truth</span></span>
-<span><span class="va">missing</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span> <span class="op">&lt;</span> <span class="fu"><a href="https://rdrr.io/r/stats/Logistic.html" class="external-link">plogis</a></span><span class="op">(</span><span class="fl">0.6</span> <span class="op">*</span> <span class="va">x1</span><span class="op">)</span>        <span class="co"># missing at random, depends on x1</span></span>
-<span><span class="va">X</span><span class="op">[</span><span class="va">missing</span>, <span class="st">"x2"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">NA</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">missing</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 0.53</span></span></code></pre></div>
-<p>The marginal distribution of <code>x2</code> is bimodal: one cluster
-near
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>−</mi><mn>2</mn></mrow><annotation encoding="application/x-tex">-2</annotation></semantics></math>,
-one near
+<span><span class="va">x_holes</span> <span class="op">&lt;-</span> <span class="va">truth</span></span>
+<span><span class="va">missing</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span> <span class="op">&lt;</span> <span class="fu"><a href="https://rdrr.io/r/stats/Logistic.html" class="external-link">plogis</a></span><span class="op">(</span><span class="fl">0.6</span> <span class="op">*</span> <span class="va">x1</span><span class="op">)</span></span>
+<span><span class="va">x_holes</span><span class="op">[</span><span class="va">missing</span>, <span class="st">"x2"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">NA</span></span>
+<span><span class="va">frac_missing</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">missing</span><span class="op">)</span></span></code></pre></div>
+<p>The values of <code>x2</code> cluster near
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>−</mi><mn>2</mn></mrow><annotation encoding="application/x-tex">-2</annotation></semantics></math>
+and near
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>+</mi><mn>2</mn></mrow><annotation encoding="application/x-tex">+2</annotation></semantics></math>,
-with little mass between them.</p>
+with few values in between. The band
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">|</mo><msub><mi>x</mi><mn>2</mn></msub><mo stretchy="false" form="prefix">|</mo><mo>&lt;</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">|x_2| &lt; 1</annotation></semantics></math>
+marks this empty middle. The function <code>in_gap()</code> returns the
+share of values that fall in the band.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">in_gap</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">v</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">v</span><span class="op">)</span> <span class="op">&lt;</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">gap_truth</span> <span class="op">&lt;-</span> <span class="fu">in_gap</span><span class="op">(</span><span class="va">truth</span><span class="op">[</span><span class="va">missing</span>, <span class="st">"x2"</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 </div>
-<div class="section level2">
-<h2 id="impute-then-look-at-the-shape">Impute, then look at the shape<a class="anchor" aria-label="anchor" href="#impute-then-look-at-the-shape"></a>
-</h2>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">imp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gmm_impute.html">gmm_impute</a></span><span class="op">(</span><span class="va">X</span>, N <span class="op">=</span> <span class="fl">2L</span>, m <span class="op">=</span> <span class="fl">20L</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
+<div class="section level3">
+<h3 id="impute-with-a-mixture-and-with-a-single-normal-distribution">Impute with a mixture and with a single normal distribution<a class="anchor" aria-label="anchor" href="#impute-with-a-mixture-and-with-a-single-normal-distribution"></a>
+</h3>
+<p>The first imputation uses a mixture of two normal distributions and
+makes 20 completed datasets.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">imp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gmm_impute.html">gmm_impute</a></span><span class="op">(</span><span class="va">x_holes</span>, N <span class="op">=</span> <span class="fl">2L</span>, m <span class="op">=</span> <span class="fl">20L</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
 <span><span class="va">imp</span></span>
 <span><span class="co">#&gt; &lt;gmm_imputation&gt;: m = 20 completions, K = 2 components, p = 2</span></span>
 <span><span class="co">#&gt;   mechanism  : missing at random</span></span>
 <span><span class="co">#&gt;   missing    : x1 0%, x2 53%</span></span></code></pre></div>
-<p>A single completed dataset has no holes:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<p>A completed dataset has no holes left.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">done</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gmm_complete.html">gmm_complete</a></span><span class="op">(</span><span class="va">imp</span>, <span class="fl">1L</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">anyNA</a></span><span class="op">(</span><span class="va">done</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] FALSE</span></span></code></pre></div>
-<p>Do the imputed values follow the two clusters, or do they pile up in
-the empty middle? Overlaying the imputed <code>x2</code> on the values
-that were actually missing shows the mixture imputer reproducing both
-modes.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">imputed</span> <span class="op">&lt;-</span> <span class="va">done</span><span class="op">[</span><span class="va">missing</span>, <span class="st">"x2"</span><span class="op">]</span></span>
-<span><span class="va">hidden</span>  <span class="op">&lt;-</span> <span class="va">truth</span><span class="op">[</span><span class="va">missing</span>, <span class="st">"x2"</span><span class="op">]</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/density.html" class="external-link">density</a></span><span class="op">(</span><span class="va">hidden</span><span class="op">)</span>, lwd <span class="op">=</span> <span class="fl">2</span>, col <span class="op">=</span> <span class="st">"grey30"</span>,</span>
-<span>     main <span class="op">=</span> <span class="st">"Missing x2: truth vs mixture imputation"</span>,</span>
-<span>     xlab <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span>, ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.5</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/density.html" class="external-link">density</a></span><span class="op">(</span><span class="va">imputed</span><span class="op">)</span>, lwd <span class="op">=</span> <span class="fl">2</span>, col <span class="op">=</span> <span class="st">"#1b7837"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/legend.html" class="external-link">legend</a></span><span class="op">(</span><span class="st">"topright"</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"held-out truth"</span>, <span class="st">"mixture imputation"</span><span class="op">)</span>,</span>
-<span>       col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"grey30"</span>, <span class="st">"#1b7837"</span><span class="op">)</span>, lwd <span class="op">=</span> <span class="fl">2</span>, bty <span class="op">=</span> <span class="st">"n"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="missing_data_files/figure-html/modes-1.png" class="r-plt" alt="Density of the missing x2 values against the mixture-imputed values; both are bimodal and overlap." width="100%"></p>
-<p>A single Gaussian fitted to the same holes has one centre and one
-spread, so it fills the empty middle and erases the two clusters.
-Forcing one component (<code>N = 1L</code>) shows the contrast:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">imp1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gmm_impute.html">gmm_impute</a></span><span class="op">(</span><span class="va">X</span>, N <span class="op">=</span> <span class="fl">1L</span>, m <span class="op">=</span> <span class="fl">20L</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
-<span><span class="va">imputed1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gmm_complete.html">gmm_complete</a></span><span class="op">(</span><span class="va">imp1</span>, <span class="fl">1L</span><span class="op">)</span><span class="op">[</span><span class="va">missing</span>, <span class="st">"x2"</span><span class="op">]</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/density.html" class="external-link">density</a></span><span class="op">(</span><span class="va">hidden</span><span class="op">)</span>, lwd <span class="op">=</span> <span class="fl">2</span>, col <span class="op">=</span> <span class="st">"grey30"</span>,</span>
-<span>     main <span class="op">=</span> <span class="st">"A single Gaussian fills the gap"</span>,</span>
-<span>     xlab <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span>, ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.5</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/density.html" class="external-link">density</a></span><span class="op">(</span><span class="va">imputed1</span><span class="op">)</span>, lwd <span class="op">=</span> <span class="fl">2</span>, col <span class="op">=</span> <span class="st">"#d95f02"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/legend.html" class="external-link">legend</a></span><span class="op">(</span><span class="st">"topright"</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"held-out truth"</span>, <span class="st">"single-Gaussian imputation"</span><span class="op">)</span>,</span>
-<span>       col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"grey30"</span>, <span class="st">"#d95f02"</span><span class="op">)</span>, lwd <span class="op">=</span> <span class="fl">2</span>, bty <span class="op">=</span> <span class="st">"n"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="missing_data_files/figure-html/single-1.png" class="r-plt" alt="A single-Gaussian imputation places mass in the empty middle, unlike the bimodal truth." width="100%"></p>
-</div>
-<div class="section level2">
-<h2 id="pooling-an-estimand">Pooling an estimand<a class="anchor" aria-label="anchor" href="#pooling-an-estimand"></a>
-</h2>
-<p>A column mean is pooled in closed form – the exact large-sample limit
-of the between-imputation variance, so there is no Monte-Carlo noise in
-the pooling step – reporting the estimate, a standard error, a
-confidence interval, and the fraction of missing information.</p>
+<p>With <code>N = 1L</code>, the mixture has one component, so the
+imputation model is a single multivariate normal distribution. Many
+standard imputation methods make this assumption. It is the point of
+comparison in this section.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/proxy_pool.html">proxy_pool</a></span><span class="op">(</span><span class="va">imp</span>, <span class="st">"x2"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   term   estimate  std.error statistic       df  conf.low conf.high        fmi</span></span>
-<span><span class="co">#&gt; 1   x2 0.04314127 0.09129778 0.4725336 5561.483 -0.135838 0.2221206 0.09745177</span></span>
-<span><span class="fu"><a href="../reference/proxy_fmi.html">proxy_fmi</a></span><span class="op">(</span><span class="va">imp</span>, <span class="st">"x2"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;         x2 </span></span>
-<span><span class="co">#&gt; 0.09745177</span></span></code></pre></div>
-<p>For a regression or any other model, the established place to combine
-an estimand across imputations is <code>mice</code>.
-<code><a href="../reference/as_mids.html">as_mids()</a></code> packages the completions as a <code>mice</code>
-object, so the joint mixture imputations flow into
-<code><a href="https://amices.org/mice/reference/pool.html" class="external-link">mice::pool()</a></code> unchanged – proxymix supplies the imputation
-model, <code>mice</code> the pooling.</p>
+<code class="sourceCode R"><span><span class="va">imp1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gmm_impute.html">gmm_impute</a></span><span class="op">(</span><span class="va">x_holes</span>, N <span class="op">=</span> <span class="fl">1L</span>, m <span class="op">=</span> <span class="fl">20L</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
+<span><span class="va">done1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gmm_complete.html">gmm_complete</a></span><span class="op">(</span><span class="va">imp1</span>, <span class="fl">1L</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<caption>Share of values in the empty middle, over the 320 deleted
+entries. The imputation rows use the first completed dataset of each
+imputation.</caption>
+<thead><tr class="header">
+<th align="left">Values</th>
+<th align="right">Share with
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">|</mo><msub><mi>x</mi><mn>2</mn></msub><mo stretchy="false" form="postfix">|</mo><mo>&lt;</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\lvert x_2 \rvert &lt; 1</annotation></semantics></math>
+</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">deleted values (truth)</td>
+<td align="right">0.069</td>
+</tr>
+<tr class="even">
+<td align="left">mixture imputation (N = 2)</td>
+<td align="right">0.084</td>
+</tr>
+<tr class="odd">
+<td align="left">single-normal imputation (N = 1)</td>
+<td align="right">0.184</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section level3">
+<h3 id="where-the-imputed-values-fall">Where the imputed values fall<a class="anchor" aria-label="anchor" href="#where-the-imputed-values-fall"></a>
+</h3>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/amices/mice" class="external-link">mice</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Attaching package: 'mice'</span></span>
-<span><span class="co">#&gt; The following object is masked from 'package:stats':</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;     filter</span></span>
-<span><span class="co">#&gt; The following objects are masked from 'package:base':</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;     cbind, rbind</span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="fu"><a href="../reference/as_mids.html">as_mids</a></span><span class="op">(</span><span class="va">imp</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">x2</span> <span class="op">~</span> <span class="va">x1</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="fu"><a href="https://amices.org/mice/reference/pool.html" class="external-link">pool</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;          term    estimate  std.error  statistic       df      p.value</span></span>
-<span><span class="co">#&gt; 1 (Intercept) -0.03669985 0.03897720 -0.9415722 67.96957 3.497462e-01</span></span>
-<span><span class="co">#&gt; 2          x1  0.94152713 0.01920706 49.0198404 57.09474 2.346299e-48</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">dens_df</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">v</span>, <span class="va">label</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/density.html" class="external-link">density</a></span><span class="op">(</span><span class="va">v</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x2 <span class="op">=</span> <span class="va">d</span><span class="op">$</span><span class="va">x</span>, density <span class="op">=</span> <span class="va">d</span><span class="op">$</span><span class="va">y</span>, source <span class="op">=</span> <span class="va">label</span>,</span>
+<span>             stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="va">plot_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://amices.org/mice/reference/cbind.html" class="external-link">rbind</a></span><span class="op">(</span></span>
+<span>  <span class="fu">dens_df</span><span class="op">(</span><span class="va">truth</span><span class="op">[</span><span class="va">missing</span>, <span class="st">"x2"</span><span class="op">]</span>, <span class="st">"deleted values (truth)"</span><span class="op">)</span>,</span>
+<span>  <span class="fu">dens_df</span><span class="op">(</span><span class="va">done</span><span class="op">[</span><span class="va">missing</span>, <span class="st">"x2"</span><span class="op">]</span>, <span class="st">"mixture (N = 2)"</span><span class="op">)</span>,</span>
+<span>  <span class="fu">dens_df</span><span class="op">(</span><span class="va">done1</span><span class="op">[</span><span class="va">missing</span>, <span class="st">"x2"</span><span class="op">]</span>, <span class="st">"single normal (N = 1)"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">plot_df</span><span class="op">$</span><span class="va">source</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span></span>
+<span>  <span class="va">plot_df</span><span class="op">$</span><span class="va">source</span>,</span>
+<span>  levels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"deleted values (truth)"</span>, <span class="st">"mixture (N = 2)"</span>,</span>
+<span>             <span class="st">"single normal (N = 1)"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">plot_df</span>, <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x2</span>, <span class="va">density</span>, colour <span class="op">=</span> <span class="va">source</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span>linewidth <span class="op">=</span> <span class="fl">0.9</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/annotate.html" class="external-link">annotate</a></span><span class="op">(</span><span class="st">"rect"</span>, xmin <span class="op">=</span> <span class="op">-</span><span class="fl">1</span>, xmax <span class="op">=</span> <span class="fl">1</span>, ymin <span class="op">=</span> <span class="op">-</span><span class="cn">Inf</span>, ymax <span class="op">=</span> <span class="cn">Inf</span>,</span>
+<span>                    fill <span class="op">=</span> <span class="st">"grey60"</span>, alpha <span class="op">=</span> <span class="fl">0.18</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_manual.html" class="external-link">scale_colour_manual</a></span><span class="op">(</span></span>
+<span>    name <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>    values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"deleted values (truth)"</span> <span class="op">=</span> <span class="st">"#000000"</span>,</span>
+<span>               <span class="st">"mixture (N = 2)"</span> <span class="op">=</span> <span class="st">"#009E73"</span>,</span>
+<span>               <span class="st">"single normal (N = 1)"</span> <span class="op">=</span> <span class="st">"#D55E00"</span><span class="op">)</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span></span>
+<span>    x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span>, y <span class="op">=</span> <span class="st">"density"</span>,</span>
+<span>    title <span class="op">=</span> <span class="st">"Deleted values and the values imputed in their place"</span>,</span>
+<span>    subtitle <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="st">"Shaded band: the empty middle, "</span> <span class="op">*</span></span>
+<span>                            <span class="fu">group</span><span class="op">(</span><span class="st">"|"</span>, <span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span>, <span class="st">"|"</span><span class="op">)</span> <span class="op">&lt;</span> <span class="fl">1</span><span class="op">)</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span>base_size <span class="op">=</span> <span class="fl">11</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"top"</span><span class="op">)</span></span></code></pre></div>
+<div class="figure">
+<img src="missing_data_files/figure-html/fig-modes-1.png" class="r-plt" alt="Three density curves over x2: the deleted values, the mixture imputation and the single-normal imputation. All three have two peaks. The single-normal curve has lower peaks and more density in the shaded band between the two groups." width="100%"><p class="caption">
+Density of the deleted values of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>2</mn></msub><annotation encoding="application/x-tex">x_2</annotation></semantics></math>
+and of the values each imputation put in their place, from the first
+completed dataset of each. The shaded band is the empty middle,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">|</mo><msub><mi>x</mi><mn>2</mn></msub><mo stretchy="false" form="prefix">|</mo><mo>&lt;</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">|x_2| &lt; 1</annotation></semantics></math>.
+</p>
+</div>
+</div>
+<div class="section level3">
+<h3 id="pool-the-mean-of-x2">Pool the mean of x2<a class="anchor" aria-label="anchor" href="#pool-the-mean-of-x2"></a>
+</h3>
+<p><code><a href="../reference/proxy_pool.html">proxy_pool()</a></code> combines the 20 estimates of the mean of
+<code>x2</code> into one estimate with a standard error (SE) and a 95%
+confidence interval (CI).</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pooled</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/proxy_pool.html">proxy_pool</a></span><span class="op">(</span><span class="va">imp</span>, <span class="st">"x2"</span><span class="op">)</span></span>
+<span><span class="va">pooled1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/proxy_pool.html">proxy_pool</a></span><span class="op">(</span><span class="va">imp1</span>, <span class="st">"x2"</span><span class="op">)</span></span>
+<span><span class="va">fmi_mix</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/proxy_fmi.html">proxy_fmi</a></span><span class="op">(</span><span class="va">imp</span>, <span class="st">"x2"</span><span class="op">)</span></span>
+<span><span class="va">mean_truth</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">truth</span><span class="op">[</span>, <span class="st">"x2"</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">err_mix</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">pooled</span><span class="op">$</span><span class="va">estimate</span> <span class="op">-</span> <span class="va">mean_truth</span><span class="op">)</span></span>
+<span><span class="va">err_one</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">pooled1</span><span class="op">$</span><span class="va">estimate</span> <span class="op">-</span> <span class="va">mean_truth</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<caption>The mean of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>2</mn></msub><annotation encoding="application/x-tex">x_2</annotation></semantics></math>
+from the complete data, from the rows that were not deleted, and pooled
+over each imputation.</caption>
+<colgroup>
+<col width="33%">
+<col width="14%">
+<col width="7%">
+<col width="9%">
+<col width="9%">
+<col width="28%">
+</colgroup>
+<thead><tr class="header">
+<th align="left">Data used</th>
+<th align="right">Mean of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>2</mn></msub><annotation encoding="application/x-tex">x_2</annotation></semantics></math>
+</th>
+<th align="right">SE</th>
+<th align="right">CI lower</th>
+<th align="right">CI upper</th>
+<th align="right">Distance from complete data</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">complete data, before deletion</td>
+<td align="right">0.0423</td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right">0.0000</td>
+</tr>
+<tr class="even">
+<td align="left">rows not deleted</td>
+<td align="right">-1.0809</td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right">1.1232</td>
+</tr>
+<tr class="odd">
+<td align="left">mixture imputation (N = 2)</td>
+<td align="right">0.0431</td>
+<td align="right">0.0913</td>
+<td align="right">-0.1358</td>
+<td align="right">0.2221</td>
+<td align="right">0.0008</td>
+</tr>
+<tr class="even">
+<td align="left">single-normal imputation (N = 1)</td>
+<td align="right">0.0200</td>
+<td align="right">0.0937</td>
+<td align="right">-0.1638</td>
+<td align="right">0.2039</td>
+<td align="right">0.0223</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section level3">
+<h3 id="pool-a-regression-slope-with-mice">Pool a regression slope with mice<a class="anchor" aria-label="anchor" href="#pool-a-regression-slope-with-mice"></a>
+</h3>
+<p>For estimates other than a column mean, <code><a href="../reference/as_mids.html">as_mids()</a></code>
+converts the completed datasets into a <code>mice</code> object. The
+regression of <code>x2</code> on <code>x1</code> is then fitted in each
+completed dataset, and <code><a href="https://amices.org/mice/reference/pool.html" class="external-link">mice::pool()</a></code> combines the results by
+Rubin’s rules. These rules average the estimates and add their spread
+across the completed datasets to the average variance.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mice_fit</span> <span class="op">&lt;-</span> <span class="fu">mice</span><span class="fu">::</span><span class="fu"><a href="https://amices.org/mice/reference/pool.html" class="external-link">pool</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="fu"><a href="../reference/as_mids.html">as_mids</a></span><span class="op">(</span><span class="va">imp</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">x2</span> <span class="op">~</span> <span class="va">x1</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<caption>The regression of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>2</mn></msub><annotation encoding="application/x-tex">x_2</annotation></semantics></math>
+on
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>1</mn></msub><annotation encoding="application/x-tex">x_1</annotation></semantics></math>,
+fitted in each of the 20 completed datasets of the mixture imputation
+and pooled by <code><a href="https://amices.org/mice/reference/pool.html" class="external-link">mice::pool()</a></code>.</caption>
+<thead><tr class="header">
+<th align="left">term</th>
+<th align="right">estimate</th>
+<th align="right">std.error</th>
+<th align="right">statistic</th>
+<th align="right">df</th>
+<th align="right">p.value</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">(Intercept)</td>
+<td align="right">-0.037</td>
+<td align="right">0.039</td>
+<td align="right">-0.942</td>
+<td align="right">67.970</td>
+<td align="right">0.350</td>
+</tr>
+<tr class="even">
+<td align="left">x1</td>
+<td align="right">0.942</td>
+<td align="right">0.019</td>
+<td align="right">49.020</td>
+<td align="right">57.095</td>
+<td align="right">&lt; 0.001</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section level3">
+<h3 id="comparison-with-mice-and-amelia">Comparison with mice and Amelia<a class="anchor" aria-label="anchor" href="#comparison-with-mice-and-amelia"></a>
+</h3>
+<p>So far the mixture has been compared only with a single normal
+distribution, on one dataset. In a simulation, proxymix was compared
+with two established imputation packages. <code>mice</code> (van Buuren
+and Groothuis-Oudshoorn, 2011) ran with its default method for numeric
+columns, predictive mean matching, which fills each hole with an
+observed value from a row whose prediction is similar.
+<code>Amelia</code> (Honaker, King and Blackwell, 2011) draws the
+missing values from a single multivariate normal distribution fitted to
+bootstrap resamples of the data. Each package imputed 500 datasets of
+500 rows from each of two designs: one normal cloud, and two groups with
+different correlations. For each simulated dataset, the slope of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>2</mn></msub><annotation encoding="application/x-tex">x_2</annotation></semantics></math>
+on
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>1</mn></msub><annotation encoding="application/x-tex">x_1</annotation></semantics></math>
+was estimated in every completed dataset and pooled by Rubin’s rules.
+The coverage is the share of simulated datasets whose 95% interval
+contained the true slope. It should be close to 0.95.</p>
+<table class="table">
+<caption>Slope of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>2</mn></msub><annotation encoding="application/x-tex">x_2</annotation></semantics></math>
+on
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>1</mn></msub><annotation encoding="application/x-tex">x_1</annotation></semantics></math>
+over 500 simulated datasets per design. Coverage is the share of 95%
+intervals that contained the true slope. Error is the root mean squared
+error of the estimate. With 500 datasets, a coverage near 0.95 has a
+simulation standard error of about 0.01.</caption>
+<colgroup>
+<col width="26%">
+<col width="17%">
+<col width="17%">
+<col width="15%">
+<col width="23%">
+</colgroup>
+<thead><tr class="header">
+<th align="left">Data used</th>
+<th align="right">Coverage, one cloud</th>
+<th align="right">Coverage, two groups</th>
+<th align="right">Error, two groups</th>
+<th align="right">Interval width, two groups</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">complete data, before deletion</td>
+<td align="right">0.948</td>
+<td align="right">0.964</td>
+<td align="right">0.030</td>
+<td align="right">0.127</td>
+</tr>
+<tr class="even">
+<td align="left">proxymix</td>
+<td align="right">0.928</td>
+<td align="right">0.940</td>
+<td align="right">0.057</td>
+<td align="right">0.223</td>
+</tr>
+<tr class="odd">
+<td align="left">mice</td>
+<td align="right">0.766</td>
+<td align="right">0.828</td>
+<td align="right">0.055</td>
+<td align="right">0.150</td>
+</tr>
+<tr class="even">
+<td align="left">Amelia</td>
+<td align="right">0.926</td>
+<td align="right">0.452</td>
+<td align="right">0.136</td>
+<td align="right">0.231</td>
+</tr>
+</tbody>
+</table>
+<p>With two groups, the proxymix intervals contained the true slope in
+0.940 of datasets, against 0.828 for <code>mice</code> and 0.452 for
+<code>Amelia</code>. <code>Amelia</code> fits one normal distribution to
+both groups, and on average its slope estimates were 0.124 above the
+true value of 0.854. The <code>mice</code> estimates were about as
+accurate as those of proxymix, but the <code>mice</code> intervals were
+narrower and missed the true slope more often. With one normal cloud,
+proxymix and <code>Amelia</code> did equally well, with coverages of
+0.928 and 0.926, while <code>mice</code> reached only 0.766.</p>
+<p>proxymix is the slowest of the three. Twenty completions of one
+two-group dataset took 1.47 seconds with proxymix, 0.08 with
+<code>mice</code> and 0.04 with <code>Amelia</code> (median of five runs
+on one computer).</p>
+<p>The code below imputes one dataset from the two-group design with all
+three packages and pools the slope with <code><a href="https://amices.org/mice/reference/pool.html" class="external-link">mice::pool()</a></code> for
+each. It repeats the simulation code for a single dataset. It needs
+<code>mice</code> and <code>Amelia</code>, both on CRAN, and it is not
+run when this vignette is built.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/max578/proxymix" class="external-link">proxymix</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/amices/mice" class="external-link">mice</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://gking.harvard.edu/amelia" class="external-link">Amelia</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># one dataset of 500 rows with two groups</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1L</span><span class="op">)</span></span>
+<span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">500L</span></span>
+<span><span class="va">grp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span> <span class="op">&lt;</span> <span class="fl">0.5</span></span>
+<span><span class="va">rho</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">grp</span>, <span class="op">-</span><span class="fl">0.3</span>, <span class="fl">0.6</span><span class="op">)</span></span>
+<span><span class="va">z1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span></span>
+<span><span class="va">full</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  x1 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">grp</span>, <span class="fl">1.5</span>, <span class="op">-</span><span class="fl">1.5</span><span class="op">)</span> <span class="op">+</span> <span class="va">z1</span>,</span>
+<span>  x2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">grp</span>, <span class="fl">2</span>, <span class="op">-</span><span class="fl">1.5</span><span class="op">)</span> <span class="op">+</span> <span class="va">rho</span> <span class="op">*</span> <span class="va">z1</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">rho</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># delete x2 with a probability that rises with x1</span></span>
+<span><span class="va">obs</span> <span class="op">&lt;-</span> <span class="va">full</span></span>
+<span><span class="va">obs</span><span class="op">$</span><span class="va">x2</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span> <span class="op">&lt;</span> <span class="fu"><a href="https://rdrr.io/r/stats/Logistic.html" class="external-link">plogis</a></span><span class="op">(</span><span class="fl">0.4</span> <span class="op">+</span> <span class="fl">0.6</span> <span class="op">*</span> <span class="va">full</span><span class="op">$</span><span class="va">x1</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">NA</span></span>
+<span></span>
+<span><span class="co"># 20 completed datasets from each package</span></span>
+<span><span class="va">sets</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  proxymix <span class="op">=</span> <span class="fu"><a href="https://tidyr.tidyverse.org/reference/complete.html" class="external-link">complete</a></span><span class="op">(</span><span class="fu"><a href="../reference/as_mids.html">as_mids</a></span><span class="op">(</span><span class="fu"><a href="../reference/gmm_impute.html">gmm_impute</a></span><span class="op">(</span><span class="va">obs</span>, m <span class="op">=</span> <span class="fl">20L</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span><span class="op">)</span>, <span class="st">"all"</span><span class="op">)</span>,</span>
+<span>  mice <span class="op">=</span> <span class="fu"><a href="https://tidyr.tidyverse.org/reference/complete.html" class="external-link">complete</a></span><span class="op">(</span><span class="fu"><a href="https://amices.org/mice/reference/mice.html" class="external-link">mice</a></span><span class="op">(</span><span class="va">obs</span>, m <span class="op">=</span> <span class="fl">20L</span>, seed <span class="op">=</span> <span class="fl">1L</span>, printFlag <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>, <span class="st">"all"</span><span class="op">)</span>,</span>
+<span>  Amelia <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/Amelia/man/amelia.html" class="external-link">amelia</a></span><span class="op">(</span><span class="va">obs</span>, m <span class="op">=</span> <span class="fl">20L</span>, p2s <span class="op">=</span> <span class="fl">0L</span><span class="op">)</span><span class="op">$</span><span class="va">imputations</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># the same regression in every completed dataset, pooled by mice::pool()</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">sets</span>, <span class="kw">function</span><span class="op">(</span><span class="va">s</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">fits</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">s</span>, <span class="kw">function</span><span class="op">(</span><span class="va">d</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">x2</span> <span class="op">~</span> <span class="va">x1</span>, data <span class="op">=</span> <span class="va">d</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="fu"><a href="https://amices.org/mice/reference/pool.html" class="external-link">pool</a></span><span class="op">(</span><span class="va">fits</span><span class="op">)</span>, conf.int <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<p>The <a href="https://max578.github.io/proxymix/articles/extended/missing_data.html">extended
+version of this article</a> gives the full simulation, its results for
+the mean as well as the slope, and an example on the Palmer penguins
+data.</p>
+</div>
 </div>
 <div class="section level2">
-<h2 id="scope">Scope<a class="anchor" aria-label="anchor" href="#scope"></a>
+<h2 id="interpretation">Interpretation<a class="anchor" aria-label="anchor" href="#interpretation"></a>
 </h2>
-<p>This vignette covers numeric data that is missing at random: the
-probability that an entry is missing may depend on the observed entries
-but not on the missing value itself. Value-dependent missingness
-(<code><a href="../reference/mechanism.html">mnar()</a></code>) and censoring at a known bound
-(<code><a href="../reference/mechanism.html">censored()</a></code>) are supported through the
-<code>mechanism</code> argument and are the subject of the companion
-vignette <em>Imputation when the mechanism depends on the value</em>
-(<code><a href="../articles/missing_data_mnar.html">vignette("missing_data_mnar")</a></code>). The number of mixture
-components is chosen by the Bayesian information criterion when
-<code>N</code> is left at its default, and a supplied <code>seed</code>
-makes the result reproducible without disturbing the ambient
-random-number state.</p>
+<p>The table of shares in the empty middle uses the first completed
+dataset of each imputation. Averaged over all 20 completed datasets, the
+mixture put 6.0 per cent of its imputed values in the middle, and the
+single normal distribution put 15.8 per cent there. The single normal
+distribution put about 2.3 times as much in the middle as the data
+had.</p>
+<p>Both imputations in the figure have two peaks. Each imputed value is
+drawn given the observed <code>x1</code> of its row, and <code>x1</code>
+itself falls into two groups. The imputations differ in the line along
+which each imputation model draws <code>x2</code> from <code>x1</code>,
+and in the spread of the draws around that line. The single-normal model
+draws from one line for both groups, with a slope of 0.94 and a standard
+deviation around the line of 0.70. The mixture model draws from one line
+per group, with slopes of 0.37 and 0.43 and standard deviations of 0.60
+and 0.62. In the complete data, the slope within each group is 0.43 and
+the standard deviation around the line is 0.63. The single-normal
+imputations are therefore too wide, and their inner edges reach into the
+middle.</p>
+<p>These lines belong to the imputation models, not to the regression
+that the analyst fits afterwards. The regression of <code>x2</code> on
+<code>x1</code> in the table above ignores the groups. Its pooled slope
+is therefore about 0.94 for both imputations, as it is in the complete
+data.</p>
+<p>The mean of <code>x2</code> in the complete data is 0.042. The mean
+of the rows that were not deleted is -1.081. The two differ because rows
+with a large <code>x1</code>, and therefore a large <code>x2</code>,
+were more likely to be deleted. The pooled means of the mixture and
+single-normal imputations differ from the complete-data mean by 0.0008
+and 0.0223. Both differences are much smaller than the standard errors
+of about 0.09, so this dataset does not show which imputation gives the
+better mean. The single normal distribution distorts the shape of the
+imputed values. The figure shows this distortion. The pooled mean does
+not.</p>
+<p>The fraction of missing information for the mean is 0.097. Although
+53 per cent of <code>x2</code> is missing, the observed <code>x1</code>
+carries much of the information about <code>x2</code>. Only about 10 per
+cent of the information about the mean is lost.</p>
+</div>
+<div class="section level2">
+<h2 id="limitations">Limitations<a class="anchor" aria-label="anchor" href="#limitations"></a>
+</h2>
+<p>Everything above assumes numeric data that are missing at random.
+Under this assumption, the chance that an entry is missing may depend on
+the observed entries but not on the missing value itself. The assumption
+cannot be tested from the observed data. Missingness that depends on the
+missing value, and censoring at a known limit, break it. The
+<code>mechanism</code> argument of <code><a href="../reference/gmm_impute.html">gmm_impute()</a></code> handles
+censoring. It also handles missingness that depends on the missing
+value, once you assume how strongly the value changes its chance of
+being missing, as <em>Missing data that depends on the missing
+value</em> shows.</p>
+<p>The single-dataset example compares the mixture only with a single
+normal distribution, on 600 rows in two variables, with the number of
+components set by hand. It does not show how the method behaves on wide
+data or with many incomplete columns. The simulation adds predictive
+mean matching (<code>mice</code>) and bootstrapped multivariate normal
+imputation (<code>Amelia</code>), with the number of components chosen
+by BIC. It does not include other methods that can also represent
+groups, such as imputation by classification and regression trees. It
+covers two designs, one pattern of missingness and one sample size. The
+imputers were not given the group of each row. With the group as a
+column, <code>mice</code> and <code>Amelia</code> could model the groups
+directly.</p>
+<p>Estimates other than a column mean are pooled by <code>mice</code>,
+which uses the large-sample rules of Rubin (1987) and inherits their
+assumptions. The setting with the largest effect on the result is the
+number of components. With <code>N = 1</code>, the imputation model is a
+single multivariate normal distribution. With far more components than
+there are real groups, the mixture fits noise into the conditional
+distribution.</p>
+</div>
+<div class="section level2">
+<h2 id="further-reading">Further reading<a class="anchor" aria-label="anchor" href="#further-reading"></a>
+</h2>
+<p><em>Missing data that depends on the missing value</em> covers
+censoring at a known limit and missingness whose chance depends on the
+missing value. It shows how to vary the assumed strength of the link
+between a value and its chance of being missing. The observed data
+inform that strength only through the assumed shape of the
+distribution.</p>
+<p><em>The closed-form operator calculus on a mixture</em> explains the
+formulas behind <code><a href="../reference/gmm_conditionalise.html">gmm_conditionalise()</a></code> and the other exact
+operations on a mixture.</p>
+<p><em>One mixture, many methods</em> places imputation beside other
+classical analyses that use a single fitted mixture.</p>
+</div>
+<div class="section level2">
+<h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
+</h2>
+<p>Honaker, J., King, G. and Blackwell, M. (2011). <em>Amelia II: A
+program for missing data.</em> Journal of Statistical Software 45(7),
+1–47. <a href="https://doi.org/10.18637/jss.v045.i07" class="external-link uri">https://doi.org/10.18637/jss.v045.i07</a>.</p>
+<p>Hoek, J. van der and Elliott, R. J. (2024). <em>Mixtures of
+multivariate Gaussians.</em> Stochastic Analysis and Applications. <a href="https://doi.org/10.1080/07362994.2024.2372605" class="external-link uri">https://doi.org/10.1080/07362994.2024.2372605</a>.</p>
+<p>Rubin, D. B. (1987). <em>Multiple Imputation for Nonresponse in
+Surveys.</em> Wiley.</p>
+<p>van Buuren, S. and Groothuis-Oudshoorn, K. (2011). <em>mice:
+Multivariate imputation by chained equations in R.</em> Journal of
+Statistical Software 45(3), 1–67. <a href="https://doi.org/10.18637/jss.v045.i03" class="external-link uri">https://doi.org/10.18637/jss.v045.i03</a>.</p>
+</div>
+<div class="section level2">
+<h2 id="reproduce">Reproduce<a class="anchor" aria-label="anchor" href="#reproduce"></a>
+</h2>
+<p>The data are generated with seed <code>20260620</code>, and
+<code><a href="../reference/gmm_impute.html">gmm_impute()</a></code> is given <code>seed = 1L</code>. The completed
+datasets are therefore reproducible, and the seed does not change the
+random-number state outside the call. The comparison with
+<code>mice</code> and <code>Amelia</code> is read from stored results of
+a simulation run under proxymix 0.16.0, <code>mice</code> 3.19.0 and
+<code>Amelia</code> 1.8.3, which took about 27 minutes on one core.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<pre class="session-info"><code><span><span class="co">#&gt; R version 4.6.1 (2026-06-24)</span></span>
+<span><span class="co">#&gt; Platform: aarch64-apple-darwin23</span></span>
+<span><span class="co">#&gt; Running under: macOS Tahoe 26.6.2</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Matrix products: default</span></span>
+<span><span class="co">#&gt; BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib </span></span>
+<span><span class="co">#&gt; LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; locale:</span></span>
+<span><span class="co">#&gt; [1] en_AU.UTF-8/en_AU.UTF-8/en_AU.UTF-8/C/en_AU.UTF-8/en_AU.UTF-8</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; time zone: Australia/Adelaide</span></span>
+<span><span class="co">#&gt; tzcode source: internal</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; attached base packages:</span></span>
+<span><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; other attached packages:</span></span>
+<span><span class="co">#&gt; [1] proxymix_0.16.0</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
+<span><span class="co">#&gt;  [1] gtable_0.3.6       shape_1.4.6.1      xfun_0.60          bslib_0.12.0      </span></span>
+<span><span class="co">#&gt;  [5] ggplot2_4.0.3      htmlwidgets_1.6.4  lattice_0.23-1     vctrs_0.7.3       </span></span>
+<span><span class="co">#&gt;  [9] tools_4.6.1        Rdpack_2.6.6       generics_0.1.4     stats4_4.6.1      </span></span>
+<span><span class="co">#&gt; [13] tibble_3.3.1       pan_2.0            pkgconfig_2.0.3    jomo_2.7-6        </span></span>
+<span><span class="co">#&gt; [17] Matrix_1.7-6       RColorBrewer_1.1-3 S7_0.2.2           desc_1.4.3        </span></span>
+<span><span class="co">#&gt; [21] lifecycle_1.0.5    compiler_4.6.1     farver_2.1.2       textshaping_1.0.5 </span></span>
+<span><span class="co">#&gt; [25] codetools_0.2-20   htmltools_0.5.9    sass_0.4.10        yaml_2.3.12       </span></span>
+<span><span class="co">#&gt; [29] glmnet_5.0         mice_3.19.0        pillar_1.11.1      pkgdown_2.2.1     </span></span>
+<span><span class="co">#&gt; [33] nloptr_2.2.1       jquerylib_0.1.4    tidyr_1.3.2        MASS_7.3-66       </span></span>
+<span><span class="co">#&gt; [37] cachem_1.1.0       reformulas_0.4.4   iterators_1.0.14   rpart_4.1.27      </span></span>
+<span><span class="co">#&gt; [41] boot_1.3-32        foreach_1.5.2      mitml_0.4-5        nlme_3.1-171      </span></span>
+<span><span class="co">#&gt; [45] tidyselect_1.2.1   digest_0.6.39      dplyr_1.2.1        purrr_1.2.2       </span></span>
+<span><span class="co">#&gt; [49] labeling_0.4.3     splines_4.6.1      fastmap_1.2.0      grid_4.6.1        </span></span>
+<span><span class="co">#&gt; [53] cli_3.6.6          magrittr_2.0.5     dichromat_2.0-1    survival_3.8-11   </span></span>
+<span><span class="co">#&gt; [57] broom_1.0.13       withr_3.0.3        scales_1.4.0       backports_1.5.1   </span></span>
+<span><span class="co">#&gt; [61] rmarkdown_2.32     otel_0.2.0         nnet_7.3-21        lme4_2.0-6        </span></span>
+<span><span class="co">#&gt; [65] ragg_1.5.2         evaluate_1.0.5     knitr_1.51         rbibutils_2.4.1   </span></span>
+<span><span class="co">#&gt; [69] rlang_1.3.0        Rcpp_1.1.2         glue_1.8.1         minqa_1.2.8       </span></span>
+<span><span class="co">#&gt; [73] jsonlite_2.0.0     R6_2.6.1           systemfonts_1.3.2  fs_2.1.0</span></span></code></pre>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
@@ -227,7 +696,7 @@ random-number state.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

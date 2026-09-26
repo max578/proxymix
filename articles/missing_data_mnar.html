@@ -7,10 +7,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Missing data that depends on the missing value • proxymix</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Missing data that depends on the missing value">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<meta property="og:title" content="Missing data that depends on the missing value">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -20,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">proxymix</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.15.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.16.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,18 +34,20 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/quickstart.html">Quickstart</a></li>
+<li><a class="dropdown-item" href="../articles/quickstart.html">Fitting a proxy to a density you cannot sample</a></li>
     <li><a class="dropdown-item" href="../articles/posterior_proxy.html">Compressing a Bayesian posterior you can evaluate but not sample</a></li>
-    <li><a class="dropdown-item" href="../articles/three_regimes.html">Three regimes: moment, sample, and KLD-EM</a></li>
-    <li><a class="dropdown-item" href="../articles/density_shapes.html">KLD-EM on three density shapes</a></li>
-    <li><a class="dropdown-item" href="../articles/operator_calculus.html">Affine-Gaussian operator calculus on a Gaussian mixture</a></li>
-    <li><a class="dropdown-item" href="../articles/from_kde.html">From KDE: compressing a kernel density estimate into a Gaussian-mixture proxy</a></li>
+    <li><a class="dropdown-item" href="../articles/three_regimes.html">Choosing between the three fitting regimes</a></li>
+    <li><a class="dropdown-item" href="../articles/density_shapes.html">How well a mixture proxies four awkward shapes</a></li>
+    <li><a class="dropdown-item" href="../articles/operator_calculus.html">The closed-form operator calculus on a mixture</a></li>
+    <li><a class="dropdown-item" href="../articles/from_kde.html">Compressing a kernel density estimate into a mixture</a></li>
     <li><a class="dropdown-item" href="../articles/many_methods.html">One mixture, many methods</a></li>
-    <li><a class="dropdown-item" href="../articles/entropy.html">Entropy diagnostics with proxymix</a></li>
+    <li><a class="dropdown-item" href="../articles/entropy.html">Reading the entropy of a fitted mixture</a></li>
     <li><a class="dropdown-item" href="../articles/calibration.html">Mapping the optima of an objective</a></li>
     <li><a class="dropdown-item" href="../articles/missing_data.html">Imputing missing data with a mixture</a></li>
     <li><a class="dropdown-item" href="../articles/missing_data_mnar.html">Missing data that depends on the missing value</a></li>
     <li><a class="dropdown-item" href="../articles/end_of_sample.html">Testing the last observation for instability</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -76,156 +79,767 @@
 
     
     
+<!-- Render time: ~25 s under rmarkdown::render() with ggplot2 installed;
+     macOS arm64 (Apple silicon), R 4.6.1, one core. The sweep over five
+     slopes takes most of it. The comparison with mice, Amelia,
+     sampleSelection, AER and survival is read from
+     results/missing_data_mnar.rds, built by
+     data-raw/vignette_results/missing_data_mnar.R. -->
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/max578/proxymix" class="external-link">proxymix</a></span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">has_ggplot2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ggplot2"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
-<h2 id="imputation-is-conditioning-on-a-gate">Imputation is conditioning on a gate<a class="anchor" aria-label="anchor" href="#imputation-is-conditioning-on-a-gate"></a>
+<h2 id="the-problem">The problem<a class="anchor" aria-label="anchor" href="#the-problem"></a>
 </h2>
-<p>In proxymix you do not impute a missing entry so much as condition
-the fitted mixture on what its being missing tells you. For an entry
-missing at random that is nothing beyond the other coordinates, so the
-imputation law is the plain mixture conditional. Two common situations
-carry more information than that. An entry can be missing because it
-fell in a known interval – below a detection limit, above a ceiling –
-which is <em>censoring</em>. Or it can be missing with a probability
-that depends on its own unobserved value, larger values dropping out
-more often, which is <em>missing not at random</em>. Each is a gate
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>δ</mi><mo stretchy="false" form="prefix">(</mo><mi>y</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\delta(y)</annotation></semantics></math>
-multiplying the mixture conditional before the value is drawn.</p>
+<p><em>Imputing missing data with a mixture</em> shows how to fill the
+holes in a dataset under one assumption, called missing at random. The
+chance that a value is missing may depend on the other values in its
+row, but not on the missing value itself.</p>
+<p>Often the missing values are mostly the large ones, or mostly the
+small ones. An assay saturates above some level. A yield is never
+recorded on the paddocks that did badly. The patients who are most
+unwell miss their follow-up visit. The values that remain are then
+unrepresentative, and their mean is biased. Imputation under missing at
+random removes only part of this bias, because its model is fitted to
+the same unrepresentative values.</p>
+<p>Two such cases are common. The first is censoring: a value is missing
+because it fell below (or above) a known limit, such as the detection
+limit of an assay. The missing value is then known to lie on the far
+side of the limit. The second is missing not at random: the chance that
+a value is missing rises or falls with the value itself, by an unknown
+amount. The observed data cannot settle how strong the link is. The
+usual remedy is a sensitivity analysis (Little, 1993): the analysis is
+repeated under several assumed strengths, and all the results are
+reported.</p>
+<p>This vignette works through both cases on simulated data. Because the
+deleted values are kept, every estimate can be checked against the
+truth. The vignette then compares proxymix with established packages for
+each case.</p>
+</div>
+<div class="section level2">
+<h2 id="package-capabilities">Package capabilities<a class="anchor" aria-label="anchor" href="#package-capabilities"></a>
+</h2>
+<ul>
+<li>
+<code><a href="../reference/gmm_impute.html">gmm_impute()</a></code> fits a Gaussian mixture, a sum of a few
+normal distributions, to data with holes. It returns <code>m</code>
+completed datasets, as in <em>Imputing missing data with a mixture</em>.
+Its <code>mechanism</code> argument specifies how the values came to be
+missing.</li>
+<li>
+<code><a href="../reference/mechanism.html">mar()</a></code> is missing at random, the default.</li>
+<li>
+<code><a href="../reference/mechanism.html">censored()</a></code> is for a missing value known to lie in a
+range. For example, <code>censored("y", upper = 0.3)</code> specifies
+that each missing <code>y</code> lies below 0.3.</li>
+<li>
+<code><a href="../reference/mechanism.html">mnar()</a></code> is for a value of <code>y</code> whose chance of
+being missing depends on <code>y</code> itself. You supply the strength
+of the link.</li>
+<li>
+<code><a href="../reference/proxy_mnar_sensitivity.html">proxy_mnar_sensitivity()</a></code> repeats the imputation for a
+range of strengths and returns the pooled mean of <code>y</code> for
+each.</li>
+<li>
+<code><a href="../reference/proxy_pool.html">proxy_pool()</a></code> pools the mean of a column over the
+completed datasets.</li>
+</ul>
+<p>Each missing value is drawn from its conditional distribution: the
+distribution of the missing entry given the observed entries in the same
+row. Under <code><a href="../reference/mechanism.html">censored()</a></code>, this distribution is cut off at the
+limit, and every imputed value falls on the censored side of it. The
+cut-off distribution has an exact formula. Under <code><a href="../reference/mechanism.html">mnar()</a></code>,
+the conditional distribution is weighted by the chance of being missing
+at each value. Values that were more likely to go missing are then drawn
+more often.</p>
+<p><code><a href="../reference/mechanism.html">mnar()</a></code> models the chance that <code>y</code> is missing
+as <code>plogis(alpha + beta * y)</code>, the logistic curve used in
+logistic regression. This is the selection model of Diggle and Kenward
+(1994). The slope <code>beta</code> is the strength of the link, and
+<code>beta = 0</code> is missing at random. You supply
+<code>beta</code>. The package sets the intercept <code>alpha</code> so
+that the model gives the observed share of missing values.</p>
 <table class="table">
+<caption>The three mechanisms that <code><a href="../reference/gmm_impute.html">gmm_impute()</a></code>
+accepts.</caption>
+<colgroup>
+<col width="16%">
+<col width="37%">
+<col width="9%">
+<col width="36%">
+</colgroup>
 <thead><tr class="header">
 <th align="left">Mechanism</th>
-<th align="left">Gate</th>
-<th align="left">Constructor</th>
+<th align="left">What is known about a missing value</th>
+<th align="left">Function</th>
+<th align="left">Can the observed data fix the imputation model?</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
 <td align="left">missing at random</td>
-<td align="left">constant</td>
-<td align="left">mar()</td>
+<td align="left">nothing beyond the rest of its row</td>
+<td align="left"><code><a href="../reference/mechanism.html">mar()</a></code></td>
+<td align="left">yes, once the mixture is assumed</td>
 </tr>
 <tr class="even">
 <td align="left">censored</td>
-<td align="left">indicator of an interval</td>
-<td align="left">censored()</td>
+<td align="left">it lies beyond a known limit</td>
+<td align="left"><code><a href="../reference/mechanism.html">censored()</a></code></td>
+<td align="left">yes, the limit is known</td>
 </tr>
 <tr class="odd">
 <td align="left">missing not at random</td>
-<td align="left">selection probability</td>
-<td align="left">mnar()</td>
+<td align="left">its chance of going missing depended on its size</td>
+<td align="left"><code><a href="../reference/mechanism.html">mnar()</a></code></td>
+<td align="left">only through the assumed shape of <code>y</code>
+</td>
 </tr>
 </tbody>
 </table>
 </div>
 <div class="section level2">
-<h2 id="a-value-dependent-mechanism-biases-the-ordinary-fit">A value-dependent mechanism biases the ordinary fit<a class="anchor" aria-label="anchor" href="#a-value-dependent-mechanism-biases-the-ordinary-fit"></a>
+<h2 id="addressing-the-problem">Addressing the problem<a class="anchor" aria-label="anchor" href="#addressing-the-problem"></a>
 </h2>
-<p>Consider a two-component mixture where the second coordinate
-<code>y</code> is missing with a probability that grows with
-<code>y</code> itself, so the larger values are under-represented among
-the observed.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">1200</span></span>
-<span><span class="va">comp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>, <span class="va">n</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="va">mu</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.5</span>, <span class="fl">0.5</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">L</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/chol.html" class="external-link">chol</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0.6</span>, <span class="fl">0.6</span>, <span class="fl">1</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">Z</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">2</span> <span class="op">*</span> <span class="va">n</span><span class="op">)</span>, <span class="va">n</span>, <span class="fl">2</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="va">L</span> <span class="op">+</span> <span class="va">mu</span><span class="op">[</span><span class="va">comp</span>, <span class="op">]</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">Z</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x1"</span>, <span class="st">"y"</span><span class="op">)</span></span>
-<span><span class="va">truth</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">Z</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span><span class="op">)</span>                                  <span class="co"># the complete-data mean</span></span>
-<span></span>
-<span><span class="va">miss</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span> <span class="op">&lt;</span> <span class="fu"><a href="https://rdrr.io/r/stats/Logistic.html" class="external-link">plogis</a></span><span class="op">(</span><span class="op">-</span><span class="fl">0.5</span> <span class="op">+</span> <span class="fl">0.7</span> <span class="op">*</span> <span class="va">Z</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span><span class="op">)</span>         <span class="co"># larger y, more missing</span></span>
-<span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="va">Z</span></span>
-<span><span class="va">dat</span><span class="op">[</span><span class="va">miss</span>, <span class="st">"y"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">NA</span></span></code></pre></div>
-<p>An imputer that assumes the data are missing at random fills the gap
-from the conditional of the observed, which is itself short of the large
-values, so it stays biased. Supplying the selection slope to
-<code><a href="../reference/mechanism.html">mnar()</a></code> lets the fit account for the mechanism and recover
-the mean.</p>
+<div class="section level3">
+<h3 id="data-in-which-the-large-values-go-missing">Data in which the large values go missing<a class="anchor" aria-label="anchor" href="#data-in-which-the-large-values-go-missing"></a>
+</h3>
+<p>The data have 600 rows and two columns, <code>x1</code> and
+<code>y</code>. They are drawn from a mixture of two normal
+distributions of equal size. In each, <code>x1</code> and <code>y</code>
+have unit variance and a correlation of 0.6. The chance that
+<code>y</code> is deleted is <code>plogis(-0.5 + 0.7 * y)</code>. Larger
+values of <code>y</code> are therefore deleted more often. The complete
+data are kept as the truth.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">mar_fit</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gmm_impute.html">gmm_impute</a></span><span class="op">(</span><span class="va">dat</span>, N <span class="op">=</span> <span class="fl">2</span>, m <span class="op">=</span> <span class="fl">20</span>, mechanism <span class="op">=</span> <span class="fu"><a href="../reference/mechanism.html">mar</a></span><span class="op">(</span><span class="op">)</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="va">mnar_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gmm_impute.html">gmm_impute</a></span><span class="op">(</span><span class="va">dat</span>, N <span class="op">=</span> <span class="fl">2</span>, m <span class="op">=</span> <span class="fl">20</span>, mechanism <span class="op">=</span> <span class="fu"><a href="../reference/mechanism.html">mnar</a></span><span class="op">(</span><span class="st">"y"</span>, beta <span class="op">=</span> <span class="fl">0.7</span><span class="op">)</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">20260622</span><span class="op">)</span></span>
+<span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">600L</span></span>
+<span><span class="va">comp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>, <span class="va">n</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">mu</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://amices.org/mice/reference/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.5</span>, <span class="fl">0.5</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">chol_r</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/chol.html" class="external-link">chol</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0.6</span>, <span class="fl">0.6</span>, <span class="fl">1</span><span class="op">)</span>, <span class="fl">2L</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">z_full</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">2</span> <span class="op">*</span> <span class="va">n</span><span class="op">)</span>, <span class="va">n</span>, <span class="fl">2L</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="va">chol_r</span> <span class="op">+</span> <span class="va">mu</span><span class="op">[</span><span class="va">comp</span>, <span class="op">]</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">z_full</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x1"</span>, <span class="st">"y"</span><span class="op">)</span></span>
+<span><span class="va">truth</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">z_full</span><span class="op">[</span>, <span class="fl">2L</span><span class="op">]</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>truth        <span class="op">=</span> <span class="va">truth</span>,</span>
-<span>  available    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">dat</span><span class="op">[</span><span class="op">!</span><span class="va">miss</span>, <span class="st">"y"</span><span class="op">]</span><span class="op">)</span>,</span>
-<span>  mar          <span class="op">=</span> <span class="fu"><a href="../reference/proxy_pool.html">proxy_pool</a></span><span class="op">(</span><span class="va">mar_fit</span>, <span class="st">"y"</span><span class="op">)</span><span class="op">$</span><span class="va">estimate</span>,</span>
-<span>  mnar         <span class="op">=</span> <span class="fu"><a href="../reference/proxy_pool.html">proxy_pool</a></span><span class="op">(</span><span class="va">mnar_fit</span>, <span class="st">"y"</span><span class="op">)</span><span class="op">$</span><span class="va">estimate</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Analytic pooling is not defined for a gated (<span style="color: #0000BB;">"mnar"</span>) mechanism; pooling by</span></span>
-<span><span class="co">#&gt; Rubin's rules instead.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> The returned attribute `method` records what was used.</span></span>
-<span><span class="co">#&gt;       truth   available         mar        mnar </span></span>
-<span><span class="co">#&gt;  0.23108581 -0.09794993  0.01068370  0.20500158</span></span></code></pre></div>
-<p>The slope <code>beta</code> is the strength of the dependence on the
-log-odds scale, and <code>beta = 0</code> is the missing-at-random case.
-The intercept is not supplied – it is calibrated to the observed
-fraction missing.</p>
+<span><span class="va">beta_true</span> <span class="op">&lt;-</span> <span class="fl">0.7</span></span>
+<span><span class="va">miss</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span> <span class="op">&lt;</span> <span class="fu"><a href="https://rdrr.io/r/stats/Logistic.html" class="external-link">plogis</a></span><span class="op">(</span><span class="op">-</span><span class="fl">0.5</span> <span class="op">+</span> <span class="va">beta_true</span> <span class="op">*</span> <span class="va">z_full</span><span class="op">[</span>, <span class="fl">2L</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="va">z_full</span></span>
+<span><span class="va">dat</span><span class="op">[</span><span class="va">miss</span>, <span class="st">"y"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">NA</span></span></code></pre></div>
 </div>
-<div class="section level2">
-<h2 id="the-slope-is-a-sensitivity-parameter">The slope is a sensitivity parameter<a class="anchor" aria-label="anchor" href="#the-slope-is-a-sensitivity-parameter"></a>
-</h2>
-<p>A missing-not-at-random departure cannot be identified from the
-observed data, so a single estimate would overstate what the data
-support. The appropriate summary is a curve:
-<code><a href="../reference/proxy_mnar_sensitivity.html">proxy_mnar_sensitivity()</a></code> sweeps the slope and reports the
-pooled mean with its interval at each value, and the analyst reads off
-where a conclusion would change.</p>
+<div class="section level3">
+<h3 id="impute-under-two-assumptions">Impute under two assumptions<a class="anchor" aria-label="anchor" href="#impute-under-two-assumptions"></a>
+</h3>
+<p>The first imputation assumes missing at random. The second supplies
+the slope that generated the data, <code>beta = 0.7</code>, to
+<code><a href="../reference/mechanism.html">mnar()</a></code>. Both make 10 completed datasets. Both allow up to
+500 fitting rounds (<code>max_iter</code>), the default of
+<code><a href="../reference/proxy_mnar_sensitivity.html">proxy_mnar_sensitivity()</a></code> below. Near missing at random, the
+fitting can take more rounds than the <code><a href="../reference/gmm_impute.html">gmm_impute()</a></code> default
+of 100.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sweep</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/proxy_mnar_sensitivity.html">proxy_mnar_sensitivity</a></span><span class="op">(</span><span class="va">dat</span>, <span class="st">"y"</span>, beta_grid <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1.2</span>, by <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span>,</span>
-<span>                                N <span class="op">=</span> <span class="fl">2</span>, m <span class="op">=</span> <span class="fl">20</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="va">sweep</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"beta"</span>, <span class="st">"estimate"</span>, <span class="st">"conf.low"</span>, <span class="st">"conf.high"</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="co">#&gt;   beta    estimate      conf.low  conf.high</span></span>
-<span><span class="co">#&gt; 1  0.0 0.002778616 -0.0636722281 0.06922946</span></span>
-<span><span class="co">#&gt; 2  0.2 0.069116912 -0.0006741309 0.13890795</span></span>
-<span><span class="co">#&gt; 3  0.4 0.125791797  0.0545376895 0.19704590</span></span>
-<span><span class="co">#&gt; 4  0.6 0.166268504  0.0939383140 0.23859869</span></span>
-<span><span class="co">#&gt; 5  0.8 0.213794032  0.1309621000 0.29662596</span></span>
-<span><span class="co">#&gt; 6  1.0 0.278313865  0.1993631237 0.35726461</span></span>
-<span><span class="co">#&gt; 7  1.2 0.324815991  0.2379499875 0.41168200</span></span></code></pre></div>
-<p><img src="missing_data_mnar_files/figure-html/tornado-1.png" class="r-plt" alt="Pooled mean of y against the assumed sensitivity slope, with confidence bands and the complete-data truth marked." width="100%"></p>
-<p>The estimate rises monotonically with the assumed slope and crosses
-the complete-data truth near the slope that generated the data, which is
-the value proposition of a sensitivity analysis – without knowing the
-slope, sweeping it brackets the truth.</p>
+<code class="sourceCode R"><span><span class="va">m_draws</span> <span class="op">&lt;-</span> <span class="fl">10L</span></span>
+<span><span class="va">mar_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gmm_impute.html">gmm_impute</a></span><span class="op">(</span><span class="va">dat</span>, N <span class="op">=</span> <span class="fl">2L</span>, m <span class="op">=</span> <span class="va">m_draws</span>, mechanism <span class="op">=</span> <span class="fu"><a href="../reference/mechanism.html">mar</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>                      seed <span class="op">=</span> <span class="fl">1L</span>, max_iter <span class="op">=</span> <span class="fl">500L</span><span class="op">)</span></span>
+<span><span class="va">mnar_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gmm_impute.html">gmm_impute</a></span><span class="op">(</span><span class="va">dat</span>, N <span class="op">=</span> <span class="fl">2L</span>, m <span class="op">=</span> <span class="va">m_draws</span>,</span>
+<span>                       mechanism <span class="op">=</span> <span class="fu"><a href="../reference/mechanism.html">mnar</a></span><span class="op">(</span><span class="st">"y"</span>, beta <span class="op">=</span> <span class="va">beta_true</span><span class="op">)</span>, seed <span class="op">=</span> <span class="fl">1L</span>,</span>
+<span>                       max_iter <span class="op">=</span> <span class="fl">500L</span><span class="op">)</span></span>
+<span><span class="va">mar_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/proxy_pool.html">proxy_pool</a></span><span class="op">(</span><span class="va">mar_fit</span>, <span class="st">"y"</span><span class="op">)</span><span class="op">$</span><span class="va">estimate</span></span>
+<span><span class="va">mnar_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/proxy_pool.html">proxy_pool</a></span><span class="op">(</span><span class="va">mnar_fit</span>, <span class="st">"y"</span>, method <span class="op">=</span> <span class="st">"rubin"</span><span class="op">)</span><span class="op">$</span><span class="va">estimate</span></span></code></pre></div>
+<p>For data missing at random, <code><a href="../reference/proxy_pool.html">proxy_pool()</a></code> computes the
+pooled standard error exactly from the fitted mixture. That exact
+formula does not hold under <code><a href="../reference/mechanism.html">censored()</a></code> or
+<code><a href="../reference/mechanism.html">mnar()</a></code>. These fits are pooled by Rubin’s rules instead
+(Rubin, 1987). These rules average the estimates over the completed
+datasets and add their spread to the average variance. Called without
+<code>method = "rubin"</code>, <code><a href="../reference/proxy_pool.html">proxy_pool()</a></code> switches to
+Rubin’s rules for such fits and prints a message.</p>
+<table class="table">
+<caption>The mean of y from the complete data, from the rows not
+deleted, and pooled over each imputation. 250 of 600 values of y were
+deleted.</caption>
+<colgroup>
+<col width="51%">
+<col width="12%">
+<col width="36%">
+</colgroup>
+<thead><tr class="header">
+<th align="left">Data used</th>
+<th align="right">Mean of y</th>
+<th align="right">Difference from complete data</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">complete data, before deletion</td>
+<td align="right">0.285</td>
+<td align="right">0.000</td>
+</tr>
+<tr class="even">
+<td align="left">rows not deleted</td>
+<td align="right">-0.044</td>
+<td align="right">-0.330</td>
+</tr>
+<tr class="odd">
+<td align="left">imputed, missing at random</td>
+<td align="right">0.058</td>
+<td align="right">-0.227</td>
+</tr>
+<tr class="even">
+<td align="left">imputed, missing not at random (slope 0.7)</td>
+<td align="right">0.240</td>
+<td align="right">-0.046</td>
+</tr>
+</tbody>
+</table>
 </div>
-<div class="section level2">
-<h2 id="censoring-is-the-exact-identifiable-case">Censoring is the exact, identifiable case<a class="anchor" aria-label="anchor" href="#censoring-is-the-exact-identifiable-case"></a>
-</h2>
-<p>When the reason for missingness is a known bound, the mechanism is
-identified and there is no sensitivity parameter. A detection limit that
-hides values of <code>y</code> below a threshold is
-<code>censored("y", upper = threshold)</code>, and proxymix draws from
-the mixture conditional truncated to the censored interval rather than
-substituting a constant such as half the limit.</p>
+<div class="section level3">
+<h3 id="sweep-the-assumed-slope">Sweep the assumed slope<a class="anchor" aria-label="anchor" href="#sweep-the-assumed-slope"></a>
+</h3>
+<p>In real data the slope is unknown. Under this model, the observed
+data carry some information about the slope, but only through the
+assumed shape of the distribution of <code>y</code>. A different shape
+could fit the observed data equally well with a different slope. An
+estimate at a single slope would rest on that shape.</p>
+<p><code><a href="../reference/proxy_mnar_sensitivity.html">proxy_mnar_sensitivity()</a></code> therefore repeats the
+imputation at each slope in a grid. For each slope, it returns the
+pooled mean with its 95% confidence interval (CI), the log-likelihood,
+and whether the fit converged. The log-likelihood measures how well the
+model with that slope fits the observed data. Higher values mean a
+better fit. A fit has converged when its rounds settle within the limit
+of 500.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sweep</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/proxy_mnar_sensitivity.html">proxy_mnar_sensitivity</a></span><span class="op">(</span><span class="va">dat</span>, <span class="st">"y"</span>,</span>
+<span>                                beta_grid <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1.2</span>, by <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span>,</span>
+<span>                                N <span class="op">=</span> <span class="fl">2L</span>, m <span class="op">=</span> <span class="va">m_draws</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
+<span><span class="va">covers</span> <span class="op">&lt;-</span> <span class="va">sweep</span><span class="op">$</span><span class="va">conf.low</span> <span class="op">&lt;=</span> <span class="va">truth</span> <span class="op">&amp;</span> <span class="va">sweep</span><span class="op">$</span><span class="va">conf.high</span> <span class="op">&gt;=</span> <span class="va">truth</span></span>
+<span><span class="va">beta_first</span> <span class="op">&lt;-</span> <span class="va">sweep</span><span class="op">$</span><span class="va">beta</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/which.html" class="external-link">which</a></span><span class="op">(</span><span class="va">covers</span><span class="op">)</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="va">beta_best</span> <span class="op">&lt;-</span> <span class="va">sweep</span><span class="op">$</span><span class="va">beta</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/which.min.html" class="external-link">which.max</a></span><span class="op">(</span><span class="va">sweep</span><span class="op">$</span><span class="va">loglik</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="va">ll_gain</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">sweep</span><span class="op">$</span><span class="va">loglik</span><span class="op">)</span> <span class="op">-</span> <span class="va">sweep</span><span class="op">$</span><span class="va">loglik</span><span class="op">[</span><span class="fl">1L</span><span class="op">]</span></span></code></pre></div>
+<table class="table">
+<caption>The pooled mean of y at each assumed slope. The mean of y in
+the complete data is 0.285.</caption>
+<colgroup>
+<col width="18%">
+<col width="22%">
+<col width="12%">
+<col width="12%">
+<col width="20%">
+<col width="13%">
+</colgroup>
+<thead><tr class="header">
+<th align="right">Assumed slope</th>
+<th align="right">Pooled mean of y</th>
+<th align="right">CI lower</th>
+<th align="right">CI upper</th>
+<th align="right">Log-likelihood</th>
+<th align="left">Converged</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="right">0.0</td>
+<td align="right">0.063</td>
+<td align="right">-0.061</td>
+<td align="right">0.187</td>
+<td align="right">-1812.4</td>
+<td align="left">yes</td>
+</tr>
+<tr class="even">
+<td align="right">0.3</td>
+<td align="right">0.135</td>
+<td align="right">0.028</td>
+<td align="right">0.243</td>
+<td align="right">-1802.9</td>
+<td align="left">yes</td>
+</tr>
+<tr class="odd">
+<td align="right">0.6</td>
+<td align="right">0.227</td>
+<td align="right">0.129</td>
+<td align="right">0.325</td>
+<td align="right">-1797.6</td>
+<td align="left">yes</td>
+</tr>
+<tr class="even">
+<td align="right">0.9</td>
+<td align="right">0.276</td>
+<td align="right">0.176</td>
+<td align="right">0.377</td>
+<td align="right">-1795.5</td>
+<td align="left">yes</td>
+</tr>
+<tr class="odd">
+<td align="right">1.2</td>
+<td align="right">0.351</td>
+<td align="right">0.236</td>
+<td align="right">0.466</td>
+<td align="right">-1795.9</td>
+<td align="left">yes</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sweep_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">sweep</span><span class="op">)</span></span>
+<span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">sweep_df</span>, <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">beta</span>, <span class="va">estimate</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_ribbon.html" class="external-link">geom_ribbon</a></span><span class="op">(</span></span>
+<span>    <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>ymin <span class="op">=</span> <span class="va">conf.low</span>, ymax <span class="op">=</span> <span class="va">conf.high</span><span class="op">)</span>,</span>
+<span>    fill <span class="op">=</span> <span class="st">"#56B4E9"</span>, alpha <span class="op">=</span> <span class="fl">0.3</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span>colour <span class="op">=</span> <span class="st">"#0072B2"</span>, linewidth <span class="op">=</span> <span class="fl">0.9</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>colour <span class="op">=</span> <span class="st">"#0072B2"</span>, size <span class="op">=</span> <span class="fl">2</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html" class="external-link">geom_hline</a></span><span class="op">(</span>yintercept <span class="op">=</span> <span class="va">truth</span>, linetype <span class="op">=</span> <span class="st">"dashed"</span>,</span>
+<span>                      colour <span class="op">=</span> <span class="st">"#000000"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html" class="external-link">geom_vline</a></span><span class="op">(</span>xintercept <span class="op">=</span> <span class="va">beta_true</span>, linetype <span class="op">=</span> <span class="st">"dotted"</span>,</span>
+<span>                      colour <span class="op">=</span> <span class="st">"#D55E00"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/annotate.html" class="external-link">annotate</a></span><span class="op">(</span><span class="st">"text"</span>, x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="va">sweep_df</span><span class="op">$</span><span class="va">beta</span><span class="op">)</span>, y <span class="op">=</span> <span class="va">truth</span>,</span>
+<span>                    label <span class="op">=</span> <span class="st">"complete-data mean"</span>, hjust <span class="op">=</span> <span class="fl">0</span>, vjust <span class="op">=</span> <span class="op">-</span><span class="fl">0.6</span>,</span>
+<span>                    size <span class="op">=</span> <span class="fl">3.2</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/annotate.html" class="external-link">annotate</a></span><span class="op">(</span><span class="st">"text"</span>, x <span class="op">=</span> <span class="va">beta_true</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="va">sweep_df</span><span class="op">$</span><span class="va">conf.low</span><span class="op">)</span>,</span>
+<span>                    label <span class="op">=</span> <span class="st">"generating slope"</span>, hjust <span class="op">=</span> <span class="fl">1.05</span>, vjust <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>                    size <span class="op">=</span> <span class="fl">3.2</span>, colour <span class="op">=</span> <span class="st">"#D55E00"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span></span>
+<span>    x <span class="op">=</span> <span class="st">"assumed slope"</span>,</span>
+<span>    y <span class="op">=</span> <span class="st">"pooled mean of y"</span>,</span>
+<span>    title <span class="op">=</span> <span class="st">"The pooled mean of y under each assumed slope"</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span>base_size <span class="op">=</span> <span class="fl">11</span><span class="op">)</span></span></code></pre></div>
+<div class="figure">
+<img src="missing_data_mnar_files/figure-html/fig-sweep-1.png" class="r-plt" alt="Pooled mean of y against the assumed slope, rising from left to right, with a shaded confidence band, a point at each assumed slope, a dashed horizontal line at the complete-data mean, and a dotted vertical line at the generating slope of 0.7." width="100%"><p class="caption">
+The pooled mean of y and its 95% confidence interval at each assumed
+slope. The dashed line is the mean of the complete data. The dotted line
+marks the slope that generated the data.
+</p>
+</div>
+<p>The row at slope 0 makes the same missing-at-random assumption as the
+earlier table, but <code><a href="../reference/proxy_mnar_sensitivity.html">proxy_mnar_sensitivity()</a></code> refits the
+mixture and draws its own completions. Its mean of 0.063 therefore
+differs from the earlier 0.058 by 0.005.</p>
+</div>
+<div class="section level3">
+<h3 id="censoring-at-a-known-limit">Censoring at a known limit<a class="anchor" aria-label="anchor" href="#censoring-at-a-known-limit"></a>
+</h3>
+<p>When values are missing because they fell beyond a known limit, the
+mechanism is known and no sweep is needed. Here every value of
+<code>y</code> below 0.3 is hidden, as if 0.3 were the detection limit
+of an assay. <code>censored("y", upper = 0.3)</code> draws each hidden
+value from the mixture’s conditional distribution cut off at 0.3. A
+common alternative replaces each hidden value with half the detection
+limit.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">thr</span> <span class="op">&lt;-</span> <span class="fl">0.3</span></span>
-<span><span class="va">cmiss</span> <span class="op">&lt;-</span> <span class="va">Z</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span> <span class="op">&lt;</span> <span class="va">thr</span></span>
-<span><span class="va">cdat</span> <span class="op">&lt;-</span> <span class="va">Z</span></span>
+<span><span class="va">cmiss</span> <span class="op">&lt;-</span> <span class="va">z_full</span><span class="op">[</span>, <span class="fl">2L</span><span class="op">]</span> <span class="op">&lt;</span> <span class="va">thr</span></span>
+<span><span class="va">cdat</span> <span class="op">&lt;-</span> <span class="va">z_full</span></span>
 <span><span class="va">cdat</span><span class="op">[</span><span class="va">cmiss</span>, <span class="st">"y"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">NA</span></span>
+<span><span class="va">cfit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gmm_impute.html">gmm_impute</a></span><span class="op">(</span><span class="va">cdat</span>, N <span class="op">=</span> <span class="fl">2L</span>, m <span class="op">=</span> <span class="va">m_draws</span>,</span>
+<span>                   mechanism <span class="op">=</span> <span class="fu"><a href="../reference/mechanism.html">censored</a></span><span class="op">(</span><span class="st">"y"</span>, upper <span class="op">=</span> <span class="va">thr</span><span class="op">)</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
+<span><span class="va">cens_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/proxy_pool.html">proxy_pool</a></span><span class="op">(</span><span class="va">cfit</span>, <span class="st">"y"</span>, method <span class="op">=</span> <span class="st">"rubin"</span><span class="op">)</span><span class="op">$</span><span class="va">estimate</span></span>
+<span><span class="va">half_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">cmiss</span>, <span class="va">thr</span> <span class="op">/</span> <span class="fl">2</span>, <span class="va">z_full</span><span class="op">[</span>, <span class="fl">2L</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">below_half</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">z_full</span><span class="op">[</span><span class="va">cmiss</span>, <span class="fl">2L</span><span class="op">]</span> <span class="op">&lt;</span> <span class="va">thr</span> <span class="op">/</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<caption>The mean of y when values below 0.3 are hidden. 297 of 600
+values were hidden.</caption>
+<colgroup>
+<col width="47%">
+<col width="13%">
+<col width="39%">
+</colgroup>
+<thead><tr class="header">
+<th align="left">Data used</th>
+<th align="right">Mean of y</th>
+<th align="right">Difference from complete data</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">complete data, before censoring</td>
+<td align="right">0.285</td>
+<td align="right">0.000</td>
+</tr>
+<tr class="even">
+<td align="left">rows not censored</td>
+<td align="right">1.102</td>
+<td align="right">0.817</td>
+</tr>
+<tr class="odd">
+<td align="left">hidden values set to half the limit</td>
+<td align="right">0.631</td>
+<td align="right">0.345</td>
+</tr>
+<tr class="even">
+<td align="left">imputed, censored below the limit</td>
+<td align="right">0.318</td>
+<td align="right">0.032</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section level3">
+<h3 id="comparison-with-mice-amelia-sampleselection-and-the-tobit-model">Comparison with mice, Amelia, sampleSelection and the Tobit
+model<a class="anchor" aria-label="anchor" href="#comparison-with-mice-amelia-sampleselection-and-the-tobit-model"></a>
+</h3>
+<p>The examples above use one dataset each. To check proxymix against
+established tools, a simulation repeated both analyses on 300 datasets
+of 300 rows each.</p>
+<p>The first design is the missing-not-at-random example above, at half
+the size. The target is the mean of <code>y</code>. proxymix swept the
+slopes 0, 0.35, 0.7 and 1.05. <code>mice</code> (van Buuren and
+Groothuis-Oudshoorn, 2011) drew each missing <code>y</code> from a
+normal regression on <code>x1</code> and then added a fixed shift to
+every imputed value. This is called delta adjustment, and a shift of 0
+is missing at random. <code>mice</code> used the shifts 0, 0.2, 0.4 and
+0.6, in units of <code>y</code>, in place of proxymix’s slopes.
+<code>Amelia</code> (Honaker, King and Blackwell, 2011) assumes missing
+at random. The Heckman two-step estimator (Heckman, 1979) in
+<code>sampleSelection</code> (Toomet and Henningsen, 2008) models
+whether <code>y</code> is observed and the value of <code>y</code>
+together. It was run with <code>x1</code> in both parts and without an
+exclusion restriction, that is, without a variable that affects whether
+<code>y</code> is observed but not <code>y</code> itself. This design
+has no such variable, and without one the Heckman estimator is known to
+be unreliable.</p>
+<p>In the second design, <code>y</code> is recorded as zero whenever it
+falls below zero, which happens to 30% of the values. The target is the
+slope of <code>y</code> on a predictor <code>x</code>. Its true value is
+1. The Tobit model (Tobin, 1958) treats each zero as a value known only
+to lie at or below zero. <code><a href="https://rdrr.io/pkg/AER/man/tobit.html" class="external-link">tobit()</a></code> in <code>AER</code>
+(Kleiber and Zeileis, 2008) and <code><a href="https://rdrr.io/pkg/survival/man/survreg.html" class="external-link">survreg()</a></code> in
+<code>survival</code> (Therneau and Grambsch, 2000) fit this model and
+gave identical results. With proxymix, the zeros were set to missing and
+imputed with <code>censored("y", upper = 0)</code>, and the regression
+was pooled by Rubin’s rules.</p>
+<p>Each imputer made 10 completed datasets. Every interval is a 95%
+interval. Coverage is the share of datasets whose interval contained the
+true value, and it should be close to 0.95.</p>
+<table style="width:100%;" class="table">
+<caption>Results over 300 simulated datasets per design. Bias is the
+average difference from the true value, and error is the root mean
+squared error. The mean of y is 0.25 in the population, and the true
+slope is 1. The proxymix and mice rows are the grid values closest to
+the truth. With 300 datasets, a coverage near 0.95 has a simulation
+standard error of about 0.013. The Heckman coverage is over the 287
+datasets in which its estimated variance was positive.</caption>
+<colgroup>
+<col width="58%">
+<col width="7%">
+<col width="8%">
+<col width="9%">
+<col width="16%">
+</colgroup>
+<thead><tr class="header">
+<th align="left">Target and method</th>
+<th align="right">Bias</th>
+<th align="right">Error</th>
+<th align="right">Coverage</th>
+<th align="right">Interval width</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">Mean of y: complete data, before deletion</td>
+<td align="right">0.003</td>
+<td align="right">0.059</td>
+<td align="right">0.947</td>
+<td align="right">0.234</td>
+</tr>
+<tr class="even">
+<td align="left">Mean of y: rows not deleted</td>
+<td align="right">-0.284</td>
+<td align="right">0.294</td>
+<td align="right">0.047</td>
+<td align="right">0.295</td>
+</tr>
+<tr class="odd">
+<td align="left">Mean of y: Amelia (missing at random)</td>
+<td align="right">-0.187</td>
+<td align="right">0.200</td>
+<td align="right">0.250</td>
+<td align="right">0.284</td>
+</tr>
+<tr class="even">
+<td align="left">Mean of y: proxymix, slope 0.7</td>
+<td align="right">-0.002</td>
+<td align="right">0.077</td>
+<td align="right">0.947</td>
+<td align="right">0.305</td>
+</tr>
+<tr class="odd">
+<td align="left">Mean of y: mice, shift 0.4</td>
+<td align="right">-0.014</td>
+<td align="right">0.074</td>
+<td align="right">0.950</td>
+<td align="right">0.297</td>
+</tr>
+<tr class="even">
+<td align="left">Mean of y: Heckman two-step, no exclusion
+restriction</td>
+<td align="right">0.341</td>
+<td align="right">116.203</td>
+<td align="right">0.986</td>
+<td align="right">2382.095</td>
+</tr>
+<tr class="odd">
+<td align="left">Slope: complete data, before censoring</td>
+<td align="right">-0.005</td>
+<td align="right">0.062</td>
+<td align="right">0.933</td>
+<td align="right">0.229</td>
+</tr>
+<tr class="even">
+<td align="left">Slope: zeros taken at face value</td>
+<td align="right">-0.302</td>
+<td align="right">0.306</td>
+<td align="right">0.000</td>
+<td align="right">0.183</td>
+</tr>
+<tr class="odd">
+<td align="left">Slope: Tobit model (AER, survival)</td>
+<td align="right">-0.004</td>
+<td align="right">0.073</td>
+<td align="right">0.937</td>
+<td align="right">0.269</td>
+</tr>
+<tr class="even">
+<td align="left">Slope: proxymix, censored imputation</td>
+<td align="right">-0.033</td>
+<td align="right">0.085</td>
+<td align="right">0.907</td>
+<td align="right">0.317</td>
+</tr>
+</tbody>
+</table>
+<p>Assuming missing at random, proxymix at slope 0, <code>mice</code> at
+shift 0 and <code>Amelia</code> all understated the mean by about 0.19,
+with intervals that contained it in only 0.23 to 0.25 of datasets. At
+the grid values closest to the truth, proxymix and <code>mice</code> did
+equally well, with coverages of 0.947 and 0.950, although with real data
+neither the right slope nor the right shift is known. Without an
+exclusion restriction, the Heckman estimator broke down, with an error
+of 116 and no valid interval in 13 of 300 datasets. In the censored
+design the Tobit model did better than proxymix, with an error of 0.073
+against 0.085 and a coverage of 0.937 against 0.907, even though the
+proxymix intervals were wider.</p>
+<p>proxymix is the slowest method here. On one dataset, its sweep over
+four slopes took 4.3 seconds against 0.29 for the four <code>mice</code>
+shifts, and its censored imputation took 0.46 seconds against 0.002 for
+the Tobit fit (median of five runs on one computer).</p>
+<p>The code below analyses one dataset from each design with every
+method. It repeats the simulation code for a single dataset.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/max578/proxymix" class="external-link">proxymix</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/amices/mice" class="external-link">mice</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://gking.harvard.edu/amelia" class="external-link">Amelia</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">AER</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/therneau/survival" class="external-link">survival</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://r-forge.r-project.org/projects/sampleselection/" class="external-link">sampleSelection</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">cfit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gmm_impute.html">gmm_impute</a></span><span class="op">(</span><span class="va">cdat</span>, N <span class="op">=</span> <span class="fl">2</span>, m <span class="op">=</span> <span class="fl">20</span>, mechanism <span class="op">=</span> <span class="fu"><a href="../reference/mechanism.html">censored</a></span><span class="op">(</span><span class="st">"y"</span>, upper <span class="op">=</span> <span class="va">thr</span><span class="op">)</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>truth      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">Z</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span><span class="op">)</span>,</span>
-<span>  available  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">cdat</span><span class="op">[</span><span class="op">!</span><span class="va">cmiss</span>, <span class="st">"y"</span><span class="op">]</span><span class="op">)</span>,</span>
-<span>  half_limit <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">cmiss</span>, <span class="va">thr</span> <span class="op">/</span> <span class="fl">2</span>, <span class="va">Z</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  proxymix   <span class="op">=</span> <span class="fu"><a href="../reference/proxy_pool.html">proxy_pool</a></span><span class="op">(</span><span class="va">cfit</span>, <span class="st">"y"</span><span class="op">)</span><span class="op">$</span><span class="va">estimate</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Analytic pooling is not defined for a gated (<span style="color: #0000BB;">"censored"</span>) mechanism; pooling by</span></span>
-<span><span class="co">#&gt; Rubin's rules instead.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> The returned attribute `method` records what was used.</span></span>
-<span><span class="co">#&gt;      truth  available half_limit   proxymix </span></span>
-<span><span class="co">#&gt;  0.2310858  1.1165493  0.5962236  0.2088121</span></span></code></pre></div>
+<span><span class="co"># one dataset of 300 rows in which larger values of y are more often deleted</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1L</span><span class="op">)</span></span>
+<span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">300L</span></span>
+<span><span class="va">comp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>, <span class="va">n</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">mu</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://amices.org/mice/reference/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.5</span>, <span class="fl">0.5</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">chol_r</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/chol.html" class="external-link">chol</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0.6</span>, <span class="fl">0.6</span>, <span class="fl">1</span><span class="op">)</span>, <span class="fl">2L</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">z</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">2</span> <span class="op">*</span> <span class="va">n</span><span class="op">)</span>, <span class="va">n</span>, <span class="fl">2L</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="va">chol_r</span> <span class="op">+</span> <span class="va">mu</span><span class="op">[</span><span class="va">comp</span>, <span class="op">]</span></span>
+<span><span class="va">full</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x1 <span class="op">=</span> <span class="va">z</span><span class="op">[</span>, <span class="fl">1L</span><span class="op">]</span>, y <span class="op">=</span> <span class="va">z</span><span class="op">[</span>, <span class="fl">2L</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">obs</span> <span class="op">&lt;-</span> <span class="va">full</span></span>
+<span><span class="va">obs</span><span class="op">$</span><span class="va">y</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span> <span class="op">&lt;</span> <span class="fu"><a href="https://rdrr.io/r/stats/Logistic.html" class="external-link">plogis</a></span><span class="op">(</span><span class="op">-</span><span class="fl">0.5</span> <span class="op">+</span> <span class="fl">0.7</span> <span class="op">*</span> <span class="va">full</span><span class="op">$</span><span class="va">y</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">NA</span></span>
+<span></span>
+<span><span class="co"># proxymix: the pooled mean of y at four assumed slopes</span></span>
+<span><span class="fu"><a href="../reference/proxy_mnar_sensitivity.html">proxy_mnar_sensitivity</a></span><span class="op">(</span><span class="va">obs</span>, <span class="st">"y"</span>, beta_grid <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.35</span>, <span class="fl">0.7</span>, <span class="fl">1.05</span><span class="op">)</span>,</span>
+<span>                       m <span class="op">=</span> <span class="fl">10L</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># mice: add a fixed shift to every imputed y, then pool the mean</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.2</span>, <span class="fl">0.4</span>, <span class="fl">0.6</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">delta</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">post</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://amices.org/mice/reference/make.post.html" class="external-link">make.post</a></span><span class="op">(</span><span class="va">obs</span><span class="op">)</span></span>
+<span>  <span class="va">post</span><span class="op">[</span><span class="st">"y"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"imp[[j]][, i] &lt;- imp[[j]][, i] + "</span>, <span class="va">delta</span><span class="op">)</span></span>
+<span>  <span class="va">imp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://amices.org/mice/reference/mice.html" class="external-link">mice</a></span><span class="op">(</span><span class="va">obs</span>, m <span class="op">=</span> <span class="fl">10L</span>, method <span class="op">=</span> <span class="st">"norm"</span>, post <span class="op">=</span> <span class="va">post</span>, seed <span class="op">=</span> <span class="fl">1L</span>,</span>
+<span>              printFlag <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="fu"><a href="https://amices.org/mice/reference/pool.html" class="external-link">pool</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">imp</span>, <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>, conf.int <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Amelia: ten completed datasets, pooled by mice::pool()</span></span>
+<span><span class="va">fits</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/Amelia/man/amelia.html" class="external-link">amelia</a></span><span class="op">(</span><span class="va">obs</span>, m <span class="op">=</span> <span class="fl">10L</span>, p2s <span class="op">=</span> <span class="fl">0L</span><span class="op">)</span><span class="op">$</span><span class="va">imputations</span>,</span>
+<span>               <span class="kw">function</span><span class="op">(</span><span class="va">d</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fl">1</span>, data <span class="op">=</span> <span class="va">d</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="fu"><a href="https://amices.org/mice/reference/pool.html" class="external-link">pool</a></span><span class="op">(</span><span class="va">fits</span><span class="op">)</span>, conf.int <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># sampleSelection: Heckman two-step with x1 in both parts; the mean of y</span></span>
+<span><span class="co"># is the fitted model for y at the mean of x1, with an approximate interval</span></span>
+<span><span class="va">obs</span><span class="op">$</span><span class="va">seen</span> <span class="op">&lt;-</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">obs</span><span class="op">$</span><span class="va">y</span><span class="op">)</span></span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/sampleSelection/man/selection.html" class="external-link">heckit</a></span><span class="op">(</span><span class="va">seen</span> <span class="op">~</span> <span class="va">x1</span>, <span class="va">y</span> <span class="op">~</span> <span class="va">x1</span>, data <span class="op">=</span> <span class="va">obs</span><span class="op">)</span></span>
+<span><span class="va">x_bar</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">obs</span><span class="op">$</span><span class="va">x1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">est</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">x_bar</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span><span class="op">[</span><span class="fl">3</span><span class="op">:</span><span class="fl">4</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">se</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="va">x_bar</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="fu"><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span><span class="op">[</span><span class="fl">3</span><span class="op">:</span><span class="fl">4</span>, <span class="fl">3</span><span class="op">:</span><span class="fl">4</span><span class="op">]</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="va">x_bar</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>estimate <span class="op">=</span> <span class="va">est</span>, conf.low <span class="op">=</span> <span class="va">est</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">qnorm</a></span><span class="op">(</span><span class="fl">0.975</span><span class="op">)</span> <span class="op">*</span> <span class="va">se</span>,</span>
+<span>  conf.high <span class="op">=</span> <span class="va">est</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">qnorm</a></span><span class="op">(</span><span class="fl">0.975</span><span class="op">)</span> <span class="op">*</span> <span class="va">se</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># one dataset of 300 rows with y recorded as 0 whenever it falls below 0</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1L</span><span class="op">)</span></span>
+<span><span class="va">a_cens</span> <span class="op">&lt;-</span> <span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">qnorm</a></span><span class="op">(</span><span class="fl">0.3</span><span class="op">)</span></span>
+<span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span></span>
+<span><span class="va">y_star</span> <span class="op">&lt;-</span> <span class="va">a_cens</span> <span class="op">+</span> <span class="va">x</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span></span>
+<span><span class="va">cens</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">x</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmax</a></span><span class="op">(</span><span class="va">y_star</span>, <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># proxymix: set the zeros to missing, draw them below 0, pool the regression</span></span>
+<span><span class="va">holes</span> <span class="op">&lt;-</span> <span class="va">cens</span></span>
+<span><span class="va">holes</span><span class="op">$</span><span class="va">y</span><span class="op">[</span><span class="va">cens</span><span class="op">$</span><span class="va">y</span> <span class="op">==</span> <span class="fl">0</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">NA</span></span>
+<span><span class="va">imp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gmm_impute.html">gmm_impute</a></span><span class="op">(</span><span class="va">holes</span>, m <span class="op">=</span> <span class="fl">10L</span>, mechanism <span class="op">=</span> <span class="fu"><a href="../reference/mechanism.html">censored</a></span><span class="op">(</span><span class="st">"y"</span>, upper <span class="op">=</span> <span class="fl">0</span><span class="op">)</span>,</span>
+<span>                  seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="fu"><a href="https://amices.org/mice/reference/pool.html" class="external-link">pool</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://tidyr.tidyverse.org/reference/complete.html" class="external-link">complete</a></span><span class="op">(</span><span class="fu"><a href="../reference/as_mids.html">as_mids</a></span><span class="op">(</span><span class="va">imp</span><span class="op">)</span>, <span class="st">"all"</span><span class="op">)</span>,</span>
+<span>                    <span class="kw">function</span><span class="op">(</span><span class="va">d</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span>, data <span class="op">=</span> <span class="va">d</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>, conf.int <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># the Tobit model, fitted by AER and by survival</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/AER/man/tobit.html" class="external-link">tobit</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span>, data <span class="op">=</span> <span class="va">cens</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/survreg.html" class="external-link">survreg</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">y</span>, <span class="va">y</span> <span class="op">&gt;</span> <span class="fl">0</span>, type <span class="op">=</span> <span class="st">"left"</span><span class="op">)</span> <span class="op">~</span> <span class="va">x</span>, data <span class="op">=</span> <span class="va">cens</span>,</span>
+<span>             dist <span class="op">=</span> <span class="st">"gaussian"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>The code needs <code>mice</code>, <code>Amelia</code>,
+<code>AER</code>, <code>survival</code> and
+<code>sampleSelection</code>, all on CRAN, and it is not run when this
+vignette is built. The <a href="https://max578.github.io/proxymix/articles/extended/missing_data_mnar.html">extended
+version of this article</a> gives the full simulation and applies both
+mechanisms to two real datasets.</p>
+</div>
 </div>
 <div class="section level2">
-<h2 id="scope-and-references">Scope and references<a class="anchor" aria-label="anchor" href="#scope-and-references"></a>
+<h2 id="interpretation">Interpretation<a class="anchor" aria-label="anchor" href="#interpretation"></a>
 </h2>
-<p>The interval and value-dependent gates act on a single coordinate,
-and a row missing that coordinate is assumed to have its other
-coordinates observed, which is the detection-limit or single-outcome
-setting. A model estimand other than a coordinate mean is pooled by
-handing the completions to <code>mice</code> through
-<code><a href="../reference/as_mids.html">as_mids()</a></code>.</p>
-<p>The selection-model formulation follows Diggle and Kenward (1994) and
-the sensitivity-analysis posture follows Little (1993) and the
-missing-data literature it anchors. The truncated-Gaussian algebra
-behind the censored path is standard, and the closed-form moments are
-evaluated directly.</p>
+<p>Of the 600 values of <code>y</code>, 250 were deleted. Because the
+larger values were deleted more often, the rows not deleted give a mean
+of -0.044, against 0.285 in the complete data. Imputing under missing at
+random gives 0.058, which is still 0.227 too low. That imputation model
+is fitted to the rows that remain, which have too few large values.
+Supplying the true slope to <code><a href="../reference/mechanism.html">mnar()</a></code> gives 0.240, within
+0.046 of the complete-data mean.</p>
+<p>In the sweep, the pooled mean rises at every step from 0.063 at slope
+0 to 0.351 at slope 1.2. Its interval first contains the complete-data
+mean at a slope of 0.6. The data were generated with a slope of 0.7. The
+fit converged at every slope. The log-likelihood is highest at slope
+0.9, where it is about 17 above its value at slope 0. This difference
+reflects the assumed two-component shape of <code>y</code>, not why the
+values went missing. A report should show the whole curve and leave the
+choice of a plausible slope to the reader.</p>
+<p>In the censoring example, 297 values fell below the limit of 0.3. The
+rows not censored give a mean of 1.102, which is 0.817 too high. Setting
+each hidden value to half the limit gives 0.631, which is still 0.345
+too high. Half the limit is a convention for concentrations, which
+cannot fall below zero. Here <code>y</code> can be negative, and 90 per
+cent of the hidden values lie below 0.15. The censored imputation gives
+0.318, within 0.032 of the complete-data mean.</p>
+</div>
+<div class="section level2">
+<h2 id="limitations">Limitations<a class="anchor" aria-label="anchor" href="#limitations"></a>
+</h2>
+<p><code><a href="../reference/mechanism.html">censored()</a></code> and <code><a href="../reference/mechanism.html">mnar()</a></code> act on one column. A
+row missing that column is assumed to have all its other columns
+observed. This suits a detection limit or a single outcome, not holes
+spread across many columns. Estimates other than a column mean are
+pooled by passing the completed datasets to <code>mice</code> through
+<code><a href="../reference/as_mids.html">as_mids()</a></code>. They then rely on the large-sample assumptions
+of Rubin’s rules.</p>
+<p>The sweep checks one kind of departure from missing at random. The
+chance of being missing is a logistic curve in the missing value alone,
+with the intercept set from the observed share of missing values. A
+mechanism that also depends on a variable not in the data is outside
+what the sweep covers. The sweep is not a test, and its log-likelihood
+cannot tell you which slope is right. The range of results is only as
+wide as the grid you choose.</p>
+<p>The single-dataset examples use one simulated dataset of 600 rows
+with 10 completed datasets. Their numbers would change with another
+seed. The settings that matter most are the number of components and the
+assumed slope. A mixture with too few components cannot represent the
+two groups in the data. The pooled mean moves steadily as the assumed
+slope moves away from the truth, as the sweep table shows.</p>
+<p>With data censored at a known limit, the Tobit model was more
+accurate than proxymix in the simulation. The proxymix slope was biased
+by -0.033, and its 95% intervals contained the true slope in only 0.907
+of datasets. When the outcome follows a normal linear regression below
+the limit, as in this design, the Tobit model is the better choice. The
+simulation covers one mixture shape, one sample size, a logistic
+mechanism on one column, censoring at one known limit, and grids that
+contain a value near the truth. It does not show how either sweep
+behaves when its grid does not reach the truth.</p>
+</div>
+<div class="section level2">
+<h2 id="further-reading">Further reading<a class="anchor" aria-label="anchor" href="#further-reading"></a>
+</h2>
+<p><em>Imputing missing data with a mixture</em> covers data missing at
+random, the case this vignette sets aside. It shows how a mixture and a
+single normal distribution differ in the values they impute.</p>
+<p><em>The closed-form operator calculus on a mixture</em> explains the
+formulas behind the conditional distributions used here.</p>
+</div>
+<div class="section level2">
+<h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
+</h2>
+<p>Diggle, P. and Kenward, M. G. (1994). <em>Informative drop-out in
+longitudinal data analysis.</em> Journal of the Royal Statistical
+Society C 43(1), 49–93. <a href="https://doi.org/10.2307/2986113" class="external-link uri">https://doi.org/10.2307/2986113</a>.</p>
+<p>Heckman, J. J. (1979). <em>Sample selection bias as a specification
+error.</em> Econometrica 47(1), 153–161. <a href="https://doi.org/10.2307/1912352" class="external-link uri">https://doi.org/10.2307/1912352</a>.</p>
+<p>Honaker, J., King, G. and Blackwell, M. (2011). <em>Amelia II: A
+program for missing data.</em> Journal of Statistical Software 45(7),
+1–47. <a href="https://doi.org/10.18637/jss.v045.i07" class="external-link uri">https://doi.org/10.18637/jss.v045.i07</a>.</p>
+<p>Hoek, J. van der and Elliott, R. J. (2024). <em>Mixtures of
+multivariate Gaussians.</em> Stochastic Analysis and Applications. <a href="https://doi.org/10.1080/07362994.2024.2372605" class="external-link uri">https://doi.org/10.1080/07362994.2024.2372605</a>.</p>
+<p>Kleiber, C. and Zeileis, A. (2008). <em>Applied Econometrics with
+R.</em> Springer. <a href="https://doi.org/10.1007/978-0-387-77318-6" class="external-link uri">https://doi.org/10.1007/978-0-387-77318-6</a>.</p>
+<p>Little, R. J. A. (1993). <em>Pattern-mixture models for multivariate
+incomplete data.</em> Journal of the American Statistical Association
+88(421), 125–134. <a href="https://doi.org/10.1080/01621459.1993.10594302" class="external-link uri">https://doi.org/10.1080/01621459.1993.10594302</a>.</p>
+<p>Rubin, D. B. (1987). <em>Multiple Imputation for Nonresponse in
+Surveys.</em> Wiley.</p>
+<p>Therneau, T. M. and Grambsch, P. M. (2000). <em>Modeling Survival
+Data: Extending the Cox Model.</em> Springer. <a href="https://doi.org/10.1007/978-1-4757-3294-8" class="external-link uri">https://doi.org/10.1007/978-1-4757-3294-8</a>.</p>
+<p>Tobin, J. (1958). <em>Estimation of relationships for limited
+dependent variables.</em> Econometrica 26(1), 24–36. <a href="https://doi.org/10.2307/1907382" class="external-link uri">https://doi.org/10.2307/1907382</a>.</p>
+<p>Toomet, O. and Henningsen, A. (2008). <em>Sample selection models in
+R: Package sampleSelection.</em> Journal of Statistical Software 27(7),
+1–23. <a href="https://doi.org/10.18637/jss.v027.i07" class="external-link uri">https://doi.org/10.18637/jss.v027.i07</a>.</p>
+<p>van Buuren, S. and Groothuis-Oudshoorn, K. (2011). <em>mice:
+Multivariate imputation by chained equations in R.</em> Journal of
+Statistical Software 45(3), 1–67. <a href="https://doi.org/10.18637/jss.v045.i03" class="external-link uri">https://doi.org/10.18637/jss.v045.i03</a>.</p>
+</div>
+<div class="section level2">
+<h2 id="reproduce">Reproduce<a class="anchor" aria-label="anchor" href="#reproduce"></a>
+</h2>
+<p>The data are generated with seed <code>20260622</code>. Every call to
+<code><a href="../reference/gmm_impute.html">gmm_impute()</a></code> and <code><a href="../reference/proxy_mnar_sensitivity.html">proxy_mnar_sensitivity()</a></code> is
+given <code>seed = 1L</code>, so the completed datasets are
+reproducible, and the seed does not change the random-number state
+outside the call. The comparison is read from stored results of a
+simulation run under proxymix 0.16.0, <code>mice</code> 3.19.0,
+<code>Amelia</code> 1.8.3, <code>AER</code> 1.2-17,
+<code>survival</code> 3.8-11 and <code>sampleSelection</code> 1.2-14. It
+took about 15 minutes on one core and raised no warnings.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<pre class="session-info"><code><span><span class="co">#&gt; R version 4.6.1 (2026-06-24)</span></span>
+<span><span class="co">#&gt; Platform: aarch64-apple-darwin23</span></span>
+<span><span class="co">#&gt; Running under: macOS Tahoe 26.6.2</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Matrix products: default</span></span>
+<span><span class="co">#&gt; BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib </span></span>
+<span><span class="co">#&gt; LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; locale:</span></span>
+<span><span class="co">#&gt; [1] en_AU.UTF-8/en_AU.UTF-8/en_AU.UTF-8/C/en_AU.UTF-8/en_AU.UTF-8</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; time zone: Australia/Adelaide</span></span>
+<span><span class="co">#&gt; tzcode source: internal</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; attached base packages:</span></span>
+<span><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; other attached packages:</span></span>
+<span><span class="co">#&gt; [1] proxymix_0.16.0</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
+<span><span class="co">#&gt;  [1] gtable_0.3.6       jsonlite_2.0.0     dplyr_1.2.1        compiler_4.6.1    </span></span>
+<span><span class="co">#&gt;  [5] tidyselect_1.2.1   dichromat_2.0-1    jquerylib_0.1.4    systemfonts_1.3.2 </span></span>
+<span><span class="co">#&gt;  [9] scales_1.4.0       textshaping_1.0.5  yaml_2.3.12        fastmap_1.2.0     </span></span>
+<span><span class="co">#&gt; [13] ggplot2_4.0.3      R6_2.6.1           labeling_0.4.3     generics_0.1.4    </span></span>
+<span><span class="co">#&gt; [17] knitr_1.51         htmlwidgets_1.6.4  tibble_3.3.1       desc_1.4.3        </span></span>
+<span><span class="co">#&gt; [21] bslib_0.12.0       pillar_1.11.1      RColorBrewer_1.1-3 rlang_1.3.0       </span></span>
+<span><span class="co">#&gt; [25] cachem_1.1.0       xfun_0.60          fs_2.1.0           sass_0.4.10       </span></span>
+<span><span class="co">#&gt; [29] S7_0.2.2           otel_0.2.0         cli_3.6.6          pkgdown_2.2.1     </span></span>
+<span><span class="co">#&gt; [33] withr_3.0.3        magrittr_2.0.5     digest_0.6.39      grid_4.6.1        </span></span>
+<span><span class="co">#&gt; [37] lifecycle_1.0.5    vctrs_0.7.3        evaluate_1.0.5     glue_1.8.1        </span></span>
+<span><span class="co">#&gt; [41] farver_2.1.2       ragg_1.5.2         rmarkdown_2.32     tools_4.6.1       </span></span>
+<span><span class="co">#&gt; [45] pkgconfig_2.0.3    htmltools_0.5.9</span></span></code></pre>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
@@ -238,7 +852,7 @@ evaluated directly.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

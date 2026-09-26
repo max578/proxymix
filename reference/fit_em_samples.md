@@ -110,5 +110,5 @@ x <- matrix(stats::rnorm(200), ncol = 2)
 tgt <- gmm_target_from_samples(x)
 fit <- fit_em_samples(tgt, N = 2L, max_iter = 30L, n_starts = 2L)
 fit@diagnostics$loglik_final
-#> [1] -284.1687
+#> [1] -278.1822
 ```

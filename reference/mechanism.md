@@ -58,13 +58,14 @@ instead of substituting a constant such as half the detection limit.
 `mnar()` is missing not at random through a selection model: an entry of
 `coord` is missing with probability \\g(\alpha + \beta\\ y)\\ in its own
 unobserved value \\y\\, where \\g\\ is the logistic or normal link. The
-slope `beta` is the sensitivity parameter and is supplied, not estimated
-– missing-not-at-random departures are not identified from the observed
-data, so the appropriate use is to posit `beta`, propagate it, and
-report how conclusions move with it (see
-[`proxy_mnar_sensitivity()`](https://max578.github.io/proxymix/reference/proxy_mnar_sensitivity.md)).
-The intercept is calibrated to the observed missingness rate. `beta = 0`
-is missing at random.
+slope `beta` is the sensitivity parameter and is supplied, not
+estimated. The observed data inform the slope only through the assumed
+shape of the outcome distribution, so the appropriate use is to posit
+`beta`, propagate it, and report how conclusions move with it (see
+[`proxy_mnar_sensitivity()`](https://max578.github.io/proxymix/reference/proxy_mnar_sensitivity.md),
+which also reports the observed-data log-likelihood). The intercept is
+calibrated to the observed missingness rate. `beta = 0` is missing at
+random.
 
 ## See also
 

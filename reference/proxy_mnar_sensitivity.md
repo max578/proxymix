@@ -20,6 +20,7 @@ proxy_mnar_sensitivity(
   N = NULL,
   m = 20L,
   seed = NULL,
+  max_iter = 500L,
   ...
 )
 ```
@@ -51,15 +52,32 @@ proxy_mnar_sensitivity(
   a single `seed` makes the whole sweep reproducible and keeps the curve
   smooth across the grid.
 
+- max_iter:
+
+  Maximum EM iterations per fit, passed to
+  [`gmm_impute()`](https://max578.github.io/proxymix/reference/gmm_impute.md).
+  Default `500L`; fits near missing at random can need more than the
+  [`gmm_impute()`](https://max578.github.io/proxymix/reference/gmm_impute.md)
+  default of 100.
+
 ## Value
 
 A data frame with one row per grid value: `beta`, `estimate`,
-`std.error`, `conf.low`, `conf.high`, `fmi`.
+`std.error`, `conf.low`, `conf.high`, `fmi`, `loglik` (the observed-data
+log-likelihood of the selection model at the fitted mixture and
+intercept) and `converged` (whether the point fit converged). A warning
+names any slope whose fit did not converge.
 
 ## Details
 
-The slope is a sensitivity parameter, not an estimate: the data do not
-identify it. Report the curve, not a single point.
+The mixture is refitted at each slope. Under this selection model the
+observed data carry information about the slope, but only through the
+assumed shape of the outcome distribution; a different shape can fit the
+observed data equally well at a different slope. The `loglik` column
+shows how strongly the data favour one slope over another under the
+mixture. Treat a large difference as a consequence of the model's shape,
+not as evidence about the missingness mechanism itself, and report the
+whole curve.
 
 ## See also
 
@@ -83,10 +101,13 @@ x1 <- rnorm(300)
 y <- x1 + rnorm(300)
 y[runif(300) < plogis(-0.4 + 0.8 * y)] <- NA      # MNAR on y
 dat <- data.frame(x1 = x1, y = y)
-proxy_mnar_sensitivity(dat, "y", beta_grid = c(0, 0.4, 0.8, 1.2), m = 10L, seed = 1L)
-#>   beta   estimate  std.error    conf.low   conf.high       fmi
-#> 1  0.0 -0.2114708 0.09202746 -0.39312678 -0.02981479 0.2294043
-#> 2  0.4  0.0105841 0.09663433 -0.17992398  0.20109218 0.2079950
-#> 3  0.8  0.1755879 0.10466714 -0.03128688  0.38246275 0.2494541
-#> 4  1.2  0.3315785 0.11298771  0.10764312  0.55551396 0.2872016
+proxy_mnar_sensitivity(dat, "y", beta_grid = c(0, 0.5, 1), m = 5L, seed = 1L)
+#>   beta    estimate  std.error    conf.low    conf.high       fmi    loglik
+#> 1  0.0 -0.19648308 0.09406029 -0.38446678 -0.008499378 0.2526332 -857.1654
+#> 2  0.5  0.01881364 0.10018178 -0.18144275  0.219070025 0.2538684 -836.8685
+#> 3  1.0  0.21915436 0.11313359 -0.01039855  0.448707273 0.3355709 -832.4386
+#>   converged
+#> 1      TRUE
+#> 2      TRUE
+#> 3      TRUE
 ```

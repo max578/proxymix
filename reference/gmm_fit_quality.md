@@ -4,10 +4,15 @@ Returns the fit-quality certificate: a small list recording the fitting
 regime, convergence, degeneracy, the effective-sample-size profile of
 the importance weights, and (when a validation split was drawn) the
 held-out validation gap. The certificate is stamped into the object's
-metadata at fit time and carried unchanged through every closed-form
-operator, so it can be read off a marginal, a conditional, a filtered
-belief, or any other derived mixture – alongside the `provenance` vector
-recording the chain of operations that produced it.
+metadata at fit time and carried through every closed-form operator: a
+unary operator (marginal, conditional, affine map, Bayes update)
+preserves it unchanged, and an operator with several operands (product,
+convolution, mixing) combines their certificates conservatively –
+worst-case of each field, with the individual per-operand certificates
+retained under `quality_sources` and `regime` set to `"composite"`. It
+can therefore be read off a marginal, a conditional, a product, a
+filtered belief, or any other derived mixture – alongside the
+`provenance` vector recording the chain of operations that produced it.
 
 ## Usage
 
@@ -26,15 +31,32 @@ gmm_fit_quality(g)
 
 A list with elements `regime`, `converged`, `degenerate`, `ess`,
 `ess_relative`, `min_component_ess`, `max_weight`, `support_fraction`,
-`kld_final`, and `validation_gap` (fields not applicable to the regime
-are `NA`), or `NULL` for a mixture that was never fitted (e.g. built
-directly with
-[`gmm()`](https://max578.github.io/proxymix/reference/gmm.md)).
+`kld_final`, `kld_approx`, and `validation_gap` (fields not applicable
+to the regime are `NA`), or `NULL` for a mixture that was never fitted
+(e.g. built directly with
+[`gmm()`](https://max578.github.io/proxymix/reference/gmm.md)). A
+certificate produced by an operator over several operands has
+`regime = "composite"`, the conservative worst-case value of each
+numeric field across the operands, and an additional `quality_sources`
+element holding the operands' own certificates. `kld_final` is estimated
+on the importance draws the fit was tuned to, so it reads low;
+`validation_gap` is the held-out `validation_kld` (see
+[`ess_summary()`](https://max578.github.io/proxymix/reference/ess_summary.md))
+minus `kld_final`, and is `NA` when the fit was made with
+`validation_size = 0`. `kld_approx` is half the importance-weighted
+variance of `log f - log g` over the fitting draws. To second order it
+equals the KL divergence from the target to the proxy, in nats. It does
+not depend on the target's normalising constant, so it is available when
+`kld_final` is shifted. It is `NA` outside regime `"kld"`.
 
 ## Details
 
 Downstream verbs read the same certificate and raise a one-shot advisory
-(class `proxymix_low_quality`) when the source fit is flagged.
+(class `proxymix_low_quality`) when the source fit is flagged. A fit is
+flagged when it did not converge, when it is degenerate (fewer effective
+importance draws than `min_ess`), or when `kld_approx` exceeds 0.3.
+Relative ESS is not used: with a fixed proposal it describes the
+proposal, not the fit, and stays the same however good the fit is.
 
 ## See also
 
@@ -86,8 +108,11 @@ gmm_fit_quality(fit)
 #> $kld_final
 #> [1] 0.144013
 #> 
+#> $kld_approx
+#> [1] 0.1029181
+#> 
 #> $validation_gap
-#> [1] -0.05434317
+#> [1] -0.008892188
 #> 
 ## The certificate survives the operator calculus.
 gmm_fit_quality(gmm_marginalise(fit, keep = 1L))
@@ -118,7 +143,10 @@ gmm_fit_quality(gmm_marginalise(fit, keep = 1L))
 #> $kld_final
 #> [1] 0.144013
 #> 
+#> $kld_approx
+#> [1] 0.1029181
+#> 
 #> $validation_gap
-#> [1] -0.05434317
+#> [1] -0.008892188
 #> 
 ```

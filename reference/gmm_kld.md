@@ -77,10 +77,10 @@ q <- gmm(weights = 1,
          covariances = list(diag(2) * 2))
 gmm_kld(p, q, n_mc = 500L)
 #> $mc
-#> [1] 0.1067818
+#> [1] 0.1074285
 #> 
 #> $mc_se
-#> [1] 0.01585305
+#> [1] 0.01616177
 #> 
 #> $variational
 #> [1] -0.123072

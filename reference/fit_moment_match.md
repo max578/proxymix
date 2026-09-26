@@ -71,5 +71,5 @@ fit_moment_match(tgt, N = 1L)
 #>   target     : target_from_samples
 #>   iterations : 0
 #>   converged  : TRUE
-#>   [1] w = 1.0000, |mu| = 0.0897, tr(Sigma) = 2.0274
+#>   [1] w = 1.0000, |mu| = 0.1189, tr(Sigma) = 1.9310
 ```

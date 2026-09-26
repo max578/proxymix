@@ -5,12 +5,13 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Three regimes: moment, sample, and KLD-EM • proxymix</title>
+<title>Choosing between the three fitting regimes • proxymix</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Three regimes: moment, sample, and KLD-EM">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<meta property="og:title" content="Choosing between the three fitting regimes">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -20,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">proxymix</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.15.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.16.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,18 +34,20 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/quickstart.html">Quickstart</a></li>
+<li><a class="dropdown-item" href="../articles/quickstart.html">Fitting a proxy to a density you cannot sample</a></li>
     <li><a class="dropdown-item" href="../articles/posterior_proxy.html">Compressing a Bayesian posterior you can evaluate but not sample</a></li>
-    <li><a class="dropdown-item" href="../articles/three_regimes.html">Three regimes: moment, sample, and KLD-EM</a></li>
-    <li><a class="dropdown-item" href="../articles/density_shapes.html">KLD-EM on three density shapes</a></li>
-    <li><a class="dropdown-item" href="../articles/operator_calculus.html">Affine-Gaussian operator calculus on a Gaussian mixture</a></li>
-    <li><a class="dropdown-item" href="../articles/from_kde.html">From KDE: compressing a kernel density estimate into a Gaussian-mixture proxy</a></li>
+    <li><a class="dropdown-item" href="../articles/three_regimes.html">Choosing between the three fitting regimes</a></li>
+    <li><a class="dropdown-item" href="../articles/density_shapes.html">How well a mixture proxies four awkward shapes</a></li>
+    <li><a class="dropdown-item" href="../articles/operator_calculus.html">The closed-form operator calculus on a mixture</a></li>
+    <li><a class="dropdown-item" href="../articles/from_kde.html">Compressing a kernel density estimate into a mixture</a></li>
     <li><a class="dropdown-item" href="../articles/many_methods.html">One mixture, many methods</a></li>
-    <li><a class="dropdown-item" href="../articles/entropy.html">Entropy diagnostics with proxymix</a></li>
+    <li><a class="dropdown-item" href="../articles/entropy.html">Reading the entropy of a fitted mixture</a></li>
     <li><a class="dropdown-item" href="../articles/calibration.html">Mapping the optima of an objective</a></li>
     <li><a class="dropdown-item" href="../articles/missing_data.html">Imputing missing data with a mixture</a></li>
     <li><a class="dropdown-item" href="../articles/missing_data_mnar.html">Missing data that depends on the missing value</a></li>
     <li><a class="dropdown-item" href="../articles/end_of_sample.html">Testing the last observation for instability</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -67,7 +70,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Three regimes: moment, sample, and KLD-EM</h1>
+      <h1>Choosing between the three fitting regimes</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/HEAD/vignettes/three_regimes.Rmd" class="external-link"><code>vignettes/three_regimes.Rmd</code></a></small>
@@ -76,16 +79,70 @@
 
     
     
+<!-- Render time: ~4 s under rmarkdown::render() with ggplot2 installed;
+     macOS arm64 (Apple silicon), R 4.6.1, one core. The comparison with
+     mclust, mixtools and flexmix is read from results/three_regimes.rds,
+     built by data-raw/vignette_results/three_regimes.R. -->
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/max578/proxymix" class="external-link">proxymix</a></span><span class="op">)</span></span></code></pre></div>
-<p>This vignette walks through the three KL-optimal regimes of Hoek and
-Elliott (2024). For each, we show what information the regime needs
-about the target, the M-step update it implements, and an end-to-end fit
-on a target whose ground truth we know.</p>
-<p>We use the bundled three-component mixture target – its log-density
-is known exactly, and (because the target is itself a Gaussian mixture)
-so are its true samples.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">has_ggplot2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ggplot2"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<div class="section level2">
+<h2 id="the-problem">The problem<a class="anchor" aria-label="anchor" href="#the-problem"></a>
+</h2>
+<p>proxymix fits a mixture of a few normal distributions, called a
+Gaussian mixture, as a stand-in, or proxy, for a distribution you want
+to work with. The distribution being approximated is called the target.
+The package has three ways of fitting the proxy, described by van der
+Hoek and Elliott (2024). They differ in what they need from the target:
+a sample drawn from it, or a formula for its density.</p>
+<p>Often only one kind of input is available, and the choice is made for
+you. Sometimes you have both, and two of the methods will run on the
+same target and return similar-looking mixtures. This vignette runs all
+three methods on targets that have both a formula and a sample, and
+shows what each one uses and what it costs. It then checks the
+sample-based method against three established mixture packages.</p>
+</div>
+<div class="section level2">
+<h2 id="package-capabilities">Package capabilities<a class="anchor" aria-label="anchor" href="#package-capabilities"></a>
+</h2>
+<ul>
+<li>
+<code><a href="../reference/fit_moment_match.html">fit_moment_match()</a></code> fits a single normal distribution
+with the same mean and covariance as the target’s sample. This is method
+(i).</li>
+<li>
+<code><a href="../reference/fit_em_samples.html">fit_em_samples()</a></code> fits a mixture of several normal
+distributions to a sample. This is method (ii).</li>
+<li>
+<code><a href="../reference/fit_kld_em.html">fit_kld_em()</a></code> fits a mixture to the density formula
+alone, without a sample. This is method (iii).</li>
+<li>
+<code><a href="../reference/fit_proxymix.html">fit_proxymix()</a></code> runs any of the three. Its
+<code>regime</code> argument takes the values <code>"moment"</code>,
+<code>"sample"</code> and <code>"kld"</code>, or <code>"auto"</code> to
+choose from what the target carries.</li>
+<li>
+<code><a href="../reference/bic_aic.html">bic_aic()</a></code> and <code><a href="../reference/select_N.html">select_N()</a></code> choose the number
+of components. None of the three fitting methods chooses it for
+you.</li>
+<li>
+<code><a href="../reference/mixture_target.html">mixture_target()</a></code> and <code><a href="../reference/banana_target.html">banana_target()</a></code> are
+ready-made targets in two variables. Each can carry a sample as well as
+its formula.</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="addressing-the-problem">Addressing the problem<a class="anchor" aria-label="anchor" href="#addressing-the-problem"></a>
+</h2>
+<div class="section level3">
+<h3 id="a-target-with-both-a-formula-and-a-sample">A target with both a formula and a sample<a class="anchor" aria-label="anchor" href="#a-target-with-both-a-formula-and-a-sample"></a>
+</h3>
+<p>The ready-made mixture target is itself a mixture of three normal
+distributions. Its density formula is known exactly, and exact samples
+are easy to draw. All three methods can therefore be run on the same
+target.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tgt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/mixture_target.html">mixture_target</a></span><span class="op">(</span>with_samples <span class="op">=</span> <span class="cn">TRUE</span>, n <span class="op">=</span> <span class="fl">1500L</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
 <span><span class="va">tgt</span></span>
 <span><span class="co">#&gt; &lt;gmm_target&gt;: "three_mixture" in p = 2 dimensions</span></span>
@@ -93,34 +150,17 @@ so are its true samples.</p>
 <span><span class="co">#&gt;   samples     : 1500 x 2 matrix</span></span>
 <span><span class="co">#&gt;   normalised  : TRUE</span></span>
 <span><span class="co">#&gt;   log Z(f)    : 0</span></span></code></pre></div>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ggplot2"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
-<span>  <span class="va">grid_x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">4.5</span>, <span class="fl">4.5</span>, length.out <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
-<span>  <span class="va">G</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span>x1 <span class="op">=</span> <span class="va">grid_x</span>, x2 <span class="op">=</span> <span class="va">grid_x</span><span class="op">)</span></span>
-<span>  <span class="va">G</span><span class="op">$</span><span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">tgt</span><span class="op">@</span><span class="va">log_density</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">G</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">G</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x1</span>, <span class="va">x2</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_contour.html" class="external-link">geom_contour_filled</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>z <span class="op">=</span> <span class="va">f</span><span class="op">)</span>, bins <span class="op">=</span> <span class="fl">10L</span>, alpha <span class="op">=</span> <span class="fl">0.9</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">tgt</span><span class="op">@</span><span class="va">samples</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">500</span>, <span class="op">]</span><span class="op">)</span>,</span>
-<span>               <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">V1</span>, <span class="va">V2</span><span class="op">)</span>, alpha <span class="op">=</span> <span class="fl">0.15</span>, size <span class="op">=</span> <span class="fl">0.6</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_viridis.html" class="external-link">scale_fill_viridis_d</a></span><span class="op">(</span>option <span class="op">=</span> <span class="st">"mako"</span>, guide <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span>base_size <span class="op">=</span> <span class="fl">12</span><span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
-<div class="figure">
-<img src="three_regimes_files/figure-html/target-plot-1.png" class="r-plt" alt="Three-mixture target with overlaid samples." width="100%"><p class="caption">
-Three-mixture target with overlaid samples.
-</p>
 </div>
-<div class="section level2">
-<h2 id="regime-i-closed-form-moment-matching">Regime (i): closed-form moment matching<a class="anchor" aria-label="anchor" href="#regime-i-closed-form-moment-matching"></a>
-</h2>
-<p>When <code>N == 1</code>, the KL-optimal Gaussian proxy has the same
-mean and covariance as the target. That is regime (i). The function is
-<code><a href="../reference/fit_moment_match.html">fit_moment_match()</a></code>, and the dispatcher chooses it under
-<code>regime = "auto"</code> when <code>N == 1</code> and samples (or
-moments) are available.</p>
+<div class="section level3">
+<h3 id="method-i-one-normal-distribution-with-the-samples-mean-and-spread">Method (i): one normal distribution with the sample’s mean and
+spread<a class="anchor" aria-label="anchor" href="#method-i-one-normal-distribution-with-the-samples-mean-and-spread"></a>
+</h3>
+<p>With one component (<code>N = 1</code>), the closest normal
+distribution to the target has the same mean and covariance as the
+target. “Closest” here is measured by the Kullback-Leibler (KL)
+divergence, which is zero when two distributions match and grows as they
+differ. Method (i) computes the mean and covariance of the sample in one
+step, with no iteration.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">m_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_proxymix.html">fit_proxymix</a></span><span class="op">(</span><span class="va">tgt</span>, N <span class="op">=</span> <span class="fl">1L</span>, regime <span class="op">=</span> <span class="st">"moment"</span><span class="op">)</span></span>
 <span><span class="va">m_fit</span></span>
@@ -129,114 +169,70 @@ moments) are available.</p>
 <span><span class="co">#&gt;   iterations : 0</span></span>
 <span><span class="co">#&gt;   converged  : TRUE</span></span>
 <span><span class="co">#&gt;   [1] w = 1.0000, |mu| = 0.0328, tr(Sigma) = 5.6029</span></span></code></pre></div>
-<p>Recovered mean and covariance match the target’s empirical moments to
-within sampling error:</p>
+<p>The fitted mean and covariance equal those of the sample. The only
+difference is a small constant, set by <code>ridge_eps</code>, that is
+added to the diagonal of the covariance matrix, which stops the fit
+failing when the matrix is close to singular. With
+<code>ridge_eps = 0</code> the difference disappears.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">m_fit</span><span class="op">@</span><span class="va">means</span><span class="op">[[</span><span class="fl">1L</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="co">#&gt; [1] -0.01240519 -0.03037255</span></span>
-<span><span class="va">m_fit</span><span class="op">@</span><span class="va">covariances</span><span class="op">[[</span><span class="fl">1L</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="co">#&gt;          [,1]     [,2]</span></span>
-<span><span class="co">#&gt; [1,] 2.731676 2.332994</span></span>
-<span><span class="co">#&gt; [2,] 2.332994 2.871190</span></span></code></pre></div>
-<p>A single Gaussian is, of course, a bad fit to a three-mode mixture –
-but it is the <em>KL-optimal</em> single Gaussian. Regime (i) is most
-useful when used as a deterministic <em>seed</em> for regimes (ii) or
-(iii) at <code>N &gt; 1</code>.</p>
+<code class="sourceCode R"><span><span class="va">m_fit_bare</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_proxymix.html">fit_proxymix</a></span><span class="op">(</span><span class="va">tgt</span>, N <span class="op">=</span> <span class="fl">1L</span>, regime <span class="op">=</span> <span class="st">"moment"</span>, ridge_eps <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span>
+<span><span class="va">moment_gap</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>  mean <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">m_fit</span><span class="op">@</span><span class="va">means</span><span class="op">[[</span><span class="fl">1L</span><span class="op">]</span><span class="op">]</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums-methods.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">tgt</span><span class="op">@</span><span class="va">samples</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  covariance <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">m_fit</span><span class="op">@</span><span class="va">covariances</span><span class="op">[[</span><span class="fl">1L</span><span class="op">]</span><span class="op">]</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cov</a></span><span class="op">(</span><span class="va">tgt</span><span class="op">@</span><span class="va">samples</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  covariance_no_ridge <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">m_fit_bare</span><span class="op">@</span><span class="va">covariances</span><span class="op">[[</span><span class="fl">1L</span><span class="op">]</span><span class="op">]</span> <span class="op">-</span></span>
+<span>                                  <span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cov</a></span><span class="op">(</span><span class="va">tgt</span><span class="op">@</span><span class="va">samples</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">signif</a></span><span class="op">(</span><span class="va">moment_gap</span>, <span class="fl">3L</span><span class="op">)</span></span>
+<span><span class="co">#&gt;                mean          covariance covariance_no_ridge </span></span>
+<span><span class="co">#&gt;               0e+00               1e-06               0e+00</span></span></code></pre></div>
+<p>One normal distribution cannot describe a target with three peaks. It
+is, however, the closest single normal distribution to the target.</p>
 </div>
-<div class="section level2">
-<h2 id="regime-ii-classical-em-on-samples">Regime (ii): classical EM on samples<a class="anchor" aria-label="anchor" href="#regime-ii-classical-em-on-samples"></a>
-</h2>
-<p>When the target carries samples, the textbook EM algorithm fits an
-<code>N</code>-component Gaussian mixture by maximum likelihood. That is
-regime (ii). The algorithm is the standard
-iterate-until-convergence:</p>
-<ul>
-<li>
-<strong>E-step</strong> –
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>γ</mi><mrow><mi>n</mi><mi>k</mi></mrow></msub><mo>=</mo><msub><mi>π</mi><mi>k</mi></msub><mi mathvariant="script">𝒩</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>x</mi><mi>n</mi></msub><mo>∣</mo><msub><mi>μ</mi><mi>k</mi></msub><mo>,</mo><msub><mi mathvariant="normal">Σ</mi><mi>k</mi></msub><mo stretchy="false" form="postfix">)</mo><mi>/</mi><msub><mo>∑</mo><mi>j</mi></msub><msub><mi>π</mi><mi>j</mi></msub><mi mathvariant="script">𝒩</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>x</mi><mi>n</mi></msub><mo>∣</mo><msub><mi>μ</mi><mi>j</mi></msub><mo>,</mo><msub><mi mathvariant="normal">Σ</mi><mi>j</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\gamma_{nk} = \pi_k \mathcal{N}(x_n \mid \mu_k, \Sigma_k) / \sum_j \pi_j \mathcal{N}(x_n \mid \mu_j, \Sigma_j)</annotation></semantics></math>.</li>
-<li>
-<strong>M-step</strong> – re-weight
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>π</mi><mi>k</mi></msub><mo>,</mo><msub><mi>μ</mi><mi>k</mi></msub><mo>,</mo><msub><mi mathvariant="normal">Σ</mi><mi>k</mi></msub></mrow><annotation encoding="application/x-tex">\pi_k, \mu_k, \Sigma_k</annotation></semantics></math>
-by the responsibilities, with a diagonal ridge <code>epsilon_cov</code>
-to keep
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi mathvariant="normal">Σ</mi><mi>k</mi></msub><annotation encoding="application/x-tex">\Sigma_k</annotation></semantics></math>
-positive-definite.</li>
-<li>
-<strong>Convergence</strong> – relative change in the empirical
-log-likelihood below <code>tol</code>.</li>
-</ul>
+<div class="section level3">
+<h3 id="method-ii-several-normal-distributions-fitted-to-the-sample">Method (ii): several normal distributions fitted to the sample<a class="anchor" aria-label="anchor" href="#method-ii-several-normal-distributions-fitted-to-the-sample"></a>
+</h3>
+<p>Method (ii) is the expectation-maximisation (EM) algorithm, the
+standard way to fit a mixture to a sample. Each round has two steps. The
+first step works out, for every point, the probability that it came from
+each component. The second step refits each component’s weight, mean and
+covariance to the points, counting each point in proportion to those
+probabilities. The same <code>ridge_eps</code> stops each covariance
+from becoming singular. The rounds stop when the log-likelihood of the
+sample, a measure of how well the mixture fits it, changes by less than
+the tolerance <code>tol</code>. <code>n_starts = 4L</code> runs the
+algorithm from four starting points and keeps the best fit.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">s_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_proxymix.html">fit_proxymix</a></span><span class="op">(</span><span class="va">tgt</span>, N <span class="op">=</span> <span class="fl">3L</span>, regime <span class="op">=</span> <span class="st">"sample"</span>,</span>
-<span>                      max_iter <span class="op">=</span> <span class="fl">200L</span>, n_starts <span class="op">=</span> <span class="fl">4L</span><span class="op">)</span></span>
+<span>                      max_iter <span class="op">=</span> <span class="fl">200L</span>, n_starts <span class="op">=</span> <span class="fl">4L</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
 <span><span class="va">s_fit</span></span>
 <span><span class="co">#&gt; &lt;gmm_fit&gt;: regime = "sample", K = 3, p = 2</span></span>
 <span><span class="co">#&gt;   target     : three_mixture</span></span>
-<span><span class="co">#&gt;   iterations : 53</span></span>
+<span><span class="co">#&gt;   iterations : 17</span></span>
 <span><span class="co">#&gt;   converged  : TRUE</span></span>
-<span><span class="co">#&gt;   [1] w = 0.4074, |mu| = 0.0335, tr(Sigma) = 0.9418</span></span>
-<span><span class="co">#&gt;   [2] w = 0.3025, |mu| = 2.7614, tr(Sigma) = 1.2135</span></span>
-<span><span class="co">#&gt;   [3] w = 0.2901, |mu| = 2.8208, tr(Sigma) = 0.8067</span></span></code></pre></div>
-<p>The log-likelihood trace is monotone-up:</p>
+<span><span class="co">#&gt;   [1] w = 0.4061, |mu| = 0.0336, tr(Sigma) = 0.9343</span></span>
+<span><span class="co">#&gt;   [2] w = 0.3032, |mu| = 2.7588, tr(Sigma) = 1.2155</span></span>
+<span><span class="co">#&gt;   [3] w = 0.2907, |mu| = 2.8186, tr(Sigma) = 0.8084</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="method-iii-several-normal-distributions-fitted-to-the-formula">Method (iii): several normal distributions fitted to the
+formula<a class="anchor" aria-label="anchor" href="#method-iii-several-normal-distributions-fitted-to-the-formula"></a>
+</h3>
+<p>Method (iii) needs only the density formula. It is the method to use
+when no sample exists, as with a Bayesian posterior that comes as a
+formula with no direct way to draw from it. It draws trial points once
+from a broad distribution that is easy to sample, called the proposal.
+Each trial point is weighted by how much more likely it is under the
+target than under the proposal. The mixture is then refitted to the
+weighted points in rounds, which lower the KL divergence from the
+target. The proposal here is a Student-t distribution, a relative of the
+normal with heavier tails. Its degrees of freedom, <code>df = 5</code>,
+set how heavy the tails are: the fewer, the heavier.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">trace</span> <span class="op">&lt;-</span> <span class="va">s_fit</span><span class="op">@</span><span class="va">diagnostics</span><span class="op">$</span><span class="va">loglik_trace</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ggplot2"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>iter <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">trace</span><span class="op">)</span>, loglik <span class="op">=</span> <span class="va">trace</span><span class="op">)</span>,</span>
-<span>         <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">iter</span>, <span class="va">loglik</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"EM iteration"</span>, y <span class="op">=</span> <span class="st">"log-likelihood"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span>base_size <span class="op">=</span> <span class="fl">12</span><span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
-<div class="figure">
-<img src="three_regimes_files/figure-html/em-trace-1.png" class="r-plt" alt="Sample-EM log-likelihood trace (monotone-up)." width="100%"><p class="caption">
-Sample-EM log-likelihood trace (monotone-up).
-</p>
-</div>
-<p>Information criteria are populated:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/bic_aic.html">bic_aic</a></span><span class="op">(</span><span class="va">s_fit</span><span class="op">)</span></span>
-<span><span class="co">#&gt; $bic</span></span>
-<span><span class="co">#&gt; [1] 9341.256</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $aic</span></span>
-<span><span class="co">#&gt; [1] 9250.931</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $icl</span></span>
-<span><span class="co">#&gt; [1] 9644.749</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $classification_entropy</span></span>
-<span><span class="co">#&gt; [1] 151.7466</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $n_params</span></span>
-<span><span class="co">#&gt; [1] 17</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="regime-iii-importance-sampled-kld-em">Regime (iii): importance-sampled KLD-EM<a class="anchor" aria-label="anchor" href="#regime-iii-importance-sampled-kld-em"></a>
-</h2>
-<p>Regime (iii) is the reason <code>proxymix</code> exists: it fits a
-Gaussian-mixture proxy when the target’s <code>log_density</code> is
-evaluable but <strong>no samples are available</strong>. Examples
-include posterior distributions in Bayesian models, intractable
-likelihoods, expensive simulators, and downscaling targets in spatial
-statistics.</p>
-<p>The algorithm:</p>
-<ol style="list-style-type: decimal">
-<li>Draw <code>is_size</code> samples from a user-supplied importance
-proposal <code>q</code>.</li>
-<li>Compute self-normalised importance weights
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>W</mi><mi>n</mi></msub><mo>∝</mo><mi>f</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>x</mi><mi>n</mi></msub><mo stretchy="false" form="postfix">)</mo><mi>/</mi><mi>q</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>x</mi><mi>n</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">W_n \propto f(x_n) / q(x_n)</annotation></semantics></math>.</li>
-<li>Run EM iterations using the IS weights – the M-step minimises
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi mathvariant="normal">K</mi><mi mathvariant="normal">L</mi></mrow><mo stretchy="false" form="prefix">(</mo><mi>f</mi><mo stretchy="false" form="postfix">‖</mo><msub><mi>g</mi><mi>θ</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\mathrm{KL}(f \Vert g_\theta)</annotation></semantics></math>
-by re-weighting responsibilities with <code>W</code>.</li>
-</ol>
-<p>The proposal <code>q</code> is the only free knob beyond the usual
-mixture configuration; <code><a href="../reference/is_mvt.html">is_mvt()</a></code> with <code>df = 5</code> is
-a robust default.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">k_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_proxymix.html">fit_proxymix</a></span><span class="op">(</span><span class="va">tgt</span>, N <span class="op">=</span> <span class="fl">3L</span>, regime <span class="op">=</span> <span class="st">"kld"</span>,</span>
-<span>                      proposal <span class="op">=</span> <span class="fu"><a href="../reference/is_mvt.html">is_mvt</a></span><span class="op">(</span>n_dim <span class="op">=</span> <span class="fl">2L</span>,</span>
-<span>                                        mean <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span>,</span>
-<span>                                        sigma <span class="op">=</span> <span class="fl">6</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,</span>
-<span>                                        df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>,</span>
+<span>                      proposal <span class="op">=</span> <span class="fu"><a href="../reference/proposal_uniform.html">proposal_mvt</a></span><span class="op">(</span>n_dim <span class="op">=</span> <span class="fl">2L</span>,</span>
+<span>                                              mean <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span>,</span>
+<span>                                              sigma <span class="op">=</span> <span class="fl">6</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,</span>
+<span>                                              df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>,</span>
 <span>                      is_size <span class="op">=</span> <span class="fl">3000L</span>,</span>
 <span>                      max_iter <span class="op">=</span> <span class="fl">60L</span>,</span>
 <span>                      seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
@@ -248,102 +244,507 @@ a robust default.</p>
 <span><span class="co">#&gt;   [1] w = 0.4164, |mu| = 0.0300, tr(Sigma) = 0.8377</span></span>
 <span><span class="co">#&gt;   [2] w = 0.3069, |mu| = 2.7545, tr(Sigma) = 1.2249</span></span>
 <span><span class="co">#&gt;   [3] w = 0.2767, |mu| = 2.7562, tr(Sigma) = 0.8740</span></span></code></pre></div>
-<p>Diagnostics:</p>
+</div>
+<div class="section level3">
+<h3 id="the-three-fits-side-by-side">The three fits side by side<a class="anchor" aria-label="anchor" href="#the-three-fits-side-by-side"></a>
+</h3>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">grid_x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">4.5</span>, <span class="fl">4.5</span>, length.out <span class="op">=</span> <span class="fl">100L</span><span class="op">)</span></span>
+<span><span class="va">grid_base</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span>x1 <span class="op">=</span> <span class="va">grid_x</span>, x2 <span class="op">=</span> <span class="va">grid_x</span><span class="op">)</span></span>
+<span><span class="va">grid_mat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">grid_base</span><span class="op">)</span></span>
+<span><span class="va">target_d</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">tgt</span><span class="op">@</span><span class="va">log_density</span><span class="op">(</span><span class="va">grid_mat</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">panel_of</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">fit</span>, <span class="va">label</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>    x1 <span class="op">=</span> <span class="va">grid_base</span><span class="op">$</span><span class="va">x1</span>, x2 <span class="op">=</span> <span class="va">grid_base</span><span class="op">$</span><span class="va">x2</span>,</span>
+<span>    target <span class="op">=</span> <span class="va">target_d</span>,</span>
+<span>    proxy <span class="op">=</span> <span class="fu"><a href="../reference/dgmm.html">dgmm</a></span><span class="op">(</span><span class="va">grid_mat</span>, <span class="va">fit</span><span class="op">)</span>,</span>
+<span>    regime <span class="op">=</span> <span class="va">label</span>,</span>
+<span>    stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="va">overlay_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://amices.org/mice/reference/cbind.html" class="external-link">rbind</a></span><span class="op">(</span></span>
+<span>  <span class="fu">panel_of</span><span class="op">(</span><span class="va">m_fit</span>, <span class="st">"(i) moment, N = 1"</span><span class="op">)</span>,</span>
+<span>  <span class="fu">panel_of</span><span class="op">(</span><span class="va">s_fit</span>, <span class="st">"(ii) sample EM, N = 3"</span><span class="op">)</span>,</span>
+<span>  <span class="fu">panel_of</span><span class="op">(</span><span class="va">k_fit</span>, <span class="st">"(iii) KLD-EM, N = 3"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">overlay_df</span><span class="op">$</span><span class="va">regime</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">overlay_df</span><span class="op">$</span><span class="va">regime</span>,</span>
+<span>                            levels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">overlay_df</span><span class="op">$</span><span class="va">regime</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">overlay_df</span>, <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x1</span>, <span class="va">x2</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_contour.html" class="external-link">geom_contour_filled</a></span><span class="op">(</span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>z <span class="op">=</span> <span class="va">target</span><span class="op">)</span>, bins <span class="op">=</span> <span class="fl">10L</span>,</span>
+<span>                               alpha <span class="op">=</span> <span class="fl">0.85</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_contour.html" class="external-link">geom_contour</a></span><span class="op">(</span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>z <span class="op">=</span> <span class="va">proxy</span><span class="op">)</span>, colour <span class="op">=</span> <span class="st">"white"</span>,</span>
+<span>                        linetype <span class="op">=</span> <span class="st">"dashed"</span>, linewidth <span class="op">=</span> <span class="fl">0.4</span>, bins <span class="op">=</span> <span class="fl">5L</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_viridis.html" class="external-link">scale_fill_viridis_d</a></span><span class="op">(</span>option <span class="op">=</span> <span class="st">"mako"</span>, guide <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span> <span class="va">regime</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span>base_size <span class="op">=</span> <span class="fl">11</span><span class="op">)</span></span></code></pre></div>
+<div class="figure">
+<img src="three_regimes_files/figure-html/overlay-1.png" class="r-plt" alt="Three side-by-side contour panels of the same three-peak target, overlaid with the single-normal moment fit, the sample-EM fit and the KLD-EM fit." width="100%"><p class="caption">
+The three-peak target (filled contours, the same in all three panels)
+with each method’s proxy overlaid as dashed contours. Method (i) spreads
+one normal distribution across all three peaks. Methods (ii) and (iii)
+each place one component on each peak and look alike, although (ii) used
+only the sample and (iii) only the formula.
+</p>
+</div>
+</div>
+<div class="section level3">
+<h3 id="what-each-method-improves-in-each-round">What each method improves in each round<a class="anchor" aria-label="anchor" href="#what-each-method-improves-in-each-round"></a>
+</h3>
+<p>Methods (ii) and (iii) aim at different quantities. Method (ii)
+raises the log-likelihood of the sample. Method (iii) lowers an estimate
+of the KL divergence from the target, computed on the weighted trial
+points.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">trace</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/kld_trace.html">kld_trace</a></span><span class="op">(</span><span class="va">k_fit</span><span class="op">)</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ggplot2"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>iter <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">trace</span><span class="op">)</span>, kld <span class="op">=</span> <span class="va">trace</span><span class="op">)</span>,</span>
-<span>         <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">iter</span>, <span class="va">kld</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"KLD-EM iteration"</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="fu">widehat</span><span class="op">(</span><span class="va">KL</span><span class="op">)</span><span class="op">(</span><span class="va">f</span> <span class="op">*</span> <span class="st">"||"</span> <span class="op">*</span> <span class="va">g</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span>base_size <span class="op">=</span> <span class="fl">12</span><span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
-<div class="figure">
-<img src="three_regimes_files/figure-html/kld-trace-1.png" class="r-plt" alt="KLD-EM convergence trace." width="100%"><p class="caption">
-KLD-EM convergence trace.
-</p>
-</div>
-<p>Effective sample size of the importance weights:</p>
+<code class="sourceCode R"><span><span class="va">trace_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://amices.org/mice/reference/cbind.html" class="external-link">rbind</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>    iteration <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">s_fit</span><span class="op">@</span><span class="va">diagnostics</span><span class="op">$</span><span class="va">loglik_trace</span><span class="op">)</span>,</span>
+<span>    value <span class="op">=</span> <span class="va">s_fit</span><span class="op">@</span><span class="va">diagnostics</span><span class="op">$</span><span class="va">loglik_trace</span>,</span>
+<span>    panel <span class="op">=</span> <span class="st">"(ii) sample EM: log-likelihood (up)"</span>,</span>
+<span>    stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>    iteration <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="fu"><a href="../reference/kld_trace.html">kld_trace</a></span><span class="op">(</span><span class="va">k_fit</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    value <span class="op">=</span> <span class="fu"><a href="../reference/kld_trace.html">kld_trace</a></span><span class="op">(</span><span class="va">k_fit</span><span class="op">)</span>,</span>
+<span>    panel <span class="op">=</span> <span class="st">"(iii) KLD-EM: KL on the fitting draws (down)"</span>,</span>
+<span>    stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ess_trace.html">ess_trace</a></span><span class="op">(</span><span class="va">k_fit</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 757.7185</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="side-by-side-overlay">Side-by-side overlay<a class="anchor" aria-label="anchor" href="#side-by-side-overlay"></a>
-</h2>
-<p>The three fits – moment (N = 1), classical EM (N = 3), KLD-EM (N = 3)
-– overlaid on the target:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ggplot2"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">&amp;&amp;</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"patchwork"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">grid_x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">4.5</span>, <span class="fl">4.5</span>, length.out <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
-<span>  <span class="va">G</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span>x1 <span class="op">=</span> <span class="va">grid_x</span>, x2 <span class="op">=</span> <span class="va">grid_x</span><span class="op">)</span></span>
-<span>  <span class="va">G</span><span class="op">$</span><span class="va">f</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">tgt</span><span class="op">@</span><span class="va">log_density</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">G</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="va">G</span><span class="op">$</span><span class="va">mm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fu"><a href="../reference/dgmm.html">dgmm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">G</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x1"</span>, <span class="st">"x2"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span>, <span class="va">m_fit</span>, log <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="va">G</span><span class="op">$</span><span class="va">ss</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fu"><a href="../reference/dgmm.html">dgmm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">G</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x1"</span>, <span class="st">"x2"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span>, <span class="va">s_fit</span>, log <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="va">G</span><span class="op">$</span><span class="va">kk</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fu"><a href="../reference/dgmm.html">dgmm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">G</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x1"</span>, <span class="st">"x2"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span>, <span class="va">k_fit</span>, log <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span>  <span class="va">base</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">G</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x1</span>, <span class="va">x2</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_contour.html" class="external-link">geom_contour_filled</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>z <span class="op">=</span> <span class="va">f</span><span class="op">)</span>, bins <span class="op">=</span> <span class="fl">10L</span>, alpha <span class="op">=</span> <span class="fl">0.85</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_viridis.html" class="external-link">scale_fill_viridis_d</a></span><span class="op">(</span>option <span class="op">=</span> <span class="st">"mako"</span>, guide <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span>base_size <span class="op">=</span> <span class="fl">11</span><span class="op">)</span></span>
-<span></span>
-<span>  <span class="va">p1</span> <span class="op">&lt;-</span> <span class="va">base</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_contour.html" class="external-link">geom_contour</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>z <span class="op">=</span> <span class="va">mm</span><span class="op">)</span>, bins <span class="op">=</span> <span class="fl">5L</span>, colour <span class="op">=</span> <span class="st">"white"</span>,</span>
-<span>                            linetype <span class="op">=</span> <span class="st">"dashed"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Regime (i) moment, N = 1"</span>, x <span class="op">=</span> <span class="cn">NULL</span>, y <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
-<span>  <span class="va">p2</span> <span class="op">&lt;-</span> <span class="va">base</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_contour.html" class="external-link">geom_contour</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>z <span class="op">=</span> <span class="va">ss</span><span class="op">)</span>, bins <span class="op">=</span> <span class="fl">5L</span>, colour <span class="op">=</span> <span class="st">"white"</span>,</span>
-<span>                            linetype <span class="op">=</span> <span class="st">"dashed"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Regime (ii) sample EM, N = 3"</span>, x <span class="op">=</span> <span class="cn">NULL</span>, y <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
-<span>  <span class="va">p3</span> <span class="op">&lt;-</span> <span class="va">base</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_contour.html" class="external-link">geom_contour</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>z <span class="op">=</span> <span class="va">kk</span><span class="op">)</span>, bins <span class="op">=</span> <span class="fl">5L</span>, colour <span class="op">=</span> <span class="st">"white"</span>,</span>
-<span>                            linetype <span class="op">=</span> <span class="st">"dashed"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Regime (iii) KLD-EM, N = 3"</span>, x <span class="op">=</span> <span class="cn">NULL</span>, y <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
-<span></span>
-<span>  <span class="fu">patchwork</span><span class="fu">::</span><span class="fu"><a href="https://patchwork.data-imaginist.com/reference/wrap_plots.html" class="external-link">wrap_plots</a></span><span class="op">(</span><span class="va">p1</span>, <span class="va">p2</span>, <span class="va">p3</span>, nrow <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">trace_df</span>, <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">iteration</span>, <span class="va">value</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span>colour <span class="op">=</span> <span class="st">"#0072B2"</span>, linewidth <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>colour <span class="op">=</span> <span class="st">"#0072B2"</span>, size <span class="op">=</span> <span class="fl">1.1</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span> <span class="va">panel</span>, scales <span class="op">=</span> <span class="st">"free"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html" class="external-link">scale_x_continuous</a></span><span class="op">(</span>breaks <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">lim</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">floor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/pretty.html" class="external-link">pretty</a></span><span class="op">(</span><span class="va">lim</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"round"</span>, y <span class="op">=</span> <span class="st">"value"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span>base_size <span class="op">=</span> <span class="fl">11</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">
-<img src="three_regimes_files/figure-html/overlay-1.png" class="r-plt" alt="Target (filled) overlaid with the three regimes' fits (dashed)." width="100%"><p class="caption">
-Target (filled) overlaid with the three regimes’ fits (dashed).
+<img src="three_regimes_files/figure-html/traces-plot-1.png" class="r-plt" alt="Two panels of iteration traces: an increasing log-likelihood curve for sample EM and a decreasing Kullback-Leibler curve for KLD-EM." width="100%"><p class="caption">
+The value each method improves, round by round. Method (ii) raises the
+log-likelihood of the sample. Method (iii) lowers an estimate of the KL
+divergence, scored on the same trial points the fit was tuned to. That
+makes the estimate read low, and it can fall below zero, although a true
+KL divergence cannot.
 </p>
 </div>
 </div>
-<div class="section level2">
-<h2 id="a-sanity-check-i-and-iii-agree-at-n-1">A sanity check: (i) and (iii) agree at N = 1<a class="anchor" aria-label="anchor" href="#a-sanity-check-i-and-iii-agree-at-n-1"></a>
-</h2>
-<p>When <code>N = 1</code>, the KL-optimal Gaussian is the
-moment-matched one. Regime (iii) – a numerical optimiser – should
-converge to that same Gaussian (up to Monte Carlo error). Let us check
-this on the banana target where regime (iii) is the <em>only</em>
-available regime if we ignore samples:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="section level3">
+<h3 id="one-normal-distribution-fitted-two-ways-against-the-exact-answer">One normal distribution fitted two ways, against the exact
+answer<a class="anchor" aria-label="anchor" href="#one-normal-distribution-fitted-two-ways-against-the-exact-answer"></a>
+</h3>
+<p>With one component, methods (i) and (iii) aim at the same answer: the
+mean and covariance of the target. Method (i) reads them from the
+sample. Method (iii) reads only the formula. The banana target makes it
+possible to check both against the exact answer. It is built from two
+independent standard normal variables
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>z</mi><mn>1</mn></msub><annotation encoding="application/x-tex">z_1</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>z</mi><mn>2</mn></msub><annotation encoding="application/x-tex">z_2</annotation></semantics></math>
+as
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>x</mi><mn>1</mn></msub><mo>=</mo><msub><mi>z</mi><mn>1</mn></msub></mrow><annotation encoding="application/x-tex">x_1 = z_1</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>x</mi><mn>2</mn></msub><mo>=</mo><msub><mi>z</mi><mn>2</mn></msub><mo>+</mo><mo stretchy="false" form="prefix">(</mo><msubsup><mi>z</mi><mn>1</mn><mn>2</mn></msubsup><mo>−</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo><mi>/</mi><mn>2</mn></mrow><annotation encoding="application/x-tex">x_2 = z_2 + (z_1^2 - 1)/2</annotation></semantics></math>.
+Its mean is therefore
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mn>0</mn><mo>,</mo><mn>0</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(0, 0)</annotation></semantics></math>.
+The variance of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>1</mn></msub><annotation encoding="application/x-tex">x_1</annotation></semantics></math>
+is 1, the variance of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>2</mn></msub><annotation encoding="application/x-tex">x_2</annotation></semantics></math>
+is
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mo>+</mo><mn>2</mn><mi>/</mi><mn>4</mn><mo>=</mo><mn>3</mn><mi>/</mi><mn>2</mn></mrow><annotation encoding="application/x-tex">1 + 2/4 = 3/2</annotation></semantics></math>,
+and the trace of the covariance, the sum of the two variances, is
+exactly
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>5</mn><mi>/</mi><mn>2</mn></mrow><annotation encoding="application/x-tex">5/2</annotation></semantics></math>.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">banana</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/banana_target.html">banana_target</a></span><span class="op">(</span>with_samples <span class="op">=</span> <span class="cn">TRUE</span>, n <span class="op">=</span> <span class="fl">2000L</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
 <span><span class="va">m_b</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_proxymix.html">fit_proxymix</a></span><span class="op">(</span><span class="va">banana</span>, N <span class="op">=</span> <span class="fl">1L</span>, regime <span class="op">=</span> <span class="st">"moment"</span><span class="op">)</span></span>
 <span><span class="va">k_b</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_proxymix.html">fit_proxymix</a></span><span class="op">(</span><span class="va">banana</span>, N <span class="op">=</span> <span class="fl">1L</span>, regime <span class="op">=</span> <span class="st">"kld"</span>,</span>
-<span>                    proposal <span class="op">=</span> <span class="fu"><a href="../reference/is_mvt.html">is_mvt</a></span><span class="op">(</span>n_dim <span class="op">=</span> <span class="fl">2L</span>,</span>
-<span>                                      sigma <span class="op">=</span> <span class="fl">4</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,</span>
-<span>                                      df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>,</span>
+<span>                    proposal <span class="op">=</span> <span class="fu"><a href="../reference/proposal_uniform.html">proposal_mvt</a></span><span class="op">(</span>n_dim <span class="op">=</span> <span class="fl">2L</span>,</span>
+<span>                                            sigma <span class="op">=</span> <span class="fl">4</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,</span>
+<span>                                            df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>,</span>
 <span>                    is_size <span class="op">=</span> <span class="fl">3000L</span>, max_iter <span class="op">=</span> <span class="fl">50L</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://amices.org/mice/reference/cbind.html" class="external-link">rbind</a></span><span class="op">(</span></span>
-<span>  moment_mean <span class="op">=</span> <span class="va">m_b</span><span class="op">@</span><span class="va">means</span><span class="op">[[</span><span class="fl">1L</span><span class="op">]</span><span class="op">]</span>,</span>
-<span>  kld_mean    <span class="op">=</span> <span class="va">k_b</span><span class="op">@</span><span class="va">means</span><span class="op">[[</span><span class="fl">1L</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="va">tr_of</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">f</span><span class="op">@</span><span class="va">covariances</span><span class="op">[[</span><span class="fl">1L</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">sample_trace</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cov</a></span><span class="op">(</span><span class="va">banana</span><span class="op">@</span><span class="va">samples</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">exact_trace</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">+</span> <span class="fl">2</span> <span class="op">*</span> <span class="fl">0.5</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<caption>The single normal proxy for the banana target, fitted two ways.
+The error is the trace of the covariance minus its exact value, 5/2, so
+a negative error means the spread is understated.</caption>
+<colgroup>
+<col width="30%">
+<col width="37%">
+<col width="24%">
+<col width="8%">
+</colgroup>
+<thead><tr class="header">
+<th align="left">Source</th>
+<th align="left">Uses</th>
+<th align="right">Trace of covariance</th>
+<th align="right">Error</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">method (i), moment match</td>
+<td align="left">the sample</td>
+<td align="right">2.678</td>
+<td align="right">0.178</td>
+</tr>
+<tr class="even">
+<td align="left">method (iii), KLD-EM</td>
+<td align="left">the formula</td>
+<td align="right">2.448</td>
+<td align="right">-0.052</td>
+</tr>
+<tr class="odd">
+<td align="left">the attached sample</td>
+<td align="left">the sample</td>
+<td align="right">2.678</td>
+<td align="right">0.178</td>
+</tr>
+<tr class="even">
+<td align="left">exact value</td>
+<td align="left">the construction of the target</td>
+<td align="right">2.500</td>
+<td align="right">0.000</td>
+</tr>
+</tbody>
+</table>
+<p>The sample and the trial points are each one random draw. Repeating
+both with fresh seeds shows how far each trace moves by chance.</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sample_traces</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fl">500L</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">s</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cov</a></span><span class="op">(</span><span class="fu"><a href="../reference/banana_target.html">banana_target</a></span><span class="op">(</span>with_samples <span class="op">=</span> <span class="cn">TRUE</span>, n <span class="op">=</span> <span class="fl">2000L</span>,</span>
+<span>                             seed <span class="op">=</span> <span class="va">s</span><span class="op">)</span><span class="op">@</span><span class="va">samples</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span>, <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">1L</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">kld_traces</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fl">100L</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">s</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu">tr_of</span><span class="op">(</span><span class="fu"><a href="../reference/fit_proxymix.html">fit_proxymix</a></span><span class="op">(</span><span class="va">banana</span>, N <span class="op">=</span> <span class="fl">1L</span>, regime <span class="op">=</span> <span class="st">"kld"</span>,</span>
+<span>                     proposal <span class="op">=</span> <span class="fu"><a href="../reference/proposal_uniform.html">proposal_mvt</a></span><span class="op">(</span>n_dim <span class="op">=</span> <span class="fl">2L</span>,</span>
+<span>                                             sigma <span class="op">=</span> <span class="fl">4</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,</span>
+<span>                                             df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>,</span>
+<span>                     is_size <span class="op">=</span> <span class="fl">3000L</span>, max_iter <span class="op">=</span> <span class="fl">50L</span>, seed <span class="op">=</span> <span class="va">s</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span>, <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">1L</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">spread</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  seeds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">sample_traces</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">kld_traces</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  mean <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">sample_traces</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">kld_traces</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  sd <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">sample_traces</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">kld_traces</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  row.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"trace of a 2000-point sample"</span>, <span class="st">"method (iii) trace"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt;                    [,1]       [,2]</span></span>
-<span><span class="co">#&gt; moment_mean -0.01395503 0.05373059</span></span>
-<span><span class="co">#&gt; kld_mean     0.01182980 0.01616172</span></span>
-<span><span class="fu"><a href="https://amices.org/mice/reference/cbind.html" class="external-link">rbind</a></span><span class="op">(</span></span>
-<span>  moment_tr   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">m_b</span><span class="op">@</span><span class="va">covariances</span><span class="op">[[</span><span class="fl">1L</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  kld_tr      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">k_b</span><span class="op">@</span><span class="va">covariances</span><span class="op">[[</span><span class="fl">1L</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">spread</span>, <span class="fl">3L</span><span class="op">)</span></span>
+<span><span class="co">#&gt;                              seeds  mean    sd</span></span>
+<span><span class="co">#&gt; trace of a 2000-point sample   500 2.496 0.085</span></span>
+<span><span class="co">#&gt; method (iii) trace             100 2.488 0.073</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="comparison-with-mclust-mixtools-and-flexmix">Comparison with mclust, mixtools and flexmix<a class="anchor" aria-label="anchor" href="#comparison-with-mclust-mixtools-and-flexmix"></a>
+</h3>
+<p>The established packages <code>mclust</code>, <code>mixtools</code>
+and <code>flexmix</code> fit mixtures to samples, as method (ii) does.
+They do not fit a mixture to a formula alone, so they can check method
+(ii) but not method (iii). Two checks were run, and every package was
+given the number of components. The first uses the 272 eruptions of the
+Old Faithful geyser in R’s <code>faithful</code> data (Azzalini and
+Bowman, 1990): the length of each eruption and the waiting time to the
+next. Each package fitted a two-component mixture to a random half of
+the eruptions. Each fit was then scored by its held-out log-likelihood,
+the average log density it gives to the other half. Higher is better.
+The second check is a simulation of 300 datasets of 200 points and 300
+datasets of 1,000 points, drawn from the three-component mixture used
+above. Each fit was scored by its KL divergence from the true mixture,
+computed on a fine grid. A fit whose divergence exceeded 0.1 was counted
+as a misfit. <code>mclust</code> (Scrucca et al., 2016) chose among its
+covariance shapes by the Bayesian information criterion (BIC), a score
+that balances fit against the number of parameters. <code>flexmix</code>
+(Leisch, 2004; Grün and Leisch, 2008) kept the best of five random
+starts, the number proxymix uses by default for method (ii) as well. One
+<code>mixtools</code> (Benaglia et al., 2009) fit to 1,000 points took
+41 s, so <code>mixtools</code> was left out of the simulation.</p>
+<table class="table">
+<caption>Two-component fits to half of the Old Faithful eruptions,
+scored on the other half (higher is better), and three-component fits to
+300 simulated datasets at each sample size, scored by the KL divergence
+from the true mixture (lower is better). A misfit is a fit with a
+divergence above 0.1, counted out of 300.</caption>
+<colgroup>
+<col width="15%">
+<col width="26%">
+<col width="13%">
+<col width="15%">
+<col width="13%">
+<col width="15%">
+</colgroup>
+<thead><tr class="header">
+<th align="left">Package</th>
+<th align="right">Old Faithful: held-out log-likelihood</th>
+<th align="right">Mean KL, 200 points</th>
+<th align="right">Mean KL, 1,000 points</th>
+<th align="right">Misfits, 200 points</th>
+<th align="right">Misfits, 1,000 points</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">proxymix, method (ii)</td>
+<td align="right">-4.311</td>
+<td align="right">0.0527</td>
+<td align="right">0.0092</td>
+<td align="right">15</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left">mclust</td>
+<td align="right">-4.318</td>
+<td align="right">0.0583</td>
+<td align="right">0.0117</td>
+<td align="right">7</td>
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td align="left">mixtools</td>
+<td align="right">-4.312</td>
+<td align="right">not run</td>
+<td align="right">not run</td>
+<td align="right">not run</td>
+<td align="right">not run</td>
+</tr>
+<tr class="even">
+<td align="left">flexmix</td>
+<td align="right">-4.308</td>
+<td align="right">0.0955</td>
+<td align="right">0.0647</td>
+<td align="right">108</td>
+<td align="right">80</td>
+</tr>
+</tbody>
+</table>
+<p>On this one split of Old Faithful, the four fits are within 0.011 of
+each other in held-out log-likelihood. In the simulation, proxymix had
+the lowest mean KL divergence of the three packages at both sample
+sizes. Its paired difference from <code>mclust</code> over the same
+datasets was -0.0056 at 200 points and -0.0026 at 1,000 points, with
+standard errors of 0.0011 and 0.0003. At 200 points, however,
+<code>mclust</code> had fewer misfits than proxymix, 7 against 15. At
+1,000 points neither had any. <code>flexmix</code> produced misfits in
+36 per cent of the 200-point datasets and 27 per cent of the 1,000-point
+ones.</p>
+<p>At 200 points, proxymix took 0.039 s per fit on average, 2.5 times as
+long as <code>mclust</code> (0.016 s), and <code>flexmix</code> took
+0.65 s. At 1,000 points, proxymix took 0.09 s, <code>mclust</code> 0.23
+s and <code>flexmix</code> 0.97 s.</p>
+<p>The code below runs the Old Faithful check with all four packages. It
+converts each package’s fit to a proxymix mixture, so that
+<code><a href="../reference/dgmm.html">dgmm()</a></code> scores every fit in the same way. It needs
+<code>mclust</code>, <code>mixtools</code> and <code>flexmix</code>, all
+on CRAN, and it is not run when this vignette is built.</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/max578/proxymix" class="external-link">proxymix</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mclust-org.github.io/mclust/" class="external-link">mclust</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/dsy109/mixtools" class="external-link">mixtools</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">flexmix</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># split the Old Faithful eruptions into a training half and a held-out half</span></span>
+<span><span class="va">faithful_mat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="fu">datasets</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/r/datasets/faithful.html" class="external-link">faithful</a></span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">20260925</span><span class="op">)</span></span>
+<span><span class="va">i_train</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">faithful_mat</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">faithful_mat</span><span class="op">)</span> <span class="op">/</span> <span class="fl">2L</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">train</span> <span class="op">&lt;-</span> <span class="va">faithful_mat</span><span class="op">[</span><span class="va">i_train</span>, <span class="op">]</span></span>
+<span><span class="va">test</span> <span class="op">&lt;-</span> <span class="va">faithful_mat</span><span class="op">[</span><span class="op">-</span><span class="va">i_train</span>, <span class="op">]</span></span>
+<span><span class="va">train_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>eruptions <span class="op">=</span> <span class="va">train</span><span class="op">[</span>, <span class="fl">1L</span><span class="op">]</span>, waiting <span class="op">=</span> <span class="va">train</span><span class="op">[</span>, <span class="fl">2L</span><span class="op">]</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># convert each package's fit to a proxymix mixture, so dgmm() scores all four</span></span>
+<span><span class="va">as_gmm_mclust</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">fit</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="../reference/gmm.html">gmm</a></span><span class="op">(</span></span>
+<span>    weights <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">parameters</span><span class="op">$</span><span class="va">pro</span>,</span>
+<span>    means <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">G</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">k</span><span class="op">)</span> <span class="va">fit</span><span class="op">$</span><span class="va">parameters</span><span class="op">$</span><span class="va">mean</span><span class="op">[</span>, <span class="va">k</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>    covariances <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">G</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">k</span><span class="op">)</span> <span class="op">{</span></span>
+<span>      <span class="va">fit</span><span class="op">$</span><span class="va">parameters</span><span class="op">$</span><span class="va">variance</span><span class="op">$</span><span class="va">sigma</span><span class="op">[</span>, , <span class="va">k</span><span class="op">]</span></span>
+<span>    <span class="op">}</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="va">as_gmm_mixtools</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">fit</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="../reference/gmm.html">gmm</a></span><span class="op">(</span>weights <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">lambda</span>, means <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">mu</span>, covariances <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">sigma</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="va">as_gmm_flexmix</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">fit</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">comps</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">fit</span><span class="op">@</span><span class="va">components</span>, <span class="kw">function</span><span class="op">(</span><span class="va">cc</span><span class="op">)</span> <span class="va">cc</span><span class="op">[[</span><span class="fl">1L</span><span class="op">]</span><span class="op">]</span><span class="op">@</span><span class="va">parameters</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="../reference/gmm.html">gmm</a></span><span class="op">(</span></span>
+<span>    weights <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/modeltools/man/Generics.html" class="external-link">prior</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span>,</span>
+<span>    means <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">comps</span>, <span class="kw">function</span><span class="op">(</span><span class="va">p</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">p</span><span class="op">$</span><span class="va">center</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    covariances <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">comps</span>, <span class="kw">function</span><span class="op">(</span><span class="va">p</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">p</span><span class="op">$</span><span class="va">cov</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="co"># two-component fits to the training half</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1L</span><span class="op">)</span></span>
+<span><span class="va">fits</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  proxymix <span class="op">=</span> <span class="fu"><a href="../reference/fit_proxymix.html">fit_proxymix</a></span><span class="op">(</span><span class="fu"><a href="../reference/gmm_target_from_samples.html">gmm_target_from_samples</a></span><span class="op">(</span><span class="va">train</span><span class="op">)</span>, N <span class="op">=</span> <span class="fl">2L</span>,</span>
+<span>                          regime <span class="op">=</span> <span class="st">"sample"</span><span class="op">)</span>,</span>
+<span>  mclust <span class="op">=</span> <span class="fu">as_gmm_mclust</span><span class="op">(</span><span class="fu"><a href="https://mclust-org.github.io/mclust/reference/Mclust.html" class="external-link">Mclust</a></span><span class="op">(</span><span class="va">train</span>, G <span class="op">=</span> <span class="fl">2L</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  mixtools <span class="op">=</span> <span class="fu">as_gmm_mixtools</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/mixtools/man/mvnormalmixEM.html" class="external-link">mvnormalmixEM</a></span><span class="op">(</span><span class="va">train</span>, k <span class="op">=</span> <span class="fl">2L</span>, verb <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  flexmix <span class="op">=</span> <span class="fu">as_gmm_flexmix</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/flexmix/man/stepFlexmix.html" class="external-link">stepFlexmix</a></span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="https://amices.org/mice/reference/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">eruptions</span>, <span class="va">waiting</span><span class="op">)</span> <span class="op">~</span> <span class="fl">1</span>, data <span class="op">=</span> <span class="va">train_df</span>, k <span class="op">=</span> <span class="fl">2L</span>, nrep <span class="op">=</span> <span class="fl">5L</span>,</span>
+<span>    model <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/flexmix/man/FLXmclust.html" class="external-link">FLXMCmvnorm</a></span><span class="op">(</span>diagonal <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  <span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt;               [,1]</span></span>
-<span><span class="co">#&gt; moment_tr 2.677815</span></span>
-<span><span class="co">#&gt; kld_tr    2.447868</span></span></code></pre></div>
-<p>The means and trace-covariances agree to within Monte Carlo
-error.</p>
+<span></span>
+<span><span class="co"># mean log-likelihood of the held-out eruptions under each fit</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">fits</span>, <span class="kw">function</span><span class="op">(</span><span class="va">g</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="fu"><a href="../reference/dgmm.html">dgmm</a></span><span class="op">(</span><span class="va">test</span>, <span class="va">g</span>, log <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">1L</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>The <a href="https://max578.github.io/proxymix/articles/extended/three_regimes.html">extended
+version of this article</a> gives the full simulation code and a measure
+of how well each package’s grouping of the points matches the true
+components. It also compares method (iii) on the Old Faithful data with
+drawing a sample by Markov chain Monte Carlo, a standard way to sample
+from a formula, and fitting a mixture to that sample.</p>
+</div>
 </div>
 <div class="section level2">
-<h2 id="reference">Reference<a class="anchor" aria-label="anchor" href="#reference"></a>
+<h2 id="interpretation">Interpretation<a class="anchor" aria-label="anchor" href="#interpretation"></a>
 </h2>
+<p>Method (i) copies the moments of the sample rather than estimating
+them by iteration. Its fitted mean equals the sample mean exactly. Its
+fitted covariance differs from the sample covariance by
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mn>10</mn><mrow><mi>−</mi><mn>6</mn></mrow></msup><annotation encoding="application/x-tex">10^{-6}</annotation></semantics></math>,
+which is the constant that <code>ridge_eps</code> adds to the diagonal.
+Without that constant, the fitted covariance equals the sample
+covariance exactly.</p>
+<p>Methods (ii) and (iii) reach nearly the same mixture by different
+routes. Method (ii) took 17 rounds and method (iii) took 10. Their
+component weights agree to within 0.015. Both put one component on each
+peak, which is correct for a target that is itself a mixture of three
+normal distributions. The 3,000 weighted trial points of method (iii)
+were worth 758 equally weighted points, 25 per cent of the total. On
+30,000 fresh trial points, the KL divergence of the method (iii) proxy
+from the target is 0.012, with a simulation standard error of 0.002.</p>
+<p>On the banana target, the attached sample overstates the exact trace
+of 2.5 by 0.178, and method (i) copies that error. Method (iii) never
+sees the sample. Its trace is 0.052 below the exact value. In this one
+run, method (iii) is therefore closer. The repeated draws show that this
+is partly chance. The trace of a 2,000-point sample has a standard
+deviation of 0.085, so this sample’s error is 2.1 standard deviations.
+The method (iii) trace has a standard deviation of 0.073 over 100 seeds,
+which is similar. Its average is 0.012 below the exact value, which is
+less than two standard errors of that average.</p>
+<p>Methods (i) and (ii) fit whatever sample was drawn, while method
+(iii) fits the formula itself. With a large sample the difference is
+negligible. In the simulation above, method (iii) was also given the
+true formula and 3,000 trial points. It does not use the sample. Its
+mean KL divergence was 0.0068 and 0.0070 in the two halves of the
+simulation, which differ only by chance. Method (ii) reached 0.0527 and
+0.0092. When samples are plentiful, method (iii) costs more: it needs a
+proposal, it evaluated the formula 33,000 times for the three-peak fit,
+and its weights have to be checked before the fit is used.</p>
+</div>
+<div class="section level2">
+<h2 id="limitations">Limitations<a class="anchor" aria-label="anchor" href="#limitations"></a>
+</h2>
+<p>The number of components was set by hand in every fit, and the
+three-peak target was chosen because the right number is known. On a
+real target, <code><a href="../reference/bic_aic.html">bic_aic()</a></code> and <code><a href="../reference/select_N.html">select_N()</a></code> choose
+it. Too few components show up as a KL divergence that more trial points
+do not reduce.</p>
+<p>The three-peak target is itself a mixture of three normal
+distributions, so methods (ii) and (iii) can both match it exactly. On a
+target of a different shape, the two methods aim at different
+quantities, and their fits differ.</p>
+<p>The exact trace of the banana target is known only because the target
+is built from normal variables. A sum over a grid of 400 by 400 points
+on
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">[</mo><mi>−</mi><mn>8</mn><mo>,</mo><mn>8</mn><msup><mo stretchy="false" form="postfix">]</mo><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">[-8, 8]^2</annotation></semantics></math>
+misses
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>6.4</mn><mo>×</mo><msup><mn>10</mn><mrow><mi>−</mi><mn>5</mn></mrow></msup></mrow><annotation encoding="application/x-tex">6.4 \times 10^{-5}</annotation></semantics></math>
+of the probability and gives 2.494, which is 0.006 below the exact
+value. The missing probability lies far out in the tail of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>2</mn></msub><annotation encoding="application/x-tex">x_2</annotation></semantics></math>,
+where it adds much to the variance. A grid sum is a useful check only in
+two or three variables, and only after you have checked how much
+probability the grid misses.</p>
+<p>The comparison with other packages covers one real dataset and one
+simulated mixture in two variables, with the number of components given.
+It does not cover a target of a different shape, a chosen number of
+components or more variables.</p>
+</div>
+<div class="section level2">
+<h2 id="further-reading">Further reading<a class="anchor" aria-label="anchor" href="#further-reading"></a>
+</h2>
+<p><em>Fitting a proxy to a density you cannot sample</em> introduces
+method (iii) and the fit certificate that checks it.</p>
+<p><em>How well a mixture proxies four awkward shapes</em> applies
+method (iii) to targets that are not Gaussian mixtures.</p>
+<p><em>Reading the entropy of a fitted mixture</em> covers choosing the
+number of components, including a method that finds the number rather
+than being given it.</p>
+<p><em>One mixture, many methods</em> shows what else a single fitted
+mixture can do.</p>
+<p><em>Mapping the optima of an objective</em> applies method (iii) to a
+function that is to be optimised, and returns a mixture with one
+component on each of its optima.</p>
+</div>
+<div class="section level2">
+<h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
+</h2>
+<p>Azzalini, A. and Bowman, A. W. (1990). <em>A look at some data on the
+Old Faithful geyser.</em> Journal of the Royal Statistical Society,
+Series C (Applied Statistics) 39(3), 357–365. <a href="https://doi.org/10.2307/2347385" class="external-link uri">https://doi.org/10.2307/2347385</a>.</p>
+<p>Benaglia, T., Chauveau, D., Hunter, D. R. and Young, D. S. (2009).
+<em>mixtools: An R package for analyzing finite mixture models.</em>
+Journal of Statistical Software 32(6), 1–29. <a href="https://doi.org/10.18637/jss.v032.i06" class="external-link uri">https://doi.org/10.18637/jss.v032.i06</a>.</p>
+<p>Grün, B. and Leisch, F. (2008). <em>FlexMix version 2: Finite
+mixtures with concomitant variables and varying and constant
+parameters.</em> Journal of Statistical Software 28(4), 1–35. <a href="https://doi.org/10.18637/jss.v028.i04" class="external-link uri">https://doi.org/10.18637/jss.v028.i04</a>.</p>
 <p>Hoek, J. van der and Elliott, R. J. (2024). <em>Mixtures of
 multivariate Gaussians.</em> Stochastic Analysis and Applications. <a href="https://doi.org/10.1080/07362994.2024.2372605" class="external-link uri">https://doi.org/10.1080/07362994.2024.2372605</a>.</p>
+<p>Leisch, F. (2004). <em>FlexMix: A general framework for finite
+mixture models and latent class regression in R.</em> Journal of
+Statistical Software 11(8), 1–18. <a href="https://doi.org/10.18637/jss.v011.i08" class="external-link uri">https://doi.org/10.18637/jss.v011.i08</a>.</p>
+<p>Scrucca, L., Fop, M., Murphy, T. B. and Raftery, A. E. (2016).
+<em>mclust 5: Clustering, classification and density estimation using
+Gaussian finite mixture models.</em> The R Journal 8(1), 289–317. <a href="https://doi.org/10.32614/RJ-2016-021" class="external-link uri">https://doi.org/10.32614/RJ-2016-021</a>.</p>
+</div>
+<div class="section level2">
+<h2 id="reproduce">Reproduce<a class="anchor" aria-label="anchor" href="#reproduce"></a>
+</h2>
+<p>The target’s sample is drawn with <code>seed = 1L</code>, and each
+fit that uses random numbers is given <code>seed = 1L</code>. The
+repeated banana draws use seeds 1 to 500 for the samples and 1 to 100
+for the trial points. The comparison is read from stored results. The
+simulation ran under proxymix 0.16.0, <code>mclust</code> 6.1.3 and
+<code>flexmix</code> 2.3-21, and took about 15 minutes on one core. The
+Old Faithful fits ran under <code>mixtools</code> 2.0.0.1 and the same
+versions of the other packages.</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<pre class="session-info"><code><span><span class="co">#&gt; R version 4.6.1 (2026-06-24)</span></span>
+<span><span class="co">#&gt; Platform: aarch64-apple-darwin23</span></span>
+<span><span class="co">#&gt; Running under: macOS Tahoe 26.6.2</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Matrix products: default</span></span>
+<span><span class="co">#&gt; BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib </span></span>
+<span><span class="co">#&gt; LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; locale:</span></span>
+<span><span class="co">#&gt; [1] en_AU.UTF-8/en_AU.UTF-8/en_AU.UTF-8/C/en_AU.UTF-8/en_AU.UTF-8</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; time zone: Australia/Adelaide</span></span>
+<span><span class="co">#&gt; tzcode source: internal</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; attached base packages:</span></span>
+<span><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; other attached packages:</span></span>
+<span><span class="co">#&gt; [1] proxymix_0.16.0</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
+<span><span class="co">#&gt;  [1] mvnfast_0.2.8      gtable_0.3.6       jsonlite_2.0.0     dplyr_1.2.1       </span></span>
+<span><span class="co">#&gt;  [5] compiler_4.6.1     Rcpp_1.1.2         tidyselect_1.2.1   dichromat_2.0-1   </span></span>
+<span><span class="co">#&gt;  [9] jquerylib_0.1.4    systemfonts_1.3.2  scales_1.4.0       textshaping_1.0.5 </span></span>
+<span><span class="co">#&gt; [13] yaml_2.3.12        fastmap_1.2.0      ggplot2_4.0.3      R6_2.6.1          </span></span>
+<span><span class="co">#&gt; [17] labeling_0.4.3     generics_0.1.4     isoband_0.3.0      knitr_1.51        </span></span>
+<span><span class="co">#&gt; [21] htmlwidgets_1.6.4  tibble_3.3.1       desc_1.4.3         bslib_0.12.0      </span></span>
+<span><span class="co">#&gt; [25] pillar_1.11.1      RColorBrewer_1.1-3 rlang_1.3.0        cachem_1.1.0      </span></span>
+<span><span class="co">#&gt; [29] xfun_0.60          fs_2.1.0           sass_0.4.10        S7_0.2.2          </span></span>
+<span><span class="co">#&gt; [33] otel_0.2.0         viridisLite_0.4.3  cli_3.6.6          pkgdown_2.2.1     </span></span>
+<span><span class="co">#&gt; [37] withr_3.0.3        magrittr_2.0.5     digest_0.6.39      grid_4.6.1        </span></span>
+<span><span class="co">#&gt; [41] lifecycle_1.0.5    vctrs_0.7.3        evaluate_1.0.5     glue_1.8.1        </span></span>
+<span><span class="co">#&gt; [45] farver_2.1.2       ragg_1.5.2         rmarkdown_2.32     tools_4.6.1       </span></span>
+<span><span class="co">#&gt; [49] pkgconfig_2.0.3    htmltools_0.5.9</span></span></code></pre>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
@@ -356,7 +757,7 @@ multivariate Gaussians.</em> Stochastic Analysis and Applications. <a href="http
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

@@ -30,10 +30,7 @@ Useful links:
 **Maintainer**: Max Moldovan <max.moldovan@gmail.com>
 ([ORCID](https://orcid.org/0000-0001-9680-8474))
 
-Other contributors:
+Authors:
 
-- Johannes van der Hoek (Foundational theory in Hoek & Elliott (2024).)
-  \[contributor\]
-
-- Robert J. Elliott (Foundational theory in Hoek & Elliott (2024).)
-  \[contributor\]
+- Max Moldovan <max.moldovan@gmail.com>
+  ([ORCID](https://orcid.org/0000-0001-9680-8474))

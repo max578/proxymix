@@ -10,7 +10,7 @@ non-identification of the individual counterfactual law.
 ## Usage
 
 ``` r
-proxy_identification_report(model, newdata, t1 = 1, t0 = 0)
+proxy_identification_report(model, newdata, t1 = NULL, t0 = NULL)
 ```
 
 ## Arguments
@@ -27,7 +27,9 @@ proxy_identification_report(model, newdata, t1 = 1, t0 = 0)
 
 - t1, t0:
 
-  The treated and control treatment values. Default `1` and `0`.
+  The treated and control treatment values. Default the treatment levels
+  observed at fit time (`model@treatment_levels`); a value matching
+  neither observed level aborts.
 
 ## Value
 
@@ -62,9 +64,10 @@ Other decision:
 ``` r
 set.seed(1)
 n <- 600L
+u <- stats::rbinom(n, 1L, 0.5) # unobserved group
 x <- stats::rnorm(n)
-t <- stats::rbinom(n, 1L, 0.5)
-y <- 0.5 * t + x + stats::rnorm(n, sd = 0.5)
+t <- stats::rbinom(n, 1L, 0.3 + 0.4 * u)
+y <- 1 + 5 * u + 0.5 * t + x + stats::rnorm(n, sd = 0.5)
 dat <- data.frame(y = y, t = t, x = x)
 m <- fit_uplift(dat, "y", "t", "x", N = 2L, regime = "sample",
                 max_iter = 80L, seed = 1L)
@@ -75,9 +78,9 @@ proxy_identification_report(m, data.frame(x = stats::rnorm(100)))
 #>                requires (Y(0), Y(1)) independent of T given X.
 #>   Regimes    : K = 2   Outcome scale: continuous
 #>   Units      : 100
-#>   Overlap    : 99.0% of units adequately supported
+#>   Overlap    : 100.0% of units adequately supported
 #>   Confounding gap (value at risk if a latent regime confounds):
-#>                mean |Delta| = 0.4842, max |Delta| = 0.572
+#>                mean |Delta| = 2.336, max |Delta| = 2.41
 #>   NOT identified : the individual counterfactual law
 #>                    (its variance and tail probabilities).
 #> ===========================================================

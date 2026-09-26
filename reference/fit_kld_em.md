@@ -109,11 +109,16 @@ fit_kld_em(
 
 - validation_size:
 
-  Number of independent importance-sampling draws to use for held-out
-  validation. The default `NULL` uses `ceiling(is_size / 4)`, so the
-  overfit-vs-generalise diagnostic (`validation_kld` and the
-  certificate's `validation_gap`) exists by default; set `0L` to disable
-  the validation split.
+  Number of independent importance-sampling draws for the held-out
+  estimate `validation_kld` and its standard error `validation_mc_se`.
+  The standard error is roughly `sqrt(2 * KL / ESS)`, where ESS is the
+  effective sample size of the validation draws, so a close fit needs
+  many draws before the estimate is precise. The default `NULL` draws
+  batches of `is_size` until the standard error is at most a tenth of
+  the estimate (at most 0.001 when the estimate is below 0.01), stopping
+  at `10 * is_size` draws. When the target's normalising constant is
+  unknown, the goal is a standard error of 0.001. A number draws exactly
+  that many; `0L` skips validation.
 
 - validation_proposal:
 
@@ -181,9 +186,10 @@ fit_kld_em(
 
 A [gmm_fit](https://max578.github.io/proxymix/reference/gmm_fit.md) with
 `regime = "kld"`. The diagnostics list contains, among others,
-`kld_trace`, `kld_final`, `kld_is_shifted`, `kld_final_absolute` (when
-computable), `ess`, `ess_relative` (`ess / is_size`), `max_weight`,
-`support_fraction`, `mc_se_kld`, `validation_kld`, `validation_ess`, and
+`kld_trace`, `kld_final` (in-sample), `kld_is_shifted`,
+`kld_final_absolute` (when computable), `ess`, `ess_relative`
+(`ess / is_size`), `max_weight`, `support_fraction`, `mc_se_kld`,
+`validation_kld` (held-out), `validation_ess`, and
 `validation_max_weight`.
 
 ## Details
@@ -213,11 +219,12 @@ defensive-mixture safeguard of Owen and Zhou (2000); it re-draws rather
 than recycles batches (compare the adaptive multiple importance sampling
 of Cornuet et al., 2012).
 
-Since v0.1.1 the function also draws an *independent* validation IS
-sample when `validation_size > 0` and reports its own KLD estimate,
-effective sample size, and largest weight share. This lets users tell
-the difference between in-sample EM overfit to one particular IS draw
-and a fit that generalises across independent IS draws.
+`kld_final` is estimated on the same importance draws the fit was tuned
+to, so it reads low and can come out negative, more so for large `N` and
+small `is_size`. When `validation_size > 0` the function also draws an
+*independent* validation IS sample and reports its KLD estimate
+(`validation_kld`), effective sample size, and largest weight share;
+`validation_kld` is the estimate to quote as the fit's accuracy.
 
 When the target's `normalised` property is `FALSE` or `NA`, the
 importance-sampled `kld_final` and `kld_trace` measure \\\widehat{KL}(f

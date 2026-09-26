@@ -14,7 +14,7 @@ spread is not (see
 ## Usage
 
 ``` r
-proxy_retrospective_uplift(model, observed, t1 = 1, t0 = 0)
+proxy_retrospective_uplift(model, observed, t1 = NULL, t0 = NULL)
 ```
 
 ## Arguments
@@ -31,7 +31,9 @@ proxy_retrospective_uplift(model, observed, t1 = 1, t0 = 0)
 
 - t1, t0:
 
-  The treated and control treatment values. Default `1` and `0`.
+  The treated and control treatment values. Default the treatment levels
+  observed at fit time (`model@treatment_levels`); a value matching
+  neither observed level aborts.
 
 ## Value
 

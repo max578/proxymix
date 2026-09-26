@@ -1,6 +1,240 @@
 # Changelog
 
-## proxymix 0.15.1
+## proxymix 0.16.0
+
+#### Changes to defaults
+
+- [`gmm_independence_graph()`](https://max578.github.io/proxymix/reference/gmm_independence_graph.md)
+  tests each partial correlation with Fisher’s z at level `alpha`
+  (default 0.05) when the mixture was fitted to data, taking the sample
+  size from a `"sample"` or `"moment"` fit or from the new `n` argument.
+  Giving `threshold` keeps the old rule `|r| > threshold`, which is also
+  used when no sample size is known.
+- [`from_kde()`](https://max578.github.io/proxymix/reference/from_kde.md)
+  uses `is_size = 10000 + 2500 * N` importance draws instead of 5000,
+  which reduces overfitting at larger `N`.
+- [`from_kde()`](https://max578.github.io/proxymix/reference/from_kde.md)
+  holds out validation draws by default, so its fits report
+  `validation_kld`. Use `validation_size = 0L` for the old behaviour.
+- [`fit_kld_em()`](https://max578.github.io/proxymix/reference/fit_kld_em.md)
+  and `fit_proxymix(regime = "kld")` draw validation points in batches
+  of `is_size` until the standard error of `validation_kld` is at most a
+  tenth of the estimate, up to `10 * is_size` draws. The old default of
+  `ceiling(is_size / 4)` draws left a standard error about as large as
+  the estimate on a close fit. Give `validation_size` to fix the number
+  of draws.
+- The fit-quality advisory (class `proxymix_low_quality`) no longer
+  fires on relative ESS below 0.05. With a fixed proposal, relative ESS
+  describes the proposal rather than the fit, so the advisory fired on
+  about half of good regime `"kld"` fits and more often as `is_size`
+  grew. It now fires when a fit did not converge, is degenerate, or has
+  `kld_approx` above 0.3.
+  [`gmm_fit_quality()`](https://max578.github.io/proxymix/reference/gmm_fit_quality.md)
+  reports the new field `kld_approx`: half the weighted variance of
+  `log f - log g`, which approximates the KL divergence and does not
+  depend on the target’s normalising constant.
+
+#### New features
+
+- [`proxy_mnar_sensitivity()`](https://max578.github.io/proxymix/reference/proxy_mnar_sensitivity.md)
+  reports, for each slope, the observed-data log-likelihood of the
+  selection model (`loglik`) and whether the fit converged
+  (`converged`), and warns when a fit did not converge. Its new
+  `max_iter` argument defaults to 500, because fits near missing at
+  random could stop before converging at the
+  [`gmm_impute()`](https://max578.github.io/proxymix/reference/gmm_impute.md)
+  default of 100.
+
+- [`from_objective()`](https://max578.github.io/proxymix/reference/from_objective.md)
+  gains `scale = "loglik"` for negative log-likelihoods: the default
+  temperature ladder then ends at 1, so the returned map is the
+  likelihood surface on the box.
+
+- [`proxy_functional_ci()`](https://max578.github.io/proxymix/reference/proxy_functional_ci.md)
+  gains `tail_warn` (default `1e-3`) and warns, with class
+  `proxymix_tail_functional`, when the functional is a probability below
+  that level. Its interval covers refit variability only, not the error
+  of the mixture’s tails.
+
+- [`glance()`](https://generics.r-lib.org/reference/glance.html) on a
+  fitted proxy reports `validation_kld`, the held-out KL estimate.
+
+#### Bug fixes
+
+- [`from_objective()`](https://max578.github.io/proxymix/reference/from_objective.md)
+  no longer evaluates the objective outside `[lower, upper]`. Points
+  outside the box get the same penalty as non-finite values, so a map
+  can no longer settle outside the box.
+
+- [`from_objective()`](https://max578.github.io/proxymix/reference/from_objective.md)
+  raises at most one low effective-sample-size warning per call, and
+  only when the final cooling step is low. The effective sample size at
+  each step is stored in `fit@metadata$from_objective$ess`.
+
+- [`hellinger_mc()`](https://max578.github.io/proxymix/reference/hellinger_mc.md)
+  draws `n_mc` fresh samples from the fit, using `seed`, for regime
+  `"kld"` fits too. The estimate is no longer biased low and its
+  standard error is no longer `NaN`.
+
+- [`proxy_confounding_gap()`](https://max578.github.io/proxymix/reference/proxy_confounding_gap.md)
+  and
+  [`proxy_regime_segments()`](https://max578.github.io/proxymix/reference/proxy_regime_segments.md)
+  warn, with class `proxymix_constant_treatment`, when each regime holds
+  a single treatment arm. The within-regime effect is then zero, so the
+  gap equals the whole estimated effect and the segment effects are all
+  zero.
+
+- The decision family
+  ([`proxy_cate()`](https://max578.github.io/proxymix/reference/proxy_cate.md),
+  [`proxy_uplift()`](https://max578.github.io/proxymix/reference/proxy_uplift.md),
+  [`proxy_overlap()`](https://max578.github.io/proxymix/reference/proxy_overlap.md),
+  [`proxy_decide()`](https://max578.github.io/proxymix/reference/proxy_decide.md),
+  [`proxy_confounding_gap()`](https://max578.github.io/proxymix/reference/proxy_confounding_gap.md),
+  [`proxy_policy_value()`](https://max578.github.io/proxymix/reference/proxy_policy_value.md),
+  [`proxy_retrospective_uplift()`](https://max578.github.io/proxymix/reference/proxy_retrospective_uplift.md),
+  [`proxy_regime_segments()`](https://max578.github.io/proxymix/reference/proxy_regime_segments.md),
+  [`proxy_identification_report()`](https://max578.github.io/proxymix/reference/proxy_identification_report.md))
+  previously defaulted the treatment contrast to `t1 = 1, t0 = 0`
+  regardless of the treatment coding
+  [`fit_uplift()`](https://max578.github.io/proxymix/reference/fit_uplift.md)
+  observed, silently returning an effect on the wrong scale for any
+  treatment not coded `{0, 1}` (e.g. a `{0, 100}`-coded dose). The
+  default now reads `model@treatment_levels`, the arms actually observed
+  at fit time; a `t1`/`t0` matching neither observed level now aborts
+  with a classed `proxymix_treatment_scale_error` instead of returning a
+  silently mis-scaled effect.
+
+#### Documentation
+
+- `kld_final` is described as an in-sample estimate that reads low, with
+  `validation_kld` as the figure to quote.
+
+- The
+  [`from_kde()`](https://max578.github.io/proxymix/reference/from_kde.md)
+  help states that a Gaussian-kernel KDE is already a mixture that can
+  be marginalised, conditioned and sampled exactly, and that compression
+  reduces its cost from n components to N.
+
+- The
+  [`gmm_eos_test()`](https://max578.github.io/proxymix/reference/gmm_eos_test.md)
+  help states that the Andrews subsampling calibration is asymptotic,
+  assumes stationary ergodic innovations, and can over-reject in short
+  series. It also states how `method = "andrews"` differs from
+  Andrews’ (2003) P-test: its p-value counts the tested block, and the
+  block statistics are computed at the supplied model rather than
+  re-estimated.
+
+- The
+  [`mnar()`](https://max578.github.io/proxymix/reference/mechanism.md)
+  and
+  [`proxy_mnar_sensitivity()`](https://max578.github.io/proxymix/reference/proxy_mnar_sensitivity.md)
+  help no longer says the data cannot identify the missing-not-at-random
+  slope. Under the mixture selection model the observed data inform the
+  slope through the assumed shape of the outcome distribution, which the
+  new `loglik` column shows.
+
+- [`gmm_entropy()`](https://max578.github.io/proxymix/reference/gmm_entropy.md)
+  and
+  [`gmm_conditional_entropy()`](https://max578.github.io/proxymix/reference/gmm_conditional_entropy.md)
+  are titled by the quantity they return by default, the order-2 Renyi
+  entropy.
+
+- The package website carries an extended version of each of the twelve
+  vignettes. Each adds a numerical comparison with other R packages on
+  the same task. The comparisons are read from stored simulation
+  results, and the code that produced them is in `data-raw/articles/` in
+  the source repository.
+
+- All twelve vignettes were brought to a common quality bar: each now
+  opens with the question it answers, carries a Why / What / Do / Read /
+  Limits / What to read next / Reproduce shape, states every number in
+  prose from a chunk or inline code rather than by hand, draws its
+  figures with `ggplot2` on a colourblind-safe palette with captions and
+  alt text, tabulates through
+  [`knitr::kable()`](https://rdrr.io/pkg/knitr/man/kable.html), refers
+  to its companions by title, and closes with its seed and
+  [`sessionInfo()`](https://rdrr.io/r/utils/sessionInfo.html). *One
+  mixture, many methods* gains a section on the decision family
+  ([`fit_uplift()`](https://max578.github.io/proxymix/reference/fit_uplift.md),
+  [`proxy_cate()`](https://max578.github.io/proxymix/reference/proxy_cate.md),
+  [`proxy_decide()`](https://max578.github.io/proxymix/reference/proxy_decide.md),
+  [`proxy_identification_report()`](https://max578.github.io/proxymix/reference/proxy_identification_report.md)),
+  which no vignette previously covered and which shows the
+  `proxymix_treatment_scale_error` refusal of an unobserved treatment
+  contrast; *How well a mixture proxies four awkward shapes* shows the
+  `proxymix_degenerate_fit` refusal of a collapsed importance sample.
+  Claims that had never been computed are now computed, and three that
+  did not survive the computation were corrected: the regime (i) and
+  regime
+
+  3.  fits at `N = 1` do not agree to within Monte Carlo error, the
+      donut’s residual divergence needed a grid-quadrature oracle to be
+      stated at all, and the fraction of `x2` deleted in the imputation
+      example was near a half rather than the two fifths claimed.
+
+- Every figure chunk across the vignette set now carries a `fig.cap`
+  stating what the figure shows, and the four uncaptioned or
+  under-interpreted plots (`calibration`, `from_kde`, `missing_data`,
+  `operator_calculus`) gained a trailing prose sentence reading the
+  result off the plot.
+
+- `entropy.Rmd`’s order-2 Renyi entropy formula is now typeset as LaTeX
+  (`\(H_2(\mathcal{N}(\mu, \Sigma)) = \dots\)`) rather than as inline
+  code.
+
+- The in-text short-form citation “Hoek and Elliott (2024)” is now “van
+  der Hoek and Elliott (2024)” in `README.Rmd` and the three vignettes
+  that used the short form (`quickstart`, `three_regimes`,
+  `calibration`); the surname was silently dropped when the co-author’s
+  `Authors@R` entry was removed at 0.15.1.
+
+- `README.Rmd` and the two vignettes still calling the deprecated
+  [`is_mvt()`](https://max578.github.io/proxymix/reference/is_mvt.md)
+  alias (`quickstart`, `three_regimes`) now use the preferred
+  [`proposal_mvt()`](https://max578.github.io/proxymix/reference/proposal_uniform.md)
+  name introduced at 0.13.0.
+
+- `README.Rmd`’s stray Unicode em/en dashes are now the LaTeX `--`
+  convention used throughout the rest of the package’s prose.
+
+- [`gmm_complete()`](https://max578.github.io/proxymix/reference/gmm_complete.md),
+  [`proposal_uniform()`](https://max578.github.io/proxymix/reference/proposal_uniform.md)/[`proposal_mvn()`](https://max578.github.io/proxymix/reference/proposal_uniform.md)/[`proposal_mvt()`](https://max578.github.io/proxymix/reference/proposal_uniform.md),
+  and the `gmm_imputation` class gained `@examples`.
+
+- Function names in nine vignettes printed with literal square brackets
+  (`[gmm_impute()]`); they now print as plain code.
+
+## proxymix 0.15.2
+
+#### Bug fixes
+
+- The fit-quality certificate now composes across the product,
+  convolution, and mixing operators.
+  [`gmm_product()`](https://max578.github.io/proxymix/reference/gmm_product.md),
+  [`gmm_convolve()`](https://max578.github.io/proxymix/reference/gmm_convolve.md),
+  and
+  [`gmm_mix()`](https://max578.github.io/proxymix/reference/gmm_mix.md)
+  previously carried only the first operand’s certificate (and
+  [`gmm_mix()`](https://max578.github.io/proxymix/reference/gmm_mix.md)
+  carried none); they now combine every operand’s certificate
+  conservatively – not-converged if any operand is, degenerate if any
+  operand is, and the worst-case of the numeric fields – with the
+  individual certificates retained under `quality_sources` and
+  `regime = "composite"`.
+
+#### New features
+
+- `fit_proxymix(regime = "kld")` now flags when an auto-selected
+  proposal replaces an unbounded target-support end with a finite,
+  data-derived working box. Because such a box does not sample the
+  target tail beyond it, the fit is a truncated-target approximation
+  rather than exact importance sampling; this is reported with a classed
+  warning (`proxymix_truncated_support_proposal`), a `support_truncated`
+  flag in
+  [`ess_summary()`](https://max578.github.io/proxymix/reference/ess_summary.md),
+  and the finite box in `fit@diagnostics$working_bounds`. Pass an
+  explicit dominating `proposal` for exact importance sampling over the
+  full support.
 
 #### Housekeeping
 
@@ -139,15 +373,15 @@
 
 #### API changes
 
-- The four planned-interface placeholders
-  (`from_aggregate_likelihood()`, `fit_kld_em_collider()`,
-  `to_apsim_scenarios()`, `from_simulator()`) and the posterior-producer
-  seam helpers (`from_fb_posterior()`, `fb_log_posterior_spec()`,
-  `fb_producer_available()`, `mock_fb_posterior()`) are internal as of
-  this release: an exported function whose only behaviour is to error,
-  or whose contract awaits an unreleased counterpart, does not belong on
-  the public surface. Their signatures and behaviour are unchanged and
-  remain under test; the general-purpose S3 generic
+- The four planned-interface functions (`from_aggregate_likelihood()`,
+  `fit_kld_em_collider()`, `to_apsim_scenarios()`, `from_simulator()`)
+  and the posterior-producer seam helpers (`from_fb_posterior()`,
+  `fb_log_posterior_spec()`, `fb_producer_available()`,
+  `mock_fb_posterior()`) are internal as of this release: an exported
+  function whose only behaviour is to error, or whose contract awaits an
+  unreleased counterpart, does not belong on the public surface. Their
+  signatures and behaviour are unchanged and remain under test; the
+  general-purpose S3 generic
   [`gmm_target_from_posterior()`](https://max578.github.io/proxymix/reference/gmm_target_from_posterior.md)
   remains the public route for external posteriors.
 - The imputation mechanism layer is explicitly sealed: `.as_gate()`
@@ -203,10 +437,9 @@
   to `ceiling(is_size / 4)` rather than `0`, so the
   overfit-vs-generalise diagnostic exists on every regime-(iii) fit.
   Pass `validation_size = 0L` to disable.
-- [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
-  is now registered for plain `gmm` objects too, so operator-calculus
-  results (marginals, conditionals, filtered beliefs) plot directly
-  rather than only freshly fitted proxies.
+- `autoplot()` is now registered for plain `gmm` objects too, so
+  operator-calculus results (marginals, conditionals, filtered beliefs)
+  plot directly rather than only freshly fitted proxies.
 - A dimension disclosure now lives at the core fitter:
   [`fit_kld_em()`](https://max578.github.io/proxymix/reference/fit_kld_em.md)
   notes `p > 5` and warns (classed `proxymix_high_dimension`) beyond
@@ -793,9 +1026,7 @@
   present. proxymix never `Imports:` a producer package – the seam is a
   soft contract and `R CMD check` is clean with none installed.
 
-- **New:
-  [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
-  method for `gmm_fit`.** Render a fitted proxy with
+- **New: `autoplot()` method for `gmm_fit`.** Render a fitted proxy with
   `ggplot2::autoplot(fit)` — a marginal density curve in one dimension,
   or a viridis density raster with per-component ellipses in two. Any
   ambient dimension is supported: the requested coordinates are reduced

@@ -76,8 +76,8 @@ fit_proxymix(tgt_s, N = 2L, max_iter = 25L)
 #>   target     : target_from_samples
 #>   iterations : 25
 #>   converged  : FALSE
-#>   [1] w = 0.7928, |mu| = 0.3344, tr(Sigma) = 1.4380
-#>   [2] w = 0.2072, |mu| = 1.5704, tr(Sigma) = 1.3301
+#>   [1] w = 0.7961, |mu| = 0.3148, tr(Sigma) = 1.6544
+#>   [2] w = 0.2039, |mu| = 1.5805, tr(Sigma) = 1.3296
 
 ## explicit "kld" on a log-density-only target.
 fit_proxymix(banana_target(), N = 3L, regime = "kld",

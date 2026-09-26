@@ -58,5 +58,5 @@ best <- multi_start_best_of(
   max_iter = 25L
 )
 best@diagnostics$loglik_final
-#> [1] -285.4343
+#> [1] -291.5803
 ```

@@ -11,13 +11,13 @@ Source:
 [`inst/CITATION`](https://github.com/max578/proxymix/blob/HEAD/inst/CITATION)
 
 Moldovan M (2026). *proxymix: KL-Optimal Gaussian Mixture Proxies for
-Arbitrary Target Densities*. R package version 0.15.1.
+Arbitrary Target Densities*. R package version 0.16.0.
 
     @Manual{,
       title = {{proxymix}: KL-Optimal Gaussian Mixture Proxies for Arbitrary Target Densities},
       author = {Max Moldovan},
       year = {2026},
-      note = {R package version 0.15.1},
+      note = {R package version 0.16.0},
     }
 
 Hoek, J. van der and Elliott, R. J. (2024). Mixtures of multivariate

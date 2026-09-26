@@ -5,12 +5,13 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>From KDE: compressing a kernel density estimate into a Gaussian-mixture proxy • proxymix</title>
+<title>Compressing a kernel density estimate into a mixture • proxymix</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="From KDE: compressing a kernel density estimate into a Gaussian-mixture proxy">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<meta property="og:title" content="Compressing a kernel density estimate into a mixture">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -20,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">proxymix</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.15.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.16.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,18 +34,20 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/quickstart.html">Quickstart</a></li>
+<li><a class="dropdown-item" href="../articles/quickstart.html">Fitting a proxy to a density you cannot sample</a></li>
     <li><a class="dropdown-item" href="../articles/posterior_proxy.html">Compressing a Bayesian posterior you can evaluate but not sample</a></li>
-    <li><a class="dropdown-item" href="../articles/three_regimes.html">Three regimes: moment, sample, and KLD-EM</a></li>
-    <li><a class="dropdown-item" href="../articles/density_shapes.html">KLD-EM on three density shapes</a></li>
-    <li><a class="dropdown-item" href="../articles/operator_calculus.html">Affine-Gaussian operator calculus on a Gaussian mixture</a></li>
-    <li><a class="dropdown-item" href="../articles/from_kde.html">From KDE: compressing a kernel density estimate into a Gaussian-mixture proxy</a></li>
+    <li><a class="dropdown-item" href="../articles/three_regimes.html">Choosing between the three fitting regimes</a></li>
+    <li><a class="dropdown-item" href="../articles/density_shapes.html">How well a mixture proxies four awkward shapes</a></li>
+    <li><a class="dropdown-item" href="../articles/operator_calculus.html">The closed-form operator calculus on a mixture</a></li>
+    <li><a class="dropdown-item" href="../articles/from_kde.html">Compressing a kernel density estimate into a mixture</a></li>
     <li><a class="dropdown-item" href="../articles/many_methods.html">One mixture, many methods</a></li>
-    <li><a class="dropdown-item" href="../articles/entropy.html">Entropy diagnostics with proxymix</a></li>
+    <li><a class="dropdown-item" href="../articles/entropy.html">Reading the entropy of a fitted mixture</a></li>
     <li><a class="dropdown-item" href="../articles/calibration.html">Mapping the optima of an objective</a></li>
     <li><a class="dropdown-item" href="../articles/missing_data.html">Imputing missing data with a mixture</a></li>
     <li><a class="dropdown-item" href="../articles/missing_data_mnar.html">Missing data that depends on the missing value</a></li>
     <li><a class="dropdown-item" href="../articles/end_of_sample.html">Testing the last observation for instability</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -67,7 +70,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>From KDE: compressing a kernel density estimate into a Gaussian-mixture proxy</h1>
+      <h1>Compressing a kernel density estimate into a mixture</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/HEAD/vignettes/from_kde.Rmd" class="external-link"><code>vignettes/from_kde.Rmd</code></a></small>
@@ -76,55 +79,101 @@
 
     
     
+<!-- Render time: ~5 s under rmarkdown::render() with ggplot2 installed;
+     macOS arm64 (Apple silicon), R 4.6.1, one core. The comparison with
+     ks, np, KernSmooth, mclust and mixtools is read from
+     results/from_kde.rds, built by data-raw/vignette_results/from_kde.R. -->
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/max578/proxymix" class="external-link">proxymix</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/max578/proxymix" class="external-link">proxymix</a></span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">has_ggplot2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ggplot2"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
-<h2 id="why-a-from_kde-constructor">Why a <code>from_kde()</code> constructor<a class="anchor" aria-label="anchor" href="#why-a-from_kde-constructor"></a>
+<h2 id="the-problem">The problem<a class="anchor" aria-label="anchor" href="#the-problem"></a>
 </h2>
-<p>A kernel density estimate (KDE) gives a smooth, non-parametric
-density from a sample of <code>n</code> points, but with three
-operational costs:</p>
-<ul>
-<li>
-<strong>No closed-form marginals.</strong> Integrating out a
-coordinate of a KDE requires a numerical sweep over the kernel
-mixture.</li>
-<li>
-<strong>No closed-form conditioning.</strong> There is no analogue
-of the Schur complement; one has to resample or build a conditional KDE
-per query.</li>
-<li>
-<strong>No native aggregation algebra.</strong> Pushforwards through
-linear operators, observation-channel updates, or block-sums all
-collapse to Monte Carlo.</li>
-</ul>
-<p><code><a href="../reference/from_kde.html">proxymix::from_kde()</a></code> <em>compresses</em> the KDE into an
-<code>N</code>-component Gaussian mixture proxy (with <code>N</code>
-typically much smaller than <code>n</code>) by treating the KDE as a
-normalised, evaluable target and running regime (iii) KLD-EM against it.
-The proxy then supports the full closed-form operator set exposed by the
-rest of the package – <code><a href="../reference/dgmm.html">dgmm()</a></code>, <code><a href="../reference/rgmm.html">rgmm()</a></code>,
-<code><a href="../reference/gmm_marginalise.html">gmm_marginalise()</a></code>, <code><a href="../reference/gmm_conditionalise.html">gmm_conditionalise()</a></code>, plus
-the v0.3 affine-Gaussian calculus (<code><a href="../reference/gmm_affine.html">gmm_affine()</a></code>,
-<code><a href="../reference/gmm_observe.html">gmm_observe()</a></code>).</p>
-<p>This is <strong>not new science</strong>. It is a practical bridge
-between a non-parametric density estimate and a parametric closed-form
-mixture representation. The bias inherited from the KDE is reproduced in
-the proxy; the bandwidth controls the bias-variance trade-off.</p>
+<p>A kernel density estimate turns a sample into a smooth density
+without assuming a shape for it. It places a small normal bell curve,
+called a kernel, on every data point and averages them. The width of the
+kernels is called the bandwidth. A narrow bandwidth keeps every bump in
+the sample, and a wide one smooths them away.</p>
+<p>The estimate from 300 data points is therefore a mixture of 300
+normal distributions. Both its density at a point and the distribution
+of one variable when another is held at a fixed value involve all 300 of
+them. The work grows with the size of the sample. This matters when an
+analysis repeats such steps many times.</p>
+<p>proxymix replaces the estimate with a mixture of a few normal
+distributions, for example two or five, chosen to be as close to the
+estimate as possible. This smaller mixture is called the proxy. The same
+steps on the proxy involve only its few components.</p>
+<p>This vignette compresses the estimate of a sample from two groups,
+measures what the compression loses, and compares the result with five
+other R packages.</p>
 </div>
 <div class="section level2">
-<h2 id="recovering-a-known-mixture">Recovering a known mixture<a class="anchor" aria-label="anchor" href="#recovering-a-known-mixture"></a>
+<h2 id="package-capabilities">Package capabilities<a class="anchor" aria-label="anchor" href="#package-capabilities"></a>
 </h2>
-<p>Sample from a known bimodal mixture and ask <code><a href="../reference/from_kde.html">from_kde()</a></code>
-to recover it.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1L</span><span class="op">)</span></span>
-<span><span class="va">true_means</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>, <span class="fl">0</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">true_cov</span>   <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span></span>
+<ul>
+<li>
+<code><a href="../reference/from_kde.html">from_kde()</a></code> builds the kernel density estimate from a
+data matrix and compresses it into an <code>N</code>-component Gaussian
+mixture, a sum of <code>N</code> normal distributions. Its
+<code>bandwidth</code> argument takes a rule of thumb by name
+(<code>"silverman"</code> or <code>"scott"</code>, after Silverman,
+1986, and Scott, 1992) or numbers, a single number for all variables or
+one number per variable.</li>
+<li>
+<code><a href="../reference/from_kde.html">from_kde()</a></code> fits the proxy with the package’s method for
+a density that can be evaluated but not sampled (van der Hoek and
+Elliott, 2024), described in <em>Fitting a proxy to a density you cannot
+sample</em>. It draws <code>is_size</code> trial points from a simple
+wide distribution and weights each by how likely it is under the
+estimate, <code>10000 + 2500 * N</code> points by default. It also draws
+fresh points that are not used in the fit. By default it adds them in
+batches of <code>is_size</code> until the KL estimate is precise, up to
+<code>10 * is_size</code> points.</li>
+<li>
+<code><a href="../reference/ess_summary.html">ess_summary()</a></code> reports the quality of the weighted draws
+and the Kullback-Leibler (KL) divergence between the proxy and the
+estimate, measured on the fresh draws (<code>validation_kld</code>). The
+KL divergence is zero when two densities match and grows as they
+differ.</li>
+<li>
+<code><a href="../reference/hellinger_mc.html">hellinger_mc()</a></code> estimates a second distance between the
+proxy and the estimate, the squared Hellinger distance, from fresh
+random draws. It lies between 0, for identical densities, and 1.</li>
+<li>
+<code><a href="../reference/dgmm.html">dgmm()</a></code>, <code><a href="../reference/rgmm.html">rgmm()</a></code>,
+<code><a href="../reference/gmm_marginalise.html">gmm_marginalise()</a></code> and <code><a href="../reference/gmm_conditionalise.html">gmm_conditionalise()</a></code>
+give density values, random draws, the distribution of one variable on
+its own, and the distribution of one variable when another is held
+fixed. <code><a href="../reference/gmm_affine.html">gmm_affine()</a></code> gives the distribution of a linear
+transformation of the variables, and <code><a href="../reference/gmm_observe.html">gmm_observe()</a></code> updates
+the proxy after a measurement with normal noise.</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="addressing-the-problem">Addressing the problem<a class="anchor" aria-label="anchor" href="#addressing-the-problem"></a>
+</h2>
+<div class="section level3">
+<h3 id="a-sample-from-two-groups">A sample from two groups<a class="anchor" aria-label="anchor" href="#a-sample-from-two-groups"></a>
+</h3>
+<p>The data are simulated, so the true density is known. Half of the 300
+points come from a normal distribution centred at
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mi>−</mi><mn>2</mn><mo>,</mo><mn>0</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(-2, 0)</annotation></semantics></math>
+and half from one centred at
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mn>2</mn><mo>,</mo><mn>0</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(2, 0)</annotation></semantics></math>,
+both with unit variances and no correlation. The call fits a proxy with
+two components and uses Silverman’s rule for the bandwidth. It sets
+<code>is_size</code> and <code>validation_size</code> below their
+defaults to keep the vignette fast.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">20260601</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">n_each</span> <span class="op">&lt;-</span> <span class="fl">150L</span></span>
+<span><span class="va">true_means</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>, <span class="fl">0</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">true_cov</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span></span>
 <span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span></span>
-<span>  <span class="fu">mvnfast</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/mvnfast/man/rmvn.html" class="external-link">rmvn</a></span><span class="op">(</span><span class="fl">150L</span>, mu <span class="op">=</span> <span class="va">true_means</span><span class="op">[[</span><span class="fl">1L</span><span class="op">]</span><span class="op">]</span>, sigma <span class="op">=</span> <span class="va">true_cov</span><span class="op">)</span>,</span>
-<span>  <span class="fu">mvnfast</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/mvnfast/man/rmvn.html" class="external-link">rmvn</a></span><span class="op">(</span><span class="fl">150L</span>, mu <span class="op">=</span> <span class="va">true_means</span><span class="op">[[</span><span class="fl">2L</span><span class="op">]</span><span class="op">]</span>, sigma <span class="op">=</span> <span class="va">true_cov</span><span class="op">)</span></span>
+<span>  <span class="fu">mvnfast</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/mvnfast/man/rmvn.html" class="external-link">rmvn</a></span><span class="op">(</span><span class="va">n_each</span>, mu <span class="op">=</span> <span class="va">true_means</span><span class="op">[</span>, <span class="fl">1L</span><span class="op">]</span>, sigma <span class="op">=</span> <span class="va">true_cov</span><span class="op">)</span>,</span>
+<span>  <span class="fu">mvnfast</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/mvnfast/man/rmvn.html" class="external-link">rmvn</a></span><span class="op">(</span><span class="va">n_each</span>, mu <span class="op">=</span> <span class="va">true_means</span><span class="op">[</span>, <span class="fl">2L</span><span class="op">]</span>, sigma <span class="op">=</span> <span class="va">true_cov</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/from_kde.html">from_kde</a></span><span class="op">(</span></span>
@@ -136,186 +185,602 @@ to recover it.</p>
 <span><span class="va">fit</span></span>
 <span><span class="co">#&gt; &lt;gmm_fit&gt;: regime = "kld", K = 2, p = 2</span></span>
 <span><span class="co">#&gt;   target     : from_kde</span></span>
-<span><span class="co">#&gt;   iterations : 15</span></span>
+<span><span class="co">#&gt;   iterations : 10</span></span>
 <span><span class="co">#&gt;   converged  : TRUE</span></span>
-<span><span class="co">#&gt;   [1] w = 0.5083, |mu| = 1.9840, tr(Sigma) = 3.0490</span></span>
-<span><span class="co">#&gt;   [2] w = 0.4917, |mu| = 2.2039, tr(Sigma) = 2.4588</span></span></code></pre></div>
-<p>The proxy components sit near the true means.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">fit</span><span class="op">@</span><span class="va">means</span>, <span class="kw">function</span><span class="op">(</span><span class="va">mu</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">mu</span>, <span class="fl">2L</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">2L</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;       [,1]  [,2]</span></span>
-<span><span class="co">#&gt; [1,] -1.98  2.20</span></span>
-<span><span class="co">#&gt; [2,]  0.05 -0.08</span></span></code></pre></div>
+<span><span class="co">#&gt;   [1] w = 0.5225, |mu| = 2.0526, tr(Sigma) = 2.7785</span></span>
+<span><span class="co">#&gt;   [2] w = 0.4775, |mu| = 1.9564, tr(Sigma) = 2.6586</span></span></code></pre></div>
 </div>
-<div class="section level2">
-<h2 id="quality-of-the-importance-sampled-fit">Quality of the importance-sampled fit<a class="anchor" aria-label="anchor" href="#quality-of-the-importance-sampled-fit"></a>
-</h2>
-<p>Inspect ESS and the largest self-normalised weight: a healthy
-regime-(iii) fit has ESS close to <code>is_size</code> and a max-weight
-share of a few percent.</p>
+<div class="section level3">
+<h3 id="the-recovered-groups">The recovered groups<a class="anchor" aria-label="anchor" href="#the-recovered-groups"></a>
+</h3>
+<p>Sorting the two fitted components by their first coordinate puts them
+in the same order as the true groups.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ess_summary.html">ess_summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
-<span><span class="co">#&gt; $is_size</span></span>
-<span><span class="co">#&gt; [1] 2000</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $ess</span></span>
-<span><span class="co">#&gt; [1] 1532.381</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $ess_relative</span></span>
-<span><span class="co">#&gt; [1] 0.7661903</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $max_weight</span></span>
-<span><span class="co">#&gt; [1] 0.001171959</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $support_fraction</span></span>
-<span><span class="co">#&gt; [1] 1</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $mc_se_kld</span></span>
-<span><span class="co">#&gt; [1] 0.005589403</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $validation_size</span></span>
-<span><span class="co">#&gt; [1] 2000</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $validation_ess</span></span>
-<span><span class="co">#&gt; [1] 1530.978</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $validation_ess_relative</span></span>
-<span><span class="co">#&gt; [1] 0.7654892</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $validation_max_weight</span></span>
-<span><span class="co">#&gt; [1] 0.00116206</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $validation_support_fraction</span></span>
-<span><span class="co">#&gt; [1] 1</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $validation_kld</span></span>
-<span><span class="co">#&gt; [1] 0.02483515</span></span></code></pre></div>
-<p>The validation block reports a held-out KLD on an independent IS draw
-– a safeguard against in-sample overfitting to one particular IS
-realisation.</p>
+<code class="sourceCode R"><span><span class="va">mu_hat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">fit</span><span class="op">@</span><span class="va">means</span>, <span class="kw">function</span><span class="op">(</span><span class="va">mu</span><span class="op">)</span> <span class="va">mu</span>, <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">2L</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">comp_order</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">mu_hat</span><span class="op">[</span><span class="fl">1L</span>, <span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">mu_hat</span> <span class="op">&lt;-</span> <span class="va">mu_hat</span><span class="op">[</span>, <span class="va">comp_order</span>, drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span>
+<span><span class="va">weight_hat</span> <span class="op">&lt;-</span> <span class="va">fit</span><span class="op">@</span><span class="va">weights</span><span class="op">[</span><span class="va">comp_order</span><span class="op">]</span></span>
+<span><span class="va">mean_error</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">mu_hat</span> <span class="op">-</span> <span class="va">true_means</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<caption>The means and weights of the two fitted components beside the
+means of the two groups the 300 points were drawn from.</caption>
+<thead><tr class="header">
+<th align="right">Component</th>
+<th align="right">Fitted
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>1</mn></msub><annotation encoding="application/x-tex">x_1</annotation></semantics></math>
+</th>
+<th align="right">Fitted
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>2</mn></msub><annotation encoding="application/x-tex">x_2</annotation></semantics></math>
+</th>
+<th align="right">True
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>1</mn></msub><annotation encoding="application/x-tex">x_1</annotation></semantics></math>
+</th>
+<th align="right">True
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>2</mn></msub><annotation encoding="application/x-tex">x_2</annotation></semantics></math>
+</th>
+<th align="right">Weight</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="right">1</td>
+<td align="right">-1.954</td>
+<td align="right">0.105</td>
+<td align="right">-2</td>
+<td align="right">0</td>
+<td align="right">0.478</td>
+</tr>
+<tr class="even">
+<td align="right">2</td>
+<td align="right">2.046</td>
+<td align="right">-0.159</td>
+<td align="right">2</td>
+<td align="right">0</td>
+<td align="right">0.522</td>
+</tr>
+</tbody>
+</table>
 </div>
-<div class="section level2">
-<h2 id="bandwidth-sensitivity">Bandwidth sensitivity<a class="anchor" aria-label="anchor" href="#bandwidth-sensitivity"></a>
-</h2>
-<p>Smaller bandwidths track the data more tightly (lower bias, higher
-variance); larger bandwidths smooth the proxy. The proxy inherits this
-trade-off.</p>
+<div class="section level3">
+<h3 id="check-the-fit">Check the fit<a class="anchor" aria-label="anchor" href="#check-the-fit"></a>
+</h3>
+<p>The effective sample size is the number of equally weighted draws
+that the weighted draws are worth. It should be close to the number of
+draws, and no single draw should carry much of the weight. The KL
+divergence is reported on the fresh draws, with its Monte Carlo standard
+error, the random error due to the finite number of draws. The KL
+divergence on the draws used for fitting reads too low, because the fit
+was tuned to those draws.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">es</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ess_summary.html">ess_summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>is_size <span class="op">=</span> <span class="va">es</span><span class="op">$</span><span class="va">is_size</span>, ess <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">es</span><span class="op">$</span><span class="va">ess</span>, <span class="fl">1</span><span class="op">)</span>,</span>
+<span>                 ess_relative <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">es</span><span class="op">$</span><span class="va">ess_relative</span>, <span class="fl">3</span><span class="op">)</span>,</span>
+<span>                 max_weight <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">signif</a></span><span class="op">(</span><span class="va">es</span><span class="op">$</span><span class="va">max_weight</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>      row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="co">#&gt;  is_size  ess ess_relative max_weight</span></span>
+<span><span class="co">#&gt;     2000 1538        0.769    0.00116</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>validation_size <span class="op">=</span> <span class="va">es</span><span class="op">$</span><span class="va">validation_size</span>,</span>
+<span>                 validation_kld <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">signif</a></span><span class="op">(</span><span class="va">es</span><span class="op">$</span><span class="va">validation_kld</span>, <span class="fl">3</span><span class="op">)</span>,</span>
+<span>                 validation_se <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">signif</a></span><span class="op">(</span><span class="va">fit</span><span class="op">@</span><span class="va">diagnostics</span><span class="op">$</span><span class="va">validation_mc_se</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>      row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="co">#&gt;  validation_size validation_kld validation_se</span></span>
+<span><span class="co">#&gt;             2000          0.016       0.00449</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="what-the-compression-loses">What the compression loses<a class="anchor" aria-label="anchor" href="#what-the-compression-loses"></a>
+</h3>
+<p>The proxy and the kernel estimate are both densities on the same
+plane, so the gap between them can be added up on a fine grid. The total
+variation distance is half the total absolute gap. It is the largest
+difference between the probabilities that the two densities give to any
+region. The squared Hellinger distance comes from 10,000 fresh draws
+from the proxy.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">g1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">6</span>, <span class="fl">6</span>, length.out <span class="op">=</span> <span class="fl">160L</span><span class="op">)</span></span>
+<span><span class="va">g2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">5</span>, <span class="fl">5</span>, length.out <span class="op">=</span> <span class="fl">140L</span><span class="op">)</span></span>
+<span><span class="va">grid</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span>x1 <span class="op">=</span> <span class="va">g1</span>, x2 <span class="op">=</span> <span class="va">g2</span><span class="op">)</span></span>
+<span><span class="va">gm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">grid</span><span class="op">)</span></span>
+<span><span class="va">cell</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">g1</span><span class="op">[</span><span class="fl">2L</span><span class="op">]</span> <span class="op">-</span> <span class="va">g1</span><span class="op">[</span><span class="fl">1L</span><span class="op">]</span><span class="op">)</span> <span class="op">*</span> <span class="op">(</span><span class="va">g2</span><span class="op">[</span><span class="fl">2L</span><span class="op">]</span> <span class="op">-</span> <span class="va">g2</span><span class="op">[</span><span class="fl">1L</span><span class="op">]</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">grid</span><span class="op">$</span><span class="va">kde</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">fit</span><span class="op">@</span><span class="va">target</span><span class="op">@</span><span class="va">log_density</span><span class="op">(</span><span class="va">gm</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">grid</span><span class="op">$</span><span class="va">proxy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dgmm.html">dgmm</a></span><span class="op">(</span><span class="va">gm</span>, <span class="va">fit</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">total_variation</span> <span class="op">&lt;-</span> <span class="fl">0.5</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">grid</span><span class="op">$</span><span class="va">kde</span> <span class="op">-</span> <span class="va">grid</span><span class="op">$</span><span class="va">proxy</span><span class="op">)</span><span class="op">)</span> <span class="op">*</span> <span class="va">cell</span></span>
+<span><span class="va">hell</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/hellinger_mc.html">hellinger_mc</a></span><span class="op">(</span><span class="va">fit</span>, n_mc <span class="op">=</span> <span class="fl">10000L</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>total_variation <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">signif</a></span><span class="op">(</span><span class="va">total_variation</span>, <span class="fl">3</span><span class="op">)</span>,</span>
+<span>  hellinger_sq <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">signif</a></span><span class="op">(</span><span class="va">hell</span><span class="op">$</span><span class="va">h2</span>, <span class="fl">3</span><span class="op">)</span>, hellinger_se <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">signif</a></span><span class="op">(</span><span class="va">hell</span><span class="op">$</span><span class="va">se</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; total_variation    hellinger_sq    hellinger_se </span></span>
+<span><span class="co">#&gt;         0.06250         0.00373         0.00090</span></span></code></pre></div>
+<p>The figure shows where the two densities differ. Both are drawn on
+the log scale with the same contour levels.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">plot_grid</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span></span>
+<span>  x1 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">5</span>, <span class="fl">5</span>, length.out <span class="op">=</span> <span class="fl">80L</span><span class="op">)</span>,</span>
+<span>  x2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">4</span>, <span class="fl">4</span>, length.out <span class="op">=</span> <span class="fl">60L</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">pm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">plot_grid</span><span class="op">)</span></span>
+<span><span class="va">plot_grid</span><span class="op">$</span><span class="va">kde</span> <span class="op">&lt;-</span> <span class="va">fit</span><span class="op">@</span><span class="va">target</span><span class="op">@</span><span class="va">log_density</span><span class="op">(</span><span class="va">pm</span><span class="op">)</span></span>
+<span><span class="va">plot_grid</span><span class="op">$</span><span class="va">proxy</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fu"><a href="../reference/dgmm.html">dgmm</a></span><span class="op">(</span><span class="va">pm</span>, <span class="va">fit</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co">## Shared contour levels so the two log-densities are directly comparable.</span></span>
+<span><span class="va">brks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/pretty.html" class="external-link">pretty</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">plot_grid</span><span class="op">$</span><span class="va">kde</span>, <span class="va">plot_grid</span><span class="op">$</span><span class="va">proxy</span><span class="op">)</span>, finite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="fl">9L</span><span class="op">)</span></span>
+<span><span class="va">sample_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x1 <span class="op">=</span> <span class="va">x</span><span class="op">[</span>, <span class="fl">1L</span><span class="op">]</span>, x2 <span class="op">=</span> <span class="va">x</span><span class="op">[</span>, <span class="fl">2L</span><span class="op">]</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">sample_df</span>, <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x1</span>, <span class="va">x2</span><span class="op">)</span>,</span>
+<span>                      colour <span class="op">=</span> <span class="st">"grey60"</span>, alpha <span class="op">=</span> <span class="fl">0.25</span>, size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_contour.html" class="external-link">geom_contour</a></span><span class="op">(</span></span>
+<span>    data <span class="op">=</span> <span class="va">plot_grid</span>,</span>
+<span>    <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x1</span>, <span class="va">x2</span>, z <span class="op">=</span> <span class="va">kde</span>, colour <span class="op">=</span> <span class="st">"Kernel estimate"</span>,</span>
+<span>                 linetype <span class="op">=</span> <span class="st">"Kernel estimate"</span><span class="op">)</span>,</span>
+<span>    breaks <span class="op">=</span> <span class="va">brks</span>, linewidth <span class="op">=</span> <span class="fl">0.45</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_contour.html" class="external-link">geom_contour</a></span><span class="op">(</span></span>
+<span>    data <span class="op">=</span> <span class="va">plot_grid</span>,</span>
+<span>    <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x1</span>, <span class="va">x2</span>, z <span class="op">=</span> <span class="va">proxy</span>, colour <span class="op">=</span> <span class="st">"Mixture proxy"</span>,</span>
+<span>                 linetype <span class="op">=</span> <span class="st">"Mixture proxy"</span><span class="op">)</span>,</span>
+<span>    breaks <span class="op">=</span> <span class="va">brks</span>, linewidth <span class="op">=</span> <span class="fl">0.55</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_manual.html" class="external-link">scale_colour_manual</a></span><span class="op">(</span></span>
+<span>    name <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>    values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Kernel estimate"</span> <span class="op">=</span> <span class="st">"#0072B2"</span>, <span class="st">"Mixture proxy"</span> <span class="op">=</span> <span class="st">"#D55E00"</span><span class="op">)</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_manual.html" class="external-link">scale_linetype_manual</a></span><span class="op">(</span></span>
+<span>    name <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>    values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Kernel estimate"</span> <span class="op">=</span> <span class="st">"solid"</span>, <span class="st">"Mixture proxy"</span> <span class="op">=</span> <span class="st">"dashed"</span><span class="op">)</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span>expand <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span></span>
+<span>    title <span class="op">=</span> <span class="st">"Kernel estimate and two-component proxy"</span>,</span>
+<span>    subtitle <span class="op">=</span> <span class="st">"log-density contours on shared levels"</span>,</span>
+<span>    x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span>base_size <span class="op">=</span> <span class="fl">11</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>plot.title <span class="op">=</span> <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>face <span class="op">=</span> <span class="st">"bold"</span><span class="op">)</span>,</span>
+<span>                 legend.position <span class="op">=</span> <span class="st">"top"</span>,</span>
+<span>                 panel.grid.minor <span class="op">=</span> <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_blank</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<div class="figure">
+<img src="from_kde_files/figure-html/visualise-1.png" class="r-plt" alt="Contour plot of the kernel-density log-density and the Gaussian-mixture proxy log-density on a planar grid, with sample points overlaid. The inner contours around the two group centres nearly coincide; the outer contours of the kernel estimate are wavy and those of the proxy are smooth ellipses." width="100%"><p class="caption">
+Contours of the log-density of the kernel estimate (blue, solid) and of
+the two-component proxy (orange, dashed), on shared levels, over the 300
+data points (grey). Around the two group centres the contours nearly
+coincide. On the outer, low-density levels the kernel estimate bends
+around single outlying points, and the proxy stays smooth.
+</p>
+</div>
+</div>
+<div class="section level3">
+<h3 id="use-the-proxy">Use the proxy<a class="anchor" aria-label="anchor" href="#use-the-proxy"></a>
+</h3>
+<p><code>gmm_conditionalise(given = c(NA, 0))</code> gives the
+distribution of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>1</mn></msub><annotation encoding="application/x-tex">x_1</annotation></semantics></math>
+when
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>2</mn></msub><annotation encoding="application/x-tex">x_2</annotation></semantics></math>
+equals 0, with <code>NA</code> marking the variable left free. The
+result is a mixture with the proxy’s two components, and
+<code><a href="../reference/rgmm.html">rgmm()</a></code> draws from it in one call.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">slice</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gmm_conditionalise.html">gmm_conditionalise</a></span><span class="op">(</span><span class="va">fit</span>, given <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">draws</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rgmm.html">rgmm</a></span><span class="op">(</span><span class="fl">200L</span>, <span class="va">slice</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>components <span class="op">=</span> <span class="fu"><a href="../reference/gmm_n_components.html">gmm_n_components</a></span><span class="op">(</span><span class="va">slice</span><span class="op">)</span>, dimension <span class="op">=</span> <span class="fu"><a href="../reference/gmm_dim.html">gmm_dim</a></span><span class="op">(</span><span class="va">slice</span><span class="op">)</span>,</span>
+<span>  draws <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">draws</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; components  dimension      draws </span></span>
+<span><span class="co">#&gt;          2          1        200</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="the-effect-of-the-bandwidth">The effect of the bandwidth<a class="anchor" aria-label="anchor" href="#the-effect-of-the-bandwidth"></a>
+</h3>
+<p>The proxy has the same smoothing as the estimate it compresses. The
+code below compresses the same sample with three bandwidths, at 1,500
+weighted draws. By default the fresh draws are added in batches until
+the standard error of the KL divergence is at most a tenth of the
+estimate, or at most 0.001 when the estimate is below 0.01, up to ten
+times <code>is_size</code> draws.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">bandwidth_grid</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.2</span>, <span class="fl">0.5</span>, <span class="fl">1.0</span><span class="op">)</span></span>
 <span><span class="va">fits</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">bandwidth_grid</span>, <span class="kw">function</span><span class="op">(</span><span class="va">h</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="../reference/from_kde.html">from_kde</a></span><span class="op">(</span><span class="va">x</span>, N <span class="op">=</span> <span class="fl">2L</span>, bandwidth <span class="op">=</span> <span class="va">h</span>,</span>
 <span>           is_size <span class="op">=</span> <span class="fl">1500L</span>, max_iter <span class="op">=</span> <span class="fl">40L</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="va">sweep_is</span> <span class="op">&lt;-</span> <span class="va">fits</span><span class="op">[[</span><span class="fl">1L</span><span class="op">]</span><span class="op">]</span><span class="op">@</span><span class="va">diagnostics</span><span class="op">$</span><span class="va">is_size</span></span>
+<span><span class="va">sweep_vs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">fits</span>, <span class="kw">function</span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="va">f</span><span class="op">@</span><span class="va">diagnostics</span><span class="op">$</span><span class="va">validation_size</span>,</span>
+<span>                   <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">1L</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">sweep_val</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">fits</span>, <span class="kw">function</span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="va">f</span><span class="op">@</span><span class="va">diagnostics</span><span class="op">$</span><span class="va">validation_kld</span>,</span>
+<span>                    <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">1L</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">sweep_se</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">fits</span>, <span class="kw">function</span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="va">f</span><span class="op">@</span><span class="va">diagnostics</span><span class="op">$</span><span class="va">validation_mc_se</span>,</span>
+<span>                   <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">1L</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<table style="width:100%;" class="table">
+<caption>The same sample compressed with three bandwidths, at 1500
+weighted draws. The spread of the left-hand component is the sum of its
+two variances.</caption>
+<colgroup>
+<col width="8%">
+<col width="19%">
+<col width="13%">
+<col width="21%">
+<col width="10%">
+<col width="13%">
+<col width="13%">
+</colgroup>
+<thead><tr class="header">
+<th align="right">Bandwidth</th>
+<th align="right">Effective sample size</th>
+<th align="right">Largest weight</th>
+<th align="right">Spread of left component</th>
+<th align="right">Fresh draws</th>
+<th align="right">KL, fresh draws</th>
+<th align="right">Standard error</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="right">0.2</td>
+<td align="right">791.4</td>
+<td align="right">0.00313</td>
+<td align="right">1.675</td>
+<td align="right">3000</td>
+<td align="right">0.20</td>
+<td align="right">0.017</td>
+</tr>
+<tr class="even">
+<td align="right">0.5</td>
+<td align="right">1019.0</td>
+<td align="right">0.00172</td>
+<td align="right">2.077</td>
+<td align="right">9000</td>
+<td align="right">0.030</td>
+<td align="right">0.0028</td>
+</tr>
+<tr class="odd">
+<td align="right">1.0</td>
+<td align="right">1205.3</td>
+<td align="right">0.00124</td>
+<td align="right">3.443</td>
+<td align="right">10500</td>
+<td align="right">0.0061</td>
+<td align="right">0.00098</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section level3">
+<h3 id="comparison-with-ks-np-kernsmooth-mclust-and-mixtools">Comparison with ks, np, KernSmooth, mclust and mixtools<a class="anchor" aria-label="anchor" href="#comparison-with-ks-np-kernsmooth-mclust-and-mixtools"></a>
+</h3>
+<p>In a simulation, <code><a href="../reference/from_kde.html">from_kde()</a></code> was compared with three
+kernel estimators and two packages that fit a Gaussian mixture directly
+to the data. ks (Duong, 2007) computed the kernel estimate with a
+bandwidth set from the data by a formula, its plug-in rule.
+<code><a href="../reference/from_kde.html">from_kde()</a></code> compressed that same estimate at 3, 5 and 8
+components. KernSmooth (Wand and Jones, 1995) computed the same estimate
+on a grid by binning the data, and np (Hayfield and Racine, 2008) chose
+its own bandwidths by cross-validation. mclust (Scrucca et al., 2016)
+chose its number of components by the Bayesian information criterion
+(BIC), a score that trades fit against the number of parameters.
+mixtools (Benaglia et al., 2009) was given the true number, three. Each
+method estimated the density of 100 datasets of 500 points, drawn from a
+known mixture of three normal distributions in two dimensions. The
+measure is the integrated squared error: the squared gap between the
+estimated and the true density, added up over the plane. Smaller is
+better, and zero is a perfect estimate.</p>
+<table class="table">
+<caption>Integrated squared error against the true density, in
+thousandths, averaged over 100 simulated datasets of 500 points, with
+its standard error in brackets. The difference from ks is taken dataset
+by dataset. A negative value means a smaller error than ks. Seconds per
+fit is the mean time to fit one dataset.</caption>
+<colgroup>
+<col width="34%">
+<col width="18%">
+<col width="25%">
+<col width="21%">
+</colgroup>
+<thead><tr class="header">
+<th align="left">Method</th>
+<th align="right">Error</th>
+<th align="right">Difference from ks</th>
+<th align="right">Seconds per fit</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">ks</td>
+<td align="right">1.689 (0.042)</td>
+<td align="right"></td>
+<td align="right">0.197</td>
+</tr>
+<tr class="even">
+<td align="left">KernSmooth</td>
+<td align="right">1.689 (0.042)</td>
+<td align="right">-0.0004 (0.0002)</td>
+<td align="right">0.011</td>
+</tr>
+<tr class="odd">
+<td align="left">np</td>
+<td align="right">1.666 (0.042)</td>
+<td align="right">-0.0227 (0.0089)</td>
+<td align="right">0.256</td>
+</tr>
+<tr class="even">
+<td align="left">proxymix, 3 components</td>
+<td align="right">1.315 (0.037)</td>
+<td align="right">-0.3742 (0.0209)</td>
+<td align="right">1.007</td>
+</tr>
+<tr class="odd">
+<td align="left">proxymix, 5 components</td>
+<td align="right">1.525 (0.040)</td>
+<td align="right">-0.1637 (0.0190)</td>
+<td align="right">1.180</td>
+</tr>
+<tr class="even">
+<td align="left">proxymix, 8 components</td>
+<td align="right">1.692 (0.046)</td>
+<td align="right">0.0028 (0.0163)</td>
+<td align="right">1.549</td>
+</tr>
+<tr class="odd">
+<td align="left">mclust, components by BIC</td>
+<td align="right">0.969 (0.043)</td>
+<td align="right">-0.7197 (0.0468)</td>
+<td align="right">0.629</td>
+</tr>
+<tr class="even">
+<td align="left">mixtools, 3 components</td>
+<td align="right">0.776 (0.108)</td>
+<td align="right">-0.9127 (0.1164)</td>
+<td align="right">9.333</td>
+</tr>
+</tbody>
+</table>
+<p>At 3 and 5 components, the proxy had a smaller error than all three
+kernel estimators: 1.31 and 1.53 thousandths, against 1.67 to 1.69. A
+proxy with few components cannot follow the random bumps in the kernel
+estimate. Here that smoothing moved it closer to the truth. At 8
+components the proxy was level with ks (difference 0.003, standard error
+0.016) and slightly behind np. mclust and mixtools, which fit a mixture
+to the data directly, had the smallest errors of all, 0.97 and 0.78
+thousandths. Unlike mclust, mixtools did not have to choose the number
+of components. The true density in this design is itself a mixture of
+three normal distributions, which favours every method that fits a
+mixture.</p>
+<p>proxymix took 1.01 to 1.55 seconds per fit, slower than ks (0.20), np
+(0.26), KernSmooth (0.011) and mclust (0.63), and faster than mixtools
+(9.3). Query times were measured on the Old Faithful data (Azzalini and
+Bowman, 1990) and the Palmer penguins data (Gorman et al., 2014; Horst
+et al., 2022), as the median of five timings on one computer, averaged
+over the two datasets. A query here is the conditional mean and the 90%
+conditional quantile of one variable given the other. On the
+three-component proxy a query took 0.46 milliseconds (ms). That is about
+32 times faster than the 14.8 ms for the ks estimate evaluated on a grid
+of 401 points, and about 19 times slower than the 0.025 ms for the
+KernSmooth grid. Queries on the mixtures from mclust and from mixtools,
+here with two components, took 0.44 and 0.37 ms, and queries on np took
+1.67 ms.</p>
+<p>The code below fits one simulated dataset with all six packages and
+computes the integrated squared error of each. It repeats the simulation
+code for a single dataset. It needs ks, np, mclust and mixtools from
+CRAN (KernSmooth ships with R), and it is not run when this vignette is
+built.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/max578/proxymix" class="external-link">proxymix</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mclust-org.github.io/mclust/" class="external-link">mclust</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/dsy109/mixtools" class="external-link">mixtools</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/JeffreyRacine/R-Package-np" class="external-link">np</a></span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>np.messages <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  bandwidth      <span class="op">=</span> <span class="va">bandwidth_grid</span>,</span>
-<span>  ess            <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">fits</span>, <span class="kw">function</span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="va">f</span><span class="op">@</span><span class="va">diagnostics</span><span class="op">$</span><span class="va">ess</span>, <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">1L</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  max_weight     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">fits</span>, <span class="kw">function</span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="va">f</span><span class="op">@</span><span class="va">diagnostics</span><span class="op">$</span><span class="va">max_weight</span>, <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">1L</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  trace_Sigma_k1 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">fits</span>, <span class="kw">function</span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">f</span><span class="op">@</span><span class="va">covariances</span><span class="op">[[</span><span class="fl">1L</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">1L</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co"># one dataset of 500 points from a mixture of three normal distributions</span></span>
+<span><span class="va">truth</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  weights <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.35</span>, <span class="fl">0.35</span>, <span class="fl">0.30</span><span class="op">)</span>,</span>
+<span>  means <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>, <span class="fl">0</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">4</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  covs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0.5</span>, <span class="fl">0.5</span>, <span class="fl">1</span><span class="op">)</span>, <span class="fl">2L</span><span class="op">)</span>, <span class="fl">0.6</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt;   bandwidth       ess  max_weight trace_Sigma_k1</span></span>
-<span><span class="co">#&gt; 1       0.2  768.4537 0.007158846       2.165142</span></span>
-<span><span class="co">#&gt; 2       0.5  997.8578 0.001887074       2.463437</span></span>
-<span><span class="co">#&gt; 3       1.0 1189.3327 0.001287610       3.816308</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="visualising-the-compression">Visualising the compression<a class="anchor" aria-label="anchor" href="#visualising-the-compression"></a>
-</h2>
-<p>Compare the KDE log-density and the proxy log-density on a planar
-grid.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">grid</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span></span>
-<span>  x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">5</span>, <span class="fl">5</span>, length.out <span class="op">=</span> <span class="fl">80L</span><span class="op">)</span>,</span>
-<span>  y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">4</span>, <span class="fl">4</span>, length.out <span class="op">=</span> <span class="fl">60L</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">gm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">grid</span><span class="op">)</span></span>
-<span><span class="va">kde_log_density</span> <span class="op">&lt;-</span> <span class="va">fit</span><span class="op">@</span><span class="va">target</span><span class="op">@</span><span class="va">log_density</span></span>
-<span><span class="va">grid</span><span class="op">$</span><span class="va">kde</span>   <span class="op">&lt;-</span> <span class="fu">kde_log_density</span><span class="op">(</span><span class="va">gm</span><span class="op">)</span></span>
-<span><span class="va">grid</span><span class="op">$</span><span class="va">proxy</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fu"><a href="../reference/dgmm.html">dgmm</a></span><span class="op">(</span><span class="va">gm</span>, <span class="va">fit</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1L</span><span class="op">)</span></span>
+<span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">500L</span></span>
+<span><span class="va">k</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int</a></span><span class="op">(</span><span class="fl">3L</span>, <span class="va">n</span>, replace <span class="op">=</span> <span class="cn">TRUE</span>, prob <span class="op">=</span> <span class="va">truth</span><span class="op">$</span><span class="va">weights</span><span class="op">)</span></span>
+<span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="cn">NA_real_</span>, <span class="va">n</span>, <span class="fl">2L</span><span class="op">)</span></span>
+<span><span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fl">3L</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">s</span> <span class="op">&lt;-</span> <span class="va">k</span> <span class="op">==</span> <span class="va">j</span></span>
+<span>  <span class="va">x</span><span class="op">[</span><span class="va">s</span>, <span class="op">]</span> <span class="op">&lt;-</span> <span class="fu">mvnfast</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/mvnfast/man/rmvn.html" class="external-link">rmvn</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">s</span><span class="op">)</span>, <span class="va">truth</span><span class="op">$</span><span class="va">means</span><span class="op">[[</span><span class="va">j</span><span class="op">]</span><span class="op">]</span>, <span class="va">truth</span><span class="op">$</span><span class="va">covs</span><span class="op">[[</span><span class="va">j</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
 <span></span>
-<span><span class="co">## Shared contour levels so the two log-densities are directly comparable.</span></span>
-<span><span class="va">brks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/pretty.html" class="external-link">pretty</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">grid</span><span class="op">$</span><span class="va">kde</span>, <span class="va">grid</span><span class="op">$</span><span class="va">proxy</span><span class="op">)</span>, finite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="fl">9L</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">V1</span>, <span class="va">V2</span><span class="op">)</span>,</span>
-<span>             colour <span class="op">=</span> <span class="st">"grey55"</span>, alpha <span class="op">=</span> <span class="fl">0.25</span>, size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_contour.html" class="external-link">geom_contour</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">grid</span>,</span>
-<span>               <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, z <span class="op">=</span> <span class="va">kde</span>, colour <span class="op">=</span> <span class="st">"KDE"</span>, linetype <span class="op">=</span> <span class="st">"KDE"</span><span class="op">)</span>,</span>
-<span>               breaks <span class="op">=</span> <span class="va">brks</span>, linewidth <span class="op">=</span> <span class="fl">0.45</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_contour.html" class="external-link">geom_contour</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">grid</span>,</span>
-<span>               <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, z <span class="op">=</span> <span class="va">proxy</span>,</span>
-<span>                   colour <span class="op">=</span> <span class="st">"Mixture proxy"</span>, linetype <span class="op">=</span> <span class="st">"Mixture proxy"</span><span class="op">)</span>,</span>
-<span>               breaks <span class="op">=</span> <span class="va">brks</span>, linewidth <span class="op">=</span> <span class="fl">0.55</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_manual.html" class="external-link">scale_colour_manual</a></span><span class="op">(</span>name <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>                      values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"KDE"</span> <span class="op">=</span> <span class="st">"#2C7FB8"</span>,</span>
-<span>                                 <span class="st">"Mixture proxy"</span> <span class="op">=</span> <span class="st">"#D95F0E"</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_manual.html" class="external-link">scale_linetype_manual</a></span><span class="op">(</span>name <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>                        values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"KDE"</span> <span class="op">=</span> <span class="st">"solid"</span>,</span>
-<span>                                   <span class="st">"Mixture proxy"</span> <span class="op">=</span> <span class="st">"dashed"</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span>expand <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"KDE and Gaussian-mixture proxy (log-density contours)"</span>,</span>
-<span>       x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span>base_size <span class="op">=</span> <span class="fl">11</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>plot.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>face <span class="op">=</span> <span class="st">"bold"</span><span class="op">)</span>,</span>
-<span>        legend.position <span class="op">=</span> <span class="st">"top"</span>,</span>
-<span>        panel.grid.minor <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_blank</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="from_kde_files/figure-html/visualise-1.png" class="r-plt" alt="" width="100%"></p>
+<span><span class="co"># integrated squared error against the true density, on a grid</span></span>
+<span><span class="va">g1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">6</span>, <span class="fl">6</span>, length.out <span class="op">=</span> <span class="fl">121L</span><span class="op">)</span></span>
+<span><span class="va">g2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">4</span>, <span class="fl">8</span>, length.out <span class="op">=</span> <span class="fl">121L</span><span class="op">)</span></span>
+<span><span class="va">grid</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span>x1 <span class="op">=</span> <span class="va">g1</span>, x2 <span class="op">=</span> <span class="va">g2</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">cell</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">g1</span><span class="op">[</span><span class="fl">2L</span><span class="op">]</span> <span class="op">-</span> <span class="va">g1</span><span class="op">[</span><span class="fl">1L</span><span class="op">]</span><span class="op">)</span> <span class="op">*</span> <span class="op">(</span><span class="va">g2</span><span class="op">[</span><span class="fl">2L</span><span class="op">]</span> <span class="op">-</span> <span class="va">g2</span><span class="op">[</span><span class="fl">1L</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">f_true</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/funprog.html" class="external-link">Reduce</a></span><span class="op">(</span><span class="va">`+`</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fl">3L</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">j</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">truth</span><span class="op">$</span><span class="va">weights</span><span class="op">[</span><span class="va">j</span><span class="op">]</span> <span class="op">*</span> <span class="fu">mvnfast</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/mvnfast/man/dmvn.html" class="external-link">dmvn</a></span><span class="op">(</span><span class="va">grid</span>, <span class="va">truth</span><span class="op">$</span><span class="va">means</span><span class="op">[[</span><span class="va">j</span><span class="op">]</span><span class="op">]</span>, <span class="va">truth</span><span class="op">$</span><span class="va">covs</span><span class="op">[[</span><span class="va">j</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">ise</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">f_hat</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="op">(</span><span class="va">f_hat</span> <span class="op">-</span> <span class="va">f_true</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span> <span class="op">*</span> <span class="va">cell</span></span>
+<span><span class="va">as_gmm</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">w</span>, <span class="va">mu</span>, <span class="va">sigma</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="../reference/gmm.html">gmm</a></span><span class="op">(</span>weights <span class="op">=</span> <span class="va">w</span>, means <span class="op">=</span> <span class="va">mu</span>, covariances <span class="op">=</span> <span class="va">sigma</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="co"># ks with its diagonal plug-in bandwidth, and proxymix compressing the same estimate</span></span>
+<span><span class="va">h</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fu">ks</span><span class="fu">::</span><span class="fu"><a href="https://mvstat.net/ks/reference/Hpi.html" class="external-link">Hpi.diag</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">kd</span> <span class="op">&lt;-</span> <span class="fu">ks</span><span class="fu">::</span><span class="fu"><a href="https://mvstat.net/ks/reference/kde.html" class="external-link">kde</a></span><span class="op">(</span><span class="va">x</span>, H <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">h</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span>, eval.points <span class="op">=</span> <span class="va">grid</span><span class="op">)</span></span>
+<span><span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/from_kde.html">from_kde</a></span><span class="op">(</span><span class="va">x</span>, N <span class="op">=</span> <span class="fl">3L</span>, bandwidth <span class="op">=</span> <span class="va">h</span>, is_size <span class="op">=</span> <span class="fl">20000L</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">mc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://mclust-org.github.io/mclust/reference/Mclust.html" class="external-link">Mclust</a></span><span class="op">(</span><span class="va">x</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">g_mc</span> <span class="op">&lt;-</span> <span class="fu">as_gmm</span><span class="op">(</span></span>
+<span>  <span class="va">mc</span><span class="op">$</span><span class="va">parameters</span><span class="op">$</span><span class="va">pro</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">mc</span><span class="op">$</span><span class="va">G</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">j</span><span class="op">)</span> <span class="va">mc</span><span class="op">$</span><span class="va">parameters</span><span class="op">$</span><span class="va">mean</span><span class="op">[</span>, <span class="va">j</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">mc</span><span class="op">$</span><span class="va">G</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">j</span><span class="op">)</span> <span class="va">mc</span><span class="op">$</span><span class="va">parameters</span><span class="op">$</span><span class="va">variance</span><span class="op">$</span><span class="va">sigma</span><span class="op">[</span>, , <span class="va">j</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">mt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/mixtools/man/mvnormalmixEM.html" class="external-link">mvnormalmixEM</a></span><span class="op">(</span><span class="va">x</span>, k <span class="op">=</span> <span class="fl">3L</span><span class="op">)</span></span>
+<span><span class="va">nd</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/np/man/np.density.html" class="external-link">npudens</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/np/man/np.density.bw.html" class="external-link">npudensbw</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">f_np</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">nd</span>, newdata <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">grid</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">bk</span> <span class="op">&lt;-</span> <span class="fu">KernSmooth</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/KernSmooth/man/bkde2D.html" class="external-link">bkde2D</a></span><span class="op">(</span><span class="va">x</span>, bandwidth <span class="op">=</span> <span class="va">h</span>, gridsize <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">121L</span>, <span class="fl">121L</span><span class="op">)</span>,</span>
+<span>                         range.x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">g1</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">g2</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fl">1000</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>ks <span class="op">=</span> <span class="fu">ise</span><span class="op">(</span><span class="va">kd</span><span class="op">$</span><span class="va">estimate</span><span class="op">)</span>,</span>
+<span>         proxymix <span class="op">=</span> <span class="fu">ise</span><span class="op">(</span><span class="fu"><a href="../reference/dgmm.html">dgmm</a></span><span class="op">(</span><span class="va">grid</span>, <span class="va">f</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>         mclust <span class="op">=</span> <span class="fu">ise</span><span class="op">(</span><span class="fu"><a href="../reference/dgmm.html">dgmm</a></span><span class="op">(</span><span class="va">grid</span>, <span class="va">g_mc</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>         mixtools <span class="op">=</span> <span class="fu">ise</span><span class="op">(</span><span class="fu"><a href="../reference/dgmm.html">dgmm</a></span><span class="op">(</span><span class="va">grid</span>, <span class="fu">as_gmm</span><span class="op">(</span><span class="va">mt</span><span class="op">$</span><span class="va">lambda</span>, <span class="va">mt</span><span class="op">$</span><span class="va">mu</span>, <span class="va">mt</span><span class="op">$</span><span class="va">sigma</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>         np <span class="op">=</span> <span class="fu">ise</span><span class="op">(</span><span class="va">f_np</span><span class="op">)</span>,</span>
+<span>         KernSmooth <span class="op">=</span> <span class="fu">ise</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="va">bk</span><span class="op">$</span><span class="va">fhat</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>The <a href="https://max578.github.io/proxymix/articles/extended/from_kde.html">extended
+version of this article</a> gives the full simulation and the
+conditional queries on the Old Faithful and Palmer penguins data.</p>
+</div>
 </div>
 <div class="section level2">
-<h2 id="scope-and-limits-v0-2">Scope and limits (v0.2)<a class="anchor" aria-label="anchor" href="#scope-and-limits-v0-2"></a>
+<h2 id="interpretation">Interpretation<a class="anchor" aria-label="anchor" href="#interpretation"></a>
 </h2>
-<ul>
-<li>
-<strong>Dimensional cap.</strong> <code><a href="../reference/from_kde.html">from_kde()</a></code> is
-well-tested for <code>p &lt;= 5</code>; it warns between
-<code>p = 6</code> and <code>p = 10</code>, and refuses
-<code>p &gt; 10</code>. Regime (iii) is driven by importance sampling,
-whose effective sample size falls sharply in high dimensions. For richer
-ambient spaces, compose a low-<code>p</code> proxy with the
-affine-Gaussian operator calculus rather than fitting in the ambient
-space.</li>
-<li>
-<strong>Bandwidth shapes.</strong> Only scalar and diagonal
-bandwidths are supported. A full-matrix bandwidth effectively encodes a
-covariance estimate and blurs the KDE-vs-mixture distinction; if that is
-what you want, fit the mixture directly with
-<code>fit_proxymix(regime = "sample")</code>.</li>
-<li>
-<strong>Normalisation.</strong> A KDE is normalised by construction,
-so the returned <code>gmm_target</code> declares
-<code>normalised = TRUE</code> and <code>log_normalizer = 0</code>. This
-makes <code><a href="../reference/hellinger_mc.html">hellinger_mc()</a></code> meaningful and lets the KLD
-diagnostics report absolute values, not shifted ones.</li>
-<li>
-<strong>What this is not.</strong> It is not a method for
-<em>picking</em> the KDE bandwidth. Use the conventional rules of thumb
-(<code>"silverman"</code>, <code>"scott"</code>) or a cross-validation
-procedure outside the package, then pass the chosen bandwidth in.</li>
-</ul>
+<p>The proxy recovers the two groups the 300 points came from. Its means
+differ from the true means by at most 0.16, and its weights are 0.478
+and 0.522, against 0.5 for each group.</p>
+<p>The diagnostics of the weighted draws show no problem. The effective
+sample size was 1538 out of 2000, or 77 per cent, and the heaviest
+single draw held 0.0012 of the total weight. On 2000 fresh draws the KL
+divergence between the proxy and the kernel estimate was 0.016, with a
+standard error of 0.0045.</p>
+<p>The total variation distance between the kernel estimate and the
+proxy is 0.062. The two densities therefore give any region
+probabilities that differ by at most about 6.2 percentage points. The
+squared Hellinger distance is 0.0037, with a standard error of 0.0009,
+about 4 standard errors above zero. The figure shows where the
+difference lies: in the outer, low-density region, where the kernel
+estimate follows single points. The gain is in size: the conditional
+distribution computed above has 2 components. The same conditional of
+the kernel estimate also has an exact formula, but it has 300
+components.</p>
+<p>The bandwidth affects the proxy as it affects the estimate. A wider
+bandwidth gives a smoother estimate that is easier to fit. The effective
+sample size rises from 791 at bandwidth 0.2 to 1205 at bandwidth 1.0,
+out of 1500 draws. The spread of the left-hand component grows from 1.67
+to 3.44, because the proxy copies the extra smoothing. The KL divergence
+on fresh draws falls from 0.2 at bandwidth 0.2 to 0.03 at bandwidth 0.5.
+At the narrowest bandwidth the estimate keeps the bumps of the sample,
+which two components cannot follow. At bandwidth 1.0 the KL divergence
+on fresh draws is 0.0061, with a standard error of 0.001. It is small
+but above zero: two components do not reproduce even the smoothest of
+the three estimates exactly.</p>
 </div>
 <div class="section level2">
-<h2 id="when-to-prefer-fit_proxymixregime-sample-instead">When to prefer <code>fit_proxymix(regime = "sample")</code>
-instead<a class="anchor" aria-label="anchor" href="#when-to-prefer-fit_proxymixregime-sample-instead"></a>
+<h2 id="limitations">Limitations<a class="anchor" aria-label="anchor" href="#limitations"></a>
 </h2>
-<p>If your goal is “find a Gaussian-mixture density given samples”, the
-classical EM regime is more direct, fits in linear time, and does not
-incur the regime-(iii) importance-sampling tax. <code><a href="../reference/from_kde.html">from_kde()</a></code>
-only earns its place when you specifically want the KDE’s smoothing as a
-step in your pipeline – e.g. as part of a sequence such as</p>
-<pre><code><span><span class="va">samples</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/from_kde.html">from_kde</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/gmm_conditionalise.html">gmm_conditionalise</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/rgmm.html">rgmm</a></span><span class="op">(</span><span class="op">)</span></span></code></pre>
-<p>– or when the KDE’s bias-variance trade-off is part of what you are
-trying to validate downstream.</p>
+<p><code><a href="../reference/from_kde.html">from_kde()</a></code> is tested for up to five variables. It warns
+between six and ten and refuses more than ten. Weighted trial draws lose
+efficiency quickly as the number of variables grows. This vignette uses
+two. For more variables, fit a proxy in a few variables and extend it
+with <code><a href="../reference/gmm_affine.html">gmm_affine()</a></code> and the other exact operations
+instead.</p>
+<p>The bandwidth must be one number or one number per variable. A full
+bandwidth matrix, with correlations, is not supported. Such a matrix
+acts like a covariance estimate. If that is what you want, fit the
+mixture to the data directly with
+<code>fit_proxymix(regime = "sample")</code>.</p>
+<p>A kernel estimate always integrates to one, and
+<code><a href="../reference/from_kde.html">from_kde()</a></code> marks it as normalised. Because of this, the KL
+divergence and the Hellinger distance above measure the gap itself. For
+a density that is not normalised, both are off by an unknown amount.</p>
+<p><code><a href="../reference/from_kde.html">from_kde()</a></code> does not choose the bandwidth. Choose it with
+a rule of thumb, by name, or by cross-validation outside the package,
+and pass it in. The proxy keeps the errors of the estimate it
+compresses, including those due to the bandwidth.</p>
+<p>When the aim is only a Gaussian mixture for a sample, fitting the
+mixture to the data directly is simpler and does not need weighted trial
+draws. In the comparison above, mclust and mixtools also reached a
+smaller error. <code><a href="../reference/from_kde.html">from_kde()</a></code> is useful when the kernel
+estimate itself is a step in the analysis, and later steps need its
+conditionals or marginals many times.</p>
+<p>The comparison covers one well-separated mixture in two dimensions,
+one sample size and one bandwidth rule. Heavier tails, overlapping
+groups, more variables and bandwidths chosen by cross-validation were
+not tested. The query times come from two real datasets on one computer
+and change from run to run.</p>
+</div>
+<div class="section level2">
+<h2 id="further-reading">Further reading<a class="anchor" aria-label="anchor" href="#further-reading"></a>
+</h2>
+<p><em>Choosing between the three fitting regimes</em> explains the
+method <code><a href="../reference/from_kde.html">from_kde()</a></code> uses and what fitting a mixture directly
+to the same data would do instead.</p>
+<p><em>The closed-form operator calculus on a mixture</em> covers the
+exact operations, such as conditioning and linear transformation, that
+the proxy makes available.</p>
+<p><em>One mixture, many methods</em> places the kernel estimate and the
+compressed proxy on one scale, from a single component to one component
+per data point.</p>
 </div>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
 </h2>
-<ul>
-<li>Hoek, J. van der and Elliott, R. J. (2024). <em>Mixtures of
-multivariate Gaussians.</em> Stochastic Analysis and Applications. <a href="doi:10.1080/07362994.2024.2372605" class="uri">doi:10.1080/07362994.2024.2372605</a>.</li>
-<li>Silverman, B. W. (1986). <em>Density Estimation for Statistics and
-Data Analysis.</em> CRC Press.</li>
-<li>Scott, D. W. (1992). <em>Multivariate Density Estimation: Theory,
-Practice, and Visualization.</em> Wiley.</li>
-</ul>
+<p>Azzalini, A. and Bowman, A. W. (1990). <em>A look at some data on the
+Old Faithful geyser.</em> Applied Statistics 39(3), 357–365. <a href="https://doi.org/10.2307/2347385" class="external-link uri">https://doi.org/10.2307/2347385</a>.</p>
+<p>Benaglia, T., Chauveau, D., Hunter, D. R. and Young, D. S. (2009).
+<em>mixtools: An R package for analyzing finite mixture models.</em>
+Journal of Statistical Software 32(6), 1–29. <a href="https://doi.org/10.18637/jss.v032.i06" class="external-link uri">https://doi.org/10.18637/jss.v032.i06</a>.</p>
+<p>Duong, T. (2007). <em>ks: Kernel density estimation and kernel
+discriminant analysis for multivariate data in R.</em> Journal of
+Statistical Software 21(7), 1–16. <a href="https://doi.org/10.18637/jss.v021.i07" class="external-link uri">https://doi.org/10.18637/jss.v021.i07</a>.</p>
+<p>Gorman, K. B., Williams, T. D. and Fraser, W. R. (2014).
+<em>Ecological sexual dimorphism and environmental variability within a
+community of Antarctic penguins (genus Pygoscelis).</em> PLoS ONE 9(3),
+e90081. <a href="https://doi.org/10.1371/journal.pone.0090081" class="external-link uri">https://doi.org/10.1371/journal.pone.0090081</a>.</p>
+<p>Hayfield, T. and Racine, J. S. (2008). <em>Nonparametric
+econometrics: The np package.</em> Journal of Statistical Software
+27(5), 1–32. <a href="https://doi.org/10.18637/jss.v027.i05" class="external-link uri">https://doi.org/10.18637/jss.v027.i05</a>.</p>
+<p>Hoek, J. van der and Elliott, R. J. (2024). <em>Mixtures of
+multivariate Gaussians.</em> Stochastic Analysis and Applications. <a href="https://doi.org/10.1080/07362994.2024.2372605" class="external-link uri">https://doi.org/10.1080/07362994.2024.2372605</a>.</p>
+<p>Horst, A. M., Presmanes Hill, A. and Gorman, K. B. (2022). <em>Palmer
+Archipelago penguins data in the palmerpenguins R package: An
+alternative to Anderson’s irises.</em> The R Journal 14(1), 244–254. <a href="https://doi.org/10.32614/RJ-2022-020" class="external-link uri">https://doi.org/10.32614/RJ-2022-020</a>.</p>
+<p>Scott, D. W. (1992). <em>Multivariate Density Estimation: Theory,
+Practice, and Visualization.</em> Wiley.</p>
+<p>Scrucca, L., Fop, M., Murphy, T. B. and Raftery, A. E. (2016).
+<em>mclust 5: Clustering, classification and density estimation using
+Gaussian finite mixture models.</em> The R Journal 8(1), 289–317. <a href="https://doi.org/10.32614/RJ-2016-021" class="external-link uri">https://doi.org/10.32614/RJ-2016-021</a>.</p>
+<p>Silverman, B. W. (1986). <em>Density Estimation for Statistics and
+Data Analysis.</em> Chapman and Hall.</p>
+<p>Wand, M. P. and Jones, M. C. (1995). <em>Kernel Smoothing.</em>
+Chapman and Hall.</p>
+</div>
+<div class="section level2">
+<h2 id="reproduce">Reproduce<a class="anchor" aria-label="anchor" href="#reproduce"></a>
+</h2>
+<p>The data are generated with seed <code>20260601</code>, and every
+<code><a href="../reference/from_kde.html">from_kde()</a></code> call passes <code>seed = 1L</code>, so the
+weighted draws are reproducible. <code><a href="../reference/hellinger_mc.html">hellinger_mc()</a></code> uses its
+own <code>seed = 1L</code>. The comparison is read from stored results
+of a simulation run under proxymix 0.16.0, ks 1.15.3, np 0.70-5,
+KernSmooth 2.23-27, mclust 6.1.3 and mixtools 2.0.0.1, which took about
+26 minutes on one core.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<pre class="session-info"><code><span><span class="co">#&gt; R version 4.6.1 (2026-06-24)</span></span>
+<span><span class="co">#&gt; Platform: aarch64-apple-darwin23</span></span>
+<span><span class="co">#&gt; Running under: macOS Tahoe 26.6.2</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Matrix products: default</span></span>
+<span><span class="co">#&gt; BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib </span></span>
+<span><span class="co">#&gt; LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; locale:</span></span>
+<span><span class="co">#&gt; [1] en_AU.UTF-8/en_AU.UTF-8/en_AU.UTF-8/C/en_AU.UTF-8/en_AU.UTF-8</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; time zone: Australia/Adelaide</span></span>
+<span><span class="co">#&gt; tzcode source: internal</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; attached base packages:</span></span>
+<span><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; other attached packages:</span></span>
+<span><span class="co">#&gt; [1] proxymix_0.16.0</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
+<span><span class="co">#&gt;  [1] mvnfast_0.2.8      gtable_0.3.6       jsonlite_2.0.0     dplyr_1.2.1       </span></span>
+<span><span class="co">#&gt;  [5] compiler_4.6.1     Rcpp_1.1.2         tidyselect_1.2.1   dichromat_2.0-1   </span></span>
+<span><span class="co">#&gt;  [9] jquerylib_0.1.4    systemfonts_1.3.2  scales_1.4.0       textshaping_1.0.5 </span></span>
+<span><span class="co">#&gt; [13] yaml_2.3.12        fastmap_1.2.0      ggplot2_4.0.3      R6_2.6.1          </span></span>
+<span><span class="co">#&gt; [17] labeling_0.4.3     generics_0.1.4     isoband_0.3.0      knitr_1.51        </span></span>
+<span><span class="co">#&gt; [21] htmlwidgets_1.6.4  tibble_3.3.1       desc_1.4.3         bslib_0.12.0      </span></span>
+<span><span class="co">#&gt; [25] pillar_1.11.1      RColorBrewer_1.1-3 rlang_1.3.0        cachem_1.1.0      </span></span>
+<span><span class="co">#&gt; [29] xfun_0.60          fs_2.1.0           sass_0.4.10        S7_0.2.2          </span></span>
+<span><span class="co">#&gt; [33] otel_0.2.0         cli_3.6.6          withr_3.0.3        pkgdown_2.2.1     </span></span>
+<span><span class="co">#&gt; [37] magrittr_2.0.5     digest_0.6.39      grid_4.6.1         lifecycle_1.0.5   </span></span>
+<span><span class="co">#&gt; [41] vctrs_0.7.3        evaluate_1.0.5     glue_1.8.1         farver_2.1.2      </span></span>
+<span><span class="co">#&gt; [45] ragg_1.5.2         rmarkdown_2.32     tools_4.6.1        pkgconfig_2.0.3   </span></span>
+<span><span class="co">#&gt; [49] htmltools_0.5.9</span></span></code></pre>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
@@ -328,7 +793,7 @@ Practice, and Visualization.</em> Wiley.</li>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

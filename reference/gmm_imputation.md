@@ -103,3 +103,16 @@ Other imputation:
 [`proxy_fmi()`](https://max578.github.io/proxymix/reference/proxy_fmi.md),
 [`proxy_mnar_sensitivity()`](https://max578.github.io/proxymix/reference/proxy_mnar_sensitivity.md),
 [`proxy_pool()`](https://max578.github.io/proxymix/reference/proxy_pool.md)
+
+## Examples
+
+``` r
+x1 <- rnorm(60)
+x2 <- x1 + rnorm(60, sd = 0.4)
+x2[sample(60, 10)] <- NA
+imp <- gmm_impute(cbind(x1, x2), N = 1L, m = 10L, seed = 1L)
+imp   # an S7 object of class gmm_imputation
+#> <gmm_imputation>: m = 10 completions, K = 1 components, p = 2
+#>   mechanism  : missing at random
+#>   missing    : x1 0%, x2 17%
+```

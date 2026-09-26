@@ -2,8 +2,7 @@
 
 Fits an `N`-component Gaussian-mixture proxy to a (Gaussian, diagonal-
 bandwidth) kernel-density estimate over `samples`, via regime (iii)
-KLD-EM. The proxy is closed-form marginalisable, conditionable, and
-samplable; the KDE is none of those things on its own.
+KLD-EM.
 
 ## Usage
 
@@ -13,13 +12,13 @@ from_kde(
   N = 3L,
   bandwidth = "silverman",
   proposal = NULL,
-  is_size = 5000L,
+  is_size = NULL,
   max_iter = 100L,
   tol = 1e-05,
   ridge_eps = 1e-06,
   min_ess = 50L,
   seed = NULL,
-  validation_size = 0L,
+  validation_size = NULL,
   validation_proposal = NULL,
   validation_seed = NULL,
   support_warn = TRUE,
@@ -53,7 +52,10 @@ from_kde(
 
 - is_size:
 
-  Importance-sample size for fitting. Default `5000L`.
+  Importance-sample size for fitting. The default `NULL` uses
+  `10000 + 2500 * N`: the fitted components overfit a fixed draw, and
+  larger `N` needs more draws to keep the held-out divergence close to
+  its large-sample value.
 
 - max_iter:
 
@@ -82,7 +84,10 @@ from_kde(
 
 - validation_size:
 
-  Held-out IS sample size. Forwarded to
+  Held-out IS sample size. The default `NULL` adds draws until
+  `validation_kld` is precise, as described in
+  [`fit_kld_em()`](https://max578.github.io/proxymix/reference/fit_kld_em.md);
+  `0L` disables it. Forwarded to
   [`fit_kld_em()`](https://max578.github.io/proxymix/reference/fit_kld_em.md).
 
 - validation_proposal:
@@ -113,15 +118,23 @@ from_kde(
 
 A [gmm_fit](https://max578.github.io/proxymix/reference/gmm_fit.md) with
 `regime = "kld"` and metadata recording the KDE inputs (`kde_samples_n`,
-`bandwidth`, `bandwidth_method`).
+`bandwidth`, `bandwidth_method`). Its in-sample `kld_final` reads low,
+often below zero; the held-out `validation_kld` (see
+[`ess_summary()`](https://max578.github.io/proxymix/reference/ess_summary.md))
+measures the compression error.
 
 ## Details
 
-This is a **compression** operation: take an `n`-sample KDE and replace
-it with the closest `N`-component mixture in the Kullback-Leibler sense
-(which is much smaller than `n` for typical use). Bias inherited from
-the KDE is reproduced in the proxy; the bandwidth controls the
-bias-variance trade-off.
+A Gaussian-kernel KDE on `n` points is already an `n`-component Gaussian
+mixture with equal weights, so it can be marginalised, conditioned and
+sampled in closed form as it stands. `from_kde()` is a **compression**:
+it replaces the `n` components with the closest `N`-component mixture in
+the Kullback-Leibler sense, with `N` much smaller than `n`. Density
+evaluation, storage and the operator calculus then cost in proportion to
+`N` rather than `n` (products and convolutions of two mixtures have as
+many components as the product of their counts). Bias inherited from the
+KDE is reproduced in the proxy; the bandwidth controls the bias-variance
+trade-off.
 
 Dimensional scope. The dimensional guard is `p <= 5` (recommended),
 `p <= 10` (allowed with warning), `p > 10` (rejected). Regime-(iii)
@@ -169,25 +182,28 @@ ess_summary(fit)
 #> $support_fraction
 #> [1] 1
 #> 
+#> $support_truncated
+#> [1] FALSE
+#> 
 #> $mc_se_kld
 #> [1] 0.005537856
 #> 
 #> $validation_size
-#> [1] 0
+#> [1] 12000
 #> 
 #> $validation_ess
-#> [1] NA
+#> [1] 9302.059
 #> 
 #> $validation_ess_relative
-#> [1] NA
+#> [1] 0.7751716
 #> 
 #> $validation_max_weight
-#> [1] NA
+#> [1] 0.0001909344
 #> 
 #> $validation_support_fraction
-#> [1] NA
+#> [1] 1
 #> 
 #> $validation_kld
-#> [1] NA
+#> [1] 0.01945376
 #> 
 ```

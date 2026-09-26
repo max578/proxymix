@@ -1,12 +1,13 @@
-# Differential entropy of a Gaussian mixture
+# Renyi-2 or Shannon entropy of a Gaussian mixture
 
-Computes the differential entropy of a Gaussian mixture. The quadratic
-(order-2) Renyi entropy \\H_2(g) = -\log \int g(x)^2 \\ dx\\ is
-available in closed form, because \\\int g^2\\ is a finite sum of
-Gaussian-density evaluations. Shannon entropy has no closed form for a
-mixture (the integrand carries the logarithm of a sum) and is estimated
-by Monte Carlo, reported with its standard error and an analytic upper
-bound that brackets it from above.
+Computes the order-2 Renyi entropy (the default) or the Shannon
+differential entropy of a Gaussian mixture. The quadratic (order-2)
+Renyi entropy \\H_2(g) = -\log \int g(x)^2 \\ dx\\ is available in
+closed form, because \\\int g^2\\ is a finite sum of Gaussian-density
+evaluations. Shannon entropy has no closed form for a mixture (the
+integrand carries the logarithm of a sum) and is estimated by Monte
+Carlo, reported with its standard error and an analytic upper bound that
+brackets it from above.
 
 ## Usage
 
@@ -37,9 +38,10 @@ gmm_entropy(g, order = c("renyi2", "shannon"), n_mc = 5000L, seed = NULL)
 
 ## Value
 
-For `order = "renyi2"`, a numeric scalar. For `order = "shannon"`, a
-list with components `mc` (the estimate), `mc_se` (its standard error),
-`upper_bound` (the analytic upper bound), and `n_mc`.
+For `order = "renyi2"`, the Renyi-2 entropy in nats, a numeric scalar.
+For `order = "shannon"`, a list with components `mc` (the estimate),
+`mc_se` (its standard error), `upper_bound` (the analytic upper bound),
+and `n_mc`.
 
 ## See also
 

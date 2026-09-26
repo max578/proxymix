@@ -57,3 +57,14 @@ Other proposals:
 [`is_mvn()`](https://max578.github.io/proxymix/reference/is_mvn.md),
 [`is_mvt()`](https://max578.github.io/proxymix/reference/is_mvt.md),
 [`is_uniform()`](https://max578.github.io/proxymix/reference/is_uniform.md)
+
+## Examples
+
+``` r
+proposal_uniform(n_dim = 2L, lower = -5, upper = 5)
+#> <is_proposal>: "is_uniform" in p = 2 dimensions
+proposal_mvn(n_dim = 2L, mean = c(0, 0), cov = diag(2))
+#> <is_proposal>: "is_mvn" in p = 2 dimensions
+proposal_mvt(n_dim = 2L, df = 5)   # heavier tails; a robust default
+#> <is_proposal>: "is_mvt" in p = 2 dimensions
+```

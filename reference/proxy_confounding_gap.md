@@ -10,7 +10,7 @@ correction the data licenses.
 ## Usage
 
 ``` r
-proxy_confounding_gap(model, newdata, t1 = 1, t0 = 0)
+proxy_confounding_gap(model, newdata, t1 = NULL, t0 = NULL)
 ```
 
 ## Arguments
@@ -26,13 +26,22 @@ proxy_confounding_gap(model, newdata, t1 = 1, t0 = 0)
 
 - t1, t0:
 
-  The treated and control treatment values. Default `1` and `0`.
+  The treated and control treatment values. Default the treatment levels
+  observed at fit time (`model@treatment_levels`); a value matching
+  neither observed level aborts.
 
 ## Value
 
 A
 [data.table::data.table](https://rdrr.io/pkg/data.table/man/data.table.html)
 with columns `id`, `tau_obs`, `tau_do`, `gap`, `overlap_flag`.
+
+## Details
+
+When each regime holds a single treatment arm, as often happens with a
+binary treatment, the within-regime effect is zero, the gap equals the
+whole estimated effect, and a warning of class
+`proxymix_constant_treatment` is raised.
 
 ## See also
 
@@ -63,16 +72,17 @@ Other decision:
 ``` r
 set.seed(1)
 n <- 600L
+u <- stats::rbinom(n, 1L, 0.5) # unobserved group
 x <- stats::rnorm(n)
-t <- stats::rbinom(n, 1L, 0.5)
-y <- 0.5 * t + x + stats::rnorm(n, sd = 0.5)
+t <- stats::rbinom(n, 1L, 0.3 + 0.4 * u)
+y <- 1 + 5 * u + 0.5 * t + x + stats::rnorm(n, sd = 0.5)
 dat <- data.frame(y = y, t = t, x = x)
 m <- fit_uplift(dat, "y", "t", "x", N = 2L, regime = "sample",
                 max_iter = 80L, seed = 1L)
 proxy_confounding_gap(m, data.frame(x = c(-1, 0, 1)))
-#>       id   tau_obs tau_do       gap overlap_flag
-#>    <int>     <num>  <num>     <num>       <lgcl>
-#> 1:     1 0.4438819      0 0.4438819        FALSE
-#> 2:     2 0.4850305      0 0.4850305        FALSE
-#> 3:     3 0.5261790      0 0.5261790        FALSE
+#>       id  tau_obs    tau_do      gap overlap_flag
+#>    <int>    <num>     <num>    <num>       <lgcl>
+#> 1:     1 2.908359 0.5072123 2.401147        FALSE
+#> 2:     2 2.868482 0.5105251 2.357957        FALSE
+#> 3:     3 2.801414 0.5132769 2.288137        FALSE
 ```

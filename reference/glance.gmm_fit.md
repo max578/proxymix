@@ -18,7 +18,17 @@ count, and the regime's headline fit statistics. Available as
 
 ## Value
 
-A one-row data frame.
+A one-row data frame with columns `regime`, `n_components`, `dim`,
+`converged`, `iterations`, `ess`, `kld_final`, `validation_kld`,
+`loglik_final` and `bic` (`NA` where not applicable to the regime).
+
+## Details
+
+For a regime-(iii) fit, `kld_final` is estimated on the same importance
+draws the fit was tuned to, so it reads low and can be negative.
+`validation_kld` is the estimate on an independent draw and is the one
+to quote as the fit's accuracy; it is `NA` when the fit was made with
+`validation_size = 0`.
 
 ## See also
 
@@ -40,8 +50,8 @@ Other classes:
 fit <- fit_proxymix(banana_target(), N = 2L, regime = "kld",
                     is_size = 1000L, max_iter = 10L, seed = 1L)
 generics::glance(fit)
-#>   regime n_components dim converged iterations      ess kld_final loglik_final
-#> 1    kld            2   2      TRUE         10 706.9948 0.1123726           NA
-#>   bic
-#> 1  NA
+#>   regime n_components dim converged iterations      ess kld_final
+#> 1    kld            2   2      TRUE         10 706.9948 0.1123726
+#>   validation_kld loglik_final bic
+#> 1      0.1475466           NA  NA
 ```

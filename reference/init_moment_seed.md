@@ -45,7 +45,7 @@ Other init:
 x <- matrix(stats::rnorm(200), ncol = 2)
 init_moment_seed(x, N = 3L)
 #> <init_moment_seed>: K = 3 components in p = 2 dimensions
-#>   [1] w = 0.3333, |mu| = 1.7233, tr(Sigma) = 2.0251
-#>   [2] w = 0.3333, |mu| = 0.1768, tr(Sigma) = 2.0251
-#>   [3] w = 0.3333, |mu| = 1.5184, tr(Sigma) = 2.0251
+#>   [1] w = 0.3333, |mu| = 1.6067, tr(Sigma) = 1.8331
+#>   [2] w = 0.3333, |mu| = 0.1352, tr(Sigma) = 1.8331
+#>   [3] w = 0.3333, |mu| = 1.5498, tr(Sigma) = 1.8331
 ```

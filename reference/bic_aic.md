@@ -69,16 +69,16 @@ tgt <- gmm_target_from_samples(x)
 fit <- fit_proxymix(tgt, N = 2L, regime = "sample", max_iter = 25L)
 bic_aic(fit)
 #> $bic
-#> [1] 637.4143
+#> [1] 631.5502
 #> 
 #> $aic
-#> [1] 608.7574
+#> [1] 602.8934
 #> 
 #> $icl
-#> [1] 718.8163
+#> [1] 727.1539
 #> 
 #> $classification_entropy
-#> [1] 40.70102
+#> [1] 47.80185
 #> 
 #> $n_params
 #> [1] 11

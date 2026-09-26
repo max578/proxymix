@@ -7,10 +7,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Mapping the optima of an objective • proxymix</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Mapping the optima of an objective">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<meta property="og:title" content="Mapping the optima of an objective">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -20,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">proxymix</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.15.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.16.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,18 +34,20 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/quickstart.html">Quickstart</a></li>
+<li><a class="dropdown-item" href="../articles/quickstart.html">Fitting a proxy to a density you cannot sample</a></li>
     <li><a class="dropdown-item" href="../articles/posterior_proxy.html">Compressing a Bayesian posterior you can evaluate but not sample</a></li>
-    <li><a class="dropdown-item" href="../articles/three_regimes.html">Three regimes: moment, sample, and KLD-EM</a></li>
-    <li><a class="dropdown-item" href="../articles/density_shapes.html">KLD-EM on three density shapes</a></li>
-    <li><a class="dropdown-item" href="../articles/operator_calculus.html">Affine-Gaussian operator calculus on a Gaussian mixture</a></li>
-    <li><a class="dropdown-item" href="../articles/from_kde.html">From KDE: compressing a kernel density estimate into a Gaussian-mixture proxy</a></li>
+    <li><a class="dropdown-item" href="../articles/three_regimes.html">Choosing between the three fitting regimes</a></li>
+    <li><a class="dropdown-item" href="../articles/density_shapes.html">How well a mixture proxies four awkward shapes</a></li>
+    <li><a class="dropdown-item" href="../articles/operator_calculus.html">The closed-form operator calculus on a mixture</a></li>
+    <li><a class="dropdown-item" href="../articles/from_kde.html">Compressing a kernel density estimate into a mixture</a></li>
     <li><a class="dropdown-item" href="../articles/many_methods.html">One mixture, many methods</a></li>
-    <li><a class="dropdown-item" href="../articles/entropy.html">Entropy diagnostics with proxymix</a></li>
+    <li><a class="dropdown-item" href="../articles/entropy.html">Reading the entropy of a fitted mixture</a></li>
     <li><a class="dropdown-item" href="../articles/calibration.html">Mapping the optima of an objective</a></li>
     <li><a class="dropdown-item" href="../articles/missing_data.html">Imputing missing data with a mixture</a></li>
     <li><a class="dropdown-item" href="../articles/missing_data_mnar.html">Missing data that depends on the missing value</a></li>
     <li><a class="dropdown-item" href="../articles/end_of_sample.html">Testing the last observation for instability</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -76,106 +79,141 @@
 
     
     
+<!-- Render time: ~2 s under rmarkdown::render() with ggplot2 installed;
+     macOS arm64 (Apple silicon), R 4.5.2, one core. -->
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/max578/proxymix" class="external-link">proxymix</a></span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">has_ggplot2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ggplot2"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
-<h2 id="an-objective-is-a-density-you-can-evaluate-but-not-sample">An objective is a density you can evaluate but not sample<a class="anchor" aria-label="anchor" href="#an-objective-is-a-density-you-can-evaluate-but-not-sample"></a>
+<h2 id="the-problem">The problem<a class="anchor" aria-label="anchor" href="#the-problem"></a>
 </h2>
-<p>An objective
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>f</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">f(x)</annotation></semantics></math>
-to be minimised over a box defines an unnormalised density, the Gibbs
-measure
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi mathvariant="normal">exp</mi><mo>⁡</mo></mrow><mo stretchy="false" form="prefix">(</mo><mi>−</mi><mi>f</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo><mi>/</mi><mi>T</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\exp(-f(x) / T)</annotation></semantics></math>,
-whose mass concentrates on the low regions of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>f</mi><annotation encoding="application/x-tex">f</annotation></semantics></math>
-as the temperature
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>T</mi><annotation encoding="application/x-tex">T</annotation></semantics></math>
-falls. That density can be evaluated point-wise but not directly
-sampled, which is exactly regime (iii) of Hoek and Elliott (2024).
-<code><a href="../reference/from_objective.html">from_objective()</a></code> fits a Gaussian-mixture proxy to
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi mathvariant="normal">exp</mi><mo>⁡</mo></mrow><mo stretchy="false" form="prefix">(</mo><mi>−</mi><mi>f</mi><mi>/</mi><mi>T</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\exp(-f / T)</annotation></semantics></math>
-by cooling a short temperature ladder through the same
-importance-sampled KLD-EM that <code><a href="../reference/fit_kld_em.html">fit_kld_em()</a></code> runs,
-warm-starting each step from the previous fit.</p>
-<p>The point of the construction is not a single best point but the
-whole picture. A multimodal
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>f</mi><annotation encoding="application/x-tex">f</annotation></semantics></math>
-gives a multimodal Gibbs measure, so the fitted mixture spreads its
-components across the basins and recovers the optima <em>together</em>.
-The result is an ordinary <code>gmm</code>, so the closed-form operator
-calculus – marginalisation, conditioning, divergence – applies to the
-map of solutions. <code><a href="../reference/gmm_modes.html">gmm_modes()</a></code> reads the distinct optima off
-that map.</p>
+<p>Calibrating a model means choosing values for its unknown parameters
+so that its output matches what was observed. Each choice is scored by a
+function called the objective, for example the sum of squared
+differences between the model output and the data. A lower score is a
+better fit, and the lowest point of the objective is its minimum.</p>
+<p>The usual tool for this search is an optimiser, such as R’s
+<code><a href="https://rdrr.io/r/stats/optim.html" class="external-link">optim()</a></code>. It starts from one point, moves downhill until it
+can go no lower, and returns that single point. Many objectives have
+several low valleys, called basins. The basin an optimiser ends in
+depends on where it started. A single run gives no information about the
+basins the optimiser never visited.</p>
+<p>In calibration, one point is often not enough. Several quite
+different parameter settings may fit the data about equally well, and
+you need to know all of them before you report any one.</p>
+<p>proxymix builds a map of the good regions of an objective instead.
+The map is a Gaussian mixture, a few normal distributions added
+together, with a peak over each low basin. A single fit gives the
+locations of the basins, and the height of each peak shows how low that
+basin goes.</p>
+<p>Both objectives in this vignette have known minima, which lets you
+check the result.</p>
 </div>
 <div class="section level2">
-<h2 id="a-bimodal-objective-in-one-dimension">A bimodal objective in one dimension<a class="anchor" aria-label="anchor" href="#a-bimodal-objective-in-one-dimension"></a>
+<h2 id="package-capabilities">Package capabilities<a class="anchor" aria-label="anchor" href="#package-capabilities"></a>
 </h2>
+<ul>
+<li>
+<code><a href="../reference/from_objective.html">from_objective()</a></code> builds the map. You supply the
+objective and a box, given as a lower and an upper limit for each
+parameter, inside which the optima are sought.</li>
+<li>
+<code><a href="../reference/gmm_modes.html">gmm_modes()</a></code> finds the peaks of the map, called modes,
+with the fixed-point search of Carreira-Perpiñán (2000). It returns
+their locations, the height of the map at each one, and how many
+distinct modes there are.</li>
+<li>
+<code><a href="../reference/ess_summary.html">ess_summary()</a></code> reports the effective sample size of the
+fit, a check on whether the map can be trusted.</li>
+<li>The map is an ordinary fitted mixture. The tools from <em>Fitting a
+proxy to a density you cannot sample</em> also work on it.
+<code><a href="../reference/dgmm.html">dgmm()</a></code> gives density values, <code><a href="../reference/rgmm.html">rgmm()</a></code> gives
+random draws, and <code><a href="../reference/gmm_marginalise.html">gmm_marginalise()</a></code> and
+<code><a href="../reference/gmm_conditionalise.html">gmm_conditionalise()</a></code> give the distribution of one parameter
+on its own or with another held fixed.</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="addressing-the-problem">Addressing the problem<a class="anchor" aria-label="anchor" href="#addressing-the-problem"></a>
+</h2>
+<div class="section level3">
+<h3 id="from-an-objective-to-a-distribution">From an objective to a distribution<a class="anchor" aria-label="anchor" href="#from-an-objective-to-a-distribution"></a>
+</h3>
+<p>For an objective
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>f</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">f(x)</annotation></semantics></math>,
+the formula
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi mathvariant="normal">exp</mi><mo>⁡</mo></mrow><mo stretchy="false" form="prefix">(</mo><mi>−</mi><mi>f</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo><mi>/</mi><mi>T</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\exp(-f(x) / T)</annotation></semantics></math>,
+once scaled to integrate to one over the box, defines a distribution
+known as the Gibbs distribution. Here
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>T</mi><annotation encoding="application/x-tex">T</annotation></semantics></math>
+is a positive number called the temperature. Where
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>f</mi><annotation encoding="application/x-tex">f</annotation></semantics></math>
+is low, the formula is high, and the distribution puts most of its
+probability there. As
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>T</mi><annotation encoding="application/x-tex">T</annotation></semantics></math>
+falls, that probability gathers more tightly around the minima.</p>
+<p>The formula can be evaluated at any point, but there is no direct way
+to draw from the Gibbs distribution. The third fitting method of van der
+Hoek and Elliott (2024) is built for this setting: a density you can
+evaluate but cannot sample. <em>Fitting a proxy to a density you cannot
+sample</em> describes that method. It draws trial points, weights each
+one by the formula, and fits the mixture to the weighted points.
+<code><a href="../reference/from_objective.html">from_objective()</a></code> runs this method at a short sequence of
+falling temperatures, and each fit starts from the one before it.</p>
+<p>The box sets where the optima are sought. It also sets the scale of
+the temperatures and of the trial points. The objective is evaluated
+only inside the box. Points outside the box, and points where the
+objective is not a finite number, receive a large penalty value instead.
+Setting <code>minimise = FALSE</code> maps the maxima of the objective
+instead of its minima.</p>
+</div>
+<div class="section level3">
+<h3 id="two-minima-in-one-dimension">Two minima in one dimension<a class="anchor" aria-label="anchor" href="#two-minima-in-one-dimension"></a>
+</h3>
 <p>The objective
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><msup><mi>θ</mi><mn>2</mn></msup><mo>−</mo><mn>4</mn><msup><mo stretchy="false" form="postfix">)</mo><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">(\theta^2 - 4)^2</annotation></semantics></math>
 has two minima, at
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>θ</mi><mo>=</mo><mi>−</mi><mn>2</mn></mrow><annotation encoding="application/x-tex">\theta = -2</annotation></semantics></math>
 and
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>θ</mi><mo>=</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">\theta = 2</annotation></semantics></math>.
-We fit the map and resolve it.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">f</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">v</span><span class="op">)</span> <span class="op">(</span><span class="va">v</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">^</span><span class="fl">2</span> <span class="op">-</span> <span class="fl">4</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span></span>
+The call below fits a map with six components, using 3,000 trial points
+at each of five temperatures, and then finds its modes.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">20260619</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">f</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">v</span><span class="op">)</span> <span class="op">(</span><span class="va">v</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">^</span><span class="fl">2</span> <span class="op">-</span> <span class="fl">4</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span></span>
 <span></span>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/from_objective.html">from_objective</a></span><span class="op">(</span><span class="va">f</span>, lower <span class="op">=</span> <span class="op">-</span><span class="fl">5</span>, upper <span class="op">=</span> <span class="fl">5</span>, N <span class="op">=</span> <span class="fl">6L</span>,</span>
 <span>                      is_size <span class="op">=</span> <span class="fl">3000L</span>, n_steps <span class="op">=</span> <span class="fl">5L</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">modes</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gmm_modes.html">gmm_modes</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">modes</span><span class="op">$</span><span class="va">modes</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] -2.006  2.019</span></span></code></pre></div>
-<p>Both minima are recovered. The fitted object is a
-<code>gmm_fit</code>, so the importance-sampling diagnostics are
-available alongside the map.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ess_summary.html">ess_summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
-<span><span class="co">#&gt; $is_size</span></span>
-<span><span class="co">#&gt; [1] 3000</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $ess</span></span>
-<span><span class="co">#&gt; [1] 1577.087</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $ess_relative</span></span>
-<span><span class="co">#&gt; [1] 0.5256957</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $max_weight</span></span>
-<span><span class="co">#&gt; [1] 0.0009347261</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $support_fraction</span></span>
-<span><span class="co">#&gt; [1] 1</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $mc_se_kld</span></span>
-<span><span class="co">#&gt; [1] 0.001075373</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $validation_size</span></span>
-<span><span class="co">#&gt; [1] 0</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $validation_ess</span></span>
-<span><span class="co">#&gt; [1] NA</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $validation_ess_relative</span></span>
-<span><span class="co">#&gt; [1] NA</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $validation_max_weight</span></span>
-<span><span class="co">#&gt; [1] NA</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $validation_support_fraction</span></span>
-<span><span class="co">#&gt; [1] NA</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $validation_kld</span></span>
-<span><span class="co">#&gt; [1] NA</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] -2.034  2.031</span></span></code></pre></div>
 </div>
-<div class="section level2">
-<h2 id="four-minima-at-once-himmelblau">Four minima at once: Himmelblau<a class="anchor" aria-label="anchor" href="#four-minima-at-once-himmelblau"></a>
-</h2>
-<p>Himmelblau’s function has four equal minima. A single-point optimiser
-would return one of them and miss the rest.
-<code><a href="../reference/from_objective.html">from_objective()</a></code> returns all four in one fit, provided the
-number of components <code>N</code> is comfortably larger than the
-number of optima so that a component can settle on each basin.</p>
+<div class="section level3">
+<h3 id="check-the-fit-before-using-it">Check the fit before using it<a class="anchor" aria-label="anchor" href="#check-the-fit-before-using-it"></a>
+</h3>
+<p>Weighted trial points can fail in the way a survey fails when a few
+respondents carry most of the weight. The effective sample size is the
+number of equally weighted points that the weighted sample is worth. A
+value far below the number of trial points means the map depends on a
+few points and should not be trusted.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ess_1d</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ess_summary.html">ess_summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>ess <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">ess_1d</span><span class="op">$</span><span class="va">ess</span>, <span class="fl">1</span><span class="op">)</span>, is_size <span class="op">=</span> <span class="va">ess_1d</span><span class="op">$</span><span class="va">is_size</span>,</span>
+<span>  ess_relative <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">ess_1d</span><span class="op">$</span><span class="va">ess_relative</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;          ess      is_size ess_relative </span></span>
+<span><span class="co">#&gt;     1565.100     3000.000        0.522</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="four-minima-in-two-dimensions">Four minima in two dimensions<a class="anchor" aria-label="anchor" href="#four-minima-in-two-dimensions"></a>
+</h3>
+<p>Himmelblau’s function has four minima, all with the same value of
+zero. An optimiser run from one starting point returns one of them. The
+map below has ten components, which leaves room for one on each
+basin.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">himmelblau</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">v</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">x</span> <span class="op">&lt;-</span> <span class="va">v</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span></span>
 <span>  <span class="va">y</span> <span class="op">&lt;-</span> <span class="va">v</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span></span>
@@ -186,77 +224,269 @@ number of optima so that a component can settle on each basin.</p>
 <span>                       N <span class="op">=</span> <span class="fl">10L</span>, is_size <span class="op">=</span> <span class="fl">4000L</span>, n_steps <span class="op">=</span> <span class="fl">6L</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">found</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gmm_modes.html">gmm_modes</a></span><span class="op">(</span><span class="va">fit2</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">found</span><span class="op">$</span><span class="va">modes</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">found</span><span class="op">$</span><span class="va">modes</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span><span class="op">)</span>, <span class="op">]</span>, <span class="fl">3</span><span class="op">)</span></span>
-<span><span class="co">#&gt;        [,1]   [,2]</span></span>
-<span><span class="co">#&gt; [1,] -3.756 -3.231</span></span>
-<span><span class="co">#&gt; [2,] -2.734  3.096</span></span>
-<span><span class="co">#&gt; [3,]  2.975  1.922</span></span>
-<span><span class="co">#&gt; [4,]  3.533 -1.706</span></span></code></pre></div>
-<p>The four recovered minima sit at
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mn>3</mn><mo>,</mo><mn>2</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(3, 2)</annotation></semantics></math>,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mi>−</mi><mn>2.81</mn><mo>,</mo><mn>3.13</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(-2.81, 3.13)</annotation></semantics></math>,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mi>−</mi><mn>3.78</mn><mo>,</mo><mi>−</mi><mn>3.28</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(-3.78, -3.28)</annotation></semantics></math>
-and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mn>3.58</mn><mo>,</mo><mi>−</mi><mn>1.85</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(3.58, -1.85)</annotation></semantics></math>
-– the known optima. The figure below overlays the recovered modes
-(orange) and the analytic truth (red crosses) on the log-objective
-surface.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<span><span class="va">found</span><span class="op">$</span><span class="va">n</span></span>
+<span><span class="co">#&gt; [1] 4</span></span></code></pre></div>
+<p>The four minima of Himmelblau’s function are known exactly. The code
+below pairs each mode with the nearest true minimum and measures the
+distance between the two. It also evaluates the objective at each
+mode.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">truth</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fl">2</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2.805118</span>, <span class="fl">3.131312</span><span class="op">)</span>,</span>
 <span>               <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">3.779310</span>, <span class="op">-</span><span class="fl">3.283186</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3.584428</span>, <span class="op">-</span><span class="fl">1.848126</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">xs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">5</span>, <span class="fl">5</span>, length.out <span class="op">=</span> <span class="fl">140</span><span class="op">)</span></span>
-<span><span class="va">ys</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">5</span>, <span class="fl">5</span>, length.out <span class="op">=</span> <span class="fl">140</span><span class="op">)</span></span>
-<span><span class="va">zz</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/outer.html" class="external-link">outer</a></span><span class="op">(</span><span class="va">xs</span>, <span class="va">ys</span>, <span class="fu"><a href="https://rdrr.io/r/base/Vectorize.html" class="external-link">Vectorize</a></span><span class="op">(</span><span class="kw">function</span><span class="op">(</span><span class="va">a</span>, <span class="va">b</span><span class="op">)</span> <span class="fu">himmelblau</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">a</span>, <span class="va">b</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">pair_dist</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/dist.html" class="external-link">dist</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">found</span><span class="op">$</span><span class="va">modes</span>, <span class="va">truth</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">n_found</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">found</span><span class="op">$</span><span class="va">modes</span><span class="op">)</span></span>
+<span><span class="va">pair_dist</span> <span class="op">&lt;-</span> <span class="va">pair_dist</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">n_found</span><span class="op">)</span>, <span class="va">n_found</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">truth</span><span class="op">)</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="va">nearest</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">pair_dist</span>, <span class="fl">1L</span>, <span class="va">which.min</span><span class="op">)</span></span>
+<span><span class="va">gap</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">pair_dist</span>, <span class="fl">1L</span>, <span class="va">min</span><span class="op">)</span></span>
+<span><span class="va">f_at_mode</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">found</span><span class="op">$</span><span class="va">modes</span>, <span class="fl">1L</span>, <span class="va">himmelblau</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/image.html" class="external-link">image</a></span><span class="op">(</span><span class="va">xs</span>, <span class="va">ys</span>, <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log1p</a></span><span class="op">(</span><span class="va">zz</span><span class="op">)</span>, col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/palettes.html" class="external-link">hcl.colors</a></span><span class="op">(</span><span class="fl">40</span>, <span class="st">"YlGnBu"</span>, rev <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
-<span>      xlab <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span>, ylab <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span>,</span>
-<span>      main <span class="op">=</span> <span class="st">"Himmelblau: the map over the four minima"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/contour.html" class="external-link">contour</a></span><span class="op">(</span><span class="va">xs</span>, <span class="va">ys</span>, <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log1p</a></span><span class="op">(</span><span class="va">zz</span><span class="op">)</span>, add <span class="op">=</span> <span class="cn">TRUE</span>, col <span class="op">=</span> <span class="st">"grey60"</span>,</span>
-<span>        nlevels <span class="op">=</span> <span class="fl">8</span>, drawlabels <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/points.html" class="external-link">points</a></span><span class="op">(</span><span class="va">truth</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, <span class="va">truth</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span>, pch <span class="op">=</span> <span class="fl">4</span>, col <span class="op">=</span> <span class="st">"red"</span>, cex <span class="op">=</span> <span class="fl">2</span>, lwd <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/points.html" class="external-link">points</a></span><span class="op">(</span><span class="va">found</span><span class="op">$</span><span class="va">modes</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, <span class="va">found</span><span class="op">$</span><span class="va">modes</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span>, pch <span class="op">=</span> <span class="fl">19</span>,</span>
-<span>       col <span class="op">=</span> <span class="st">"#D95F0E"</span>, cex <span class="op">=</span> <span class="fl">1.4</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/legend.html" class="external-link">legend</a></span><span class="op">(</span><span class="st">"topright"</span>, bg <span class="op">=</span> <span class="st">"white"</span>,</span>
-<span>       legend <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"analytic optima"</span>, <span class="st">"recovered modes"</span><span class="op">)</span>,</span>
-<span>       pch <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4</span>, <span class="fl">19</span><span class="op">)</span>, col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"red"</span>, <span class="st">"#D95F0E"</span><span class="op">)</span>,</span>
-<span>       pt.cex <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.4</span>, <span class="fl">1.2</span><span class="op">)</span>, pt.lwd <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="calibration_files/figure-html/himmelblau-map-1.png" class="r-plt" alt="Log-objective surface of Himmelblau's function with the four recovered modes and the analytic optima overlaid." width="100%"></p>
+<span><span class="va">all_distinct</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">nearest</span><span class="op">)</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">truth</span><span class="op">)</span></span>
+<span><span class="va">worst_gap</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">gap</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>modes_found <span class="op">=</span> <span class="va">found</span><span class="op">$</span><span class="va">n</span>, one_per_minimum <span class="op">=</span> <span class="va">all_distinct</span>,</span>
+<span>  worst_gap <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">worst_gap</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;     modes_found one_per_minimum       worst_gap </span></span>
+<span><span class="co">#&gt;           4.000           1.000           0.117</span></span></code></pre></div>
+<table class="table">
+<caption>Each mode of the map beside the true minimum nearest to it,
+with the distance between them, the objective at the mode (zero at a
+true minimum) and the height of the map at the mode.</caption>
+<colgroup>
+<col width="12%">
+<col width="12%">
+<col width="12%">
+<col width="12%">
+<col width="10%">
+<col width="21%">
+<col width="16%">
+</colgroup>
+<thead><tr class="header">
+<th align="right">Mode
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>1</mn></msub><annotation encoding="application/x-tex">x_1</annotation></semantics></math>
+</th>
+<th align="right">Mode
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>2</mn></msub><annotation encoding="application/x-tex">x_2</annotation></semantics></math>
+</th>
+<th align="right">True
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>1</mn></msub><annotation encoding="application/x-tex">x_1</annotation></semantics></math>
+</th>
+<th align="right">True
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>2</mn></msub><annotation encoding="application/x-tex">x_2</annotation></semantics></math>
+</th>
+<th align="right">Distance</th>
+<th align="right">Objective at mode</th>
+<th align="right">Height of map</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="right">2.977</td>
+<td align="right">1.886</td>
+<td align="right">3.000</td>
+<td align="right">2.000</td>
+<td align="right">0.117</td>
+<td align="right">0.281</td>
+<td align="right">0.255</td>
+</tr>
+<tr class="even">
+<td align="right">-2.738</td>
+<td align="right">3.093</td>
+<td align="right">-2.805</td>
+<td align="right">3.131</td>
+<td align="right">0.077</td>
+<td align="right">0.195</td>
+<td align="right">0.254</td>
+</tr>
+<tr class="odd">
+<td align="right">3.512</td>
+<td align="right">-1.829</td>
+<td align="right">3.584</td>
+<td align="right">-1.848</td>
+<td align="right">0.075</td>
+<td align="right">0.268</td>
+<td align="right">0.253</td>
+</tr>
+<tr class="even">
+<td align="right">-3.747</td>
+<td align="right">-3.287</td>
+<td align="right">-3.779</td>
+<td align="right">-3.283</td>
+<td align="right">0.033</td>
+<td align="right">0.066</td>
+<td align="right">0.205</td>
+</tr>
+</tbody>
+</table>
+<p>The figure shows the modes and the true minima on the surface of the
+objective. A basin with no mode in it would appear as a light patch with
+no orange point.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">xs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">5</span>, <span class="fl">5</span>, length.out <span class="op">=</span> <span class="fl">140L</span><span class="op">)</span></span>
+<span><span class="va">ys</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">5</span>, <span class="fl">5</span>, length.out <span class="op">=</span> <span class="fl">140L</span><span class="op">)</span></span>
+<span><span class="va">surface</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span>x1 <span class="op">=</span> <span class="va">xs</span>, x2 <span class="op">=</span> <span class="va">ys</span><span class="op">)</span></span>
+<span><span class="va">surface</span><span class="op">$</span><span class="va">log_f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log1p</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">surface</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x1"</span>, <span class="st">"x2"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span>, <span class="fl">1L</span>, <span class="va">himmelblau</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">mode_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x1 <span class="op">=</span> <span class="va">found</span><span class="op">$</span><span class="va">modes</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, x2 <span class="op">=</span> <span class="va">found</span><span class="op">$</span><span class="va">modes</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">truth_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x1 <span class="op">=</span> <span class="va">truth</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, x2 <span class="op">=</span> <span class="va">truth</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">surface</span>, <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x1</span>, <span class="va">x2</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_tile.html" class="external-link">geom_raster</a></span><span class="op">(</span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="va">log_f</span><span class="op">)</span>, interpolate <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_contour.html" class="external-link">geom_contour</a></span><span class="op">(</span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>z <span class="op">=</span> <span class="va">log_f</span><span class="op">)</span>, colour <span class="op">=</span> <span class="st">"white"</span>,</span>
+<span>                        linewidth <span class="op">=</span> <span class="fl">0.2</span>, alpha <span class="op">=</span> <span class="fl">0.6</span>, bins <span class="op">=</span> <span class="fl">8L</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">truth_df</span>, shape <span class="op">=</span> <span class="fl">4</span>, size <span class="op">=</span> <span class="fl">4</span>, stroke <span class="op">=</span> <span class="fl">1.4</span>,</span>
+<span>                      colour <span class="op">=</span> <span class="st">"#000000"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">mode_df</span>, shape <span class="op">=</span> <span class="fl">21</span>, size <span class="op">=</span> <span class="fl">3</span>, stroke <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>                      fill <span class="op">=</span> <span class="st">"#D55E00"</span>, colour <span class="op">=</span> <span class="st">"#000000"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_viridis.html" class="external-link">scale_fill_viridis_c</a></span><span class="op">(</span>name <span class="op">=</span> <span class="st">"log(1 + f)"</span>, option <span class="op">=</span> <span class="st">"mako"</span>,</span>
+<span>                                direction <span class="op">=</span> <span class="op">-</span><span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span>expand <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span></span>
+<span>    title <span class="op">=</span> <span class="st">"One fit, four basins of Himmelblau's function"</span>,</span>
+<span>    subtitle <span class="op">=</span> <span class="st">"crosses: true minima; filled circles: modes of the map"</span>,</span>
+<span>    x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span>base_size <span class="op">=</span> <span class="fl">11</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>plot.title <span class="op">=</span> <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>face <span class="op">=</span> <span class="st">"bold"</span><span class="op">)</span>,</span>
+<span>                 panel.grid <span class="op">=</span> <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_blank</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<div class="figure">
+<img src="calibration_files/figure-html/himmelblau-map-1.png" class="r-plt" alt="Surface of Himmelblau's function on a log scale as a shaded raster with contour lines, the four modes of the map as orange circles and the four true minima as black crosses, each pair close together." width="100%"><p class="caption">
+The four modes of the map (orange circles) sit on the four true minima
+of Himmelblau’s function (black crosses). The background shows the
+objective on a log scale, light where it is low.
+</p>
+</div>
+</div>
 </div>
 <div class="section level2">
-<h2 id="notes-on-use">Notes on use<a class="anchor" aria-label="anchor" href="#notes-on-use"></a>
+<h2 id="interpretation">Interpretation<a class="anchor" aria-label="anchor" href="#interpretation"></a>
 </h2>
-<ul>
-<li>
-<strong>Component headroom.</strong> Recovery is most reliable when
-<code>N</code> is larger than the number of optima. Symmetric
-landscapes, where several optima are exchangeable, need the most
-headroom. When in doubt raise <code>N</code>.</li>
-<li>
-<strong>The box is the search region.</strong> <code>lower</code>
-and <code>upper</code> set where the optima are sought and scale the
-temperature ladder, the uniform exploration of the proposal, and the
-initialisation. The objective may be evaluated outside the box during
-fitting, where non-finite values are treated as a finite penalty.</li>
-<li>
-<strong>Maximisation.</strong> Set <code>minimise = FALSE</code> to
-concentrate the map on the maxima of <code>f</code> instead of the
-minima.</li>
-<li>
-<strong>The map is a mixture.</strong> Because the return value is a
-<code>gmm</code>, the rest of the package applies. The optima can be
-conditioned, marginalised, or compared with
-<code><a href="../reference/gmm_divergence.html">gmm_divergence()</a></code> like any other fitted mixture.</li>
-</ul>
+<p>The map of the one-dimensional objective has modes at -2.034 and
+2.031. The true minima are at
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>−</mi><mn>2</mn></mrow><annotation encoding="application/x-tex">-2</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mn>2</mn><annotation encoding="application/x-tex">2</annotation></semantics></math>,
+and the largest difference is 0.034. The 3,000 trial points at the last
+temperature were worth 1565 equally weighted points, or 52 per cent of
+the total. The weights did not collapse onto a few points.</p>
+<p>On Himmelblau’s function, one fit gives 4 modes. Each mode lies next
+to a different true minimum. No minimum is missed or counted twice. The
+largest distance between a mode and its true minimum is 0.12, in a box
+ten units wide. The objective at the modes ranges from 0.066 to 0.28
+rather than zero. The modes therefore show where each basin lies, but
+they are not the exact bottom of the basin.</p>
+<p>The height of the map at a mode reflects how low that basin goes. For
+an exact map, a basin with a lower minimum has a higher peak.
+Himmelblau’s four minima have the same value. An exact map would
+therefore have four peaks of equal height. Here the heights run from
+0.205 to 0.255, and the highest is about 24 per cent above the lowest.
+That spread is the error left by a finite number of trial points and ten
+components. When the minima are not known to be equal, compare the
+basins by the objective at each mode as well as by height.</p>
+</div>
+<div class="section level2">
+<h2 id="limitations">Limitations<a class="anchor" aria-label="anchor" href="#limitations"></a>
+</h2>
+<p>The map is a calibration tool, not an optimiser. To find the single
+best point, a dedicated optimiser such as <code>GenSA</code> or
+<code>DEoptim</code> is faster and gets closer to the minimum. In the
+comparison in the <a href="https://max578.github.io/proxymix/articles/extended/calibration.html">extended
+version of this article</a>, proxymix was the slowest method tested.
+Optimisers run from many random starting points found all four
+Himmelblau basins in at least 98 per cent of runs, against 55 per cent
+for the map at the same budget. To locate a minimum precisely, start a
+dedicated optimiser from each mode of the map.</p>
+<p>The number of components must be larger than the number of optima.
+Each basin needs a component that is free to settle on it. Objectives
+with several interchangeable optima, such as Himmelblau’s function, need
+the most room. This vignette used ten components for four optima and six
+for two, and does not show what happens with fewer. When in doubt, raise
+<code>N</code>.</p>
+<p>An optimum outside the box cannot be found, because the objective is
+never evaluated there. Both examples here use boxes that contain every
+optimum with room to spare.</p>
+<p>Both examples have one or two parameters. The weighted trial points
+lose efficiency quickly as the number of parameters grows.
+<code><a href="../reference/from_objective.html">from_objective()</a></code> is recommended for up to five parameters,
+warns between six and ten, and refuses more than ten. At any size, a low
+effective sample size means the map should not be read as a complete
+list of basins.</p>
+<p>The height of the map at a mode depends on the final temperature, not
+on the objective alone. It is not the objective value. Nor is it the
+share of probability in the basin: a wide, shallow basin can hold more
+probability than a narrow, deep one while having a lower peak. To find
+which optimum is lowest, evaluate the objective at each mode, as in the
+table above.</p>
+</div>
+<div class="section level2">
+<h2 id="further-reading">Further reading<a class="anchor" aria-label="anchor" href="#further-reading"></a>
+</h2>
+<p>The <a href="https://max578.github.io/proxymix/articles/extended/calibration.html">extended
+version of this article</a> fits the likelihood of a two-component
+mixture to the Old Faithful geyser data and runs the full comparison
+with five optimisers.</p>
+<p><em>Choosing between the three fitting regimes</em> explains why an
+objective that can be evaluated but not sampled needs the third fitting
+method.</p>
+<p><em>Fitting a proxy to a density you cannot sample</em> works through
+the same fitting method on a distribution rather than an objective.</p>
+<p><em>The closed-form operator calculus on a mixture</em> covers the
+exact operations that apply to the map once it has been fitted.</p>
 </div>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
 </h2>
-<p>Hoek, J. van der and Elliott, R. J. (2024). <em>Mixtures of
-multivariate Gaussians.</em> Stochastic Analysis and Applications. <a href="https://doi.org/10.1080/07362994.2024.2372605" class="external-link">doi:10.1080/07362994.2024.2372605</a>.</p>
-<p>Carreira-Perpinan, M. A. (2000). Mode-finding for mixtures of
+<p>Carreira-Perpiñán, M. Á. (2000). Mode-finding for mixtures of
 Gaussian distributions. <em>IEEE Transactions on Pattern Analysis and
-Machine Intelligence</em>, 22(11), 1318-1323.</p>
+Machine Intelligence</em>, 22(11), 1318-1323. <a href="https://doi.org/10.1109/34.888716" class="external-link uri">https://doi.org/10.1109/34.888716</a>.</p>
+<p>Himmelblau, D. M. (1972). <em>Applied Nonlinear Programming.</em>
+McGraw-Hill.</p>
+<p>Hoek, J. van der and Elliott, R. J. (2024). <em>Mixtures of
+multivariate Gaussians.</em> Stochastic Analysis and Applications. <a href="https://doi.org/10.1080/07362994.2024.2372605" class="external-link uri">https://doi.org/10.1080/07362994.2024.2372605</a>.</p>
+</div>
+<div class="section level2">
+<h2 id="reproduce">Reproduce<a class="anchor" aria-label="anchor" href="#reproduce"></a>
+</h2>
+<p>The session seed is 20260619. Both fits also pass
+<code>seed = 1L</code> to <code><a href="../reference/from_objective.html">from_objective()</a></code>, so the trial
+points are the same on every run whatever the random-number state before
+the call.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<pre class="session-info"><code><span><span class="co">#&gt; R version 4.6.1 (2026-06-24)</span></span>
+<span><span class="co">#&gt; Platform: aarch64-apple-darwin23</span></span>
+<span><span class="co">#&gt; Running under: macOS Tahoe 26.6.2</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Matrix products: default</span></span>
+<span><span class="co">#&gt; BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib </span></span>
+<span><span class="co">#&gt; LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; locale:</span></span>
+<span><span class="co">#&gt; [1] en_AU.UTF-8/en_AU.UTF-8/en_AU.UTF-8/C/en_AU.UTF-8/en_AU.UTF-8</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; time zone: Australia/Adelaide</span></span>
+<span><span class="co">#&gt; tzcode source: internal</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; attached base packages:</span></span>
+<span><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; other attached packages:</span></span>
+<span><span class="co">#&gt; [1] proxymix_0.16.0</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
+<span><span class="co">#&gt;  [1] mvnfast_0.2.8      gtable_0.3.6       jsonlite_2.0.0     dplyr_1.2.1       </span></span>
+<span><span class="co">#&gt;  [5] compiler_4.6.1     Rcpp_1.1.2         tidyselect_1.2.1   dichromat_2.0-1   </span></span>
+<span><span class="co">#&gt;  [9] jquerylib_0.1.4    systemfonts_1.3.2  scales_1.4.0       textshaping_1.0.5 </span></span>
+<span><span class="co">#&gt; [13] yaml_2.3.12        fastmap_1.2.0      ggplot2_4.0.3      R6_2.6.1          </span></span>
+<span><span class="co">#&gt; [17] labeling_0.4.3     generics_0.1.4     isoband_0.3.0      knitr_1.51        </span></span>
+<span><span class="co">#&gt; [21] htmlwidgets_1.6.4  tibble_3.3.1       desc_1.4.3         bslib_0.12.0      </span></span>
+<span><span class="co">#&gt; [25] pillar_1.11.1      RColorBrewer_1.1-3 rlang_1.3.0        cachem_1.1.0      </span></span>
+<span><span class="co">#&gt; [29] xfun_0.60          fs_2.1.0           sass_0.4.10        S7_0.2.2          </span></span>
+<span><span class="co">#&gt; [33] otel_0.2.0         viridisLite_0.4.3  cli_3.6.6          pkgdown_2.2.1     </span></span>
+<span><span class="co">#&gt; [37] withr_3.0.3        magrittr_2.0.5     digest_0.6.39      grid_4.6.1        </span></span>
+<span><span class="co">#&gt; [41] lifecycle_1.0.5    vctrs_0.7.3        evaluate_1.0.5     glue_1.8.1        </span></span>
+<span><span class="co">#&gt; [45] farver_2.1.2       ragg_1.5.2         rmarkdown_2.32     tools_4.6.1       </span></span>
+<span><span class="co">#&gt; [49] pkgconfig_2.0.3    htmltools_0.5.9</span></span></code></pre>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
@@ -269,7 +499,7 @@ Machine Intelligence</em>, 22(11), 1318-1323.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

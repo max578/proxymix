@@ -1,11 +1,12 @@
-# Conditional predictive entropy of a Gaussian mixture
+# Renyi-2 or Shannon entropy of a conditional Gaussian mixture
 
-Returns the differential entropy of the conditional mixture \\g\_{Y \mid
-X = x}\\ obtained from
+Returns the order-2 Renyi entropy (the default) or the Shannon
+differential entropy of the conditional mixture \\g\_{Y \mid X = x}\\
+obtained from
 [`gmm_conditionalise()`](https://max578.github.io/proxymix/reference/gmm_conditionalise.md)
 – the predictive uncertainty of the target coordinates given the
-conditioned ones. The order-2 Renyi entropy is closed-form;
-`order = "shannon"` falls back to Monte Carlo. Multiple conditioning
+conditioned ones. The Renyi-2 entropy is closed-form;
+`order = "shannon"` is a Monte Carlo estimate. Multiple conditioning
 configurations are evaluated row-by-row.
 
 ## Usage
@@ -48,8 +49,8 @@ gmm_conditional_entropy(
 
 ## Value
 
-A numeric scalar for a single configuration, or a numeric vector with
-one entropy per row of `given`.
+The entropy of the chosen `order` in nats: a numeric scalar for a single
+configuration, or a numeric vector with one entropy per row of `given`.
 
 ## See also
 

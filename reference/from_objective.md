@@ -26,7 +26,8 @@ from_objective(
   is_size = 10000L,
   max_iter = 70L,
   ridge_eps = 1e-04,
-  seed = NULL
+  seed = NULL,
+  scale = c("objective", "loglik")
 )
 ```
 
@@ -41,7 +42,10 @@ from_objective(
 - lower, upper:
 
   Numeric vectors of equal length `p` giving the box over which the
-  optima are sought. Every `upper` must exceed its `lower`.
+  optima are sought. Every `upper` must exceed its `lower`. `objective`
+  is only evaluated inside the box; points outside it are treated like
+  points where `objective` is not finite and receive a strongly
+  unattractive value.
 
 - N:
 
@@ -57,13 +61,20 @@ from_objective(
 - temperature:
 
   Optional control of the cooling ladder. `NULL` (the default) derives a
-  ladder automatically from a uniform probe of the landscape. A positive
+  ladder from the range `r` of `objective` over a uniform probe of the
+  box: from `r / 2` down to `r / 80` when `scale = "objective"`, and
+  from `max(r / 2, 1)` down to 1 when `scale = "loglik"`. A positive
   scalar sets the final (lowest) temperature; a length-2 numeric
-  `c(high, low)` sets both ends explicitly.
+  `c(high, low)` sets both ends explicitly. A supplied `temperature` is
+  used as given, whatever `scale` is.
 
 - n_steps:
 
-  Number of temperatures in the cooling ladder. Default `6L`.
+  Number of temperatures in the cooling ladder. Default `6L`. When
+  `scale = "loglik"`, `temperature` is `NULL` and `n_steps` is not
+  supplied, the ladder takes as many steps as it needs to cool by no
+  more than the default factor of \\40^{1/5} \approx 2.1\\ per step, and
+  never fewer than 6.
 
 - exploration:
 
@@ -94,11 +105,21 @@ from_objective(
 
   Optional integer seed for reproducibility.
 
+- scale:
+
+  What the objective's values mean, which sets the default temperature
+  ladder. `"objective"` (the default) is any objective to optimise: the
+  ladder scales with its range, so the result does not depend on the
+  objective's units. `"loglik"` is a negative log-likelihood (or a
+  log-likelihood with `minimise = FALSE`): the ladder ends at
+  temperature 1, where the Gibbs measure is the likelihood itself.
+
 ## Value
 
 A [gmm_fit](https://max578.github.io/proxymix/reference/gmm_fit.md) (the
-fitted proxy) carrying a `from_objective` metadata record with the
-temperature ladder and box. Pass it to
+fitted proxy) carrying a `from_objective` metadata record with the box,
+the temperature ladder, `scale`, and the effective sample size at each
+cooling step (`ess`). Pass it to
 [`gmm_modes()`](https://max578.github.io/proxymix/reference/gmm_modes.md)
 to extract the distinct optima.
 
@@ -125,6 +146,19 @@ sampling effective sample size falls sharply with dimension; the guard
 is `p <= 5` (recommended), `p <= 10` (allowed with a warning), `p > 10`
 (rejected).
 
+Effective sample size. Each cooling step records its importance-sampling
+effective sample size in the `from_objective` metadata. A classed
+`proxymix_low_ess` warning is raised at most once per call, and only
+when the final step, the one that produced the returned fit, falls below
+50; its message gives the final effective sample size, how many steps
+were low, and the lowest value with its step.
+
+Likelihoods. With `scale = "loglik"` the objective is read as a negative
+log-likelihood (or, with `minimise = FALSE`, a log-likelihood) and the
+ladder ends at temperature 1. The fitted map is then a proxy for the
+likelihood itself, restricted to the box, which is the posterior under a
+uniform prior on the box.
+
 ## See also
 
 [`gmm_modes()`](https://max578.github.io/proxymix/reference/gmm_modes.md)
@@ -146,6 +180,15 @@ fit <- from_objective(f, lower = -5, upper = 5, N = 6L,
                       is_size = 2000L, n_steps = 5L, seed = 1L)
 gmm_modes(fit)$modes
 #>           [,1]
-#> [1,]  2.028631
-#> [2,] -2.059645
+#> [1,] -2.059751
+#> [2,]  2.009906
+
+## The likelihood surface of a logistic-regression slope.
+x <- c(-1.2, -0.6, -0.1, 0.3, 0.8, 1.4)
+y <- c(0, 0, 1, 0, 1, 1)
+nll <- function(b) sum(log1p(exp(b[1] * x))) - sum(y * b[1] * x)
+lik <- from_objective(nll, lower = -5, upper = 10, N = 4L,
+                      is_size = 2000L, seed = 1L, scale = "loglik")
+lik@metadata$from_objective$temperatures
+#> [1] 9.172354 5.888228 3.779971 2.426567 1.557744 1.000000
 ```

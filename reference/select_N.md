@@ -72,9 +72,9 @@ sel <- select_N(banana_target(), candidates = 1:3,
                 is_size = 1500L, max_iter = 20L, seed = 1L)
 sel$table
 #>   N validation_kld validation_mc_se chosen
-#> 1 1     0.17364347      0.023113220  FALSE
-#> 2 2     0.09021690      0.023610948  FALSE
-#> 3 3     0.04424349      0.007774635   TRUE
+#> 1 1     0.21072147      0.016776991  FALSE
+#> 2 2     0.13774258      0.013553578  FALSE
+#> 3 3     0.02825686      0.002803745   TRUE
 sel$best_n
 #> [1] 3
 ```

@@ -9,7 +9,7 @@ reading gives for free.
 ## Usage
 
 ``` r
-proxy_regime_segments(model, t1 = 1, t0 = 0)
+proxy_regime_segments(model, t1 = NULL, t0 = NULL)
 ```
 
 ## Arguments
@@ -22,7 +22,8 @@ proxy_regime_segments(model, t1 = 1, t0 = 0)
 - t1, t0:
 
   The treated and control treatment values used to scale the
-  within-segment effect. Default `1` and `0`.
+  within-segment effect. Default the treatment levels observed at fit
+  time (`model@treatment_levels`).
 
 ## Value
 
@@ -30,6 +31,12 @@ A
 [data.table::data.table](https://rdrr.io/pkg/data.table/man/data.table.html)
 with columns `regime`, `weight`, `effect`, `sigma`, and one column per
 covariate centre.
+
+## Details
+
+When each regime holds a single treatment arm, as often happens with a
+binary treatment, every within-segment effect is zero and a warning of
+class `proxymix_constant_treatment` is raised.
 
 ## See also
 
@@ -57,15 +64,16 @@ Other decision:
 ``` r
 set.seed(1)
 n <- 600L
+u <- stats::rbinom(n, 1L, 0.5) # unobserved group
 x <- stats::rnorm(n)
-t <- stats::rbinom(n, 1L, 0.5)
-y <- 1 + (0.5 + x) * t + stats::rnorm(n, sd = 0.5)
+t <- stats::rbinom(n, 1L, 0.3 + 0.4 * u)
+y <- 1 + 5 * u + 0.5 * t + x + stats::rnorm(n, sd = 0.5)
 dat <- data.frame(y = y, t = t, x = x)
 m <- fit_uplift(dat, "y", "t", "x", N = 2L, regime = "sample",
                 max_iter = 80L, seed = 1L)
 proxy_regime_segments(m)
-#>    regime    weight effect     sigma           x
-#>     <int>     <num>  <num>     <num>       <num>
-#> 1:      1 0.5183333      0 0.5074257  0.06613434
-#> 2:      2 0.4816667      0 0.5065112 -0.04739679
+#>    regime    weight    effect     sigma           x
+#>     <int>     <num>     <num>     <num>       <num>
+#> 1:      1 0.5233333 0.5685978 0.5184802  0.01701770
+#> 2:      2 0.4766667 0.4458673 0.5168527 -0.09606112
 ```

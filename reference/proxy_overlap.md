@@ -13,7 +13,7 @@ by default.
 ## Usage
 
 ``` r
-proxy_overlap(model, newdata, t1 = 1, t0 = 0, floor = 0.01)
+proxy_overlap(model, newdata, t1 = NULL, t0 = NULL, floor = 0.01)
 ```
 
 ## Arguments
@@ -29,7 +29,9 @@ proxy_overlap(model, newdata, t1 = 1, t0 = 0, floor = 0.01)
 
 - t1, t0:
 
-  The treated and control treatment values. Default `1` and `0`.
+  The treated and control treatment values. Default the treatment levels
+  observed at fit time (`model@treatment_levels`); a value matching
+  neither observed level aborts.
 
 - floor:
 

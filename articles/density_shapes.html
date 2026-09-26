@@ -5,12 +5,13 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>KLD-EM on three density shapes • proxymix</title>
+<title>How well a mixture proxies four awkward shapes • proxymix</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="KLD-EM on three density shapes">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<meta property="og:title" content="How well a mixture proxies four awkward shapes">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -20,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">proxymix</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.15.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.16.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,18 +34,20 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/quickstart.html">Quickstart</a></li>
+<li><a class="dropdown-item" href="../articles/quickstart.html">Fitting a proxy to a density you cannot sample</a></li>
     <li><a class="dropdown-item" href="../articles/posterior_proxy.html">Compressing a Bayesian posterior you can evaluate but not sample</a></li>
-    <li><a class="dropdown-item" href="../articles/three_regimes.html">Three regimes: moment, sample, and KLD-EM</a></li>
-    <li><a class="dropdown-item" href="../articles/density_shapes.html">KLD-EM on three density shapes</a></li>
-    <li><a class="dropdown-item" href="../articles/operator_calculus.html">Affine-Gaussian operator calculus on a Gaussian mixture</a></li>
-    <li><a class="dropdown-item" href="../articles/from_kde.html">From KDE: compressing a kernel density estimate into a Gaussian-mixture proxy</a></li>
+    <li><a class="dropdown-item" href="../articles/three_regimes.html">Choosing between the three fitting regimes</a></li>
+    <li><a class="dropdown-item" href="../articles/density_shapes.html">How well a mixture proxies four awkward shapes</a></li>
+    <li><a class="dropdown-item" href="../articles/operator_calculus.html">The closed-form operator calculus on a mixture</a></li>
+    <li><a class="dropdown-item" href="../articles/from_kde.html">Compressing a kernel density estimate into a mixture</a></li>
     <li><a class="dropdown-item" href="../articles/many_methods.html">One mixture, many methods</a></li>
-    <li><a class="dropdown-item" href="../articles/entropy.html">Entropy diagnostics with proxymix</a></li>
+    <li><a class="dropdown-item" href="../articles/entropy.html">Reading the entropy of a fitted mixture</a></li>
     <li><a class="dropdown-item" href="../articles/calibration.html">Mapping the optima of an objective</a></li>
     <li><a class="dropdown-item" href="../articles/missing_data.html">Imputing missing data with a mixture</a></li>
     <li><a class="dropdown-item" href="../articles/missing_data_mnar.html">Missing data that depends on the missing value</a></li>
     <li><a class="dropdown-item" href="../articles/end_of_sample.html">Testing the last observation for instability</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -67,7 +70,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>KLD-EM on three density shapes</h1>
+      <h1>How well a mixture proxies four awkward shapes</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/HEAD/vignettes/density_shapes.Rmd" class="external-link"><code>vignettes/density_shapes.Rmd</code></a></small>
@@ -76,239 +79,320 @@
 
     
     
+<!-- Render time: ~5 s under rmarkdown::render() with ggplot2 installed;
+     macOS arm64 (Apple silicon), R 4.5.2, one core. -->
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/max578/proxymix" class="external-link">proxymix</a></span><span class="op">)</span></span></code></pre></div>
-<p>This vignette demonstrates regime (iii) across target shapes. The
-KLD-EM regime fits a Gaussian-mixture proxy to a target whose density we
-can <em>evaluate</em> but cannot easily <em>sample from</em>. Existing
-CRAN packages for Gaussian mixtures – <code>mclust</code>,
-<code>mixtools</code>, <code>flexmix</code> – all assume i.i.d. samples
-are available.</p>
-<p>We exercise three quite different non-Gaussian target shapes:</p>
-<ul>
-<li>the <strong>banana</strong> – a Rosenbrock-style 2-D bent
-ridge;</li>
-<li>the <strong>donut</strong> – a rotationally symmetric annulus;</li>
-<li>the <strong>three-mixture</strong> – well-separated 2-D Gaussian
-components.</li>
-</ul>
-<p>For each, we</p>
-<ol style="list-style-type: decimal">
-<li>plot the target;</li>
-<li>fit by <code>fit_proxymix(regime = "kld")</code> with a
-<code>df = 5</code> multivariate-t proposal;</li>
-<li>report the importance-sample effective size, the final IS-estimated
-KLD, and a Monte-Carlo Hellinger sanity check;</li>
-<li>overlay the proxy on the target.</li>
-</ol>
-<div class="section level2">
-<h2 id="banana">Banana<a class="anchor" aria-label="anchor" href="#banana"></a>
-</h2>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">banana</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/banana_target.html">banana_target</a></span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">grid_x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">3.5</span>, <span class="fl">3.5</span>, length.out <span class="op">=</span> <span class="fl">120</span><span class="op">)</span></span>
-<span><span class="va">G_b</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span>x1 <span class="op">=</span> <span class="va">grid_x</span>, x2 <span class="op">=</span> <span class="va">grid_x</span><span class="op">)</span></span>
-<span><span class="va">G_b</span><span class="op">$</span><span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">banana</span><span class="op">@</span><span class="va">log_density</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">G_b</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ggplot2"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">G_b</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x1</span>, <span class="va">x2</span>, z <span class="op">=</span> <span class="va">f</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_contour.html" class="external-link">geom_contour_filled</a></span><span class="op">(</span>bins <span class="op">=</span> <span class="fl">12L</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_viridis.html" class="external-link">scale_fill_viridis_d</a></span><span class="op">(</span>option <span class="op">=</span> <span class="st">"mako"</span>, guide <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Banana target"</span>,</span>
-<span>         x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span>base_size <span class="op">=</span> <span class="fl">11</span><span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
-<div class="figure">
-<img src="density_shapes_files/figure-html/banana-target-1.png" class="r-plt" alt="Banana target." width="100%"><p class="caption">
-Banana target.
-</p>
+<code class="sourceCode R"><span><span class="va">has_ggplot2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ggplot2"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<div class="section level2">
+<h2 id="the-problem">The problem<a class="anchor" aria-label="anchor" href="#the-problem"></a>
+</h2>
+<p>The vignette <em>Fitting a proxy to a density you cannot sample</em>
+builds a proxy for a curved, banana-shaped distribution. The proxy is a
+mixture of a few normal distributions, and it is fitted from the density
+formula alone, with no sample. Many distributions encountered in
+practice are harder than the banana. Some have their highest values
+along a ring instead of at a single point. Some have several separate
+peaks. Some are exactly zero outside a fixed range, while a normal
+distribution is positive everywhere.</p>
+<p>Two questions follow. How close can a mixture of normal distributions
+get to each of these shapes? How can you tell when a fit should not be
+used at all? This vignette fits a proxy to four awkward shapes, measures
+each fit in two independent ways, and shows the package stopping with an
+error when a fit cannot be trusted.</p>
 </div>
+<div class="section level2">
+<h2 id="package-capabilities">Package capabilities<a class="anchor" aria-label="anchor" href="#package-capabilities"></a>
+</h2>
+<ul>
+<li>
+<code><a href="../reference/banana_target.html">banana_target()</a></code>, <code><a href="../reference/donut_target.html">donut_target()</a></code>,
+<code><a href="../reference/mixture_target.html">mixture_target()</a></code> and <code><a href="../reference/epanechnikov_target.html">epanechnikov_target()</a></code> are
+four ready-made targets. The banana is a curved ridge. The donut is a
+ring. The mixture has three well-separated peaks. The Epanechnikov
+density is shaped like an upside-down parabola and is exactly zero
+outside the interval from -1 to 1.</li>
+<li>
+<code>fit_proxymix(regime = "kld")</code> fits a proxy from the
+density formula, as in <em>Fitting a proxy to a density you cannot
+sample</em>.</li>
+<li>
+<code><a href="../reference/proposal_uniform.html">proposal_mvt()</a></code> sets up the broad Student-t distribution
+from which the fit draws its trial points. The package calls this
+distribution the proposal.</li>
+<li>The support of a distribution is the range of values where its
+density is above zero. When a target declares its support, the fit uses
+<code><a href="../reference/proposal_uniform.html">proposal_uniform()</a></code> instead of a Student-t. This spreads the
+trial points evenly over the support.</li>
+<li>Every fit reports <code>validation_kld</code>, the Kullback-Leibler
+(KL) divergence between the target and the proxy measured on a fresh set
+of trial points that the fit never used. It comes with a standard error,
+stored as <code>validation_mc_se</code>.</li>
+<li>
+<code><a href="../reference/hellinger_mc.html">hellinger_mc()</a></code> gives a second measure of the distance
+between the two densities, the squared Hellinger distance. It lies
+between 0 (identical) and 1 (no overlap) and also comes with a standard
+error.</li>
+<li>
+<code><a href="../reference/fit_kld_em.html">fit_kld_em()</a></code> is the function that
+<code>fit_proxymix(regime = "kld")</code> calls. With
+<code>on_low_ess = "abort"</code>, it stops with an error instead of
+returning a fit whose weights have collapsed onto a few trial
+points.</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="addressing-the-problem">Addressing the problem<a class="anchor" aria-label="anchor" href="#addressing-the-problem"></a>
+</h2>
+<div class="section level3">
+<h3 id="fit-the-three-shapes-that-cover-the-whole-plane">Fit the three shapes that cover the whole plane<a class="anchor" aria-label="anchor" href="#fit-the-three-shapes-that-cover-the-whole-plane"></a>
+</h3>
+<p>The banana, the donut and the three peaks are positive everywhere in
+the plane. Each gets a Student-t distribution wide enough to cover it,
+and a number of components chosen for its shape: four along the banana,
+six around the ring, and three for the three peaks.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit_b</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_proxymix.html">fit_proxymix</a></span><span class="op">(</span><span class="va">banana</span>, N <span class="op">=</span> <span class="fl">4L</span>, regime <span class="op">=</span> <span class="st">"kld"</span>,</span>
-<span>                      proposal <span class="op">=</span> <span class="fu"><a href="../reference/is_mvt.html">is_mvt</a></span><span class="op">(</span>n_dim <span class="op">=</span> <span class="fl">2L</span>,</span>
-<span>                                        sigma <span class="op">=</span> <span class="fl">4</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,</span>
-<span>                                        df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>,</span>
-<span>                      is_size <span class="op">=</span> <span class="fl">3000L</span>,</span>
-<span>                      max_iter <span class="op">=</span> <span class="fl">50L</span>,</span>
-<span>                      seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
-<span><span class="va">fit_b</span></span>
-<span><span class="co">#&gt; &lt;gmm_fit&gt;: regime = "kld", K = 4, p = 2</span></span>
-<span><span class="co">#&gt;   target     : banana</span></span>
-<span><span class="co">#&gt;   iterations : 46</span></span>
-<span><span class="co">#&gt;   converged  : TRUE</span></span>
-<span><span class="co">#&gt;   [1] w = 0.4330, |mu| = 0.1166, tr(Sigma) = 1.2545</span></span>
-<span><span class="co">#&gt;   [2] w = 0.2123, |mu| = 0.9733, tr(Sigma) = 0.9433</span></span>
-<span><span class="co">#&gt;   [3] w = 0.1929, |mu| = 1.1925, tr(Sigma) = 2.8870</span></span>
-<span><span class="co">#&gt;   [4] w = 0.1618, |mu| = 1.2661, tr(Sigma) = 2.5167</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">fit_b</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_proxymix.html">fit_proxymix</a></span><span class="op">(</span><span class="fu"><a href="../reference/banana_target.html">banana_target</a></span><span class="op">(</span><span class="op">)</span>, N <span class="op">=</span> <span class="fl">4L</span>, regime <span class="op">=</span> <span class="st">"kld"</span>,</span>
+<span>                      proposal <span class="op">=</span> <span class="fu"><a href="../reference/proposal_uniform.html">proposal_mvt</a></span><span class="op">(</span>n_dim <span class="op">=</span> <span class="fl">2L</span>,</span>
+<span>                                              sigma <span class="op">=</span> <span class="fl">4</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,</span>
+<span>                                              df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>,</span>
+<span>                      is_size <span class="op">=</span> <span class="fl">3000L</span>, max_iter <span class="op">=</span> <span class="fl">50L</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
+<span><span class="va">fit_d</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_proxymix.html">fit_proxymix</a></span><span class="op">(</span><span class="fu"><a href="../reference/donut_target.html">donut_target</a></span><span class="op">(</span><span class="op">)</span>, N <span class="op">=</span> <span class="fl">6L</span>, regime <span class="op">=</span> <span class="st">"kld"</span>,</span>
+<span>                      proposal <span class="op">=</span> <span class="fu"><a href="../reference/proposal_uniform.html">proposal_mvt</a></span><span class="op">(</span>n_dim <span class="op">=</span> <span class="fl">2L</span>,</span>
+<span>                                              sigma <span class="op">=</span> <span class="fl">9</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,</span>
+<span>                                              df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>,</span>
+<span>                      is_size <span class="op">=</span> <span class="fl">3500L</span>, max_iter <span class="op">=</span> <span class="fl">60L</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
+<span><span class="va">fit_m</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_proxymix.html">fit_proxymix</a></span><span class="op">(</span><span class="fu"><a href="../reference/mixture_target.html">mixture_target</a></span><span class="op">(</span><span class="op">)</span>, N <span class="op">=</span> <span class="fl">3L</span>, regime <span class="op">=</span> <span class="st">"kld"</span>,</span>
+<span>                      proposal <span class="op">=</span> <span class="fu"><a href="../reference/proposal_uniform.html">proposal_mvt</a></span><span class="op">(</span>n_dim <span class="op">=</span> <span class="fl">2L</span>,</span>
+<span>                                              sigma <span class="op">=</span> <span class="fl">6</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,</span>
+<span>                                              df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>,</span>
+<span>                      is_size <span class="op">=</span> <span class="fl">3000L</span>, max_iter <span class="op">=</span> <span class="fl">50L</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="compare-each-proxy-with-its-target">Compare each proxy with its target<a class="anchor" aria-label="anchor" href="#compare-each-proxy-with-its-target"></a>
+</h3>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">G_b</span><span class="op">$</span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fu"><a href="../reference/dgmm.html">dgmm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">G_b</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x1"</span>, <span class="st">"x2"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span>, <span class="va">fit_b</span>, log <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ggplot2"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">G_b</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x1</span>, <span class="va">x2</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_contour.html" class="external-link">geom_contour_filled</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>z <span class="op">=</span> <span class="va">f</span><span class="op">)</span>, bins <span class="op">=</span> <span class="fl">10L</span>, alpha <span class="op">=</span> <span class="fl">0.85</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_contour.html" class="external-link">geom_contour</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>z <span class="op">=</span> <span class="va">g</span><span class="op">)</span>, colour <span class="op">=</span> <span class="st">"white"</span>, linetype <span class="op">=</span> <span class="st">"dashed"</span>,</span>
-<span>                 linewidth <span class="op">=</span> <span class="fl">0.4</span>, bins <span class="op">=</span> <span class="fl">8L</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_viridis.html" class="external-link">scale_fill_viridis_d</a></span><span class="op">(</span>option <span class="op">=</span> <span class="st">"mako"</span>, guide <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Banana with proxy"</span>,</span>
-<span>         x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span>base_size <span class="op">=</span> <span class="fl">11</span><span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
-<div class="figure">
-<img src="density_shapes_files/figure-html/banana-overlay-1.png" class="r-plt" alt="Banana target (filled) with 4-component proxy (dashed)." width="100%"><p class="caption">
-Banana target (filled) with 4-component proxy (dashed).
-</p>
-</div>
-</div>
-<div class="section level2">
-<h2 id="donut">Donut<a class="anchor" aria-label="anchor" href="#donut"></a>
-</h2>
+<code class="sourceCode R"><span><span class="va">shape_panel</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">target</span>, <span class="va">fit</span>, <span class="va">label</span>, <span class="va">lim</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">gx</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="va">lim</span>, <span class="va">lim</span>, length.out <span class="op">=</span> <span class="fl">110L</span><span class="op">)</span></span>
+<span>  <span class="va">base</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span>x1 <span class="op">=</span> <span class="va">gx</span>, x2 <span class="op">=</span> <span class="va">gx</span><span class="op">)</span></span>
+<span>  <span class="va">gm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">base</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>    x1 <span class="op">=</span> <span class="va">base</span><span class="op">$</span><span class="va">x1</span>, x2 <span class="op">=</span> <span class="va">base</span><span class="op">$</span><span class="va">x2</span>,</span>
+<span>    target <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">target</span><span class="op">@</span><span class="va">log_density</span><span class="op">(</span><span class="va">gm</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    proxy <span class="op">=</span> <span class="fu"><a href="../reference/dgmm.html">dgmm</a></span><span class="op">(</span><span class="va">gm</span>, <span class="va">fit</span><span class="op">)</span>,</span>
+<span>    shape <span class="op">=</span> <span class="va">label</span>,</span>
+<span>    stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="va">overlay_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span></span>
+<span>  <span class="fu">shape_panel</span><span class="op">(</span><span class="fu"><a href="../reference/banana_target.html">banana_target</a></span><span class="op">(</span><span class="op">)</span>, <span class="va">fit_b</span>, <span class="st">"banana, N = 4"</span>, <span class="fl">4.5</span><span class="op">)</span>,</span>
+<span>  <span class="fu">shape_panel</span><span class="op">(</span><span class="fu"><a href="../reference/donut_target.html">donut_target</a></span><span class="op">(</span><span class="op">)</span>, <span class="va">fit_d</span>, <span class="st">"donut, N = 6"</span>, <span class="fl">4.5</span><span class="op">)</span>,</span>
+<span>  <span class="fu">shape_panel</span><span class="op">(</span><span class="fu"><a href="../reference/mixture_target.html">mixture_target</a></span><span class="op">(</span><span class="op">)</span>, <span class="va">fit_m</span>, <span class="st">"three peaks, N = 3"</span>, <span class="fl">4.5</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">overlay_df</span><span class="op">$</span><span class="va">shape</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">overlay_df</span><span class="op">$</span><span class="va">shape</span>,</span>
+<span>                           levels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">overlay_df</span><span class="op">$</span><span class="va">shape</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">donut</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/donut_target.html">donut_target</a></span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">grid_x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">4</span>, <span class="fl">4</span>, length.out <span class="op">=</span> <span class="fl">120</span><span class="op">)</span></span>
-<span><span class="va">G_d</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span>x1 <span class="op">=</span> <span class="va">grid_x</span>, x2 <span class="op">=</span> <span class="va">grid_x</span><span class="op">)</span></span>
-<span><span class="va">G_d</span><span class="op">$</span><span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">donut</span><span class="op">@</span><span class="va">log_density</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">G_d</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ggplot2"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">G_d</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x1</span>, <span class="va">x2</span>, z <span class="op">=</span> <span class="va">f</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_contour.html" class="external-link">geom_contour_filled</a></span><span class="op">(</span>bins <span class="op">=</span> <span class="fl">12L</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_viridis.html" class="external-link">scale_fill_viridis_d</a></span><span class="op">(</span>option <span class="op">=</span> <span class="st">"mako"</span>, guide <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Donut target"</span>,</span>
-<span>         x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span>base_size <span class="op">=</span> <span class="fl">11</span><span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">overlay_df</span>, <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x1</span>, <span class="va">x2</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_contour.html" class="external-link">geom_contour_filled</a></span><span class="op">(</span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>z <span class="op">=</span> <span class="va">target</span><span class="op">)</span>, bins <span class="op">=</span> <span class="fl">10L</span>,</span>
+<span>                               alpha <span class="op">=</span> <span class="fl">0.85</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_contour.html" class="external-link">geom_contour</a></span><span class="op">(</span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>z <span class="op">=</span> <span class="va">proxy</span><span class="op">)</span>, colour <span class="op">=</span> <span class="st">"white"</span>,</span>
+<span>                        linetype <span class="op">=</span> <span class="st">"dashed"</span>, linewidth <span class="op">=</span> <span class="fl">0.4</span>, bins <span class="op">=</span> <span class="fl">8L</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_viridis.html" class="external-link">scale_fill_viridis_d</a></span><span class="op">(</span>option <span class="op">=</span> <span class="st">"mako"</span>, guide <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span> <span class="va">shape</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span>base_size <span class="op">=</span> <span class="fl">11</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">
-<img src="density_shapes_files/figure-html/donut-target-1.png" class="r-plt" alt="Donut target (rotationally symmetric annulus)." width="100%"><p class="caption">
-Donut target (rotationally symmetric annulus).
+<img src="density_shapes_files/figure-html/overlay-1.png" class="r-plt" alt="Three contour panels showing the banana, donut and three-peak densities, each overlaid with dashed contours of its Gaussian-mixture proxy." width="100%"><p class="caption">
+Each target (filled contours) with its fitted proxy overlaid as dashed
+contours. The proxies for the banana and the three peaks lie close to
+their targets. The donut’s proxy is a ring of six ellipses, and its
+dashed contours break into separate lobes where neighbouring ellipses
+meet.
 </p>
 </div>
-<p>A donut is genuinely hard for a Gaussian mixture – the modes are
-<em>infinitely many</em> (along the ring). With <code>N = 6</code>
-components, KLD-EM finds a balanced ring-approximation:</p>
+</div>
+<div class="section level3">
+<h3 id="measure-each-fit-in-two-ways">Measure each fit in two ways<a class="anchor" aria-label="anchor" href="#measure-each-fit-in-two-ways"></a>
+</h3>
+<p>The held-out KL divergence is computed from random trial points, so
+it carries random error. In one or two variables, the same divergence
+can also be computed without any random draws. The plane is covered with
+a fine grid of points, and the KL formula is added up over the grid.
+This sum uses only the two density formulas, not the draws the fit was
+built on.</p>
+<p>The grid must be wide enough to hold nearly all of the target’s
+probability. The banana’s two arms reach far upwards, so its grid runs
+from -12 to 12 in each direction. The code below also prints the share
+of each target’s probability that falls on its grid, to six decimal
+places.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit_d</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_proxymix.html">fit_proxymix</a></span><span class="op">(</span><span class="va">donut</span>, N <span class="op">=</span> <span class="fl">6L</span>, regime <span class="op">=</span> <span class="st">"kld"</span>,</span>
-<span>                      proposal <span class="op">=</span> <span class="fu"><a href="../reference/is_mvt.html">is_mvt</a></span><span class="op">(</span>n_dim <span class="op">=</span> <span class="fl">2L</span>,</span>
-<span>                                        sigma <span class="op">=</span> <span class="fl">9</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,</span>
-<span>                                        df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>,</span>
-<span>                      is_size <span class="op">=</span> <span class="fl">3500L</span>,</span>
-<span>                      max_iter <span class="op">=</span> <span class="fl">60L</span>,</span>
-<span>                      seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
-<span><span class="va">fit_d</span></span>
-<span><span class="co">#&gt; &lt;gmm_fit&gt;: regime = "kld", K = 6, p = 2</span></span>
-<span><span class="co">#&gt;   target     : donut</span></span>
-<span><span class="co">#&gt;   iterations : 38</span></span>
-<span><span class="co">#&gt;   converged  : TRUE</span></span>
-<span><span class="co">#&gt;   [1] w = 0.1857, |mu| = 2.4064, tr(Sigma) = 1.2368</span></span>
-<span><span class="co">#&gt;   [2] w = 0.1843, |mu| = 2.4028, tr(Sigma) = 1.1954</span></span>
-<span><span class="co">#&gt;   [3] w = 0.1704, |mu| = 2.3580, tr(Sigma) = 1.1155</span></span>
-<span><span class="co">#&gt;   [4] w = 0.1619, |mu| = 2.4566, tr(Sigma) = 0.9912</span></span>
-<span><span class="co">#&gt;   [5] w = 0.1575, |mu| = 2.4804, tr(Sigma) = 1.0185</span></span>
-<span><span class="co">#&gt;   ... 1 more components</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">grid_points</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">lim</span>, <span class="va">step</span> <span class="op">=</span> <span class="fl">0.04</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">gx</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="va">lim</span>, <span class="va">lim</span>, by <span class="op">=</span> <span class="va">step</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span>x1 <span class="op">=</span> <span class="va">gx</span>, x2 <span class="op">=</span> <span class="va">gx</span><span class="op">)</span><span class="op">)</span>, cell <span class="op">=</span> <span class="va">step</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="va">grid_mass</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">target</span>, <span class="va">lim</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">g</span> <span class="op">&lt;-</span> <span class="fu">grid_points</span><span class="op">(</span><span class="va">lim</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">target</span><span class="op">@</span><span class="va">log_density</span><span class="op">(</span><span class="va">g</span><span class="op">$</span><span class="va">x</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">*</span> <span class="va">g</span><span class="op">$</span><span class="va">cell</span></span>
+<span><span class="op">}</span></span>
+<span><span class="va">kl_grid</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">target</span>, <span class="va">fit</span>, <span class="va">lim</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">g</span> <span class="op">&lt;-</span> <span class="fu">grid_points</span><span class="op">(</span><span class="va">lim</span><span class="op">)</span></span>
+<span>  <span class="va">log_f</span> <span class="op">&lt;-</span> <span class="va">target</span><span class="op">@</span><span class="va">log_density</span><span class="op">(</span><span class="va">g</span><span class="op">$</span><span class="va">x</span><span class="op">)</span></span>
+<span>  <span class="va">log_g</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dgmm.html">dgmm</a></span><span class="op">(</span><span class="va">g</span><span class="op">$</span><span class="va">x</span>, <span class="va">fit</span>, log <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span>  <span class="va">dens_f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">log_f</span><span class="op">)</span></span>
+<span>  <span class="va">ok</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/is.finite.html" class="external-link">is.finite</a></span><span class="op">(</span><span class="va">log_f</span><span class="op">)</span> <span class="op">&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/is.finite.html" class="external-link">is.finite</a></span><span class="op">(</span><span class="va">log_g</span><span class="op">)</span> <span class="op">&amp;</span> <span class="va">dens_f</span> <span class="op">&gt;</span> <span class="fl">1e-300</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">dens_f</span><span class="op">[</span><span class="va">ok</span><span class="op">]</span> <span class="op">*</span> <span class="op">(</span><span class="va">log_f</span><span class="op">[</span><span class="va">ok</span><span class="op">]</span> <span class="op">-</span> <span class="va">log_g</span><span class="op">[</span><span class="va">ok</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="op">*</span> <span class="va">g</span><span class="op">$</span><span class="va">cell</span></span>
+<span><span class="op">}</span></span>
+<span><span class="va">grid_lim</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>banana <span class="op">=</span> <span class="fl">12</span>, donut <span class="op">=</span> <span class="fl">7</span>, mixture <span class="op">=</span> <span class="fl">8</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/format.html" class="external-link">format</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>  banana <span class="op">=</span> <span class="fu">grid_mass</span><span class="op">(</span><span class="fu"><a href="../reference/banana_target.html">banana_target</a></span><span class="op">(</span><span class="op">)</span>, <span class="va">grid_lim</span><span class="op">[[</span><span class="st">"banana"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>  donut <span class="op">=</span> <span class="fu">grid_mass</span><span class="op">(</span><span class="fu"><a href="../reference/donut_target.html">donut_target</a></span><span class="op">(</span><span class="op">)</span>, <span class="va">grid_lim</span><span class="op">[[</span><span class="st">"donut"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>  mixture <span class="op">=</span> <span class="fu">grid_mass</span><span class="op">(</span><span class="fu"><a href="../reference/mixture_target.html">mixture_target</a></span><span class="op">(</span><span class="op">)</span>, <span class="va">grid_lim</span><span class="op">[[</span><span class="st">"mixture"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="op">)</span>, <span class="fl">6L</span><span class="op">)</span>, nsmall <span class="op">=</span> <span class="fl">6L</span><span class="op">)</span></span>
+<span><span class="co">#&gt;     banana      donut    mixture </span></span>
+<span><span class="co">#&gt; "0.999999" "1.000000" "1.000000"</span></span>
+<span><span class="va">kl_quad</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>  banana <span class="op">=</span> <span class="fu">kl_grid</span><span class="op">(</span><span class="fu"><a href="../reference/banana_target.html">banana_target</a></span><span class="op">(</span><span class="op">)</span>, <span class="va">fit_b</span>, <span class="va">grid_lim</span><span class="op">[[</span><span class="st">"banana"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>  donut <span class="op">=</span> <span class="fu">kl_grid</span><span class="op">(</span><span class="fu"><a href="../reference/donut_target.html">donut_target</a></span><span class="op">(</span><span class="op">)</span>, <span class="va">fit_d</span>, <span class="va">grid_lim</span><span class="op">[[</span><span class="st">"donut"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>  mixture <span class="op">=</span> <span class="fu">kl_grid</span><span class="op">(</span><span class="fu"><a href="../reference/mixture_target.html">mixture_target</a></span><span class="op">(</span><span class="op">)</span>, <span class="va">fit_m</span>, <span class="va">grid_lim</span><span class="op">[[</span><span class="st">"mixture"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>A narrower grid for the banana, from -6 to 6, misses 0.05 per cent of
+its probability. That small share lies in the far tails, where the proxy
+fits worst. On the narrower grid the banana’s KL divergence comes out at
+0.0079 instead of 0.0101.</p>
+<table class="table">
+<caption>Fit quality on the three shapes that cover the plane. The
+held-out and grid columns measure the same KL divergence, the first from
+fresh trial points and the second by summing over a grid. SE is the
+standard error.</caption>
+<colgroup>
+<col width="10%">
+<col width="9%">
+<col width="11%">
+<col width="18%">
+<col width="11%">
+<col width="5%">
+<col width="7%">
+<col width="15%">
+<col width="11%">
+</colgroup>
+<thead><tr class="header">
+<th align="left">Shape</th>
+<th align="right">Components</th>
+<th align="right">Trial points</th>
+<th align="right">Effective sample size</th>
+<th align="right">KL, held-out</th>
+<th align="right">KL SE</th>
+<th align="right">KL, grid</th>
+<th align="right">Squared Hellinger</th>
+<th align="right">Hellinger SE</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">banana</td>
+<td align="right">4</td>
+<td align="right">3000</td>
+<td align="right">1234</td>
+<td align="right">0.0093</td>
+<td align="right">0.0009</td>
+<td align="right">0.0101</td>
+<td align="right">0.0039</td>
+<td align="right">0.0014</td>
+</tr>
+<tr class="even">
+<td align="left">donut</td>
+<td align="right">6</td>
+<td align="right">3500</td>
+<td align="right">1035</td>
+<td align="right">0.0219</td>
+<td align="right">0.0021</td>
+<td align="right">0.0189</td>
+<td align="right">0.0060</td>
+<td align="right">0.0021</td>
+</tr>
+<tr class="odd">
+<td align="left">three peaks</td>
+<td align="right">3</td>
+<td align="right">3000</td>
+<td align="right">758</td>
+<td align="right">0.0119</td>
+<td align="right">0.0017</td>
+<td align="right">0.0092</td>
+<td align="right">0.0055</td>
+<td align="right">0.0015</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section level3">
+<h3 id="give-the-ring-more-components-and-more-trial-points">Give the ring more components and more trial points<a class="anchor" aria-label="anchor" href="#give-the-ring-more-components-and-more-trial-points"></a>
+</h3>
+<p>A mixture of a few ellipses cannot match a smooth ring exactly. To
+see how far more components lower the remaining divergence, the donut is
+refitted with different numbers of components. Each count is fitted
+twice, once with 3,500 trial points and once with 20,000.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">G_d</span><span class="op">$</span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fu"><a href="../reference/dgmm.html">dgmm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">G_d</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x1"</span>, <span class="st">"x2"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span>, <span class="va">fit_d</span>, log <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ggplot2"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">G_d</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x1</span>, <span class="va">x2</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_contour.html" class="external-link">geom_contour_filled</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>z <span class="op">=</span> <span class="va">f</span><span class="op">)</span>, bins <span class="op">=</span> <span class="fl">10L</span>, alpha <span class="op">=</span> <span class="fl">0.85</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_contour.html" class="external-link">geom_contour</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>z <span class="op">=</span> <span class="va">g</span><span class="op">)</span>, colour <span class="op">=</span> <span class="st">"white"</span>, linetype <span class="op">=</span> <span class="st">"dashed"</span>,</span>
-<span>                 linewidth <span class="op">=</span> <span class="fl">0.4</span>, bins <span class="op">=</span> <span class="fl">8L</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_viridis.html" class="external-link">scale_fill_viridis_d</a></span><span class="op">(</span>option <span class="op">=</span> <span class="st">"mako"</span>, guide <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Donut with proxy"</span>,</span>
-<span>         x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span>base_size <span class="op">=</span> <span class="fl">11</span><span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
-<div class="figure">
-<img src="density_shapes_files/figure-html/donut-overlay-1.png" class="r-plt" alt="Donut target (filled) with 6-component proxy (dashed)." width="100%"><p class="caption">
-Donut target (filled) with 6-component proxy (dashed).
-</p>
+<code class="sourceCode R"><span><span class="va">donut_n</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3L</span>, <span class="fl">4L</span>, <span class="fl">6L</span>, <span class="fl">10L</span><span class="op">)</span></span>
+<span><span class="va">donut_draws</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3500L</span>, <span class="fl">20000L</span><span class="op">)</span></span>
+<span><span class="va">donut_kl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="va">donut_draws</span>, <span class="kw">function</span><span class="op">(</span><span class="va">m</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">donut_n</span>, <span class="kw">function</span><span class="op">(</span><span class="va">k</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_proxymix.html">fit_proxymix</a></span><span class="op">(</span><span class="fu"><a href="../reference/donut_target.html">donut_target</a></span><span class="op">(</span><span class="op">)</span>, N <span class="op">=</span> <span class="va">k</span>, regime <span class="op">=</span> <span class="st">"kld"</span>,</span>
+<span>                      proposal <span class="op">=</span> <span class="fu"><a href="../reference/proposal_uniform.html">proposal_mvt</a></span><span class="op">(</span>n_dim <span class="op">=</span> <span class="fl">2L</span>,</span>
+<span>                                              sigma <span class="op">=</span> <span class="fl">9</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,</span>
+<span>                                              df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>,</span>
+<span>                      is_size <span class="op">=</span> <span class="va">m</span>, max_iter <span class="op">=</span> <span class="fl">60L</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
+<span>    <span class="fu">kl_grid</span><span class="op">(</span><span class="fu"><a href="../reference/donut_target.html">donut_target</a></span><span class="op">(</span><span class="op">)</span>, <span class="va">f</span>, <span class="va">grid_lim</span><span class="op">[[</span><span class="st">"donut"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span>  <span class="op">}</span>, <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">1L</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<caption>KL divergence of the donut proxy, computed on the grid, for
+four numbers of components and two numbers of trial points.</caption>
+<thead><tr class="header">
+<th align="right">Components</th>
+<th align="right">KL, 3,500 trial points</th>
+<th align="right">KL, 20,000 trial points</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="right">3</td>
+<td align="right">0.1976</td>
+<td align="right">0.1954</td>
+</tr>
+<tr class="even">
+<td align="right">4</td>
+<td align="right">0.0839</td>
+<td align="right">0.0773</td>
+</tr>
+<tr class="odd">
+<td align="right">6</td>
+<td align="right">0.0189</td>
+<td align="right">0.0116</td>
+</tr>
+<tr class="even">
+<td align="right">10</td>
+<td align="right">0.0169</td>
+<td align="right">0.0023</td>
+</tr>
+</tbody>
+</table>
 </div>
-</div>
-<div class="section level2">
-<h2 id="three-mixture">Three-mixture<a class="anchor" aria-label="anchor" href="#three-mixture"></a>
-</h2>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">mt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/mixture_target.html">mixture_target</a></span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">grid_x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">4.5</span>, <span class="fl">4.5</span>, length.out <span class="op">=</span> <span class="fl">120</span><span class="op">)</span></span>
-<span><span class="va">G_m</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span>x1 <span class="op">=</span> <span class="va">grid_x</span>, x2 <span class="op">=</span> <span class="va">grid_x</span><span class="op">)</span></span>
-<span><span class="va">G_m</span><span class="op">$</span><span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">mt</span><span class="op">@</span><span class="va">log_density</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">G_m</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ggplot2"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">G_m</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x1</span>, <span class="va">x2</span>, z <span class="op">=</span> <span class="va">f</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_contour.html" class="external-link">geom_contour_filled</a></span><span class="op">(</span>bins <span class="op">=</span> <span class="fl">12L</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_viridis.html" class="external-link">scale_fill_viridis_d</a></span><span class="op">(</span>option <span class="op">=</span> <span class="st">"mako"</span>, guide <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Three-mixture target"</span>,</span>
-<span>         x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span>base_size <span class="op">=</span> <span class="fl">11</span><span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
-<div class="figure">
-<img src="density_shapes_files/figure-html/mixture-target-1.png" class="r-plt" alt="Three-component mixture target." width="100%"><p class="caption">
-Three-component mixture target.
-</p>
-</div>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit_m</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_proxymix.html">fit_proxymix</a></span><span class="op">(</span><span class="va">mt</span>, N <span class="op">=</span> <span class="fl">3L</span>, regime <span class="op">=</span> <span class="st">"kld"</span>,</span>
-<span>                      proposal <span class="op">=</span> <span class="fu"><a href="../reference/is_mvt.html">is_mvt</a></span><span class="op">(</span>n_dim <span class="op">=</span> <span class="fl">2L</span>,</span>
-<span>                                        sigma <span class="op">=</span> <span class="fl">6</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,</span>
-<span>                                        df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>,</span>
-<span>                      is_size <span class="op">=</span> <span class="fl">3000L</span>,</span>
-<span>                      max_iter <span class="op">=</span> <span class="fl">50L</span>,</span>
-<span>                      seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
-<span><span class="va">fit_m</span></span>
-<span><span class="co">#&gt; &lt;gmm_fit&gt;: regime = "kld", K = 3, p = 2</span></span>
-<span><span class="co">#&gt;   target     : three_mixture</span></span>
-<span><span class="co">#&gt;   iterations : 10</span></span>
-<span><span class="co">#&gt;   converged  : TRUE</span></span>
-<span><span class="co">#&gt;   [1] w = 0.4164, |mu| = 0.0300, tr(Sigma) = 0.8377</span></span>
-<span><span class="co">#&gt;   [2] w = 0.3069, |mu| = 2.7545, tr(Sigma) = 1.2249</span></span>
-<span><span class="co">#&gt;   [3] w = 0.2767, |mu| = 2.7562, tr(Sigma) = 0.8740</span></span></code></pre></div>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">G_m</span><span class="op">$</span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fu"><a href="../reference/dgmm.html">dgmm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">G_m</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x1"</span>, <span class="st">"x2"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span>, <span class="va">fit_m</span>, log <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ggplot2"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">G_m</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x1</span>, <span class="va">x2</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_contour.html" class="external-link">geom_contour_filled</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>z <span class="op">=</span> <span class="va">f</span><span class="op">)</span>, bins <span class="op">=</span> <span class="fl">10L</span>, alpha <span class="op">=</span> <span class="fl">0.85</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_contour.html" class="external-link">geom_contour</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>z <span class="op">=</span> <span class="va">g</span><span class="op">)</span>, colour <span class="op">=</span> <span class="st">"white"</span>, linetype <span class="op">=</span> <span class="st">"dashed"</span>,</span>
-<span>                 linewidth <span class="op">=</span> <span class="fl">0.4</span>, bins <span class="op">=</span> <span class="fl">8L</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_viridis.html" class="external-link">scale_fill_viridis_d</a></span><span class="op">(</span>option <span class="op">=</span> <span class="st">"mako"</span>, guide <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Three-mixture with proxy"</span>,</span>
-<span>         x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span>base_size <span class="op">=</span> <span class="fl">11</span><span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
-<div class="figure">
-<img src="density_shapes_files/figure-html/mixture-overlay-1.png" class="r-plt" alt="Three-mixture target (filled) with 3-component proxy (dashed)." width="100%"><p class="caption">
-Three-mixture target (filled) with 3-component proxy (dashed).
-</p>
-</div>
-</div>
-<div class="section level2">
-<h2 id="bounded-support">Bounded support<a class="anchor" aria-label="anchor" href="#bounded-support"></a>
-</h2>
-<p>The three targets above all live on the whole plane. Some targets are
-instead <strong>compactly supported</strong> – exactly zero outside a
-bounded region. The textbook example is the Epanechnikov density
+<div class="section level3">
+<h3 id="a-density-with-hard-edges">A density with hard edges<a class="anchor" aria-label="anchor" href="#a-density-with-hard-edges"></a>
+</h3>
+<p>The Epanechnikov density,
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>K</mi><mo stretchy="false" form="prefix">(</mo><mi>u</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mstyle displaystyle="false"><mfrac><mn>3</mn><mn>4</mn></mfrac></mstyle><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msup><mi>u</mi><mn>2</mn></msup><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">K(u) = \tfrac{3}{4}(1 - u^2)</annotation></semantics></math>
-on
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">[</mo><mi>−</mi><mn>1</mn><mo>,</mo><mn>1</mn><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">[-1, 1]</annotation></semantics></math>.
-No mixture of full-support Gaussians can be exactly zero on an interval,
-so regime (iii) is the only viable route – and the default
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>t</mi><annotation encoding="application/x-tex">t</annotation></semantics></math>-proposal
-is actively unsafe here, since it places importance draws where the
-target log-density is
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>−</mi><mi>∞</mi></mrow><annotation encoding="application/x-tex">-\infty</annotation></semantics></math>,
-producing non-finite weights.</p>
-<p><code>proxymix</code> handles this safely. A target can declare its
-<code>support</code>, and <code><a href="../reference/fit_kld_em.html">fit_kld_em()</a></code> then selects a
-<em>support-matched</em> <code><a href="../reference/is_uniform.html">is_uniform()</a></code> proposal
-automatically instead of the crashing default.
-<code><a href="../reference/epanechnikov_target.html">epanechnikov_target()</a></code> is a built-in compact-support fixture
-that declares its support:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+for
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>u</mi><annotation encoding="application/x-tex">u</annotation></semantics></math>
+between -1 and 1, is exactly zero outside that interval. Its log-density
+is minus infinity there. A Student-t proposal places some trial points
+outside the interval. Those points get zero weight and are wasted, and
+the fit gives a warning when more than 5 per cent of the points are lost
+this way. With a standard Student-t on five degrees of freedom, about a
+third of the points fall outside. The target declares its support, so
+the fit switches to a uniform proposal over the interval and prints a
+message saying so.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">epan</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/epanechnikov_target.html">epanechnikov_target</a></span><span class="op">(</span>n_dim <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
 <span><span class="va">epan</span></span>
 <span><span class="co">#&gt; &lt;gmm_target&gt;: "epanechnikov" in p = 1 dimensions</span></span>
@@ -317,109 +401,214 @@ that declares its support:</p>
 <span><span class="co">#&gt;   normalised  : TRUE</span></span>
 <span><span class="co">#&gt;   log Z(f)    : 0</span></span>
 <span><span class="co">#&gt;   support     : [-1, 1]</span></span></code></pre></div>
-<p>Fitting needs no hand-chosen proposal – the declared support drives
-the choice, announced in a one-line message:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_e</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_proxymix.html">fit_proxymix</a></span><span class="op">(</span><span class="va">epan</span>, N <span class="op">=</span> <span class="fl">3L</span>, regime <span class="op">=</span> <span class="st">"kld"</span>,</span>
-<span>                      is_size <span class="op">=</span> <span class="fl">4000L</span>, max_iter <span class="op">=</span> <span class="fl">60L</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
+<span>                      is_size <span class="op">=</span> <span class="fl">4000L</span>, max_iter <span class="op">=</span> <span class="fl">300L</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Auto-selected a support-matched proposal (<span style="color: #0000BB;">"is_uniform[support-matched]"</span>) for</span></span>
 <span><span class="co">#&gt; the declared target support.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Pass an explicit `proposal` to override.</span></span>
-<span><span class="va">fit_e</span><span class="op">@</span><span class="va">diagnostics</span><span class="op">$</span><span class="va">proposal_name</span></span>
-<span><span class="co">#&gt; [1] "is_uniform[support-matched]"</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>ess <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">fit_e</span><span class="op">@</span><span class="va">diagnostics</span><span class="op">$</span><span class="va">ess</span>, <span class="fl">1L</span><span class="op">)</span>,</span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>proposal <span class="op">=</span> <span class="va">fit_e</span><span class="op">@</span><span class="va">diagnostics</span><span class="op">$</span><span class="va">proposal_name</span>,</span>
 <span>  support_fraction <span class="op">=</span> <span class="va">fit_e</span><span class="op">@</span><span class="va">diagnostics</span><span class="op">$</span><span class="va">support_fraction</span>,</span>
-<span>  kld_final <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">fit_e</span><span class="op">@</span><span class="va">diagnostics</span><span class="op">$</span><span class="va">kld_final</span>, <span class="fl">4L</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;              ess support_fraction        kld_final </span></span>
-<span><span class="co">#&gt;        3298.5000           1.0000           0.0092</span></span></code></pre></div>
-<p>Every importance draw receives a finite weight (the support fraction
-is 1), and the three-component proxy tracks the inverted-parabola shape
-closely:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">xs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1.4</span>, <span class="fl">1.4</span>, length.out <span class="op">=</span> <span class="fl">400L</span><span class="op">)</span></span>
-<span><span class="va">df_e</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  x <span class="op">=</span> <span class="va">xs</span>,</span>
-<span>  f <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">epan</span><span class="op">@</span><span class="va">log_density</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="va">xs</span>, ncol <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  g <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fu"><a href="../reference/dgmm.html">dgmm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="va">xs</span>, ncol <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span>, <span class="va">fit_e</span>, log <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
+<span>  iterations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="../reference/kld_trace.html">kld_trace</a></span><span class="op">(</span><span class="va">fit_e</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  converged <span class="op">=</span> <span class="fu"><a href="../reference/gmm_fit_quality.html">gmm_fit_quality</a></span><span class="op">(</span><span class="va">fit_e</span><span class="op">)</span><span class="op">$</span><span class="va">converged</span><span class="op">)</span></span>
+<span><span class="co">#&gt;                      proposal              support_fraction </span></span>
+<span><span class="co">#&gt; "is_uniform[support-matched]"                           "1" </span></span>
+<span><span class="co">#&gt;                    iterations                     converged </span></span>
+<span><span class="co">#&gt;                         "241"                        "TRUE"</span></span></code></pre></div>
+<p>The <code>support_fraction</code> is the share of trial points that
+fell inside the support.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">epan_x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1.4</span>, <span class="fl">1.4</span>, length.out <span class="op">=</span> <span class="fl">400L</span><span class="op">)</span></span>
+<span><span class="va">epan_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">epan_x</span>, density <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">epan</span><span class="op">@</span><span class="va">log_density</span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="va">epan_x</span>, ncol <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>, series <span class="op">=</span> <span class="st">"target"</span>, stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">epan_x</span>, density <span class="op">=</span> <span class="fu"><a href="../reference/dgmm.html">dgmm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="va">epan_x</span>, ncol <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span>, <span class="va">fit_e</span><span class="op">)</span>,</span>
+<span>             series <span class="op">=</span> <span class="st">"mixture proxy"</span>, stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ggplot2"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">df_e</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">f</span><span class="op">)</span>, linewidth <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">g</span><span class="op">)</span>, linetype <span class="op">=</span> <span class="st">"dashed"</span>, linewidth <span class="op">=</span> <span class="fl">0.6</span>,</span>
-<span>              colour <span class="op">=</span> <span class="st">"#2c7fb8"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Epanechnikov with proxy"</span>, y <span class="op">=</span> <span class="st">"density"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span>base_size <span class="op">=</span> <span class="fl">11</span><span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
+<span><span class="co">## probability the proxy places outside [-1, 1]</span></span>
+<span><span class="va">leak_x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">6</span>, <span class="fl">6</span>, by <span class="op">=</span> <span class="fl">0.001</span><span class="op">)</span></span>
+<span><span class="va">leak</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="../reference/dgmm.html">dgmm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="va">leak_x</span>, ncol <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span>, <span class="va">fit_e</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">leak_x</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">1</span><span class="op">]</span><span class="op">)</span> <span class="op">*</span> <span class="fl">0.001</span></span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">epan_df</span>, <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">density</span>, colour <span class="op">=</span> <span class="va">series</span>,</span>
+<span>                                      linetype <span class="op">=</span> <span class="va">series</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span>linewidth <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html" class="external-link">geom_vline</a></span><span class="op">(</span>xintercept <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span>, colour <span class="op">=</span> <span class="st">"grey60"</span>,</span>
+<span>                      linewidth <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_manual.html" class="external-link">scale_colour_manual</a></span><span class="op">(</span></span>
+<span>    name <span class="op">=</span> <span class="cn">NULL</span>, values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"target"</span> <span class="op">=</span> <span class="st">"#0072B2"</span>,</span>
+<span>                            <span class="st">"mixture proxy"</span> <span class="op">=</span> <span class="st">"#D55E00"</span><span class="op">)</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_manual.html" class="external-link">scale_linetype_manual</a></span><span class="op">(</span></span>
+<span>    name <span class="op">=</span> <span class="cn">NULL</span>, values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"target"</span> <span class="op">=</span> <span class="st">"solid"</span>, <span class="st">"mixture proxy"</span> <span class="op">=</span> <span class="st">"dashed"</span><span class="op">)</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>, y <span class="op">=</span> <span class="st">"density"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span>base_size <span class="op">=</span> <span class="fl">11</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"top"</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">
-<img src="density_shapes_files/figure-html/epan-overlay-1.png" class="r-plt" alt="Epanechnikov target (solid) with 3-component proxy (dashed)." width="100%"><p class="caption">
-Epanechnikov target (solid) with 3-component proxy (dashed).
+<img src="density_shapes_files/figure-html/epan-plot-1.png" class="r-plt" alt="Line plot of the upside-down parabola of the Epanechnikov density and its dashed Gaussian-mixture proxy, which extends slightly beyond the interval from -1 to 1." width="100%"><p class="caption">
+The Epanechnikov target and its three-component proxy. The proxy follows
+the parabola across the interval with small ripples, and places 0.52 per
+cent of its probability outside the interval, beyond the grey lines at
+-1 and 1.
 </p>
 </div>
 </div>
-<div class="section level2">
-<h2 id="summary">Summary<a class="anchor" aria-label="anchor" href="#summary"></a>
-</h2>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">summary_tbl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  target      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"banana"</span>, <span class="st">"donut"</span>, <span class="st">"three-mixture"</span><span class="op">)</span>,</span>
-<span>  N           <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="../reference/gmm_n_components.html">gmm_n_components</a></span><span class="op">(</span><span class="va">fit_b</span><span class="op">)</span>,</span>
-<span>                  <span class="fu"><a href="../reference/gmm_n_components.html">gmm_n_components</a></span><span class="op">(</span><span class="va">fit_d</span><span class="op">)</span>,</span>
-<span>                  <span class="fu"><a href="../reference/gmm_n_components.html">gmm_n_components</a></span><span class="op">(</span><span class="va">fit_m</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  is_size     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">fit_b</span><span class="op">@</span><span class="va">diagnostics</span><span class="op">$</span><span class="va">is_size</span>,</span>
-<span>                  <span class="va">fit_d</span><span class="op">@</span><span class="va">diagnostics</span><span class="op">$</span><span class="va">is_size</span>,</span>
-<span>                  <span class="va">fit_m</span><span class="op">@</span><span class="va">diagnostics</span><span class="op">$</span><span class="va">is_size</span><span class="op">)</span>,</span>
-<span>  ESS         <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">fit_b</span><span class="op">@</span><span class="va">diagnostics</span><span class="op">$</span><span class="va">ess</span>,</span>
-<span>                        <span class="va">fit_d</span><span class="op">@</span><span class="va">diagnostics</span><span class="op">$</span><span class="va">ess</span>,</span>
-<span>                        <span class="va">fit_m</span><span class="op">@</span><span class="va">diagnostics</span><span class="op">$</span><span class="va">ess</span><span class="op">)</span>, <span class="fl">1L</span><span class="op">)</span>,</span>
-<span>  kld_final   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">fit_b</span><span class="op">@</span><span class="va">diagnostics</span><span class="op">$</span><span class="va">kld_final</span>,</span>
-<span>                        <span class="va">fit_d</span><span class="op">@</span><span class="va">diagnostics</span><span class="op">$</span><span class="va">kld_final</span>,</span>
-<span>                        <span class="va">fit_m</span><span class="op">@</span><span class="va">diagnostics</span><span class="op">$</span><span class="va">kld_final</span><span class="op">)</span>, <span class="fl">4L</span><span class="op">)</span>,</span>
-<span>  hellinger2  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="../reference/hellinger_mc.html">hellinger_mc</a></span><span class="op">(</span><span class="va">fit_b</span>, n_mc <span class="op">=</span> <span class="fl">2000L</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span><span class="op">$</span><span class="va">h2</span>,</span>
-<span>    <span class="fu"><a href="../reference/hellinger_mc.html">hellinger_mc</a></span><span class="op">(</span><span class="va">fit_d</span>, n_mc <span class="op">=</span> <span class="fl">2000L</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span><span class="op">$</span><span class="va">h2</span>,</span>
-<span>    <span class="fu"><a href="../reference/hellinger_mc.html">hellinger_mc</a></span><span class="op">(</span><span class="va">fit_m</span>, n_mc <span class="op">=</span> <span class="fl">2000L</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span><span class="op">$</span><span class="va">h2</span></span>
-<span>  <span class="op">)</span>, <span class="fl">4L</span><span class="op">)</span></span>
+<div class="section level3">
+<h3 id="when-the-trial-points-miss-the-target">When the trial points miss the target<a class="anchor" aria-label="anchor" href="#when-the-trial-points-miss-the-target"></a>
+</h3>
+<p>Every number above depends on the trial points landing where the
+target has its probability. If they do not, the fitting steps still
+return a mixture, but that mixture carries no information about the
+target. The call below draws its trial points around the point (25, 25),
+far from all three peaks. With <code>on_low_ess = "abort"</code>, the
+fit stops with an error instead of returning. The error message uses the
+package’s own terms. “IS draws” are the trial points, IS standing for
+importance sampling, the name of this weighting method. The option
+<code>adapt = "pmc"</code> moves the proposal towards the target between
+rounds.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">bad</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="../reference/fit_kld_em.html">fit_kld_em</a></span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="../reference/mixture_target.html">mixture_target</a></span><span class="op">(</span><span class="op">)</span>, N <span class="op">=</span> <span class="fl">3L</span>,</span>
+<span>    proposal <span class="op">=</span> <span class="fu"><a href="../reference/proposal_uniform.html">proposal_mvn</a></span><span class="op">(</span>n_dim <span class="op">=</span> <span class="fl">2L</span>, mean <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">25</span>, <span class="fl">25</span><span class="op">)</span>, cov <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    is_size <span class="op">=</span> <span class="fl">2000L</span>, max_iter <span class="op">=</span> <span class="fl">10L</span>, seed <span class="op">=</span> <span class="fl">1L</span>,</span>
+<span>    min_ess <span class="op">=</span> <span class="fl">50</span>, on_low_ess <span class="op">=</span> <span class="st">"abort"</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="va">e</span></span>
 <span><span class="op">)</span></span>
-<span><span class="va">summary_tbl</span></span>
-<span><span class="co">#&gt;          target N is_size    ESS kld_final hellinger2</span></span>
-<span><span class="co">#&gt; 1        banana 4    3000 1234.4    0.0060     0.0008</span></span>
-<span><span class="co">#&gt; 2         donut 6    3500 1034.7   -0.0044    -0.0067</span></span>
-<span><span class="co">#&gt; 3 three-mixture 3    3000  757.7   -0.0082    -0.0064</span></span></code></pre></div>
-<p>Interpretation:</p>
-<ul>
-<li>
-<strong><code>ESS</code></strong> – the effective sample size of the
-importance-sampling weights, out of <code>is_size</code>. ESS well below
-<code>is_size</code> means the proposal is wasteful (heavy weight on few
-draws); ESS near <code>is_size</code> means the proposal is close to the
-target.</li>
-<li>
-<strong><code>kld_final</code></strong> – the importance-sampled
-estimate of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi mathvariant="normal">K</mi><mi mathvariant="normal">L</mi></mrow><mo stretchy="false" form="prefix">(</mo><mi>f</mi><mo stretchy="false" form="postfix">‖</mo><msub><mi>g</mi><mi>θ</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\mathrm{KL}(f \Vert g_\theta)</annotation></semantics></math>
-at the final parameters. <em>Small is good.</em>
-</li>
-<li>
-<strong><code>hellinger2</code></strong> – a Monte-Carlo estimate of
-the squared Hellinger distance
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>H</mi><mn>2</mn></msup><mo stretchy="false" form="prefix">(</mo><mi>f</mi><mo>,</mo><mi>g</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">H^2(f, g)</annotation></semantics></math>.
-Bounded in
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">[</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">[0, 1]</annotation></semantics></math>
-when both densities are normalised; a small value confirms the proxy
-reproduces the target’s mass <em>and</em> shape.</li>
-</ul>
-<p>The three-mixture is fit nearly exactly (the proxy lives in the same
-parametric family as the target). The banana is well-approximated by
-four Gaussians along the ridge. The donut – a topology a Gaussian
-mixture cannot reproduce exactly – is approximated by a ring of 6
-components, with a non-trivial residual KLD reflecting the structural
-mismatch.</p>
+<span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">bad</span><span class="op">)</span><span class="op">[</span><span class="fl">1L</span><span class="op">]</span></span>
+<span><span class="co">#&gt; [1] "proxymix_degenerate_fit"</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">conditionMessage</a></span><span class="op">(</span><span class="va">bad</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Effective sample size is low: ESS = 1 out of 2000; the fit is flagged as</span></span>
+<span><span class="co">#&gt; degenerate.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Consider a heavier-tailed proposal, more IS draws, or `adapt = "pmc"`.</span></span></code></pre></div>
+</div>
 </div>
 <div class="section level2">
-<h2 id="reference">Reference<a class="anchor" aria-label="anchor" href="#reference"></a>
+<h2 id="interpretation">Interpretation<a class="anchor" aria-label="anchor" href="#interpretation"></a>
+</h2>
+<p>The banana and the three peaks are fitted closely. On the grid, the
+KL divergence is 0.0101 for the banana’s proxy and 0.0092 for the proxy
+of the three peaks. In these two fits, the 3,000 trial points were worth
+1,234 and 758 equally weighted points respectively. The donut’s proxy is
+further off, at 0.0189, about 1.9 times the banana’s.</p>
+<p>The ring is harder, but it is not out of reach. With 3,500 trial
+points, going from 3 to 6 components lowers the donut’s divergence from
+0.1976 to 0.0189, and 10 components lower it only to 0.0169. With 20,000
+trial points, 10 components reach 0.0023. Over the counts tried here,
+the divergence kept falling as components and trial points were added,
+and placing more components well took more trial points. This agrees
+with a general fact: a mixture of enough normal distributions can come
+as close as needed to any smooth density.</p>
+<p>The grid and the held-out estimates agree. Across the three shapes,
+the held-out values lie within 1.6 standard errors of the grid values.
+Their standard errors run from 0.0009 to 0.0021. The held-out values
+separate the donut from the other two shapes by at least 3.7 standard
+errors of the difference, but the banana and the three peaks differ by
+only 1.3. The squared Hellinger distances are each at least 2.7 standard
+errors above zero. The largest difference between two shapes, 0.0021, is
+smaller than its standard error of 0.0025, so the Hellinger distances do
+not rank the fits.</p>
+<p>The Epanechnikov density has hard edges, which a mixture of normal
+distributions can only approach. Every trial point fell inside the
+support. The fit settled after 241 rounds, against at most 46 for the
+other three shapes. The held-out KL divergence is 0.014, with a standard
+error of 0.001. A normal distribution is positive everywhere, so the
+proxy always puts some probability outside the interval, here 0.52 per
+cent.</p>
+<p>When the trial points missed the target, no fit was returned. The
+error has class proxymix_degenerate_fit. Almost all of the weight sat on
+a single trial point, so the weighted points carried no usable
+information. Without the check, the call would have returned a mixture
+that looked ordinary when printed. The default setting,
+<code>on_low_ess = "warn"</code>, gives a warning instead of an error
+and returns the fit.</p>
+</div>
+<div class="section level2">
+<h2 id="limitations">Limitations<a class="anchor" aria-label="anchor" href="#limitations"></a>
+</h2>
+<p>All the measurements here are estimates. The held-out KL divergence
+and the squared Hellinger distance come from random draws. The standard
+errors of the Hellinger distances are as large as the differences
+between the shapes. The grid sum has no random error, and this vignette
+uses it in one and two variables. The number of grid points grows very
+fast with the number of variables, so the grid sum is not practical
+beyond two or three.</p>
+<p>The number of components was set by hand for each shape. Choosing it
+is a separate problem, and the donut runs above only touch on it.</p>
+<p>A small divergence shows that the proxy is close to the target
+overall. It does not show that the proxy is good enough for a particular
+use. Probabilities of rare events, which depend on the tails, are more
+sensitive to a poor fit than the mean or the bulk of the
+distribution.</p>
+</div>
+<div class="section level2">
+<h2 id="further-reading">Further reading<a class="anchor" aria-label="anchor" href="#further-reading"></a>
+</h2>
+<p><em>Fitting a proxy to a density you cannot sample</em> is the
+shorter introduction to the fitting method used here, and explains the
+fit certificate in full.</p>
+<p><em>Choosing between the three fitting regimes</em> explains why only
+this fitting method applies when a target has a formula and no
+sample.</p>
+<p><em>Reading the entropy of a fitted mixture</em> returns to the
+question of how many components to use.</p>
+<p><em>The closed-form operator calculus on a mixture</em> shows the
+exact operations that a fitted proxy makes possible.</p>
+<p>The <a href="https://max578.github.io/proxymix/articles/extended/density_shapes.html">extended
+version of this article</a> compares these fits with Stan’s sampler
+followed by <code>mclust</code>, and the results there are mixed:
+proxymix is closer on the ring, about level on the banana, and further
+off on the three peaks and the Epanechnikov density.</p>
+</div>
+<div class="section level2">
+<h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
 </h2>
 <p>Hoek, J. van der and Elliott, R. J. (2024). <em>Mixtures of
 multivariate Gaussians.</em> Stochastic Analysis and Applications. <a href="https://doi.org/10.1080/07362994.2024.2372605" class="external-link uri">https://doi.org/10.1080/07362994.2024.2372605</a>.</p>
+</div>
+<div class="section level2">
+<h2 id="reproduce">Reproduce<a class="anchor" aria-label="anchor" href="#reproduce"></a>
+</h2>
+<p>Every fit and every Hellinger estimate is seeded with
+<code>seed = 1L</code>. The grid sums involve no random draws.
+Re-running this vignette therefore reproduces the same numbers.</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<pre class="session-info"><code><span><span class="co">#&gt; R version 4.6.1 (2026-06-24)</span></span>
+<span><span class="co">#&gt; Platform: aarch64-apple-darwin23</span></span>
+<span><span class="co">#&gt; Running under: macOS Tahoe 26.6.2</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Matrix products: default</span></span>
+<span><span class="co">#&gt; BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib </span></span>
+<span><span class="co">#&gt; LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; locale:</span></span>
+<span><span class="co">#&gt; [1] en_AU.UTF-8/en_AU.UTF-8/en_AU.UTF-8/C/en_AU.UTF-8/en_AU.UTF-8</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; time zone: Australia/Adelaide</span></span>
+<span><span class="co">#&gt; tzcode source: internal</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; attached base packages:</span></span>
+<span><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; other attached packages:</span></span>
+<span><span class="co">#&gt; [1] proxymix_0.16.0</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
+<span><span class="co">#&gt;  [1] mvnfast_0.2.8      gtable_0.3.6       jsonlite_2.0.0     dplyr_1.2.1       </span></span>
+<span><span class="co">#&gt;  [5] compiler_4.6.1     Rcpp_1.1.2         tidyselect_1.2.1   dichromat_2.0-1   </span></span>
+<span><span class="co">#&gt;  [9] jquerylib_0.1.4    systemfonts_1.3.2  scales_1.4.0       textshaping_1.0.5 </span></span>
+<span><span class="co">#&gt; [13] yaml_2.3.12        fastmap_1.2.0      ggplot2_4.0.3      R6_2.6.1          </span></span>
+<span><span class="co">#&gt; [17] labeling_0.4.3     generics_0.1.4     isoband_0.3.0      knitr_1.51        </span></span>
+<span><span class="co">#&gt; [21] htmlwidgets_1.6.4  tibble_3.3.1       desc_1.4.3         bslib_0.12.0      </span></span>
+<span><span class="co">#&gt; [25] pillar_1.11.1      RColorBrewer_1.1-3 rlang_1.3.0        cachem_1.1.0      </span></span>
+<span><span class="co">#&gt; [29] xfun_0.60          fs_2.1.0           sass_0.4.10        S7_0.2.2          </span></span>
+<span><span class="co">#&gt; [33] otel_0.2.0         viridisLite_0.4.3  cli_3.6.6          pkgdown_2.2.1     </span></span>
+<span><span class="co">#&gt; [37] withr_3.0.3        magrittr_2.0.5     digest_0.6.39      grid_4.6.1        </span></span>
+<span><span class="co">#&gt; [41] lifecycle_1.0.5    vctrs_0.7.3        evaluate_1.0.5     glue_1.8.1        </span></span>
+<span><span class="co">#&gt; [45] farver_2.1.2       ragg_1.5.2         rmarkdown_2.32     tools_4.6.1       </span></span>
+<span><span class="co">#&gt; [49] pkgconfig_2.0.3    htmltools_0.5.9</span></span></code></pre>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
@@ -432,7 +621,7 @@ multivariate Gaussians.</em> Stochastic Analysis and Applications. <a href="http
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

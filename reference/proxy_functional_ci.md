@@ -14,7 +14,7 @@ operator calculus.
 ## Usage
 
 ``` r
-proxy_functional_ci(ensemble, fn, level = 0.9, ...)
+proxy_functional_ci(ensemble, fn, level = 0.9, ..., tail_warn = 0.001)
 ```
 
 ## Arguments
@@ -38,10 +38,29 @@ proxy_functional_ci(ensemble, fn, level = 0.9, ...)
 
   Forwarded to `fn`.
 
+- tail_warn:
+
+  Threshold for the tail-probability warning described in Details.
+  Default `1e-3`; `NULL` or `0` turns the warning off.
+
 ## Value
 
 A data frame with one row per element of `fn`'s value: `term`,
 `estimate` (the base fit's value), `conf.low`, `conf.high`.
+
+## Details
+
+The interval measures how much the functional moves when the fit is
+repeated on re-weighted draws. It does not measure how far the
+Gaussian-mixture family itself is from the target, so it can exclude the
+target's true value when the mixture has too few components. The gap is
+widest far in a tail: a mixture of Gaussians has Gaussian tails and can
+misstate a small tail probability by orders of magnitude while the
+interval stays narrow. A warning of class `proxymix_tail_functional` is
+raised when every value of `fn` (at the base fit and at every member)
+lies in `[0, 1]` and some element of the base fit's estimate, or its
+complement, is below `tail_warn`. Check such a probability against
+numerical integration of the target or a method built for tails.
 
 ## See also
 

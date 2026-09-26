@@ -1,9 +1,10 @@
 # Monte-Carlo Hellinger distance between a fit and its target
 
 Estimates the squared Hellinger distance
-`H^2(f, g) = 1 - integral sqrt(f(x) g(x)) dx` by importance sampling
-against the proposal stored in the fit (for regime `"kld"`) or by
-sampling from the fit itself (for regime `"sample"`). The target's
+`H^2(f, g) = 1 - integral sqrt(f(x) g(x)) dx` as
+`1 - mean(sqrt(f(x) / g(x)))` over `n_mc` fresh draws `x` from the fit
+`g`, for every regime. The draws are independent of any sample used to
+fit, so the estimate is unbiased, with standard error `se`. The target's
 `log_density` must be supplied **and normalised**; otherwise the Monte
 Carlo integral is biased by the missing \\\sqrt{Z(f)}\\. When the
 target's `normalised` property is not `TRUE`, a warning is issued and
@@ -24,11 +25,11 @@ hellinger_mc(fit, n_mc = 5000L, seed = NULL)
 
 - n_mc:
 
-  Number of Monte Carlo samples.
+  Number of Monte Carlo draws from the fit.
 
 - seed:
 
-  Optional integer seed.
+  Optional integer seed for the draws.
 
 ## Value
 
@@ -38,7 +39,9 @@ A list with components
 
 - `se` - Monte Carlo standard error,
 
-- `n_mc` - sample size used.
+- `n_mc` - number of draws with a finite density ratio,
+
+- `trustworthy` - `TRUE` when the target is declared normalised.
 
 ## See also
 
@@ -64,13 +67,13 @@ fit <- fit_proxymix(banana_target(), N = 3L, regime = "kld",
                     is_size = 2000L, max_iter = 25L, seed = 1L)
 hellinger_mc(fit, n_mc = 1000L, seed = 1L)
 #> $h2
-#> [1] -0.01135163
+#> [1] 0.00506444
 #> 
 #> $se
-#> [1] 0.005185913
+#> [1] 0.003431508
 #> 
 #> $n_mc
-#> [1] 2000
+#> [1] 1000
 #> 
 #> $trustworthy
 #> [1] TRUE

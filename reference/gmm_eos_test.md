@@ -60,8 +60,8 @@ gmm_eos_test(
 
 - method:
 
-  Either `"chisq"` (parametric) or `"andrews"` (distribution-free
-  subsampling P-test).
+  Either `"chisq"` (parametric) or `"andrews"` (subsampling calibration
+  after Andrews' P-test, asymptotic in `n`).
 
 - alpha:
 
@@ -78,20 +78,29 @@ in-sample block statistics used for the subsampling calibration.
 Two calibrations are offered. `method = "chisq"` refers the statistic to
 a chi-square distribution on `m * ncol(y)` degrees of freedom, which is
 exact when the standardised innovations are Gaussian.
-`method = "andrews"` is the distribution-free Andrews (2003) subsampling
-P-test: the statistic's rank among the in-sample overlapping `m`-blocks
-of the same innovations gives the p-value, so it stays calibrated when
-the innovations are non-Gaussian (heavy-tailed observation noise, say).
-The model is supplied exactly as for
+`method = "andrews"` is a subsampling calibration after the P-test of
+Andrews (2003): the statistic's rank among the \\n - 2m + 1\\
+overlapping `m`-blocks of the earlier innovations gives the p-value
+\\(1 + k) / (n - 2m + 2)\\, where \\k\\ is the number of blocks at least
+as large as the statistic. It differs from Andrews' test in two ways:
+the p-value counts the tested block itself, and the block statistics are
+computed at the supplied model instead of at estimates that leave out
+each block. It does not assume Gaussian innovations, so it suits
+heavy-tailed observation noise, but its validity is asymptotic: `n`
+large with `m` fixed, and innovations that are stationary and ergodic
+before the tested block. Its size equals the nominal level only when the
+end block is exchangeable with the earlier blocks, and in short series
+it can over-reject. The model is supplied exactly as for
 [`gmm_filter()`](https://max578.github.io/proxymix/reference/gmm_filter.md).
 
 Two finite-sample cautions. The chi-square calibration is exact when the
 model is given; with parameters estimated on a short series it
-over-rejects (size 0.068 at `n = 30` against a nominal 0.05 in the
-validation study, settling to 0.044 by `n = 120`), so prefer
-`method = "andrews"` when the model is estimated on little data. The
-subsampling p-value has a floor of `1 / (n - 2m + 2)`, so it can reject
-at level 0.05 only when `n > 2m + 18`.
+over-rejects (the end-of-sample vignette reports its size by series
+length). The subsampling calibration can also over-reject in short
+series, so neither method holds its nominal size when the model is
+estimated on little data. The subsampling p-value has a floor of
+`1 / (n - 2m + 2)`, so it can reject at level 0.05 only when
+`n > 2m + 18`.
 
 ## References
 

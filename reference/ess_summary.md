@@ -21,7 +21,12 @@ ess_summary(fit)
 
 ## Value
 
-A list of numeric scalars (or `NA`s where not applicable).
+A list of numeric scalars (or `NA`s where not applicable), plus a
+logical `support_truncated` flag that is `TRUE` when the fit's
+auto-selected proposal replaced an unbounded target-support end with a
+finite, data-derived working box (so `support_fraction` reflects only
+that finite region and the target tail beyond it was not sampled). The
+finite box itself is recorded in `fit@diagnostics$working_bounds`.
 
 ## Details
 
@@ -66,6 +71,9 @@ ess_summary(fit)
 #> 
 #> $support_fraction
 #> [1] 1
+#> 
+#> $support_truncated
+#> [1] FALSE
 #> 
 #> $mc_se_kld
 #> [1] 0.009224739

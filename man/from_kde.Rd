@@ -9,13 +9,13 @@ from_kde(
   N = 3L,
   bandwidth = "silverman",
   proposal = NULL,
-  is_size = 5000L,
+  is_size = NULL,
   max_iter = 100L,
   tol = 1e-05,
   ridge_eps = 1e-06,
   min_ess = 50L,
   seed = NULL,
-  validation_size = 0L,
+  validation_size = NULL,
   validation_proposal = NULL,
   validation_seed = NULL,
   support_warn = TRUE,
@@ -37,7 +37,10 @@ bandwidths. Default \code{"silverman"}.}
 centred at \code{colMeans(samples)}, scale = ridge(cov(samples)) +
 diag(h^2), \code{df = 5}.}
 
-\item{is_size}{Importance-sample size for fitting. Default \code{5000L}.}
+\item{is_size}{Importance-sample size for fitting. The default \code{NULL}
+uses \code{10000 + 2500 * N}: the fitted components overfit a fixed draw, and
+larger \code{N} needs more draws to keep the held-out divergence close to its
+large-sample value.}
 
 \item{max_iter}{Maximum EM iterations. Forwarded to \code{\link[=fit_kld_em]{fit_kld_em()}}.}
 
@@ -51,8 +54,9 @@ issued. Forwarded to \code{\link[=fit_kld_em]{fit_kld_em()}}.}
 
 \item{seed}{Optional integer seed for the fitting IS draw.}
 
-\item{validation_size}{Held-out IS sample size. Forwarded to
-\code{\link[=fit_kld_em]{fit_kld_em()}}.}
+\item{validation_size}{Held-out IS sample size. The default \code{NULL} uses
+\code{ceiling(is_size / 4)}, so the fit carries a held-out \code{validation_kld};
+\code{0L} disables it. Forwarded to \code{\link[=fit_kld_em]{fit_kld_em()}}.}
 
 \item{validation_proposal}{Optional \link{is_proposal} for the held-out
 sample. Forwarded to \code{\link[=fit_kld_em]{fit_kld_em()}}.}
@@ -67,20 +71,26 @@ post-processed by \code{\link[=gmm_canonicalise]{gmm_canonicalise()}}. Forwarded
 }
 \value{
 A \link{gmm_fit} with \code{regime = "kld"} and metadata recording the
-KDE inputs (\code{kde_samples_n}, \code{bandwidth}, \code{bandwidth_method}).
+KDE inputs (\code{kde_samples_n}, \code{bandwidth}, \code{bandwidth_method}). Its
+in-sample \code{kld_final} reads low, often below zero; the held-out
+\code{validation_kld} (see \code{\link[=ess_summary]{ess_summary()}}) measures the compression error.
 }
 \description{
 Fits an \code{N}-component Gaussian-mixture proxy to a (Gaussian, diagonal-
 bandwidth) kernel-density estimate over \code{samples}, via regime (iii)
-KLD-EM. The proxy is closed-form marginalisable, conditionable, and
-samplable; the KDE is none of those things on its own.
+KLD-EM.
 }
 \details{
-This is a \strong{compression} operation: take an \code{n}-sample KDE and replace
-it with the closest \code{N}-component mixture in the Kullback-Leibler sense
-(which is much smaller than \code{n} for typical use). Bias inherited from
-the KDE is reproduced in the proxy; the bandwidth controls the
-bias-variance trade-off.
+A Gaussian-kernel KDE on \code{n} points is already an \code{n}-component Gaussian
+mixture with equal weights, so it can be marginalised, conditioned and
+sampled in closed form as it stands. \code{from_kde()} is a \strong{compression}:
+it replaces the \code{n} components with the closest \code{N}-component mixture in
+the Kullback-Leibler sense, with \code{N} much smaller than \code{n}. Density
+evaluation, storage and the operator calculus then cost in proportion to
+\code{N} rather than \code{n} (products and convolutions of two mixtures have as
+many components as the product of their counts). Bias inherited from the
+KDE is reproduced in the proxy; the bandwidth controls the bias-variance
+trade-off.
 
 Dimensional scope. The dimensional guard is \code{p <= 5} (recommended),
 \code{p <= 10} (allowed with warning), \code{p > 10} (rejected). Regime-(iii)

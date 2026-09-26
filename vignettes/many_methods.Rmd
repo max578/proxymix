@@ -51,29 +51,29 @@ cost.
 
 ## What
 
-A [`gmm`] is a finite Gaussian mixture: weights, means and covariances.
-[`gmm_target_from_samples()`] wraps a data matrix as a target and
-[`fit_proxymix()`] fits the mixture to it, in the closed-form `"moment"`
+A `gmm` is a finite Gaussian mixture: weights, means and covariances.
+`gmm_target_from_samples()` wraps a data matrix as a target and
+`fit_proxymix()` fits the mixture to it, in the closed-form `"moment"`
 regime at one component or the classical expectation-maximisation
 `"sample"` regime at more than one.
 
-[`gmm_conditionalise()`] returns the conditional mixture given values on
+`gmm_conditionalise()` returns the conditional mixture given values on
 some coordinates, in closed form by the Schur complement. That single
 operator carries the regression, the kernel smoother, the imputation and the
 ridge estimator below: a conditional mean read off a joint fit is a
 prediction, and which classical estimator it coincides with depends only on
 how many components the mixture has and how wide they are.
 
-[`bic_aic()`] scores a component count. The `ridge_eps` argument of the
+`bic_aic()` scores a component count. The `ridge_eps` argument of the
 fitting verbs adds a multiple of the identity to each component covariance,
 which is where the penalised-regression section comes from.
 
 The decision family reads one joint fit as a causal object.
-[`fit_uplift()`] assembles a mixture over outcome, treatment and covariates
+`fit_uplift()` assembles a mixture over outcome, treatment and covariates
 and records the roles and the treatment arms it observed;
-[`proxy_cate()`] reads the conditional average treatment effect per unit,
-[`proxy_decide()`] turns it into an action under a value and a cost, and
-[`proxy_identification_report()`] states what the reading assumes and what
+`proxy_cate()` reads the conditional average treatment effect per unit,
+`proxy_decide()` turns it into an action under a value and a cost, and
+`proxy_identification_report()` states what the reading assumes and what
 it cannot deliver.
 
 ## Do
@@ -298,7 +298,7 @@ diff_pca <- max(abs(abs(ev) - abs(unname(pr))))
 
 ```{r fig-pca, eval = has_ggplot2, echo = has_ggplot2, fig.cap = "Clustering (colour) and the principal axes (arrows) read off the same data by two different component counts: three components give the clusters, one component gives the covariance whose eigenvectors are the principal axes.", fig.alt = "Three coloured point clusters with two principal-axis arrows drawn from the overall centroid."}
 vals <- eigen(fit_pca@covariances[[1L]])$values
-mu_pca <- fit_pca@means[[1L]]
+mu_pca <- unname(fit_pca@means[[1L]])
 axes <- data.frame(
   x = mu_pca[1L], y = mu_pca[2L],
   xend = mu_pca[1L] + 2 * sqrt(vals) * ev[1L, ],

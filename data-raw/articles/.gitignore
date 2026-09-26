@@ -1,0 +1,3 @@
+# Stan executables compiled by the generators
+density_shapes_stan/*
+!density_shapes_stan/*.stan

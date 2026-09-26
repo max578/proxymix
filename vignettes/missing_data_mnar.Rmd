@@ -57,13 +57,14 @@ unobserved value, larger values dropping out more often, which is *missing
 not at random*. Each is a gate $\delta(y)$ multiplying the mixture
 conditional before the value is drawn.
 
-[`mar()`], [`censored()`] and [`mnar()`] build those three gates, and
-[`gmm_impute()`] takes one through its `mechanism` argument.
-[`proxy_pool()`] combines an estimand across the completions.
-[`proxy_mnar_sensitivity()`] is the verb for the case that is not
-identified: it sweeps the assumed selection slope and reports the pooled
-estimate with its interval at each value, so the reader sees the whole
-curve rather than one number that hides its own assumption.
+`mar()`, `censored()` and `mnar()` build those three gates, and
+`gmm_impute()` takes one through its `mechanism` argument.
+`proxy_pool()` combines an estimand across the completions.
+`proxy_mnar_sensitivity()` is the verb for the case where the selection
+slope is assumed: it sweeps the slope and reports, at each value, the pooled
+estimate with its interval and the observed-data log-likelihood, so the
+reader sees the whole curve rather than one number that hides its own
+assumption.
 
 ```{r gate-table, echo = FALSE}
 knitr::kable(
@@ -74,13 +75,13 @@ knitr::kable(
              "selection probability"),
     Constructor = c("mar()", "censored()", "mnar()"),
     Identified = c("yes, given the model", "yes, the bound is known",
-                   "no, the slope is assumed"),
+                   "only through the assumed shape"),
     stringsAsFactors = FALSE
   ),
   align = "llll",
   caption = paste0(
     "The three missingness gates, the shape each one multiplies into the ",
-    "mixture conditional, and whether the data can identify it."
+    "mixture conditional, and how far the observed data identify it."
   )
 )
 ```
@@ -115,14 +116,16 @@ the conditional of the observed, which is itself short of the large values,
 so it stays biased. Supplying the selection slope to `mnar()` lets the fit
 account for the mechanism. Both fits use `m` = 10 completions, which is
 enough to separate the two mechanisms at this sample size and keeps the
-vignette fast.
+vignette fast, and allow 500 iterations, the limit
+`proxy_mnar_sensitivity()` uses below.
 
 ```{r recover}
 m_draws <- 10L
 mar_fit <- gmm_impute(dat, N = 2L, m = m_draws, mechanism = mar(),
-                      seed = 1L)
+                      seed = 1L, max_iter = 500L)
 mnar_fit <- gmm_impute(dat, N = 2L, m = m_draws,
-                       mechanism = mnar("y", beta = beta_true), seed = 1L)
+                       mechanism = mnar("y", beta = beta_true), seed = 1L,
+                       max_iter = 500L)
 mar_est <- proxy_pool(mar_fit, "y")$estimate
 mnar_est <- proxy_pool(mnar_fit, "y")$estimate
 ```
@@ -153,13 +156,16 @@ The slope `beta` is the strength of the dependence on the log-odds scale,
 and `beta = 0` is the missing-at-random case. The intercept is not supplied:
 it is calibrated to the observed fraction missing.
 
-### The slope is a sensitivity parameter
+### Sweeping the selection slope
 
-A missing-not-at-random departure cannot be identified from the observed
-data, so a single estimate would overstate what the data support. The
-appropriate summary is a curve. `proxy_mnar_sensitivity()` sweeps the slope
-and reports the pooled mean with its interval at each value, and the analyst
-reads off where a conclusion would change. Five slope values from 0 to 1.2
+Under this selection model the observed data carry information about the
+slope, but only through the assumed shape of the distribution of `y`. A
+different shape can fit the observed data equally well at another slope. A
+single estimate at one slope would therefore rest on that shape, and the
+appropriate summary is a curve. `proxy_mnar_sensitivity()` refits the
+mixture at each slope and reports the pooled mean with its interval, the
+observed-data log-likelihood of the selection model, and whether the fit
+converged. The analyst reads off where a conclusion would change. Five slope values from 0 to 1.2
 are enough to show the shape.
 
 ```{r sweep}
@@ -168,21 +174,28 @@ sweep <- proxy_mnar_sensitivity(dat, "y",
                                 N = 2L, m = m_draws, seed = 1L)
 covers <- sweep$conf.low <= truth & sweep$conf.high >= truth
 beta_first <- sweep$beta[min(which(covers))]
+beta_best <- sweep$beta[which.max(sweep$loglik)]
+ll_gain <- max(sweep$loglik) - sweep$loglik[1L]
 ```
 
 ```{r sweep-table, echo = FALSE}
+sweep_tbl <- as.data.frame(sweep)[, c("beta", "estimate", "conf.low",
+                                      "conf.high", "loglik", "converged")]
+sweep_tbl$converged <- ifelse(sweep_tbl$converged, "yes", "no")
 knitr::kable(
-  as.data.frame(sweep)[, c("beta", "estimate", "conf.low", "conf.high")],
-  digits = 3L,
-  col.names = c("Assumed slope", "Pooled mean", "CI lower", "CI upper"),
+  sweep_tbl,
+  digits = c(1L, 3L, 3L, 3L, 1L, 0L),
+  col.names = c("Assumed slope", "Pooled mean", "CI lower", "CI upper",
+                "Log-likelihood", "Converged"),
   caption = paste0(
-    "The pooled mean of y at each assumed selection slope. The ",
-    "complete-data truth is ", round(truth, 3), "."
+    "The pooled mean of y at each assumed selection slope, with the ",
+    "observed-data log-likelihood of the selection model and whether the ",
+    "mixture fit converged. The complete-data truth is ", round(truth, 3), "."
   )
 )
 ```
 
-```{r fig-tornado, eval = has_ggplot2, echo = has_ggplot2, fig.cap = "The pooled mean of y rises with the assumed sensitivity slope, and its interval reaches the complete-data truth near the slope that actually generated the data. Sweeping the slope brackets an answer the observed data cannot identify on its own.", fig.alt = "Pooled mean of y against the assumed sensitivity slope, with a shaded confidence band, a marked point at each swept value, a dashed horizontal line at the complete-data truth, and a vertical rule at the generating slope."}
+```{r fig-tornado, eval = has_ggplot2, echo = has_ggplot2, fig.cap = "The pooled mean of y rises with the assumed sensitivity slope, and its interval reaches the complete-data truth near the slope that actually generated the data. The observed data inform the slope only through the assumed shape of y, so the result is the whole curve.", fig.alt = "Pooled mean of y against the assumed sensitivity slope, with a shaded confidence band, a marked point at each swept value, a dashed horizontal line at the complete-data truth, and a vertical rule at the generating slope."}
 sweep_df <- as.data.frame(sweep)
 ggplot2::ggplot(sweep_df, ggplot2::aes(beta, estimate)) +
   ggplot2::geom_ribbon(
@@ -272,10 +285,15 @@ monotonically across the swept slopes, from `r round(sweep$estimate[1], 3)`
 at slope 0 to `r round(sweep$estimate[nrow(sweep)], 3)` at slope
 `r max(sweep$beta)`, and its interval first reaches the complete-data truth
 at an assumed slope of `r beta_first`, against the
-`r beta_true` that generated the data. Nothing in the observed data picks
-the slope out; sweeping it is what converts an unidentified quantity into a
-stated range, and what belongs in a report is the curve itself, with the
-reader's own view of a plausible slope applied to it.
+`r beta_true` that generated the data. The mixture fit
+`r if (all(sweep$converged)) "converged at every slope" else paste0("did not converge at slope ", paste(sweep$beta[!sweep$converged], collapse = ", "))`.
+The log-likelihood is highest at slope `r beta_best`,
+`r format(round(ll_gain, 1), nsmall = 1)` units above its value at slope 0,
+so under this model the observed data lean towards the larger slopes. That
+lean comes from the assumed two-component shape of `y`, not from anything
+the data show about why values went missing. What belongs in a report is
+the curve itself, with the reader's own view of a plausible slope applied
+to it.
 
 Censoring is the case where no sweep is needed. With `r sum(cmiss)` values
 hidden below a limit of `r thr`, the available cases give
@@ -301,11 +319,11 @@ The sensitivity sweep prices one departure at a time: the selection
 probability is a logistic function of the missing coordinate alone, with the
 intercept calibrated to the observed missing fraction, so a mechanism that
 depends jointly on the missing value and an unobserved third variable is
-outside what the sweep brackets. The sweep is also not a test. It cannot
-tell an analyst which slope is right, because that is precisely what the
-observed data does not carry; it converts one unstated assumption into a
-displayed range, and the range is only as wide as the grid the analyst
-chose.
+outside what the sweep brackets. The sweep is also not a test. Its
+log-likelihood favours some slopes only because of the assumed shape of
+`y`, so it cannot tell an analyst which slope is right. The sweep shows how
+the estimate moves with the assumed slope, and the range is only as wide as
+the grid the analyst chose.
 
 The numbers here come from one synthetic realisation at `n` = `r n` with
 `m` = `r m_draws` completions, and would move under a different seed. What

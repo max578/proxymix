@@ -57,11 +57,14 @@ log-density is minus infinity.
 
 Three diagnostics grade the result. `ess_summary()` and the fit's own
 `ess` report how many of the importance draws are effectively carrying the
-answer. The `kld_final` diagnostic is the importance-sampled estimate of
-\(\mathrm{KL}(f \Vert g_\theta)\) at the fitted parameters, and it comes
-with a Monte Carlo standard error. `hellinger_mc()` estimates the squared
-Hellinger distance \(H^2(f, g)\) by Monte Carlo, which is bounded in
-\([0, 1]\) when both densities are normalised.
+answer. The `validation_kld` diagnostic estimates
+\(\mathrm{KL}(f \Vert g_\theta)\) at the fitted parameters on a fresh set of
+importance draws that the fit never used, and it comes with a Monte Carlo
+standard error. The fit's `kld_final` uses the draws the fit was tuned to,
+so it reads low and can be negative; it is not used as an accuracy measure
+here. `hellinger_mc()` estimates the squared Hellinger distance
+\(H^2(f, g)\) from fresh draws of the proxy, with a standard error, and the
+quantity is bounded in \([0, 1]\) when both densities are normalised.
 
 `gmm_fit_quality()` carries the refusal contract. When the importance
 sample collapses, the fit does not return a mixture that looks ordinary
@@ -135,7 +138,7 @@ cat("ggplot2 is not installed on this build, so the three-shape overlay",
 
 ### Grading the three fits
 
-The importance-sampled `kld_final` is an estimate and carries Monte Carlo
+The held-out `validation_kld` is an estimate and carries Monte Carlo
 error, so a second, deterministic measurement is worth having. In two
 dimensions the divergence can be integrated directly on a grid, using
 nothing the fit produced.
@@ -163,30 +166,39 @@ kl_quad <- c(
 ```{r summary-table, echo = FALSE}
 fits <- list(fit_b, fit_d, fit_m)
 hell <- lapply(fits, hellinger_mc, n_mc = 2000L, seed = 1L)
+val_kl <- vapply(fits, function(f) f@diagnostics$validation_kld, numeric(1L))
+val_se <- vapply(fits, function(f) f@diagnostics$validation_mc_se,
+                 numeric(1L))
+hell_h2 <- vapply(hell, function(h) h$h2, numeric(1L))
+hell_se <- vapply(hell, function(h) h$se, numeric(1L))
+## Distance of each held-out estimate from its quadrature value, in
+## standard errors, and of each Hellinger estimate from zero.
+val_z_max <- max(abs(val_kl - kl_quad) / val_se)
+hell_z_min <- min(hell_h2 / hell_se)
+hi <- which.max(hell_h2)
+lo <- which.min(hell_h2)
+hell_gap <- hell_h2[hi] - hell_h2[lo]
+hell_gap_se <- sqrt(hell_se[hi]^2 + hell_se[lo]^2)
 summary_tbl <- data.frame(
   Target = c("banana", "donut", "three-mixture"),
   N = vapply(fits, gmm_n_components, integer(1L)),
   `IS draws` = vapply(fits, function(f) f@diagnostics$is_size, numeric(1L)),
   ESS = round(vapply(fits, function(f) f@diagnostics$ess, numeric(1L)), 0L),
-  `KL (sampled)` = round(
-    vapply(fits, function(f) f@diagnostics$kld_final, numeric(1L)), 4L
-  ),
-  `Monte Carlo SE` = round(
-    vapply(fits, function(f) f@diagnostics$mc_se_kld, numeric(1L)), 4L
-  ),
+  `KL (held-out)` = round(val_kl, 4L),
+  `KL SE` = round(val_se, 4L),
   `KL (quadrature)` = round(unname(kl_quad), 4L),
-  `Squared Hellinger` = round(
-    vapply(hell, function(h) h$h2, numeric(1L)), 4L
-  ),
+  `Squared Hellinger` = round(hell_h2, 4L),
+  `Hellinger SE` = round(hell_se, 4L),
   check.names = FALSE,
   stringsAsFactors = FALSE
 )
 knitr::kable(
   summary_tbl,
   caption = paste(
-    "Fit quality on the three plane-supported shapes. The sampled and",
+    "Fit quality on the three plane-supported shapes. The held-out and",
     "quadrature columns estimate the same Kullback-Leibler divergence,",
-    "the first by importance sampling and the second deterministically."
+    "the first by importance sampling on draws the fit did not use and",
+    "the second deterministically."
   )
 )
 ```
@@ -330,17 +342,21 @@ solving the approximation problem right up to the point where they stop,
 and what remains is a mixture of finitely many ellipses being asked to be a
 continuous ring.
 
-The two estimates of the same divergence disagree in a way worth reading.
-The importance-sampled column returns
-`r format(signif(fit_d@diagnostics$kld_final, 2L))` for the donut against a
-Monte Carlo standard error of
-`r format(signif(fit_d@diagnostics$mc_se_kld, 2L))`, while the quadrature
-column returns `r format(signif(kl_quad[["donut"]], 2L))`. The sampled
-estimate is within about one standard error of zero and of the quadrature
-value alike, so on these fits it is not sharp enough to separate a good
-proxy from a structurally limited one. The same holds for the squared
-Hellinger column, whose entries sit within a few thousandths of zero. The
-deterministic measurement is what makes the donut's floor visible.
+The held-out and quadrature estimates of the same divergence agree, but
+only the quadrature is sharp enough to rank the shapes. For the donut the
+held-out estimate is `r format(signif(val_kl[2L], 2L))` with a standard
+error of `r format(signif(val_se[2L], 2L))`, against
+`r format(signif(kl_quad[["donut"]], 2L))` by quadrature. Across the three
+shapes the held-out estimates lie within
+`r format(round(val_z_max, 1L))` standard errors of the quadrature values,
+and their standard errors, from `r format(signif(min(val_se), 2L))` to
+`r format(signif(max(val_se), 2L))`, are of the same order as the
+differences between shapes. The squared Hellinger estimates are each at
+least `r format(round(hell_z_min, 1L))` standard errors above zero, but the
+largest gap between two shapes, `r format(signif(hell_gap, 2L))`, is smaller
+than the combined standard error of that pair,
+`r format(signif(hell_gap_se, 2L))`, so they cannot rank the shapes either.
+The deterministic measurement is what makes the donut's floor visible.
 
 The compactly supported target is the fourth kind of awkwardness and the
 one that never fully resolves. The declared support routed the fit onto a
@@ -364,16 +380,14 @@ lets the caller decide; `"abort"` is what turns it into a contract.
 ## Limits
 
 The two divergence estimates in the table are measurements, not exact
-quantities, and neither is a certificate on its own. The importance-sampled
-estimate is a Monte Carlo quantity that can come out slightly negative on a
-near-exact fit, as it does for two of the three shapes here, and a
-negative estimate of a non-negative divergence means only that the
-estimator's error exceeds the quantity being estimated. The squared
-Hellinger estimates behave the same way, and `hellinger_mc()` does not
-always return a usable standard error alongside them. The grid quadrature
-avoids both problems and introduces a different one: it is reliable in two
-or three dimensions and becomes intractable well before the dimension at
-which importance sampling itself gives out.
+quantities, and neither is a certificate on its own. The held-out estimate
+is a Monte Carlo quantity, and at these importance-sample sizes its standard
+error is of the same order as the differences it is asked to resolve. The squared
+Hellinger estimates come from fresh draws of the proxy, and
+`hellinger_mc()` returns the standard error shown beside each one. The grid
+quadrature has no sampling error and a different limit: it is reliable in
+two or three dimensions and becomes intractable well before the dimension
+at which importance sampling itself gives out.
 
 The component counts here were chosen by hand, one per shape, to make the
 comparison across shapes a comparison of shapes. Choosing the count is a

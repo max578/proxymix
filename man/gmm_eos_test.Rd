@@ -34,8 +34,8 @@ Gaussian-sum measurement noise is rejected for the same reason.}
 
 \item{m}{Integer; the number of end-of-sample observations to test, \verb{1 <= m < nrow(y)}. The tiny-\code{m} regime (\verb{m = 1, 2, 3}) is the point of the test.}
 
-\item{method}{Either \code{"chisq"} (parametric) or \code{"andrews"} (distribution-free
-subsampling P-test).}
+\item{method}{Either \code{"chisq"} (parametric) or \code{"andrews"} (subsampling
+calibration after Andrews' P-test, asymptotic in \code{n}).}
 
 \item{alpha}{The nominal level used to set \code{reject}.}
 }
@@ -55,17 +55,27 @@ squared standardised one-step innovations from the filter; a break inflates it.
 \details{
 Two calibrations are offered. \code{method = "chisq"} refers the statistic to a
 chi-square distribution on \code{m * ncol(y)} degrees of freedom, which is exact
-when the standardised innovations are Gaussian. \code{method = "andrews"} is the
-distribution-free Andrews (2003) subsampling P-test: the statistic's rank among
-the in-sample overlapping \code{m}-blocks of the same innovations gives the p-value,
-so it stays calibrated when the innovations are non-Gaussian (heavy-tailed
-observation noise, say). The model is supplied exactly as for \code{\link[=gmm_filter]{gmm_filter()}}.
+when the standardised innovations are Gaussian. \code{method = "andrews"} is a
+subsampling calibration after the P-test of Andrews (2003): the statistic's
+rank among the \eqn{n - 2m + 1} overlapping \code{m}-blocks of the earlier
+innovations gives the p-value \eqn{(1 + k) / (n - 2m + 2)}, where \eqn{k} is
+the number of blocks at least as large as the statistic. It differs from
+Andrews' test in two ways: the p-value counts the tested block itself, and the
+block statistics are computed at the supplied model instead of at estimates
+that leave out each block. It does not
+assume Gaussian innovations, so it suits heavy-tailed observation noise, but
+its validity is asymptotic: \code{n} large with \code{m} fixed, and innovations that are
+stationary and ergodic before the tested block. Its size equals the nominal
+level only when the end block is exchangeable with the earlier blocks, and in
+short series it can over-reject. The model is supplied exactly as for
+\code{\link[=gmm_filter]{gmm_filter()}}.
 
 Two finite-sample cautions. The chi-square calibration is exact when the
 model is given; with parameters estimated on a short series it over-rejects
-(size 0.068 at \code{n = 30} against a nominal 0.05 in the validation study,
-settling to 0.044 by \code{n = 120}), so prefer \code{method = "andrews"} when the
-model is estimated on little data. The subsampling p-value has a floor of
+(the end-of-sample vignette reports its size by series length). The
+subsampling calibration can also
+over-reject in short series, so neither method holds its nominal size when
+the model is estimated on little data. The subsampling p-value has a floor of
 \verb{1 / (n - 2m + 2)}, so it can reject at level 0.05 only when \verb{n > 2m + 18}.
 }
 \examples{

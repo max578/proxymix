@@ -48,20 +48,23 @@ resample or build a conditional estimate per query. And there is no native
 aggregation algebra: pushforwards through linear operators, observation
 channel updates and block sums all collapse to Monte Carlo.
 
-[`from_kde()`] compresses the kernel estimate into an `N`-component Gaussian
+`from_kde()` compresses the kernel estimate into an `N`-component Gaussian
 mixture proxy, with `N` typically much smaller than `n`, by treating the
 estimate as a normalised, evaluable target and running regime (iii) KLD-EM
 against it. Its `bandwidth` argument takes a rule of thumb by name
-(`"silverman"`, `"scott"`) or a numeric value, and `validation_size`
-requests a held-out fit quality on an independent importance draw. The proxy
+(`"silverman"`, `"scott"`) or a numeric value. By default the fit uses
+`is_size = 10000 + 2500 * N` importance draws and holds out a further
+`ceiling(is_size / 4)` independent draws, set by `validation_size`, on which
+it reports the held-out divergence `validation_kld`. The proxy
 then supports the full closed-form operator set exposed by the rest of the
-package -- [`dgmm()`], [`rgmm()`], [`gmm_marginalise()`],
-[`gmm_conditionalise()`], and the affine-Gaussian calculus of
-[`gmm_affine()`] and [`gmm_observe()`].
+package -- `dgmm()`, `rgmm()`, `gmm_marginalise()`,
+`gmm_conditionalise()`, and the affine-Gaussian calculus of
+`gmm_affine()` and `gmm_observe()`.
 
-[`ess_summary()`] reports the importance-sampling diagnostics of the
+`ess_summary()` reports the importance-sampling diagnostics of the
 compression: the effective sample size, the largest self-normalised weight,
-and the held-out validation divergence. [`hellinger_mc()`] gives a Monte
+and the held-out divergence `validation_kld`, which is the figure to quote
+for the accuracy of the fit. `hellinger_mc()` gives a Monte
 Carlo squared Hellinger distance between the proxy and its target, which is
 meaningful here because a kernel estimate is normalised by construction.
 
@@ -76,16 +79,18 @@ bandwidth controls the bias-variance trade-off.
 
 Sample from a known bimodal mixture and ask `from_kde()` to recover it. The
 data here are synthetic: two unit-covariance Gaussians at $(-2, 0)$ and
-$(2, 0)$, 150 draws each.
+$(2, 0)$, with the same number of draws from each. The call sets `is_size` and
+`validation_size` explicitly to keep the vignette fast.
 
 ```{r recover-bimodal}
 set.seed(20260601)
 
+n_each <- 150L
 true_means <- cbind(c(-2, 0), c(2, 0))
 true_cov <- diag(2)
 x <- rbind(
-  mvnfast::rmvn(150L, mu = true_means[, 1L], sigma = true_cov),
-  mvnfast::rmvn(150L, mu = true_means[, 2L], sigma = true_cov)
+  mvnfast::rmvn(n_each, mu = true_means[, 1L], sigma = true_cov),
+  mvnfast::rmvn(n_each, mu = true_means[, 2L], sigma = true_cov)
 )
 
 fit <- from_kde(
@@ -123,7 +128,7 @@ knitr::kable(
                 "True $x_2$", "Weight"),
   caption = paste0(
     "The two recovered component means beside the means of the mixture the ",
-    "300 samples were drawn from."
+    nrow(x), " samples were drawn from."
   )
 )
 ```
@@ -131,16 +136,20 @@ knitr::kable(
 ### Quality of the importance-sampled fit
 
 A healthy regime (iii) fit has an effective sample size close to `is_size`
-and a largest weight of a few parts in a thousand. The validation block
-reports a held-out divergence on an independent importance draw, which is
-the safeguard against overfitting to one particular importance realisation.
+and a largest weight of a few parts in a thousand. The held-out
+`validation_kld` is the divergence estimated on an independent importance
+draw. The in-sample `kld_final` is computed on the draws the fit was tuned
+to, so it reads low; the two are printed side by side here.
 
 ```{r fit-quality}
 es <- ess_summary(fit)
 c(is_size = es$is_size, ess = round(es$ess, 1),
   ess_relative = round(es$ess_relative, 3),
   max_weight = signif(es$max_weight, 3),
-  validation_kld = signif(es$validation_kld, 3))
+  validation_size = es$validation_size)
+c(validation_kld = signif(es$validation_kld, 3),
+  validation_se = signif(fit@diagnostics$validation_mc_se, 3),
+  kld_final = signif(fit@diagnostics$kld_final, 3))
 ```
 
 ### What the compression costs
@@ -178,6 +187,12 @@ fits <- lapply(bandwidth_grid, function(h) {
   from_kde(x, N = 2L, bandwidth = h,
            is_size = 1500L, max_iter = 40L, seed = 1L)
 })
+sweep_is <- fits[[1L]]@diagnostics$is_size
+sweep_vs <- fits[[1L]]@diagnostics$validation_size
+sweep_val <- vapply(fits, function(f) f@diagnostics$validation_kld,
+                    numeric(1L))
+sweep_se <- vapply(fits, function(f) f@diagnostics$validation_mc_se,
+                   numeric(1L))
 ```
 
 ```{r bandwidth-table, echo = FALSE}
@@ -190,15 +205,17 @@ knitr::kable(
     ),
     trace_sigma = round(
       vapply(fits, function(f) sum(diag(f@covariances[[1L]])), numeric(1L)), 3
-    )
+    ),
+    val_kl = round(sweep_val, 4),
+    val_se = round(sweep_se, 4)
   ),
   row.names = FALSE,
   col.names = c("Bandwidth", "Effective sample size", "Largest weight",
-                "Trace of $\\Sigma_1$"),
+                "Trace of $\\Sigma_1$", "Held-out KL", "Held-out KL SE"),
   caption = paste0(
-    "Bandwidth sweep at 1500 importance draws: a wider kernel gives a ",
-    "smoother target, an easier importance problem, and a broader first ",
-    "component."
+    "Bandwidth sweep at ", sweep_is, " importance draws, with ", sweep_vs,
+    " held-out draws: a wider kernel gives a smoother target, an easier ",
+    "importance problem, and a broader first component."
   )
 )
 ```
@@ -206,7 +223,7 @@ knitr::kable(
 ### Composing the compressed proxy
 
 Once compressed, the proxy is an ordinary mixture, so conditioning and
-sampling are exact algebra rather than a sweep over 300 kernels.
+sampling are exact algebra rather than a sweep over `r nrow(x)` kernels.
 
 ```{r compose}
 slice <- gmm_conditionalise(fit, given = c(NA, 0))
@@ -277,8 +294,8 @@ cat("ggplot2 is not installed on this build, so the contour-comparison",
 
 ## Read
 
-The `r gmm_n_components(fit)`-component proxy recovers the mixture the 300
-samples came from: the fitted means differ from the true means by at most
+The `r gmm_n_components(fit)`-component proxy recovers the mixture the
+`r nrow(x)` samples came from: the fitted means differ from the true means by at most
 `r signif(mean_error, 2)`, and the two components carry weights of
 `r paste(sprintf("%.3f", sort(fit@weights)), collapse = " and ")` against a
 true half and half.
@@ -286,24 +303,25 @@ true half and half.
 The compression itself was a well-conditioned importance problem. The
 effective sample size was `r round(es$ess)` out of `r es$is_size` draws, or
 `r round(100 * es$ess_relative)` per cent, and the largest single weight was
-`r signif(es$max_weight, 2)`, so no handful of draws carried the fit. On an
-independent importance draw the held-out divergence was
-`r signif(es$validation_kld, 2)`, against a Monte Carlo standard error of
-`r signif(es$mc_se_kld, 2)` on the fitting sample, so the fit does not
-depend on the particular importance realisation it was estimated from.
+`r signif(es$max_weight, 2)`, so no handful of draws carried the fit. On
+`r es$validation_size` independent draws the held-out divergence
+`validation_kld` was `r signif(es$validation_kld, 2)`, with a Monte Carlo
+standard error of `r signif(fit@diagnostics$validation_mc_se, 2)`. The
+in-sample `kld_final` was `r signif(fit@diagnostics$kld_final, 2)`, lower
+because the fit minimises that same estimate, so the held-out value is the
+one to quote.
 
 The cost of the compression is the direct answer to the question. Going from
-a 300-kernel estimate to a `r gmm_n_components(fit)`-component mixture moves
+a `r nrow(x)`-kernel estimate to a `r gmm_n_components(fit)`-component mixture moves
 total variation by `r signif(total_variation, 2)`: the two densities agree on
 the probability of any event to within about
 `r round(100 * total_variation, 1)` percentage points. The Monte Carlo
 estimate of the squared Hellinger
-distance is `r signif(hell$h2, 2)`, against a standard error of
-`r signif(hell$se, 2)` on that estimate, so it sits within one standard
-error of zero and the two densities are not separated by that measure at
-this sample size. The figure shows where the remaining
-error sits: at the two modes, where a two-component proxy cannot follow the
-bumps that 300 finite samples put into the kernel estimate. What is bought
+distance is `r signif(hell$h2, 2)`, with a standard error of
+`r signif(hell$se, 2)`, so about `r round(hell$h2 / hell$se, 1)` standard
+errors above zero. The figure shows where the remaining error sits: at the
+two modes, where a two-component proxy cannot follow the bumps that
+`r nrow(x)` finite samples put into the kernel estimate. What is bought
 with that is exact conditioning, marginalisation and sampling -- the slice
 taken above is a `r gmm_dim(slice)`-dimensional,
 `r gmm_n_components(slice)`-component mixture obtained by algebra, not by a
@@ -315,11 +333,18 @@ problem, and the effective sample size rises from
 `r round(fits[[1L]]@diagnostics$ess)` at bandwidth
 `r sprintf("%.1f", bandwidth_grid[1L])` to
 `r round(fits[[3L]]@diagnostics$ess)` at bandwidth
-`r sprintf("%.1f", bandwidth_grid[3L])`, out of 1500 draws. The first
+`r sprintf("%.1f", bandwidth_grid[3L])`, out of `r sweep_is` draws. The first
 component's covariance trace widens over the same sweep, from
 `r round(sum(diag(fits[[1L]]@covariances[[1L]])), 2)` to
 `r round(sum(diag(fits[[3L]]@covariances[[1L]])), 2)`, which is the proxy
-inheriting the estimate's smoothing rather than resisting it.
+inheriting the estimate's smoothing rather than resisting it. The held-out
+divergence falls from `r signif(sweep_val[1L], 2)` at bandwidth
+`r sprintf("%.1f", bandwidth_grid[1L])` to
+`r signif(sweep_val[2L], 2)` at bandwidth
+`r sprintf("%.1f", bandwidth_grid[2L])`: at the narrowest bandwidth the
+kernel estimate keeps the sample's bumps, which two components cannot
+follow. At bandwidth `r sprintf("%.1f", bandwidth_grid[3L])` it is within
+one standard error of zero.
 
 ## Limits
 
@@ -358,7 +383,7 @@ validated downstream.
 
 *Choosing between the three fitting regimes* sets out why compressing an
 evaluable-but-unsampleable target is regime (iii) work, and what the
-classical expectation-maximisation regime would do with the same 300 samples
+classical expectation-maximisation regime would do with the same samples
 instead. *The closed-form operator calculus on a mixture* is the payoff of
 the compression: the marginalisation, conditioning, pushforward and update
 operators that the kernel estimate could not offer. *One mixture, many

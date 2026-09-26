@@ -12,6 +12,7 @@ proxy_mnar_sensitivity(
   N = NULL,
   m = 20L,
   seed = NULL,
+  max_iter = 500L,
   ...
 )
 }
@@ -28,10 +29,17 @@ larger unobserved values more likely to be missing.}
 
 \item{N, m, seed, ...}{Passed to \code{\link[=gmm_impute]{gmm_impute()}}; a single \code{seed} makes the whole
 sweep reproducible and keeps the curve smooth across the grid.}
+
+\item{max_iter}{Maximum EM iterations per fit, passed to \code{\link[=gmm_impute]{gmm_impute()}}.
+Default \code{500L}; fits near missing at random can need more than the
+\code{gmm_impute()} default of 100.}
 }
 \value{
 A data frame with one row per grid value: \code{beta}, \code{estimate},
-\code{std.error}, \code{conf.low}, \code{conf.high}, \code{fmi}.
+\code{std.error}, \code{conf.low}, \code{conf.high}, \code{fmi}, \code{loglik} (the observed-data
+log-likelihood of the selection model at the fitted mixture and intercept)
+and \code{converged} (whether the point fit converged). A warning names any slope
+whose fit did not converge.
 }
 \description{
 Sweeps the missing-not-at-random sensitivity slope \code{beta} over a grid and, at
@@ -43,8 +51,13 @@ strengthens, so an analyst can read off the value of \code{beta} at which a
 conclusion would change. \code{beta = 0} is the missing-at-random anchor.
 }
 \details{
-The slope is a sensitivity parameter, not an estimate: the data do not identify
-it. Report the curve, not a single point.
+The mixture is refitted at each slope. Under this selection model the observed
+data carry information about the slope, but only through the assumed shape of
+the outcome distribution; a different shape can fit the observed data equally
+well at a different slope. The \code{loglik} column shows how strongly the data
+favour one slope over another under the mixture. Treat a large difference as a
+consequence of the model's shape, not as evidence about the missingness
+mechanism itself, and report the whole curve.
 }
 \examples{
 set.seed(1)

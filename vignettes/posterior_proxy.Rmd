@@ -45,28 +45,28 @@ between.
 
 ## What
 
-[`gmm_target()`] wraps a log-density into the object the fitting verbs
+`gmm_target()` wraps a log-density into the object the fitting verbs
 consume. Declaring `normalised = FALSE` records that the normalising
 constant is unknown, which is what an unnormalised posterior is.
 
-[`fit_proxymix()`] with `regime = "kld"` runs the importance-sampled KLD-EM
+`fit_proxymix()` with `regime = "kld"` runs the importance-sampled KLD-EM
 of van der Hoek and Elliott (2024) against that target. Its `proposal`
 argument takes the importance proposal, and `adapt = "pmc"` refreshes that
 proposal from the current fit as the run proceeds, so the initial proposal
-only has to be survivable rather than good. [`proposal_mvt()`] builds a
+only has to be survivable rather than good. `proposal_mvt()` builds a
 multivariate Student-t proposal, whose heavy tails are the robust default.
 
-[`gmm_fit_quality()`] returns the certificate that travels with the fit: the
+`gmm_fit_quality()` returns the certificate that travels with the fit: the
 effective sample size of the importance weights, a degeneracy flag, the
 support fraction, and a held-out validation gap. It is the part to read
 before anything else.
 
-[`gmm_evidence()`] estimates the log marginal likelihood, using the fitted
-proxy as its own importance proposal. [`gmm_marginalise()`], [`pgmm()`] and
-[`qgmm()`] read marginals, tail probabilities and quantiles off the fitted
+`gmm_evidence()` estimates the log marginal likelihood, using the fitted
+proxy as its own importance proposal. `gmm_marginalise()`, `pgmm()` and
+`qgmm()` read marginals, tail probabilities and quantiles off the fitted
 mixture in closed form, with no further target evaluations.
 
-[`gmm_fit_ensemble()`] and [`proxy_functional_ci()`] price the fit's own
+`gmm_fit_ensemble()` and `proxy_functional_ci()` price the fit's own
 sampling variability: the ensemble re-weights the fit's cached importance
 draws, so a bootstrap interval on any functional of the mixture costs no new
 posterior evaluations at all.
@@ -263,9 +263,13 @@ cat("ggplot2 is not installed on this build, so the marginal-comparison",
 The numbers above condition on the fitted mixture. The bootstrap ensemble
 prices the fit's own sampling variability, at zero new posterior
 evaluations, because the replicates re-weight the fit's cached importance
-draws.
+draws. The probability that the slope is positive,
+`r format(signif(1 - p_negative, 2), scientific = FALSE)`, is below the default
+`tail_warn` level of `r formals(proxy_functional_ci)$tail_warn`, so the
+interval for the tail probability comes with a warning of class
+`proxymix_tail_functional`.
 
-```{r ensemble}
+```{r ensemble, warning = TRUE}
 ens <- gmm_fit_ensemble(fit, B = 80L, seed = 3L)
 ci_mean <- proxy_functional_ci(ens, gmm_mean, level = 0.9)
 ci_tail <- proxy_functional_ci(
@@ -339,7 +343,8 @@ cent interval of width
 probability to the interval
 `r sprintf("%.5f", ci_tail$conf.low[1L])` to
 `r sprintf("%.5f", ci_tail$conf.high[1L])`, both at no further evaluations of
-the posterior.
+the posterior. The tail-probability interval covers refit variability only,
+not the error in the mixture's tails.
 
 So the answer to the question is yes, on all four counts, and the four
 numbers arrive with a certificate saying how far they can be trusted.

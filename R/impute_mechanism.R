@@ -32,10 +32,11 @@
 #' `mnar()` is missing not at random through a selection model: an entry of
 #' `coord` is missing with probability \eqn{g(\alpha + \beta\, y)} in its own
 #' unobserved value \eqn{y}, where \eqn{g} is the logistic or normal link. The
-#' slope `beta` is the sensitivity parameter and is supplied, not estimated --
-#' missing-not-at-random departures are not identified from the observed data, so
-#' the appropriate use is to posit `beta`, propagate it, and report how conclusions
-#' move with it (see [proxy_mnar_sensitivity()]). The intercept is calibrated to
+#' slope `beta` is the sensitivity parameter and is supplied, not estimated.
+#' The observed data inform the slope only through the assumed shape of the
+#' outcome distribution, so the appropriate use is to posit `beta`, propagate it,
+#' and report how conclusions move with it (see [proxy_mnar_sensitivity()],
+#' which also reports the observed-data log-likelihood). The intercept is calibrated to
 #' the observed missingness rate. `beta = 0` is missing at random.
 #'
 #' @param coord Name or index of the single coordinate the mechanism acts on.

@@ -4,13 +4,21 @@
 \alias{gmm_independence_graph}
 \title{Conditional-independence (Gaussian graphical model) structure of a mixture}
 \usage{
-gmm_independence_graph(g, threshold = 0.05)
+gmm_independence_graph(g, threshold = NULL, alpha = 0.05, n = NULL)
 }
 \arguments{
 \item{g}{A \link{gmm} (or \link{gmm_fit}) mixture.}
 
 \item{threshold}{Non-negative partial-correlation magnitude above which an edge
-is drawn. Defaults to \code{0.05}.}
+is drawn. \code{NULL} (the default) uses the Fisher-z test when a sample size is
+available and \code{0.05} otherwise. Cannot be combined with \code{n}.}
+
+\item{alpha}{Per-edge level of the Fisher-z test, in \verb{(0, 1)}. Used only when
+a sample size is available and \code{threshold} is not given.}
+
+\item{n}{Number of data points the mixture was fitted to. \code{NULL} (the
+default) takes it from a regime \code{"sample"} or \code{"moment"} fit and otherwise
+leaves it unknown.}
 }
 \value{
 A symmetric integer adjacency matrix (\code{1} = edge, \code{0} = none) with the
@@ -21,15 +29,26 @@ coordinate names of \code{g}, carrying the partial-correlation matrix as the
 Returns the undirected second-order conditional-independence graph of a fitted
 Gaussian mixture: the partial-correlation (Gaussian graphical model) structure
 of the mixture's overall covariance. An edge \eqn{i - j} is present when the
-partial correlation of coordinates \eqn{i} and \eqn{j} given all the others
-exceeds \code{threshold} in magnitude, and absent when it does not -- the latter is
-the Markov statement \eqn{x_i \perp x_j \mid x_{\mathrm{rest}}} at second order.
+partial correlation \eqn{r_{ij}} of coordinates \eqn{i} and \eqn{j} given all
+the others is judged nonzero, and absent otherwise -- the latter is the Markov
+statement \eqn{x_i \perp x_j \mid x_{\mathrm{rest}}} at second order.
 The overall covariance
 \deqn{\mathrm{Cov}(X) = \sum_k w_k (\Sigma_k + \mu_k \mu_k^\top) - \bar\mu\,\bar\mu^\top,
   \qquad \bar\mu = \sum_k w_k \mu_k,}
 is closed-form in the mixture parameters, so no sampling is required.
 }
 \details{
+When the mixture was fitted to \eqn{n} data points, each partial correlation
+is tested with Fisher's z: an edge is drawn when
+\deqn{|\operatorname{atanh}(r_{ij})| \sqrt{n - p - 1} > \Phi^{-1}(1 - \alpha / 2).}
+A \link{gmm_fit} from regime \code{"sample"} or \code{"moment"} supplies \eqn{n} as the
+number of rows of its target's samples; \code{n} can also be given directly. The
+test is per edge, and a graph on \eqn{p} coordinates carries \eqn{p(p-1)/2}
+of them: \code{alpha = 0.05 / choose(p, 2)} keeps the chance of any false edge
+below 0.05. Without a sample size (a regime \code{"kld"} fit, or a plain \link{gmm}), an
+edge is drawn when \eqn{|r_{ij}|} exceeds \code{threshold}, which defaults to
+\code{0.05} there. Giving \code{threshold} always selects the magnitude rule.
+
 This is a graphical-model (dependency-structure) diagnostic, not a causal
 discovery method: it recovers the undirected Markov skeleton, not edge
 directions. Its distinctive use is \strong{regime (iii)}: composed with

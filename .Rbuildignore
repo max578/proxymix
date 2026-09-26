@@ -25,3 +25,4 @@
 ^\.claude$
 ^\.positai$
 ^\.cursor$
+^vignettes/articles$

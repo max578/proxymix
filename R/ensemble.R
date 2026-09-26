@@ -137,10 +137,25 @@ print.gmm_ensemble <- function(x, ...) {
 #' via [pgmm()] on a marginal, an entropy, a conditional mean, or any
 #' composition of the operator calculus.
 #'
+#' The interval measures how much the functional moves when the fit is
+#' repeated on re-weighted draws. It does not measure how far the
+#' Gaussian-mixture family itself is from the target, so it can exclude
+#' the target's true value when the mixture has too few components. The
+#' gap is widest far in a tail: a mixture of Gaussians has Gaussian tails
+#' and can misstate a small tail probability by orders of magnitude while
+#' the interval stays narrow. A warning of class
+#' `proxymix_tail_functional` is raised when every value of `fn` (at the
+#' base fit and at every member) lies in `[0, 1]` and some element of the
+#' base fit's estimate, or its complement, is below `tail_warn`. Check such
+#' a probability against numerical integration of the target or a method
+#' built for tails.
+#'
 #' @param ensemble A `gmm_ensemble` from [gmm_fit_ensemble()].
 #' @param fn A function mapping a [gmm] to a numeric scalar or vector.
 #' @param level Confidence level. Default `0.9`.
 #' @param ... Forwarded to `fn`.
+#' @param tail_warn Threshold for the tail-probability warning described
+#'   in Details. Default `1e-3`; `NULL` or `0` turns the warning off.
 #'
 #' @returns A data frame with one row per element of `fn`'s value:
 #'   `term`, `estimate` (the base fit's value), `conf.low`, `conf.high`.
@@ -151,7 +166,8 @@ print.gmm_ensemble <- function(x, ...) {
 #'                     is_size = 1500L, max_iter = 20L, seed = 1L)
 #' ens <- gmm_fit_ensemble(fit, B = 30L, seed = 2L)
 #' proxy_functional_ci(ens, function(g) gmm_mean(g)[1L])
-proxy_functional_ci <- function(ensemble, fn, level = 0.9, ...) {
+proxy_functional_ci <- function(ensemble, fn, level = 0.9, ...,
+                                tail_warn = 1e-3) {
   if (!inherits(ensemble, "gmm_ensemble")) {
     cli::cli_abort("`ensemble` must be a {.cls gmm_ensemble} from {.fn gmm_fit_ensemble}.")
   }
@@ -161,11 +177,28 @@ proxy_functional_ci <- function(ensemble, fn, level = 0.9, ...) {
   if (!is.numeric(level) || length(level) != 1L || level <= 0 || level >= 1) {
     cli::cli_abort("`level` must be a single number strictly inside (0, 1).")
   }
+  if (!is.null(tail_warn) &&
+        (!is.numeric(tail_warn) || length(tail_warn) != 1L ||
+           is.na(tail_warn) || tail_warn < 0 || tail_warn >= 0.5)) {
+    cli::cli_abort("`tail_warn` must be `NULL` or a single number in [0, 0.5).")
+  }
   est <- as.numeric(fn(ensemble$fit, ...))
   vals <- vapply(ensemble$members,
                  function(g) as.numeric(fn(g, ...)),
                  numeric(length(est)))
   vals <- matrix(vals, nrow = length(est))
+  ## Values confined to [0, 1] are the only sign that `fn` returns a probability.
+  if (!is.null(tail_warn) && tail_warn > 0 &&
+        isTRUE(all(est >= 0 & est <= 1) && all(vals >= 0 & vals <= 1) &&
+                 any(pmin(est, 1 - est) < tail_warn))) {
+    cli::cli_warn(c(
+      "The interval reflects refit variability only.",
+      "!" = "Gaussian-mixture tails can misstate probabilities below \\
+             {tail_warn} by orders of magnitude.",
+      "i" = "Check the value against numerical integration of the target or \\
+             a tail-specific method; set {.code tail_warn = NULL} to silence."
+    ), class = "proxymix_tail_functional")
+  }
   alpha <- (1 - level) / 2
   lo <- apply(vals, 1L, stats::quantile, probs = alpha, names = FALSE)
   hi <- apply(vals, 1L, stats::quantile, probs = 1 - alpha, names = FALSE)

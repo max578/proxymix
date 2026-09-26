@@ -1,6 +1,46 @@
-# proxymix (development version)
+# proxymix 0.16.0
+
+### Changes to defaults
+
+* `gmm_independence_graph()` tests each partial correlation with Fisher's z
+  at level `alpha` (default 0.05) when the mixture was fitted to data, taking
+  the sample size from a `"sample"` or `"moment"` fit or from the new `n`
+  argument. Giving `threshold` keeps the old rule `|r| > threshold`, which is
+  also used when no sample size is known.
+* `from_kde()` uses `is_size = 10000 + 2500 * N` importance draws instead of
+  5000, which reduces overfitting at larger `N`.
+* `from_kde()` holds out `ceiling(is_size / 4)` validation draws, so its fits
+  report `validation_kld`. Use `validation_size = 0L` for the old behaviour.
+
+### New features
+
+* `proxy_mnar_sensitivity()` reports, for each slope, the observed-data
+  log-likelihood of the selection model (`loglik`) and whether the fit
+  converged (`converged`), and warns when a fit did not converge. Its new
+  `max_iter` argument defaults to 500, because fits near missing at random
+  could stop before converging at the `gmm_impute()` default of 100.
+
+* `from_objective()` gains `scale = "loglik"` for negative log-likelihoods:
+  the default temperature ladder then ends at 1, so the returned map is the
+  likelihood surface on the box.
+* `proxy_functional_ci()` gains `tail_warn` (default `1e-3`) and warns, with
+  class `proxymix_tail_functional`, when the functional is a probability
+  below that level. Its interval covers refit variability only, not the
+  error of the mixture's tails.
+* `glance()` on a fitted proxy reports `validation_kld`, the held-out KL
+  estimate.
 
 ### Bug fixes
+
+* `from_objective()` no longer evaluates the objective outside
+  `[lower, upper]`. Points outside the box get the same penalty as
+  non-finite values, so a map can no longer settle outside the box.
+* `from_objective()` raises at most one low effective-sample-size warning
+  per call, and only when the final cooling step is low. The effective
+  sample size at each step is stored in `fit@metadata$from_objective$ess`.
+* `hellinger_mc()` draws `n_mc` fresh samples from the fit, using `seed`, for
+  regime `"kld"` fits too. The estimate is no longer biased low and its
+  standard error is no longer `NaN`.
 
 * The decision family (`proxy_cate()`, `proxy_uplift()`, `proxy_overlap()`,
   `proxy_decide()`, `proxy_confounding_gap()`, `proxy_policy_value()`,
@@ -15,6 +55,28 @@
   mis-scaled effect.
 
 ### Documentation
+
+* `kld_final` is described as an in-sample estimate that reads low, with
+  `validation_kld` as the figure to quote.
+* The `from_kde()` help states that a Gaussian-kernel KDE is already a
+  mixture that can be marginalised, conditioned and sampled exactly, and
+  that compression reduces its cost from n components to N.
+* The `gmm_eos_test()` help states that the Andrews subsampling calibration
+  is asymptotic, assumes stationary ergodic innovations, and can over-reject
+  in short series. It also states how `method = "andrews"` differs from
+  Andrews' (2003) P-test: its p-value counts the tested block, and the block
+  statistics are computed at the supplied model rather than re-estimated.
+* The `mnar()` and `proxy_mnar_sensitivity()` help no longer says the data
+  cannot identify the missing-not-at-random slope. Under the mixture
+  selection model the observed data inform the slope through the assumed
+  shape of the outcome distribution, which the new `loglik` column shows.
+* `gmm_entropy()` and `gmm_conditional_entropy()` are titled by the quantity
+  they return by default, the order-2 Renyi entropy.
+* The package website carries an extended version of each of the twelve
+  vignettes. Each adds a numerical comparison with other R packages on the
+  same task. The comparisons are read from stored simulation results, and
+  the code that produced them is in `data-raw/articles/` in the source
+  repository.
 
 * All twelve vignettes were brought to a common quality bar: each now
   opens with the question it answers, carries a Why / What / Do / Read /
@@ -53,6 +115,8 @@
   used throughout the rest of the package's prose.
 * `gmm_complete()`, `proposal_uniform()`/`proposal_mvn()`/`proposal_mvt()`,
   and the `gmm_imputation` class gained `@examples`.
+* Function names in nine vignettes printed with literal square brackets
+  (`[gmm_impute()]`); they now print as plain code.
 
 # proxymix 0.15.2
 
@@ -190,7 +254,7 @@
 
 ### API changes
 
-* The four planned-interface placeholders (`from_aggregate_likelihood()`,
+* The four planned-interface functions (`from_aggregate_likelihood()`,
   `fit_kld_em_collider()`, `to_apsim_scenarios()`, `from_simulator()`) and
   the posterior-producer seam helpers (`from_fb_posterior()`,
   `fb_log_posterior_spec()`, `fb_producer_available()`,

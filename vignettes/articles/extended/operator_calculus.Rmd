@@ -1,0 +1,1434 @@
+---
+title: "The closed-form operator calculus on a mixture"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{The closed-form operator calculus on a mixture}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+<!-- Render time: ~21 s under rmarkdown::render() with ggplot2, dlm and
+     KFAS installed, the simulation read from its stored results;
+     macOS arm64 (Apple silicon), R 4.6.1, one core. -->
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4.5,
+  dpi = 150,
+  out.width = "100%"
+)
+```
+
+```{r inline-numbers, include = FALSE}
+# in the PDF, keep a signed number or an exponent on one line
+keep_whole <- function(x) {
+  if (knitr::is_latex_output()) paste0("\\mbox{", x, "}") else x
+}
+inline_default <- knitr::knit_hooks$get("inline")
+knitr::knit_hooks$set(inline = function(x) {
+  out <- inline_default(x)
+  if (is.character(out) && length(out) == 1L &&
+        grepl("^-?[0-9.]+(e[-+][0-9]+)?$", out) && grepl("-", out)) {
+    out <- keep_whole(out)
+  }
+  out
+})
+```
+
+```{r library}
+library(proxymix)
+```
+
+```{r engines}
+has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
+```
+
+## The problem
+
+A modeller has a fitted Gaussian-mixture proxy and a pipeline waiting behind
+it: push the latent state through a sensor, fold in a measurement, aggregate
+to a coarser grid, condition on what was observed, run the whole thing
+forward in time. The question is not whether any of that is possible, but
+where the exactness stops: *I have a fitted mixture, so which of the things
+I want to do with it next stay exact, and which quietly stop being exact?*
+This vignette draws that line, and checks each claimed exactness against an
+independent hand computation rather than asserting it.
+
+## Package capabilities
+
+Four operator families act on a mixture and return a mixture, so they
+compose without ever leaving closed form. `gmm_affine()` pushes a mixture
+through a linear map with additive Gaussian noise, $y = Ax + b + \epsilon$;
+`gmm_aggregate()` is the same operator specialised to a coarsening matrix.
+`gmm_observe()` performs the Bayesian update on a noisy linear
+observation, the finite-mixture analogue of a Kalman (1960) update: it
+reweights the components by their marginal evidence and Kalman-updates each
+one. `gmm_marginalise()` integrates out a coordinate subset, and
+`gmm_conditionalise()` and `gmm_missing()` condition on coordinates
+observed exactly, through the Schur-complement algebra of the multivariate
+normal (Murphy, 2012, ch. 4).
+
+Two further verbs turn those operators into a recursion.
+`gmm_reduce()` collapses a mixture to a budget of at most `k_max`
+components by a greedy, moment-preserving pairwise merge, so a filter whose
+component count would otherwise grow stays bounded. `gmm_filter()`
+packages the predict, update and reduce loop as a single verb: with Gaussian
+noise it is the Kalman filter, and with a Gaussian-sum process or
+measurement noise it is the Gaussian-sum filter of Alspach and Sorenson
+(1972).
+
+This algebraic dividend is the reason for fitting a *parametric* proxy in
+the first place. A non-parametric kernel density estimate or a Monte Carlo
+sample bank supports none of it in closed form. The mixture approximation
+of van der Hoek and Elliott (2024) is motivated by the same use, in
+non-linear Kalman-type filtering.
+
+## Addressing the problem
+
+```{r seed}
+set.seed(20260514)
+```
+
+### A mixture to operate on
+
+A two-component mixture over a pair of latent variables.
+
+```{r prior}
+g_prior <- gmm(
+  weights = c(0.6, 0.4),
+  means = list(c(-1, 0), c(1.5, 0.5)),
+  covariances = list(diag(c(0.6, 0.8)), diag(c(0.7, 0.5)))
+)
+g_prior
+```
+
+### Pushforward through a linear sensor
+
+Suppose the latent state is observed through
+$y = A x + \epsilon$ with $\epsilon \sim \mathcal{N}(0, R)$ and a sensor
+matrix that reports both coordinates and their sum.
+
+```{r sensor}
+A_sensor <- matrix(
+  c(1, 0,
+    0, 1,
+    1, 1),
+  nrow = 3L, byrow = TRUE
+)
+b_sensor <- c(0, 0, 0)
+R_sensor <- 0.05 * diag(3)
+
+g_pushed <- gmm_affine(
+  g_prior, A_sensor, b_sensor, noise_cov = R_sensor
+)
+```
+
+The weights are unchanged, the means are $A \mu_k + b$ and the covariances
+are $A \Sigma_k A^\top + R$, which the hand computation below reproduces.
+
+```{r sensor-check}
+mu_hand <- lapply(g_prior@means, function(mu) {
+  as.numeric(A_sensor %*% mu + b_sensor)
+})
+cov_hand <- lapply(g_prior@covariances, function(s) {
+  A_sensor %*% s %*% t(A_sensor) + R_sensor
+})
+affine_gap <- max(
+  abs(unlist(g_pushed@means) - unlist(mu_hand)),
+  abs(unlist(g_pushed@covariances) - unlist(cov_hand)),
+  abs(g_pushed@weights - g_prior@weights)
+)
+```
+
+### Bayesian update on a noisy observation
+
+Now observe `y = 0.8` on the first coordinate alone, with noise variance
+0.25.
+
+```{r observe}
+A_obs <- matrix(c(1, 0), nrow = 1L)
+g_post <- gmm_observe(
+  g_prior, A = A_obs, y = 0.8, noise_cov = matrix(0.25, 1L, 1L)
+)
+g_post
+```
+
+Component weights have been multiplied by the marginal evidence
+$\pi_k \, \mathcal{N}(y;\, A \mu_k,\, S_k)$ and renormalised; component
+means and covariances have been Kalman-updated component-wise.
+
+```{r fig-prior-posterior, eval = has_ggplot2, echo = has_ggplot2, fig.height = 4, fig.cap = sprintf("The prior mixture and its posterior after observing 0.8 on the first coordinate. The right-hand component, centred at $x_1 = %s$, sits closer to the observation, and its weight rises from %s to %s while the left-hand component's falls from %s to %s. Within each component the $x_1$ variance shrinks and the $x_1$ mean moves toward the observed value; the covariances are diagonal, so the $x_2$ mean and variance of each component are unchanged.", format(g_prior@means[[2L]][1L]), format(g_prior@weights[2L]), format(round(g_post@weights[2L], 3L)), format(g_prior@weights[1L]), format(round(g_post@weights[1L], 3L))), fig.alt = "Two side-by-side density rasters on the same axes; the right-hand posterior panel is visibly more concentrated than the left-hand prior panel and its mass has shifted toward the observed value."}
+grid <- expand.grid(
+  x = seq(-4, 5, length.out = 80L),
+  y = seq(-3, 3, length.out = 60L)
+)
+gm <- as.matrix(grid)
+long <- rbind(
+  data.frame(x = grid$x, y = grid$y, d = dgmm(gm, g_prior), part = "Prior"),
+  data.frame(
+    x = grid$x, y = grid$y, d = dgmm(gm, g_post), part = "Posterior"
+  )
+)
+long$part <- factor(long$part, levels = c("Prior", "Posterior"))
+ggplot2::ggplot(long, ggplot2::aes(x, y)) +
+  ggplot2::geom_raster(ggplot2::aes(fill = d), interpolate = TRUE) +
+  ggplot2::geom_contour(
+    ggplot2::aes(z = d), colour = "white", linewidth = 0.2,
+    alpha = 0.6, bins = 8L
+  ) +
+  ggplot2::facet_wrap(~ part) +
+  ggplot2::coord_equal(expand = FALSE) +
+  ggplot2::scale_fill_viridis_c(name = "density") +
+  ggplot2::labs(
+    x = expression(x[1]), y = expression(x[2]),
+    title = "Prior and posterior after observing the first coordinate"
+  ) +
+  ggplot2::theme_minimal(base_size = 11) +
+  ggplot2::theme(
+    strip.text = ggplot2::element_text(face = "bold"),
+    panel.grid = ggplot2::element_blank()
+  )
+```
+
+```{r fig-prior-posterior-skip, eval = !has_ggplot2, echo = FALSE, results = "asis"}
+cat("ggplot2 is not installed on this build, so the prior-and-posterior",
+    "figure is skipped.\n")
+```
+
+### The Kalman parity check
+
+For a single-component prior, `gmm_observe()` should collapse exactly to a
+Kalman update. The hand recursion below is written out in full so that the
+comparison is against arithmetic this package did not produce.
+
+```{r kalman-parity}
+g_single <- gmm(
+  weights = 1, means = list(c(0, 0)),
+  covariances = list(diag(c(1, 2)))
+)
+g_one_obs <- gmm_observe(
+  g_single, A = matrix(c(1, 0), nrow = 1L), y = 0.5,
+  noise_cov = matrix(0.5, 1L, 1L)
+)
+
+s_prior <- diag(c(1, 2))
+h_obs <- matrix(c(1, 0), nrow = 1L)
+r_obs <- matrix(0.5, 1L, 1L)
+s_innov <- h_obs %*% s_prior %*% t(h_obs) + r_obs
+gain <- s_prior %*% t(h_obs) %*% solve(s_innov)
+mu_kalman <- as.numeric(gain * 0.5)
+cov_kalman <- s_prior - gain %*% h_obs %*% s_prior
+
+kalman_gap <- max(
+  abs(mu_kalman - g_one_obs@means[[1L]]),
+  abs(cov_kalman - g_one_obs@covariances[[1L]])
+)
+ridge_default <- 1e-6
+```
+
+### Aggregation through a coarsening matrix
+
+Aggregating a three-coordinate latent into two summaries -- the sum of the
+first two coordinates, and the third on its own -- is `gmm_affine()` with a
+row-sum matrix, exposed as `gmm_aggregate()`.
+
+```{r aggregate}
+g_fine <- gmm(
+  weights = c(0.3, 0.4, 0.3),
+  means = list(c(0, 0, 0), c(2, 1, -1), c(-1, -1, 2)),
+  covariances = list(diag(3), diag(3), diag(3))
+)
+A_agg <- matrix(
+  c(1, 1, 0,
+    0, 0, 1),
+  nrow = 2L, byrow = TRUE
+)
+g_coarse <- gmm_aggregate(g_fine, A_agg)
+weights_kept <- max(abs(g_coarse@weights - g_fine@weights))
+```
+
+```{r aggregate-kable, echo = FALSE}
+knitr::kable(
+  data.frame(
+    component = seq_len(gmm_n_components(g_coarse)),
+    weight = round(g_coarse@weights, 3L),
+    mean_1 = round(vapply(g_coarse@means, function(m) m[1L], numeric(1L)), 3L),
+    mean_2 = round(vapply(g_coarse@means, function(m) m[2L], numeric(1L)), 3L)
+  ),
+  col.names = c("Component", "Weight", "Mean of $x_1 + x_2$", "Mean of $x_3$"),
+  caption = paste(
+    "The aggregated mixture keeps the component count and the weights of",
+    "the fine mixture; the table shows the component means mapped through",
+    "the coarsening matrix."
+  )
+)
+```
+
+### Conditioning on coordinates observed exactly
+
+If a subset of coordinates is observed with no noise at all, `gmm_missing()`
+routes through the Schur-complement path. It is the same operation as
+`gmm_conditionalise()` with an index-based signature, and the two agree.
+
+```{r conditioning}
+g_cond_index <- gmm_missing(g_prior, observed = 2L, values = 0.5)
+g_cond_given <- gmm_conditionalise(g_prior, given = c(NA, 0.5))
+cond_gap <- max(
+  abs(unlist(g_cond_index@means) - unlist(g_cond_given@means)),
+  abs(unlist(g_cond_index@covariances) -
+        unlist(g_cond_given@covariances)),
+  abs(g_cond_index@weights - g_cond_given@weights)
+)
+```
+
+### Sequential observations compose
+
+Two observations on disjoint coordinates, applied one after the other,
+should equal one observation on the stacked coordinates.
+
+```{r compose}
+g_a <- gmm_observe(
+  g_prior, A = matrix(c(1, 0), nrow = 1L), y = 0.5,
+  noise_cov = matrix(0.25, 1L, 1L)
+)
+g_ab <- gmm_observe(
+  g_a, A = matrix(c(0, 1), nrow = 1L), y = 0.2,
+  noise_cov = matrix(0.25, 1L, 1L)
+)
+g_stack <- gmm_observe(
+  g_prior, A = diag(2), y = c(0.5, 0.2), noise_cov = 0.25 * diag(2)
+)
+compose_gap <- max(
+  abs(g_ab@weights - g_stack@weights),
+  abs(unlist(g_ab@means) - unlist(g_stack@means)),
+  abs(unlist(g_ab@covariances) - unlist(g_stack@covariances))
+)
+```
+
+### Filtering over time, and the Kalman filter as a special case
+
+The update above is a single step. A *filter* alternates two steps over
+time: a **predict** step that pushes the state forward through the dynamics
+(`gmm_affine()`, the Chapman-Kolmogorov propagation of a linear stochastic
+dynamical system), and an **update** step that folds in each noisy
+measurement (`gmm_observe()`). Run on a single-component prior, this
+recursion *is* the classical discrete-time Kalman filter; run on a
+multi-component prior, it is the **Gaussian-sum filter**, a bank of Kalman
+filters carried in parallel.
+
+Take a one-dimensional constant-velocity track, with state
+(position, velocity), linear dynamics $A$, process noise $Q$, and a noisy
+position sensor $C = [1, 0]$ with noise $R$.
+
+```{r track}
+dt <- 1
+A_dyn <- matrix(c(1, dt, 0, 1), 2L, 2L, byrow = TRUE)
+C_obs <- matrix(c(1, 0), 1L, 2L)
+Q_proc <- 0.01 * diag(2)
+R_meas <- matrix(0.5, 1L, 1L)
+
+n_steps <- 30L
+truth <- matrix(0, n_steps, 2L)
+truth[1L, ] <- c(0, 1)
+for (k1 in 2:n_steps) {
+  truth[k1, ] <- as.numeric(A_dyn %*% truth[k1 - 1L, ]) +
+    mvnfast::rmvn(1L, c(0, 0), Q_proc)
+} # ends k1, over the simulated state track
+y_track <- truth[, 1L] + rnorm(n_steps, 0, sqrt(R_meas[1L, 1L]))
+```
+
+The filter is the operator calculus in a loop.
+
+```{r filter-loop}
+g_state <- gmm(
+  weights = 1, means = list(c(0, 0)), covariances = list(diag(2))
+)
+filtered <- numeric(n_steps)
+for (k1 in seq_len(n_steps)) {
+  if (k1 > 1L) {
+    g_state <- gmm_affine(
+      g_state, A = A_dyn, b = c(0, 0), noise_cov = Q_proc
+    )                                                       # predict
+  }
+  g_state <- gmm_observe(
+    g_state, A = C_obs, y = y_track[k1], noise_cov = R_meas
+  )                                                         # update
+  filtered[k1] <- g_state@means[[1L]][1L]
+} # ends k1, over the filtering recursion
+```
+
+Against a hand-coded textbook Kalman filter:
+
+```{r filter-parity}
+mu_kf <- c(0, 0)
+p_kf <- diag(2)
+kf_track <- numeric(n_steps)
+for (k1 in seq_len(n_steps)) {
+  if (k1 > 1L) {
+    mu_kf <- as.numeric(A_dyn %*% mu_kf)
+    p_kf <- A_dyn %*% p_kf %*% t(A_dyn) + Q_proc            # predict
+  }
+  gain_kf <- p_kf %*% t(C_obs) %*%
+    solve(C_obs %*% p_kf %*% t(C_obs) + R_meas)             # gain
+  mu_kf <- mu_kf + as.numeric(gain_kf %*% (y_track[k1] - C_obs %*% mu_kf))
+  p_kf <- (diag(2) - gain_kf %*% C_obs) %*% p_kf
+  kf_track[k1] <- mu_kf[1L]
+} # ends k1, over the hand-coded Kalman recursion
+loop_gap <- max(abs(filtered - kf_track))
+```
+
+`gmm_affine()` and `gmm_observe()` add a ridge of $10^{-6}$ to the diagonal
+of every covariance they return, to keep it positive-definite. The same loop
+with `ridge_eps = 0` in both calls leaves the ridge out.
+
+```{r filter-loop-noridge}
+g_state <- gmm(
+  weights = 1, means = list(c(0, 0)), covariances = list(diag(2))
+)
+filtered_noridge <- numeric(n_steps)
+for (k1 in seq_len(n_steps)) {
+  if (k1 > 1L) {
+    g_state <- gmm_affine(
+      g_state, A = A_dyn, b = c(0, 0), noise_cov = Q_proc, ridge_eps = 0
+    )
+  }
+  g_state <- gmm_observe(
+    g_state, A = C_obs, y = y_track[k1], noise_cov = R_meas, ridge_eps = 0
+  )
+  filtered_noridge[k1] <- g_state@means[[1L]][1L]
+} # ends k1, over the filtering recursion without the ridge
+loop_gap_noridge <- max(abs(filtered_noridge - kf_track))
+```
+
+```{r fig-kalman, eval = has_ggplot2, echo = has_ggplot2, fig.height = 3.6, fig.cap = "A constant-velocity track filtered by the single-component operator-calculus recursion, which is the Kalman filter: the noisy position readings, the latent truth, and the filtered estimate tracking it.", fig.alt = "A time series with scattered grey noisy position readings, a smooth latent-truth line, and a filtered-estimate line closely following the truth."}
+track_df <- data.frame(
+  t = seq_len(n_steps), truth = truth[, 1L], y = y_track,
+  filtered = filtered
+)
+ggplot2::ggplot(track_df, ggplot2::aes(t)) +
+  ggplot2::geom_point(
+    ggplot2::aes(y = y, colour = "noisy reading"), size = 1.3, alpha = 0.7
+  ) +
+  ggplot2::geom_line(
+    ggplot2::aes(y = truth, colour = "latent truth"), linewidth = 0.8
+  ) +
+  ggplot2::geom_line(
+    ggplot2::aes(y = filtered, colour = "filtered, one component"),
+    linewidth = 0.9
+  ) +
+  ggplot2::scale_colour_manual(
+    name = NULL,
+    values = c(
+      "noisy reading" = "grey60",
+      "latent truth" = "#0072B2",
+      "filtered, one component" = "#D55E00"
+    )
+  ) +
+  ggplot2::labs(
+    x = "time step", y = "position",
+    title = "Predict and update over time is a Kalman filter"
+  ) +
+  ggplot2::theme_minimal(base_size = 11) +
+  ggplot2::theme(legend.position = "top")
+```
+
+```{r fig-kalman-skip, eval = !has_ggplot2, echo = FALSE, results = "asis"}
+cat("ggplot2 is not installed on this build, so the Kalman-track figure",
+    "is skipped.\n")
+```
+
+At more than one component the same two calls run a Kalman filter inside
+*every* component and reweight the components by their evidence, which is
+the Gaussian-sum filter. It represents beliefs a single Kalman filter cannot
+-- multimodal posteriors, several competing hypotheses about where the
+target is. The cost is component growth under noise that is itself a
+Gaussian mixture: a mixture process noise multiplies the component count in
+the predict step, where `gmm_affine()` runs once per noise component, and a
+mixture measurement noise multiplies it in the update step, where
+`gmm_observe()` runs once per noise component. Collapsing the mixture back
+to a fixed budget keeps the filter bounded.
+
+### Bounding the filter through mixture reduction
+
+`gmm_reduce()` collapses a mixture to at most `k_max` components by a
+greedy, moment-preserving pairwise merge: at each step the cheapest pair is
+replaced by the single Gaussian that preserves their combined weight, mean
+and covariance. Two merge costs decide which pair goes first, the
+Kullback-Leibler bound of Runnalls (2007) under `cost = "kl"` and a
+closed-form Cauchy-Schwarz cost under `cost = "cs"`, built from the same
+Gaussian-product identity as `gmm_divergence()`.
+
+Take a six-component mixture that really has three clusters, each split into
+two near-identical components, and reduce it to three.
+
+```{r reduce}
+g_six <- gmm(
+  weights = rep(1 / 6, 6L),
+  means = list(
+    c(-5, 0), c(-5, 0.15), c(5, 0), c(5.1, -0.1), c(0, 6), c(0.1, 6.1)
+  ),
+  covariances = rep(list(0.5 * diag(2)), 6L)
+)
+g_three <- gmm_reduce(g_six, k_max = 3L)
+
+mix_mean <- function(g) Reduce(`+`, Map(`*`, g@weights, g@means))
+reduce_shift <- max(abs(mix_mean(g_six) - mix_mean(g_three)))
+reduce_divergence <- gmm_divergence(g_six, g_three, type = "cs")
+```
+
+```{r number-words, include = FALSE}
+n_word <- function(k) {
+  c("one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+    "ten")[k]
+}
+```
+
+```{r reduce-kable, echo = FALSE}
+knitr::kable(
+  data.frame(
+    quantity = c(
+      "components before", "components after",
+      "shift in the mixture mean", "Cauchy-Schwarz divergence"
+    ),
+    value = c(
+      formatC(gmm_n_components(g_six), format = "d"),
+      formatC(gmm_n_components(g_three), format = "d"),
+      formatC(reduce_shift, format = "e", digits = 1L),
+      formatC(reduce_divergence, format = "e", digits = 1L)
+    )
+  ),
+  col.names = c("Quantity", "Value"),
+  caption = paste(
+    "Reducing six components to three by moment-preserving merges,",
+    "and what the reduction costs."
+  )
+)
+```
+
+Reducing all the way to a single component returns the moment-matched
+Gaussian, so `gmm_reduce()` interpolates between the full mixture and its
+single-Gaussian summary. For a smooth, over-parameterised mixture a globally
+fitted proxy can beat any sequence of pairwise merges, and `method =
+"anneal"` refits a budget-sized proxy by annealed expectation-maximisation
+and keeps it when it improves on the merge.
+
+### The bounded filter in one call
+
+The predict, update and reduce loop is packaged as a single verb.
+`gmm_filter()` takes the prior belief, the linear-Gaussian `dynamics` and
+`measurement`, the observation series, and an optional component cap
+`k_max`. With Gaussian noise and `k_max = NULL` it is the Kalman filter;
+with a Gaussian-sum process or measurement noise -- a `gmm` in place of a
+covariance matrix -- it is the Gaussian-sum filter, bounded by
+`gmm_reduce()` after each step.
+
+```{r verb-kalman}
+prior_state <- gmm(
+  weights = 1, means = list(c(0, 0)), covariances = list(diag(2))
+)
+out_verb <- gmm_filter(
+  prior_state,
+  dynamics = list(A = A_dyn, Q = Q_proc),
+  measurement = list(C = C_obs, R = R_meas),
+  y = y_track, ridge_eps = 0
+)
+
+mu_v <- c(0, 0)
+p_v <- diag(2)
+kf_verb <- numeric(n_steps)
+for (k1 in seq_len(n_steps)) {
+  mu_v <- as.numeric(A_dyn %*% mu_v)
+  p_v <- A_dyn %*% p_v %*% t(A_dyn) + Q_proc                # predict
+  gain_v <- p_v %*% t(C_obs) %*%
+    solve(C_obs %*% p_v %*% t(C_obs) + R_meas)              # gain
+  mu_v <- mu_v + as.numeric(gain_v %*% (y_track[k1] - C_obs %*% mu_v))
+  p_v <- (diag(2) - gain_v %*% C_obs) %*% p_v               # update
+  kf_verb[k1] <- mu_v[1L]
+} # ends k1, over the predict-then-update reference recursion
+verb_gap <- max(abs(out_verb$mean[, 1L] - kf_verb))
+```
+
+A heavy-tailed disturbance is awkward for a single Gaussian process noise.
+Modelled as a two-component Gaussian sum -- a calm regime and an occasional
+larger jump -- the recursion becomes a genuine Gaussian-sum filter. Each
+step multiplies the component count by two, so the cap returns it to budget.
+The track above was simulated with Gaussian process noise, so this
+heavy-tailed noise model is misspecified for it.
+
+```{r verb-gsf}
+q_heavy <- gmm(
+  weights = c(0.9, 0.1),
+  means = list(c(0, 0), c(0, 0)),
+  covariances = list(0.01 * diag(2), 0.5 * diag(2))
+)
+out_gsf <- gmm_filter(
+  prior_state,
+  dynamics = list(A = A_dyn, Q = q_heavy),
+  measurement = list(C = C_obs, R = R_meas),
+  y = y_track, k_max = 6L
+)
+gsf_max_k <- max(out_gsf$summary$n_components)
+gsf_rmse <- sqrt(mean((out_gsf$mean[, 1L] - truth[, 1L])^2))
+kalman_rmse <- sqrt(mean((out_verb$mean[, 1L] - truth[, 1L])^2))
+```
+
+```{r gsf-counts, include = FALSE}
+gsf_k <- out_gsf$summary$n_components
+gsf_first_cap <- which(gsf_k == gsf_max_k)[1L]
+gsf_early_vec <- paste0(gsf_k[seq_len(gsf_first_cap - 1L)], " after step ",
+                        seq_len(gsf_first_cap - 1L))
+gsf_early <- paste(gsf_early_vec, collapse = ", ")
+gsf_counts <- paste0(gsf_early, " and ", gsf_max_k, ", the cap, from step ",
+                     gsf_first_cap, " to step ", n_steps)
+```
+
+```{r fig-gsf, eval = has_ggplot2, echo = has_ggplot2, fig.height = 3.6, fig.cap = sprintf("The same track filtered by the Gaussian-sum filter under a two-component heavy-tailed process noise, capped at six components per step. The filtered mean tracks the latent truth; the component count is %s.", gsf_counts), fig.alt = "A time series with grey noisy position readings, a latent-truth line, and a Gaussian-sum-filter estimate line following the truth closely."}
+gsf_df <- data.frame(
+  t = seq_len(n_steps), truth = truth[, 1L], y = y_track,
+  filtered = out_gsf$mean[, 1L]
+)
+ggplot2::ggplot(gsf_df, ggplot2::aes(t)) +
+  ggplot2::geom_point(
+    ggplot2::aes(y = y, colour = "noisy reading"), size = 1.3, alpha = 0.7
+  ) +
+  ggplot2::geom_line(
+    ggplot2::aes(y = truth, colour = "latent truth"), linewidth = 0.8
+  ) +
+  ggplot2::geom_line(
+    ggplot2::aes(y = filtered, colour = "Gaussian-sum filter"),
+    linewidth = 0.9
+  ) +
+  ggplot2::scale_colour_manual(
+    name = NULL,
+    values = c(
+      "noisy reading" = "grey60",
+      "latent truth" = "#0072B2",
+      "Gaussian-sum filter" = "#D55E00"
+    )
+  ) +
+  ggplot2::labs(
+    x = "time step", y = "position",
+    title = "A bounded Gaussian-sum filter in one call"
+  ) +
+  ggplot2::theme_minimal(base_size = 11) +
+  ggplot2::theme(legend.position = "top")
+```
+
+```{r fig-gsf-skip, eval = !has_ggplot2, echo = FALSE, results = "asis"}
+cat("ggplot2 is not installed on this build, so the Gaussian-sum-filter",
+    "figure is skipped.\n")
+```
+
+```{r parity-kable, echo = FALSE}
+knitr::kable(
+  data.frame(
+    check = c(
+      "pushforward against the hand formula",
+      "single-component update against a hand Kalman step",
+      "index conditioning against value conditioning",
+      "two observations against one stacked observation",
+      "operator loop against a hand Kalman filter",
+      "operator loop, `ridge_eps = 0`, against a hand Kalman filter",
+      "`gmm_filter()`, `ridge_eps = 0`, against a hand Kalman filter",
+      "weights preserved by aggregation"
+    ),
+    gap = formatC(
+      c(
+        affine_gap, kalman_gap, cond_gap, compose_gap, loop_gap,
+        loop_gap_noridge, verb_gap, weights_kept
+      ),
+      format = "e", digits = 1L
+    )
+  ),
+  col.names = c("Exactness check", "Largest absolute difference"),
+  caption = paste(
+    "The exactness checks of this section, each against an independently",
+    "written hand computation; the Nile comparisons follow in the numerical",
+    "illustration. `gmm_affine()` and `gmm_observe()` add a",
+    "ridge of $10^{-6}$ to each covariance unless `ridge_eps = 0`."
+  )
+)
+```
+
+## Interpretation
+
+Every operator claimed to be exact matches its hand computation, up to the
+ridge of $10^{-`r round(-log10(ridge_default))`}$ that
+`gmm_affine()` and `gmm_observe()` add to each covariance by default. The
+pushforward reproduces $A \mu_k + b$ and $A \Sigma_k A^\top + R$ to
+`r formatC(affine_gap, format = "e", digits = 1L)`, the size of that ridge,
+and it leaves the weights untouched, as aggregation does to
+`r formatC(weights_kept, format = "e", digits = 1L)`: a linear map moves
+where the components sit, never how much mass each carries.
+
+The single-component update matches a hand-written Kalman step to
+`r formatC(kalman_gap, format = "e", digits = 1L)`, again the size of the
+ridge. The two conditioning signatures agree to
+`r formatC(cond_gap, format = "e", digits = 1L)`, so `gmm_missing()` and
+`gmm_conditionalise()` perform the same computation. Two sequential
+observations on disjoint coordinates agree with one stacked observation to
+`r formatC(compose_gap, format = "e", digits = 1L)`, the size of the one
+extra ridge the second call adds. Folding the two measurements in one at a
+time gives the same belief as folding them in together.
+
+Over time the ridge accumulates. The explicit predict-and-update loop makes
+`r 2L * n_steps - 1L` operator calls over `r n_steps` steps, each adding the
+ridge, and agrees with a hand-coded Kalman filter to
+`r formatC(loop_gap, format = "e", digits = 1L)`. With `ridge_eps = 0` the
+same loop agrees to `r formatC(loop_gap_noridge, format = "e", digits = 1L)`,
+and the packaged `gmm_filter()` verb, called with `ridge_eps = 0`, agrees
+with the same reference to
+`r formatC(verb_gap, format = "e", digits = 1L)`. The first figure shows the
+update contracting the belief toward the observation, and the second shows
+the recursion tracking a latent state through noise.
+
+Reduction is the one operator on this page that is designed to lose
+something, and the table says how much. Collapsing `r n_word(gmm_n_components(g_six))` components to
+`r n_word(gmm_n_components(g_three))` moves the mixture mean by
+`r formatC(reduce_shift, format = "e", digits = 1L)`, because every merge
+preserves the combined weight, mean and covariance by construction; the
+Cauchy-Schwarz divergence between the six-component mixture and its
+three-component reduction is
+`r formatC(reduce_divergence, format = "e", digits = 1L)`, small here only
+because the components merged were near-duplicates. On a mixture whose
+components genuinely differ, that divergence is where the cost of the budget
+shows up.
+
+Under a two-component heavy-tailed process noise the component count
+doubles at every step until it reaches the cap: from a one-component prior
+it is `r gsf_counts`. The filtered mean tracks the latent truth with a
+root-mean-square error of `r round(gsf_rmse, 3L)` against
+`r round(kalman_rmse, 3L)` for the single-Gaussian Kalman filter on the
+same readings. That is one realisation of `r n_steps` steps under a
+misspecified noise model, so it does not rank the two filters.
+
+So the line the opening question asked for runs as follows. Pushforward,
+aggregation, noisy linear update and exact conditioning each matched its
+hand computation, and any sequence of them stays in closed form, because
+each returns a mixture and the next operator does not know or care how the
+mixture arose. Reduction is
+exact in its moments and approximate in its shape. Everything outside the
+affine-Gaussian channel leaves closed form altogether, which is the subject
+of the next section.
+
+## Limitations
+
+The closed-form algebra rests on two assumptions, and both are load-bearing.
+The map must be linear and the noise must be Gaussian. A non-linear sensor
+-- a sigmoid observation, a max-pooling aggregator, anything that bends the
+coordinate space -- has no closed-form pushforward through a Gaussian
+mixture, and must not be silently linearised; a Monte Carlo pushforward is
+the correct fallback, and the operators here will not stand in for one. The
+same restriction applies to non-Gaussian observation noise, with one
+exception: noise that is itself a finite Gaussian mixture stays inside the
+calculus, and the numerical illustration that follows tests the capped
+filter under such a noise against a particle filter, beside two Kalman
+filters and a Student-t filter. Hierarchical and
+random-effect models sit outside the calculus for a third reason: the
+operators apply to a *fixed* affine-Gaussian channel, and a prior over the
+channel parameters $(A, R)$ themselves requires an integration that is not
+closed form in general.
+
+Component growth is the practical limit on the filter. Under Gaussian-sum
+process or measurement noise each predict or update step with mixture noise
+multiplies the component count by the number of noise components, so an uncapped Gaussian-sum filter over a
+long series is not a viable object. `gmm_reduce()` is what makes it viable,
+and the budget is a modelling choice with consequences: a cap tight enough
+to be cheap will merge components that represent genuinely distinct
+hypotheses, and the multimodality the Gaussian-sum filter exists to carry is
+exactly what a tight cap discards. The divergence reported above is small
+because the example merges near-duplicates by design, and it should be
+recomputed on any real filtering problem rather than assumed small.
+
+A Gaussian-process latent is the natural comparison and wins on flexibility.
+It gives a fully non-parametric, uncertainty-rich representation of the
+underlying field, and integration through a linear operator with additive
+Gaussian noise is closed form for a Gaussian process too, so on a single
+pass there is little to choose between them. What the Gaussian process
+lacks is cheap *composition*: repeatedly conditioning, aggregating and
+re-mixing its posteriors across configurations carries a growing
+kernel-algebra burden, where the mixture calculus stays a finite parameter
+list of fixed size. The finite mixture is the less flexible representation
+and the more composable one, so the choice turns on how much closed-form
+composition the downstream pipeline actually needs.
+
+Finally, everything on this page operates on a mixture that is taken as
+given. None of these checks says the mixture is a good proxy for whatever it
+was fitted to, and an exact operator applied to a poor proxy propagates the
+proxy's error exactly.
+
+## Numerical illustration
+
+```{r engines-illustration, include = FALSE}
+has_dlm <- requireNamespace("dlm", quietly = TRUE)
+has_kfas <- requireNamespace("KFAS", quietly = TRUE)
+run_illustration <- has_dlm && has_kfas
+```
+
+```{r illustration-skip, eval = !run_illustration, echo = FALSE, results = "asis"}
+cat("dlm or KFAS is not available on this build, so the Nile illustration",
+    "is skipped.\n")
+```
+
+```{r fixed-notation, include = FALSE}
+## Small numbers are written as plain decimals rather than in the
+## scientific notation knitr's inline hook would otherwise typeset.
+fixed <- function(v, digits) {
+  format(round(v, digits), nsmall = digits, scientific = FALSE)
+}
+sci <- function(v) formatC(v, format = "e", digits = 1L)
+```
+
+### The Nile at one component, beside two Kalman filters
+
+`gmm_filter()`, dlm (Petris, 2010) and KFAS (Helske, 2017) are applied to
+the annual flow of the Nile at Aswan from 1871 to 1970 (Cobb, 1978; Durbin and
+Koopman, 2012), shipped with R as `Nile`. The model is the local level: the
+level follows a random walk with variance $Q$ and each year's flow is the
+level plus Gaussian noise of variance $H$. The two variances are estimated
+once by maximum likelihood through `dlm::dlmMLE()` and handed to all three
+filters, together with one initial belief, a level of 1000 with variance
+$10^5$. KFAS places its initial belief on the level of the first year rather
+than on the level before it, so it receives the initial variance plus $Q$.
+
+The competitors install from CRAN once and load as usual:
+
+```{r install-competitors, eval = FALSE}
+install.packages(c("dlm", "KFAS", "nimble", "nimbleSMC"))
+```
+
+```{r load-competitors, eval = run_illustration, message = FALSE}
+library(dlm)
+library(KFAS)
+```
+
+```{r nile-fit, eval = run_illustration}
+y_nile <- as.numeric(datasets::Nile)
+n_nile <- length(y_nile)
+build_level <- function(p) dlmModPoly(1L, dV = exp(p[1L]), dW = exp(p[2L]))
+fit_nile <- dlmMLE(y_nile, parm = c(log(15000), log(1500)),
+                   build = build_level)
+h_nile <- exp(fit_nile$par[1L])   # observation noise variance
+q_nile <- exp(fit_nile$par[2L])   # variance of the level increments
+m0_nile <- 1000
+c0_nile <- 1e5
+```
+
+```{r nile-three, eval = run_illustration}
+mod_dlm <- dlmModPoly(1L, dV = h_nile, dW = q_nile, m0 = m0_nile,
+                      C0 = c0_nile)
+f_dlm <- dlmFilter(y_nile, mod_dlm)
+mean_dlm <- as.numeric(f_dlm$m[-1L])
+var_dlm <- unlist(dlmSvd2var(f_dlm$U.C, f_dlm$D.C))[-1L]
+ll_dlm <- -dlmLL(y_nile, mod_dlm) - n_nile / 2 * log(2 * pi)
+
+mod_kfas <- SSModel(y_nile ~ SSMtrend(1L, Q = q_nile, a1 = m0_nile,
+                                      P1 = c0_nile + q_nile), H = h_nile)
+f_kfas <- KFS(mod_kfas, filtering = "state", smoothing = "none")
+mean_kfas <- as.numeric(f_kfas$att)
+var_kfas <- as.numeric(f_kfas$Ptt)
+ll_kfas <- as.numeric(logLik(mod_kfas))
+
+prior_nile <- gmm(weights = 1, means = list(m0_nile),
+                  covariances = list(matrix(c0_nile)))
+f_pm <- gmm_filter(
+  prior_nile,
+  dynamics = list(A = matrix(1), Q = matrix(q_nile)),
+  measurement = list(C = matrix(1), R = matrix(h_nile)),
+  y = y_nile, ridge_eps = 0
+)
+mean_pm <- f_pm$mean[, 1L]
+var_pm <- f_pm$summary$sd_1^2
+ll_pm <- sum(f_pm$summary$log_evidence)
+```
+
+`dlmLL()` returns the negative log-likelihood without the
+$\tfrac{n}{2} \log 2\pi$ term, which the code above adds back so that the
+three log-likelihoods are on one scale.
+
+```{r nile-parity-table, eval = run_illustration, echo = FALSE}
+gap <- function(a, b) max(abs(a - b))
+parity_tbl <- data.frame(
+  pair = c("proxymix against dlm", "proxymix against KFAS",
+           "dlm against KFAS"),
+  mean_gap = sci(c(gap(mean_pm, mean_dlm), gap(mean_pm, mean_kfas),
+                   gap(mean_dlm, mean_kfas))),
+  var_gap = sci(c(gap(var_pm, var_dlm), gap(var_pm, var_kfas),
+                  gap(var_dlm, var_kfas))),
+  ll_gap = sci(c(abs(ll_pm - ll_dlm), abs(ll_pm - ll_kfas),
+                 abs(ll_dlm - ll_kfas))),
+  stringsAsFactors = FALSE
+)
+knitr::kable(
+  parity_tbl, align = c("l", "r", "r", "r"),
+  col.names = c("Pair of filters", "Filtered means", "Filtered variances",
+                "Log-likelihood"),
+  caption = paste0(
+    "Largest absolute difference over the ", n_nile, " filtered means and ",
+    "filtered variances of the Nile local-level model, and the absolute ",
+    "difference in log-likelihood, between each pair of filters given the ",
+    "same two variances and the same initial belief."
+  )
+)
+var_gap_pm <- max(gap(var_pm, var_dlm), gap(var_pm, var_kfas))
+rel_var_gap <- max(pmax(abs(var_pm - var_dlm), abs(var_pm - var_kfas)) /
+                     var_pm)
+ll_three <- fixed(c(ll_pm, ll_dlm, ll_kfas), 2)
+```
+
+The estimated variances are $H$ = `r fixed(h_nile, 0)` and $Q$ =
+`r fixed(q_nile, 0)`. At one component `gmm_filter()` returns the Kalman
+filter: its filtered means agree with dlm and KFAS to
+`r sci(max(gap(mean_pm, mean_dlm), gap(mean_pm, mean_kfas)))` and its
+filtered variances, which settle at `r round(var_pm[n_nile])`, to
+`r sci(var_gap_pm)`, a relative difference of at most
+`r sci(rel_var_gap)`. The three log-likelihoods are
+`r if (length(unique(ll_three)) == 1L) paste("all", keep_whole(ll_three[1L])) else paste(keep_whole(ll_three), collapse = ", ")`.
+
+### The same series with an outlier component in the noise
+
+The flow falls by about a quarter after 1898 and never recovers, and a
+Gaussian filter treats the first low reading like any other. The second run
+keeps $Q$ and the noise variance $H$ but splits the noise into two
+components: a core of weight 0.9 and variance $H / 1.9$, and an outlier
+component of weight 0.1 with ten times that variance, so the total variance
+is unchanged and only the shape of the noise differs. The exact
+Gaussian-sum filter would carry $2^{100}$ components by the last year, so
+the run is capped at four components per step. The reference is a bootstrap
+particle filter (Gordon et al., 1993) under the same
+two-component noise, written out in full below and run with 10 000
+particles.
+
+```{r nile-mixture, eval = run_illustration}
+r_mix_nile <- gmm(
+  weights = c(0.9, 0.1), means = list(0, 0),
+  covariances = list(matrix(h_nile / 1.9), matrix(10 * h_nile / 1.9))
+)
+f_mix <- gmm_filter(
+  prior_nile,
+  dynamics = list(A = matrix(1), Q = matrix(q_nile)),
+  measurement = list(C = matrix(1), R = r_mix_nile),
+  y = y_nile, k_max = 4L
+)
+mean_mix <- f_mix$mean[, 1L]
+ll_mix <- sum(f_mix$summary$log_evidence)
+```
+
+```{r nile-pf, eval = run_illustration}
+bootstrap_filter <- function(y, n_particles, m0, c0, q, r_sd, r_w) {
+  n <- length(y)
+  particles <- rnorm(n_particles, m0, sqrt(c0))
+  filtered <- numeric(n)
+  log_lik <- 0
+  for (t in seq_len(n)) {
+    particles <- particles + rnorm(n_particles, 0, sqrt(q))
+    lik <- r_w[1L] * dnorm(y[t], particles, r_sd[1L]) +
+      r_w[2L] * dnorm(y[t], particles, r_sd[2L])
+    log_lik <- log_lik + log(mean(lik))
+    filtered[t] <- sum(lik * particles) / sum(lik)
+    particles <- particles[sample.int(n_particles, n_particles,
+                                      replace = TRUE, prob = lik)]
+  }
+  list(mean = filtered, log_lik = log_lik)
+}
+
+set.seed(20260925)
+pf_nile <- bootstrap_filter(
+  y_nile, 10000L, m0_nile, c0_nile, q_nile,
+  r_sd = sqrt(c(h_nile / 1.9, 10 * h_nile / 1.9)), r_w = c(0.9, 0.1)
+)
+```
+
+```{r fig-nile, eval = run_illustration && has_ggplot2, echo = run_illustration && has_ggplot2, fig.height = 3.8, fig.cap = "The annual flow of the Nile with the filtered level under Gaussian noise, which is the Kalman filter, and under the two-component noise of the same variance, which is the capped Gaussian-sum filter. The particle filter under the two-component noise is drawn dotted and lies on the Gaussian-sum line.", fig.alt = "A time series of 100 annual Nile flow readings as grey points, with three filtered-level lines: the Gaussian filter, the four-component mixture filter, and a dotted particle-filter line that coincides with the mixture filter."}
+nile_df <- data.frame(
+  year = as.numeric(time(datasets::Nile)), flow = y_nile,
+  gaussian = mean_pm, mixture = mean_mix, particle = pf_nile$mean
+)
+ggplot2::ggplot(nile_df, ggplot2::aes(year)) +
+  ggplot2::geom_point(ggplot2::aes(y = flow, colour = "annual flow"),
+                      size = 1.3, alpha = 0.7) +
+  ggplot2::geom_line(ggplot2::aes(y = gaussian, colour = "Gaussian noise"),
+                     linewidth = 0.8) +
+  ggplot2::geom_line(
+    ggplot2::aes(y = mixture, colour = "two-component noise"),
+    linewidth = 0.9
+  ) +
+  ggplot2::geom_line(
+    ggplot2::aes(y = particle, colour = "particle filter"),
+    linewidth = 0.7, linetype = "dotted"
+  ) +
+  ggplot2::scale_colour_manual(
+    name = NULL,
+    values = c("annual flow" = "grey60", "Gaussian noise" = "#0072B2",
+               "two-component noise" = "#D55E00",
+               "particle filter" = "#000000")
+  ) +
+  ggplot2::labs(x = "year", y = expression("flow, " * 10^8 * " m"^3),
+                title = "The Nile under Gaussian and two-component noise") +
+  ggplot2::theme_minimal(base_size = 11) +
+  ggplot2::theme(legend.position = "top")
+```
+
+```{r fig-nile-skip, eval = run_illustration && !has_ggplot2, echo = FALSE, results = "asis"}
+cat("ggplot2 is not installed on this build, so the Nile figure is",
+    "skipped.\n")
+```
+
+```{r nile-mixture-table, eval = run_illustration, echo = FALSE}
+mix_tbl <- data.frame(
+  filter = c("Gaussian noise (dlm, KFAS, proxymix at one component)",
+             "two-component noise, proxymix capped at four components",
+             "two-component noise, particle filter, 10 000 particles"),
+  ll = fixed(c(ll_pm, ll_mix, pf_nile$log_lik), 2),
+  max_gap = c(fixed(c(gap(mean_pm, pf_nile$mean),
+                      gap(mean_mix, pf_nile$mean)), 1), "--"),
+  mean_gap = c(fixed(c(mean(abs(mean_pm - pf_nile$mean)),
+                       mean(abs(mean_mix - pf_nile$mean))), 1), "--"),
+  stringsAsFactors = FALSE
+)
+knitr::kable(
+  mix_tbl, align = c("l", "r", "r", "r"),
+  col.names = c("Filter", "Log-likelihood", "Largest gap", "Mean gap"),
+  caption = paste0(
+    "Log-likelihood of the ", n_nile, " Nile readings under each filter, ",
+    "and the largest and mean absolute gap between its filtered level and ",
+    "the particle filter's, the reference, over the ", n_nile, " years. ",
+    "The particle filter has no gap cells because it is the reference."
+  )
+)
+i_1899 <- which(time(datasets::Nile) == 1899)
+step_gauss <- mean_pm[i_1899] - mean_pm[i_1899 - 1L]
+step_mix <- mean_mix[i_1899] - mean_mix[i_1899 - 1L]
+```
+
+```{r nile-read, eval = run_illustration, include = FALSE}
+# differences of the log-likelihoods as the table rounds them
+ll_mix_over_gauss <- round(ll_mix, 2L) - round(ll_pm, 2L)
+mix_pf_ll_gap <- round(ll_mix, 2L) - round(pf_nile$log_lik, 2L)
+```
+
+The two-component noise lowers the log-likelihood of the series by
+`r fixed(-ll_mix_over_gauss, 2)` against the Gaussian noise of the same
+variance, so the Nile readings do not favour the split, and the capped
+filter's log-likelihood is within `r fixed(abs(mix_pf_ll_gap), 2)` of the
+particle filter's estimate under the same noise. Its filtered level stays
+within
+`r fixed(gap(mean_mix, pf_nile$mean), 1)` of the particle filter's over the
+`r n_nile` years, on readings that range from `r min(y_nile)` to
+`r max(y_nile)`, while the Gaussian filter's level differs from it by up to
+`r fixed(gap(mean_pm, pf_nile$mean), 1)`. At 1899, the first reading after
+the drop, the Gaussian filter lowers its level by `r fixed(abs(step_gauss), 1)` and
+the mixture filter by `r fixed(abs(step_mix), 1)`, because the mixture
+filter gives part of that reading to the outlier component. The series has
+no true level to score against, so the simulation below supplies one.
+
+### A simulation benchmark
+
+```{r sim-read, echo = FALSE}
+sim <- readRDS("operator_calculus_sim.rds")
+if (!identical(sim$code, as.character(knitr::knit_code$get("sim-code")))) {
+  stop("The stored simulation results were produced by code other than ",
+       "the chunk shown; rerun the simulation.", call. = FALSE)
+}
+```
+
+The simulation repeats the exercise on `r sim$n_rep` series of
+`r sim$n_t` steps whose level is known. The level is a random walk with
+increment variance `r sim$q_state`, started from a belief of mean 0 and
+variance `r sim$c0`, and each reading is the level plus noise drawn from a
+core component of standard deviation `r sim$r_sd[1L]` with probability
+`r sim$r_w[1L]`, or from an outlier component of standard deviation
+`r sim$r_sd[2L]` with probability `r sim$r_w[2L]`. Six filters are given the
+true increment variance and starting belief. proxymix runs under the
+true two-component noise, capped at
+four components per step. dlm and KFAS run the Kalman filter under Gaussian
+noise of the mixture's variance, `r sim$r_var`. The bootstrap particle
+filter of the previous section runs under the two-component noise with
+10 000 particles and is the reference. nimble (de Valpine et al., 2017)
+runs its bootstrap filter through nimbleSMC (Michaud et al., 2021) with
+10 000 particles, once
+under the two-component noise and once under a Student-t noise with 4
+degrees of freedom whose scale, `r fixed(sim$t_scale, 3)`, is the maximum
+likelihood fit to the two-component noise; the second is the robust
+competitor. nimble's filter is set to resample at every step, as the
+hand-written one does, so that its stored samples are the filtered
+distribution at every step.
+
+Each filter is scored by the root mean squared error of its filtered mean
+against the true level over the `r sim$n_t` steps, by its log-likelihood of
+the series, and by its running time.
+
+This chunk is complete and runs as shown, but it took about
+`r round(sim$elapsed_secs / 60)` minutes on one core (R
+`r sim$versions[["R"]]`, Apple silicon); the results below are
+read from its stored output. For a quick reduced run, change the line
+`n_rep <- 300L` to `n_rep <- 3L`. The per-series times in the table below
+add up to about `r round(sum(sim$sim_tab$secs) * sim$n_rep / 60)` minutes;
+the rest is compiling nimble's two models and time the process spent
+waiting rather than computing.
+
+```{r sim-code, eval = FALSE}
+library(proxymix)
+library(dlm)
+library(KFAS)
+library(nimble)
+library(nimbleSMC)
+
+n_t <- 200L           # steps per series
+n_particles <- 10000L
+n_rep <- 300L         # series
+
+q_state <- 0.25       # variance of the level increments
+r_sd <- c(1, 5)       # noise standard deviations, core and outlier
+r_w <- c(0.9, 0.1)    # their weights
+r_var <- sum(r_w * r_sd^2)
+m0 <- 0
+c0 <- 10
+
+# scale of a Student-t noise with 4 degrees of freedom, fitted by maximum
+# likelihood to the two-component noise
+t_df <- 4
+neg_ll_t <- function(s) {
+  log(s) - integrate(function(v) {
+    (r_w[1L] * dnorm(v, 0, r_sd[1L]) + r_w[2L] * dnorm(v, 0, r_sd[2L])) *
+      dt(v / s, t_df, log = TRUE)
+  }, -60, 60)$value
+}
+t_scale <- optimize(neg_ll_t, c(0.3, 5))$minimum
+
+bootstrap_filter <- function(y, n_particles, m0, c0, q, r_sd, r_w) {
+  n <- length(y)
+  particles <- rnorm(n_particles, m0, sqrt(c0))
+  filtered <- numeric(n)
+  log_lik <- 0
+  for (t in seq_len(n)) {
+    particles <- particles + rnorm(n_particles, 0, sqrt(q))
+    lik <- r_w[1L] * dnorm(y[t], particles, r_sd[1L]) +
+      r_w[2L] * dnorm(y[t], particles, r_sd[2L])
+    log_lik <- log_lik + log(mean(lik))
+    filtered[t] <- sum(lik * particles) / sum(lik)
+    particles <- particles[sample.int(n_particles, n_particles,
+                                      replace = TRUE, prob = lik)]
+  }
+  list(mean = filtered, log_lik = log_lik)
+}
+
+# the two-component noise as a nimble distribution
+dmixnorm <- nimbleFunction(
+  run = function(x = double(0), mean = double(0), sd1 = double(0),
+                 sd2 = double(0), w = double(0),
+                 log = integer(0, default = 0)) {
+    returnType(double(0))
+    d <- w * dnorm(x, mean, sd1) + (1 - w) * dnorm(x, mean, sd2)
+    if (log) return(log(d)) else return(d)
+  }
+)
+rmixnorm <- nimbleFunction(
+  run = function(n = integer(0), mean = double(0), sd1 = double(0),
+                 sd2 = double(0), w = double(0)) {
+    returnType(double(0))
+    if (runif(1) < w) return(rnorm(1, mean, sd1))
+    return(rnorm(1, mean, sd2))
+  }
+)
+registerDistributions(list(
+  dmixnorm = list(BUGSdist = "dmixnorm(mean, sd1, sd2, w)",
+                  types = c("value = double(0)"))
+))
+
+code_mix <- nimbleCode({
+  x[1] ~ dnorm(m0, var = c0 + q_state)
+  y[1] ~ dmixnorm(x[1], sd1, sd2, w1)
+  for (t in 2:n_t) {
+    x[t] ~ dnorm(x[t - 1], var = q_state)
+    y[t] ~ dmixnorm(x[t], sd1, sd2, w1)
+  }
+})
+code_t <- nimbleCode({
+  x[1] ~ dnorm(m0, var = c0 + q_state)
+  y[1] ~ dt(mu = x[1], sigma = t_scale, df = t_df)
+  for (t in 2:n_t) {
+    x[t] ~ dnorm(x[t - 1], var = q_state)
+    y[t] ~ dt(mu = x[t], sigma = t_scale, df = t_df)
+  }
+})
+
+# one compiled model and filter per noise model; the data are replaced
+# in the compiled model for each series
+build_filter <- function(code) {
+  consts <- list(n_t = n_t, m0 = m0, c0 = c0, q_state = q_state,
+                 sd1 = r_sd[1L], sd2 = r_sd[2L], w1 = r_w[1L],
+                 t_df = t_df, t_scale = t_scale)
+  model <- nimbleModel(code, data = list(y = rep(0, n_t)),
+                       constants = consts, inits = list(x = rep(0, n_t)))
+  cmodel <- compileNimble(model)
+  filt <- buildBootstrapFilter(model, nodes = "x",
+                               control = list(saveAll = TRUE, thresh = 1))
+  list(model = cmodel, filter = compileNimble(filt, project = model))
+}
+nimble_mix <- build_filter(code_mix)
+nimble_t <- build_filter(code_t)
+
+run_nimble <- function(nb, y) {
+  nb$model$y <- y
+  log_lik <- nb$filter$run(n_particles)
+  list(mean = colMeans(as.matrix(nb$filter$mvEWSamples, "x")),
+       log_lik = log_lik)
+}
+
+prior_sim <- gmm(weights = 1, means = list(m0), covariances = list(matrix(c0)))
+r_mix_sim <- gmm(weights = r_w, means = list(0, 0),
+                 covariances = list(matrix(r_sd[1L]^2), matrix(r_sd[2L]^2)))
+mod_dlm_sim <- dlmModPoly(1L, dV = r_var, dW = q_state, m0 = m0, C0 = c0)
+
+one_series <- function(r) {
+  set.seed(r)
+  x <- m0 + sqrt(c0) * rnorm(1L) + cumsum(rnorm(n_t, 0, sqrt(q_state)))
+  outlier <- runif(n_t) < r_w[2L]
+  y <- x + rnorm(n_t, 0, ifelse(outlier, r_sd[2L], r_sd[1L]))
+
+  timed <- function(expr) {
+    secs <- system.time(out <- expr)[["elapsed"]]
+    c(out, secs = secs)
+  }
+  fits <- list(
+    "proxymix, two-component noise" = timed({
+      f <- gmm_filter(prior_sim,
+                      dynamics = list(A = matrix(1), Q = matrix(q_state)),
+                      measurement = list(C = matrix(1), R = r_mix_sim),
+                      y = y, k_max = 4L)
+      list(mean = f$mean[, 1L], log_lik = sum(f$summary$log_evidence))
+    }),
+    "dlm, Gaussian noise" = timed({
+      f <- dlmFilter(y, mod_dlm_sim)
+      list(mean = as.numeric(f$m[-1L]),
+           log_lik = -dlmLL(y, mod_dlm_sim) - n_t / 2 * log(2 * pi))
+    }),
+    "KFAS, Gaussian noise" = timed({
+      mod <- SSModel(y ~ SSMtrend(1L, Q = q_state, a1 = m0,
+                                  P1 = c0 + q_state), H = r_var)
+      f <- KFS(mod, filtering = "state", smoothing = "none")
+      list(mean = as.numeric(f$att), log_lik = as.numeric(logLik(mod)))
+    }),
+    "particle filter, two-component noise" = timed(
+      bootstrap_filter(y, n_particles, m0, c0, q_state, r_sd, r_w)
+    ),
+    "nimble, two-component noise" = timed(run_nimble(nimble_mix, y)),
+    "nimble, Student-t noise" = timed(run_nimble(nimble_t, y))
+  )
+  data.frame(
+    series = r, method = names(fits),
+    rmse = vapply(fits, function(f) sqrt(mean((f$mean - x)^2)), numeric(1L)),
+    log_lik = vapply(fits, function(f) f$log_lik, numeric(1L)),
+    secs = vapply(fits, function(f) f[["secs"]], numeric(1L)),
+    row.names = NULL
+  )
+}
+
+res <- do.call(rbind, lapply(seq_len(n_rep), one_series))
+
+sim_tab <- aggregate(cbind(rmse, log_lik, secs) ~ method, data = res,
+                     FUN = mean)
+sim_tab$rmse_se <- aggregate(rmse ~ method, data = res,
+                             FUN = function(v) sd(v) / sqrt(length(v)))$rmse
+sim_tab
+```
+
+```{r sim-table, echo = FALSE}
+tab_sim <- sim$sim_tab
+method_order <- c("proxymix, two-component noise", "dlm, Gaussian noise",
+                  "KFAS, Gaussian noise",
+                  "particle filter, two-component noise",
+                  "nimble, two-component noise", "nimble, Student-t noise")
+tab_sim <- tab_sim[match(method_order, tab_sim$method), ]
+knitr::kable(
+  data.frame(
+    method = tab_sim$method,
+    rmse = fixed(tab_sim$rmse, 4),
+    rmse_se = fixed(tab_sim$rmse_se, 4),
+    log_lik = fixed(tab_sim$log_lik, 2),
+    secs = fixed(tab_sim$secs, 3),
+    stringsAsFactors = FALSE
+  ),
+  align = c("l", "r", "r", "r", "r"), row.names = FALSE,
+  col.names = c("Filter", "RMSE", "SE of mean RMSE", "Log-likelihood",
+                "Seconds"),
+  caption = paste0(
+    "Root mean squared error of the filtered mean against the true level, ",
+    "computed per series and averaged over the series; the standard error ",
+    "of that average; the mean log-likelihood of the series; and the mean ",
+    "running time per series, over ", sim$n_rep, " simulated series of ",
+    sim$n_t, " steps."
+  )
+)
+sim_value <- function(method, what) {
+  sim$sim_tab[[what]][sim$sim_tab$method == method]
+}
+rmse_pf <- sim_value("particle filter, two-component noise", "rmse")
+rmse_pm <- sim_value("proxymix, two-component noise", "rmse")
+rmse_dlm <- sim_value("dlm, Gaussian noise", "rmse")
+rmse_kfas <- sim_value("KFAS, Gaussian noise", "rmse")
+rmse_nmix <- sim_value("nimble, two-component noise", "rmse")
+rmse_t <- sim_value("nimble, Student-t noise", "rmse")
+ll_pf <- sim_value("particle filter, two-component noise", "log_lik")
+ll_pm_sim <- sim_value("proxymix, two-component noise", "log_lik")
+ll_gauss_sim <- sim_value("dlm, Gaussian noise", "log_lik")
+ll_t_sim <- sim_value("nimble, Student-t noise", "log_lik")
+secs_pm <- sim_value("proxymix, two-component noise", "secs")
+secs_pf <- sim_value("particle filter, two-component noise", "secs")
+secs_dlm <- sim_value("dlm, Gaussian noise", "secs")
+if (is.null(sim$res)) {
+  stop("The stored results carry no per-series results; rerun the ",
+       "simulation.", call. = FALSE)
+}
+# the filters share each series, so differences in RMSE are paired by series:
+# mean difference m1 minus m2, its standard error, and the share of series
+# on which m2 has the lower RMSE
+paired <- function(m1, m2) {
+  a <- sim$res[sim$res$method == m1, ]
+  b <- sim$res[sim$res$method == m2, ]
+  d <- a$rmse[order(a$series)] - b$rmse[order(b$series)]
+  c(diff = mean(d), se = sd(d) / sqrt(length(d)), share = mean(d > 0))
+}
+pm <- "proxymix, two-component noise"
+pm_dlm <- paired("dlm, Gaussian noise", pm)
+pm_t <- paired("nimble, Student-t noise", pm)
+pm_pf <- paired(pm, "particle filter, two-component noise")
+z_of <- function(p) p[["diff"]] / p[["se"]]
+# a version as its DESCRIPTION writes it, when the installed one is the one stored
+desc_version <- function(pkg) {
+  stored <- sim$versions[[pkg]]
+  if (identical(as.character(packageVersion(pkg)), stored)) {
+    utils::packageDescription(pkg)$Version
+  } else {
+    stored
+  }
+}
+```
+
+Under the two-component noise the particle filter reaches a root mean
+squared error of `r fixed(rmse_pf, 4)`, and the capped Gaussian-sum filter
+`r fixed(rmse_pm, 4)`, with nimble's bootstrap filter under the same noise
+at `r fixed(rmse_nmix, 4)`; the Monte Carlo standard error of each is about
+`r fixed(sim_value("particle filter, two-component noise", "rmse_se"), 4)`.
+The two Kalman filters, dlm and KFAS, give the same filtered means, and
+`r if (fixed(rmse_dlm, 4) == fixed(rmse_kfas, 4)) paste("both reach an RMSE of", fixed(rmse_dlm, 4)) else paste("reach RMSEs of", fixed(rmse_dlm, 4), "and", fixed(rmse_kfas, 4))`,
+so the Gaussian model of
+the noise costs `r round(100 * (rmse_dlm / rmse_pf - 1))` per cent in error
+on these series. The Student-t filter sits between, at `r fixed(rmse_t, 4)`.
+The mean log-likelihood of the capped filter, `r fixed(ll_pm_sim, 2)`, is
+within `r fixed(abs(round(ll_pm_sim, 2L) - round(ll_pf, 2L)), 2)` of the
+particle filter's `r fixed(ll_pf, 2)`, against `r fixed(ll_gauss_sim, 2)` under the Gaussian
+noise and `r fixed(ll_t_sim, 2)` under the Student-t noise. The capped filter
+took `r fixed(secs_pm, 3)` s per series, the particle filter
+`r fixed(secs_pf, 3)` s and dlm `r fixed(secs_dlm, 3)` s.
+
+In this run proxymix under the two-component noise came out ahead of the
+two Gaussian filters, with a mean RMSE lower by
+`r fixed(pm_dlm[["diff"]], 3)`, about `r round(z_of(pm_dlm))` paired
+standard errors of the difference, and lower on
+`r round(pm_dlm[["share"]] * sim$n_rep)` of the `r sim$n_rep` series. Its mean RMSE
+differed from the particle filter's by `r fixed(abs(pm_pf[["diff"]]), 4)`
+(paired standard error `r fixed(pm_pf[["se"]], 4)`), and it was identical
+to dlm and KFAS on the Nile at one component. Against the Student-t filter
+its mean RMSE was `r fixed(abs(pm_t[["diff"]]), 4)`
+`r if (pm_t[["diff"]] > 0) "lower" else "higher"`,
+`r fixed(abs(z_of(pm_t)), 1)` paired standard errors of the difference,
+which `r if (abs(z_of(pm_t)) < 2) "does not resolve the two" else "resolves the difference"`,
+and it was lower on `r round(pm_t[["share"]] * sim$n_rep)` of the
+`r sim$n_rep` series.
+dlm and KFAS ran two orders of magnitude faster than any filter under the
+two-component noise, the hand-written particle filter ran about
+`r fixed(secs_pm / secs_pf, 1)` times faster than the capped filter, and on the Nile the Gaussian noise fitted the readings better than a
+two-component noise of the same variance; the particle filters are the
+reference proxymix is measured against rather than a competitor it beats. The comparison covers one scalar local-level model at one series
+length. Every filter was given the true increment variance and starting
+belief. The mixture filters were given the true two-component noise, dlm
+and KFAS a Gaussian noise of the mixture's variance, and the Student-t
+filter a scale fitted to the mixture. Noise with more components, a
+higher-dimensional state, a process-noise mixture and estimated rather than
+known parameters were not tried.
+
+## Where next
+
+*Fitting a proxy to a density you cannot sample* produces the mixtures this
+vignette operates on, and reports the fit-quality certificate that says
+whether the proxy is worth operating on. *Testing the last observation for
+instability* uses the filtering recursion built here as the engine of an
+end-of-sample structural-break test. *Reading the entropy of a fitted
+mixture* covers the divergence used above to price the reduction, and the
+rest of the closed-form diagnostic surface. *One mixture, many methods*
+shows the same conditioning operator standing in for regression, kernel
+smoothing and principal components.
+
+## References
+
+* Alspach, D. L. and Sorenson, H. W. (1972). *Nonlinear Bayesian
+  estimation using Gaussian sum approximations.* IEEE Transactions on
+  Automatic Control 17(4), 439--448. <doi:10.1109/TAC.1972.1100034>.
+* Cobb, G. W. (1978). *The problem of the Nile: Conditional solution to a
+  changepoint problem.* Biometrika 65(2), 243--251.
+  <doi:10.1093/biomet/65.2.243>.
+* de Valpine, P., Turek, D., Paciorek, C. J., Anderson-Bergman, C.,
+  Temple Lang, D. and Bodik, R. (2017). *Programming with models: Writing
+  statistical algorithms for general model structures with NIMBLE.*
+  Journal of Computational and Graphical Statistics 26(2), 403--413.
+  <doi:10.1080/10618600.2016.1172487>.
+* Durbin, J. and Koopman, S. J. (2012). *Time Series Analysis by State
+  Space Methods*, 2nd edition. Oxford University Press.
+  <doi:10.1093/acprof:oso/9780199641178.001.0001>.
+* Gordon, N. J., Salmond, D. J. and Smith, A. F. M. (1993). *Novel
+  approach to nonlinear/non-Gaussian Bayesian state estimation.* IEE
+  Proceedings F, Radar and Signal Processing 140(2), 107--113.
+  <doi:10.1049/ip-f-2.1993.0015>.
+* Helske, J. (2017). *KFAS: Exponential family state space models in R.*
+  Journal of Statistical Software 78(10), 1--39.
+  <doi:10.18637/jss.v078.i10>.
+* Kalman, R. E. (1960). *A new approach to linear filtering and
+  prediction problems.* Journal of Basic Engineering 82(1), 35--45.
+  <doi:10.1115/1.3662552>.
+* Michaud, N., de Valpine, P., Turek, D., Paciorek, C. J. and Nguyen, D.
+  (2021). *Sequential Monte Carlo methods in the nimble and nimbleSMC R
+  packages.* Journal of Statistical Software 100(3), 1--39.
+  <doi:10.18637/jss.v100.i03>.
+* Murphy, K. P. (2012). *Machine Learning: A Probabilistic Perspective.*
+  MIT Press. Ch. 4 (Gaussian models).
+* Petris, G. (2010). *An R package for dynamic linear models.* Journal of
+  Statistical Software 36(12), 1--16. <doi:10.18637/jss.v036.i12>.
+* Runnalls, A. R. (2007). *Kullback--Leibler approach to Gaussian mixture
+  reduction.* IEEE Transactions on Aerospace and Electronic Systems
+  43(3), 989--999. <doi:10.1109/TAES.2007.4383588>.
+* van der Hoek, J. and Elliott, R. J. (2024). *Mixtures of multivariate
+  Gaussians.* Stochastic Analysis and Applications.
+  <doi:10.1080/07362994.2024.2372605>.
+
+## Reproduce
+
+The vignette sets `set.seed(20260514)` once, at the start of *Addressing
+the problem*. The only draws that follow it are the simulated
+constant-velocity track; every other operator result is deterministic
+algebra that draws no random numbers at all.
+
+The numerical illustration draws random numbers in one place, the particle
+filter on the Nile, after `set.seed(20260925)`. In the simulation each
+series is generated after `set.seed()` with its own index, and the particle
+filters that follow draw from the same stream. The stored simulation results
+come from the code shown, run on `r sim$run_date` with R
+`r sim$versions[["R"]]`, proxymix `r desc_version("proxymix")`, dlm
+`r desc_version("dlm")`, KFAS `r desc_version("KFAS")`, nimble
+`r desc_version("nimble")` and nimbleSMC `r desc_version("nimbleSMC")`,
+and the run raised `r length(sim$warnings)` warnings.
+
+```{r session-info}
+old_opt <- options(width = 72L)
+si_vec <- trimws(capture.output(sessionInfo()), "right")
+options(old_opt)
+# library paths are single long words, so a long line breaks after a slash
+long_vec <- nchar(si_vec) > 72L
+si_vec[long_vec] <- gsub("(.{1,68}/)(?=.{8,})", "\\1\n        ",
+                         si_vec[long_vec], perl = TRUE)
+writeLines(si_vec)
+```

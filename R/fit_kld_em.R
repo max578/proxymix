@@ -35,11 +35,12 @@
 #' (2000); it re-draws rather than recycles batches (compare the adaptive
 #' multiple importance sampling of Cornuet et al., 2012).
 #'
-#' Since v0.1.1 the function also draws an *independent* validation IS
-#' sample when `validation_size > 0` and reports its own KLD estimate,
-#' effective sample size, and largest weight share. This lets users tell
-#' the difference between in-sample EM overfit to one particular IS draw
-#' and a fit that generalises across independent IS draws.
+#' `kld_final` is estimated on the same importance draws the fit was tuned
+#' to, so it reads low and can come out negative, more so for large `N` and
+#' small `is_size`. When `validation_size > 0` the function also draws an
+#' *independent* validation IS sample and reports its KLD estimate
+#' (`validation_kld`), effective sample size, and largest weight share;
+#' `validation_kld` is the estimate to quote as the fit's accuracy.
 #'
 #' When the target's `normalised` property is `FALSE` or `NA`, the
 #' importance-sampled `kld_final` and `kld_trace` measure
@@ -118,10 +119,10 @@
 #'   mixture is post-processed by [gmm_canonicalise()].
 #'
 #' @returns A [gmm_fit] with `regime = "kld"`. The diagnostics list
-#'   contains, among others, `kld_trace`, `kld_final`,
+#'   contains, among others, `kld_trace`, `kld_final` (in-sample),
 #'   `kld_is_shifted`, `kld_final_absolute` (when computable), `ess`,
 #'   `ess_relative` (`ess / is_size`), `max_weight`, `support_fraction`,
-#'   `mc_se_kld`, `validation_kld`, `validation_ess`, and
+#'   `mc_se_kld`, `validation_kld` (held-out), `validation_ess`, and
 #'   `validation_max_weight`.
 #' @family fitting
 #' @references Cappé, O., Douc, R., Guillin, A., Marin, J.-M. and

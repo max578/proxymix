@@ -106,23 +106,45 @@
 #' `p <= 5` (recommended), `p <= 10` (allowed with a warning), `p > 10`
 #' (rejected).
 #'
+#' Effective sample size. Each cooling step records its importance-sampling
+#' effective sample size in the `from_objective` metadata. A classed
+#' `proxymix_low_ess` warning is raised at most once per call, and only when
+#' the final step, the one that produced the returned fit, falls below 50;
+#' its message gives the final effective sample size, how many steps were
+#' low, and the lowest value with its step.
+#'
+#' Likelihoods. With `scale = "loglik"` the objective is read as a negative
+#' log-likelihood (or, with `minimise = FALSE`, a log-likelihood) and the
+#' ladder ends at temperature 1. The fitted map is then a proxy for the
+#' likelihood itself, restricted to the box, which is the posterior under a
+#' uniform prior on the box.
+#'
 #' @param objective Function taking a length-`p` numeric vector and
 #'   returning a finite numeric scalar -- the objective to minimise (or
 #'   maximise; see `minimise`).
 #' @param lower,upper Numeric vectors of equal length `p` giving the box
 #'   over which the optima are sought. Every `upper` must exceed its
-#'   `lower`.
+#'   `lower`. `objective` is only evaluated inside the box; points outside
+#'   it are treated like points where `objective` is not finite and receive
+#'   a strongly unattractive value.
 #' @param N Number of mixture components. Default `max(10L, 5L * p)`. Raise
 #'   it for objectives with many optima or strong symmetry.
 #' @param minimise Logical. If `TRUE` (the default) lower `objective`
 #'   values are better (the proxy concentrates on the minima); if `FALSE`
 #'   the proxy concentrates on the maxima.
 #' @param temperature Optional control of the cooling ladder. `NULL` (the
-#'   default) derives a ladder automatically from a uniform probe of the
-#'   landscape. A positive scalar sets the final (lowest) temperature; a
-#'   length-2 numeric `c(high, low)` sets both ends explicitly.
+#'   default) derives a ladder from the range `r` of `objective` over a
+#'   uniform probe of the box: from `r / 2` down to `r / 80` when
+#'   `scale = "objective"`, and from `max(r / 2, 1)` down to 1 when
+#'   `scale = "loglik"`. A positive scalar sets the final (lowest)
+#'   temperature; a length-2 numeric `c(high, low)` sets both ends
+#'   explicitly. A supplied `temperature` is used as given, whatever
+#'   `scale` is.
 #' @param n_steps Number of temperatures in the cooling ladder. Default
-#'   `6L`.
+#'   `6L`. When `scale = "loglik"`, `temperature` is `NULL` and `n_steps` is
+#'   not supplied, the ladder takes as many steps as it needs to cool by no
+#'   more than the default factor of \eqn{40^{1/5} \approx 2.1} per step,
+#'   and never fewer than 6.
 #' @param exploration Probability mass the importance proposal places on
 #'   uniform exploration of the box at each step, in `[0, 1]`. Default
 #'   `0.5`. Larger values explore more (and starve no basin); smaller values
@@ -135,9 +157,17 @@
 #' @param ridge_eps Ridge added to each component covariance at every
 #'   M-step. Forwarded to [fit_kld_em()].
 #' @param seed Optional integer seed for reproducibility.
+#' @param scale What the objective's values mean, which sets the default
+#'   temperature ladder. `"objective"` (the default) is any objective to
+#'   optimise: the ladder scales with its range, so the result does not
+#'   depend on the objective's units. `"loglik"` is a negative
+#'   log-likelihood (or a log-likelihood with `minimise = FALSE`): the
+#'   ladder ends at temperature 1, where the Gibbs measure is the
+#'   likelihood itself.
 #'
 #' @returns A [gmm_fit] (the fitted proxy) carrying a `from_objective`
-#'   metadata record with the temperature ladder and box. Pass it to
+#'   metadata record with the box, the temperature ladder, `scale`, and the
+#'   effective sample size at each cooling step (`ess`). Pass it to
 #'   [gmm_modes()] to extract the distinct optima.
 #' @family fitting
 #' @seealso [gmm_modes()] to resolve the fitted map into distinct optima.
@@ -148,12 +178,23 @@
 #' fit <- from_objective(f, lower = -5, upper = 5, N = 6L,
 #'                       is_size = 2000L, n_steps = 5L, seed = 1L)
 #' gmm_modes(fit)$modes
+#'
+#' ## The likelihood surface of a logistic-regression slope.
+#' x <- c(-1.2, -0.6, -0.1, 0.3, 0.8, 1.4)
+#' y <- c(0, 0, 1, 0, 1, 1)
+#' nll <- function(b) sum(log1p(exp(b[1] * x))) - sum(y * b[1] * x)
+#' lik <- from_objective(nll, lower = -5, upper = 10, N = 4L,
+#'                       is_size = 2000L, seed = 1L, scale = "loglik")
+#' lik@metadata$from_objective$temperatures
 from_objective <- function(objective, lower, upper,
                            N = NULL, minimise = TRUE,
                            temperature = NULL, n_steps = 6L,
                            exploration = 0.5, inflate = 1.8,
                            is_size = 1e4L, max_iter = 70L,
-                           ridge_eps = 1e-4, seed = NULL) {
+                           ridge_eps = 1e-4, seed = NULL,
+                           scale = c("objective", "loglik")) {
+  scale <- rlang::arg_match(scale)
+  n_steps_default <- missing(n_steps)
   if (!is.function(objective)) {
     cli::cli_abort("`objective` must be a function of a length-p numeric vector.")
   }
@@ -235,7 +276,14 @@ from_objective <- function(objective, lower, upper,
   } else {
     min(o_probe) - 10 * penalty_spread
   }
-  if (is.null(temperature)) {
+  if (is.null(temperature) && scale == "loglik") {
+    t_high <- max(spread / 2, 1)
+    t_low <- 1
+    ## cool no faster than the default ladder, a factor of 40^(1/5) per step
+    if (n_steps_default) {
+      n_steps <- max(6L, 1L + as.integer(ceiling(log(t_high) / (log(40) / 5))))
+    }
+  } else if (is.null(temperature)) {
     t_high <- max(spread / 2, 1e-6)
     t_low <- t_high / 40
   } else if (length(temperature) == 1L) {
@@ -252,16 +300,19 @@ from_objective <- function(objective, lower, upper,
   }
   ladder <- exp(seq(log(t_high), log(t_low), length.out = n_steps))
 
-  ## The Gibbs target exp(sgn * objective / T). The box is the search
-  ## region (it scales the ladder, the uniform exploration, and the init);
-  ## the target itself is evaluated everywhere so the importance weights
-  ## stay finite, with non-finite objective values mapped to `penalty`.
+  ## The Gibbs target exp(sgn * objective / T). Rows outside the box and
+  ## non-finite objective values get the finite `penalty`, so the importance
+  ## weights stay finite and the objective is only called inside the box.
   make_target <- function(temp) {
     gmm_target(
       n_dim = p,
       log_density = function(X) {
         if (is.null(dim(X))) X <- matrix(X, ncol = p)
-        v <- .objective_rows(objective, X, p)
+        inside <- .in_box(X, lower, upper)
+        v <- rep(penalty, nrow(X))
+        if (any(inside)) {
+          v[inside] <- .objective_rows(objective, X[inside, , drop = FALSE], p)
+        }
         v[!is.finite(v)] <- penalty
         sgn * v / temp
       },
@@ -286,6 +337,8 @@ from_objective <- function(objective, lower, upper,
   ## every temperature made half of the draws (the uniform exploration mass)
   ## byte-identical across the whole ladder, so a basin missed by the first
   ## exploration draw was never probed again.
+  step_ess <- numeric(n_steps)
+  step_low <- logical(n_steps)
   for (s in seq_along(ladder)) {
     temp <- ladder[s]
     g <- gmm(
@@ -294,21 +347,37 @@ from_objective <- function(objective, lower, upper,
                            function(S) inflate * S + 1e-3 * diag(p))
     )
     proposal <- .defensive_proposal(g, lower, upper, p, log_vol, exploration)
-    fit <- fit_kld_em(
-      make_target(temp), N = N, proposal = proposal,
-      is_size = is_size, init = gmm(weights = fit@weights, means = fit@means,
-                                    covariances = fit@covariances),
-      max_iter = max_iter, ridge_eps = ridge_eps,
-      seed = if (is.null(seed)) NULL else as.integer(seed) + s,
-      validation_size = 0L,
-      support_warn = FALSE, canonicalise = FALSE
+    fit <- withCallingHandlers(
+      fit_kld_em(
+        make_target(temp), N = N, proposal = proposal,
+        is_size = is_size, init = gmm(weights = fit@weights, means = fit@means,
+                                      covariances = fit@covariances),
+        max_iter = max_iter, ridge_eps = ridge_eps,
+        seed = if (is.null(seed)) NULL else as.integer(seed) + s,
+        validation_size = 0L,
+        support_warn = FALSE, canonicalise = FALSE
+      ),
+      proxymix_low_ess = function(cnd) {
+        step_low[s] <<- TRUE
+        invokeRestart("muffleWarning")
+      }
     )
+    step_ess[s] <- fit@diagnostics$ess
+  }
+
+  if (step_low[n_steps]) {
+    worst <- which.min(step_ess)
+    cli::cli_warn(c(
+      "Effective sample size is low at the final cooling step: ESS = {round(step_ess[n_steps], 1)} out of {is_size}; the fit is flagged as degenerate.",
+      "i" = "{sum(step_low)} of {n_steps} cooling step{?s} had low ESS; the lowest was {round(step_ess[worst], 1)} at step {worst}.",
+      "i" = "Consider a larger {.arg is_size}, a smaller box, or more components."
+    ), class = "proxymix_low_ess")
   }
 
   fit@metadata <- modifyList(fit@metadata, list(
     from_objective = list(
       lower = lower, upper = upper, minimise = isTRUE(minimise),
-      temperatures = ladder, N = N
+      temperatures = ladder, N = N, scale = scale, ess = step_ess
     )
   ))
   fit

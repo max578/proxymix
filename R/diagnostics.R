@@ -47,21 +47,23 @@ ess_trace <- function(fit) {
 #' Monte-Carlo Hellinger distance between a fit and its target
 #'
 #' Estimates the squared Hellinger distance `H^2(f, g) = 1 - integral
-#' sqrt(f(x) g(x)) dx` by importance sampling against the proposal stored
-#' in the fit (for regime `"kld"`) or by sampling from the fit itself (for
-#' regime `"sample"`). The target's `log_density` must be supplied **and
-#' normalised**; otherwise the Monte Carlo integral is biased by the
-#' missing \eqn{\sqrt{Z(f)}}. When the target's `normalised` property is
-#' not `TRUE`, a warning is issued and the returned value is flagged.
+#' sqrt(f(x) g(x)) dx` as `1 - mean(sqrt(f(x) / g(x)))` over `n_mc` fresh
+#' draws `x` from the fit `g`, for every regime. The draws are independent of
+#' any sample used to fit, so the estimate is unbiased, with standard error
+#' `se`. The target's `log_density` must be supplied **and normalised**;
+#' otherwise the Monte Carlo integral is biased by the missing
+#' \eqn{\sqrt{Z(f)}}. When the target's `normalised` property is not `TRUE`,
+#' a warning is issued and the returned value is flagged.
 #'
 #' @param fit A [gmm_fit] whose target carries a `log_density`.
-#' @param n_mc Number of Monte Carlo samples.
-#' @param seed Optional integer seed.
+#' @param n_mc Number of Monte Carlo draws from the fit.
+#' @param seed Optional integer seed for the draws.
 #'
 #' @returns A list with components
 #'   * `h2` - estimate of `H^2(f, g)`,
 #'   * `se` - Monte Carlo standard error,
-#'   * `n_mc` - sample size used.
+#'   * `n_mc` - number of draws with a finite density ratio,
+#'   * `trustworthy` - `TRUE` when the target is declared normalised.
 #' @family diagnostics
 #' @export
 #' @examples
@@ -84,55 +86,14 @@ hellinger_mc <- function(fit, n_mc = 5000L, seed = NULL) {
     ))
   }
 
-  draw <- function() {
-    if (fit@regime == "kld" && !is.null(fit@diagnostics$is_sample)) {
-      ## Reuse the IS sample from the fit.
-      x <- fit@diagnostics$is_sample
-      log_w <- fit@diagnostics$is_log_weights
-      list(x = x, log_w = log_w, source = "kld_is")
-    } else {
-      ## Sample from the fit and importance-sample target.
-      n <- as.integer(n_mc)
-      x <- rgmm(n, fit)
-      list(x = x, log_w = rep(0, n), source = "gmm_proposal")
-    }
-  }
-  d <- if (is.null(seed)) draw() else withr::with_seed(seed, draw())
-  x <- d$x
-  log_f <- tgt@log_density(x)
-  log_g <- dgmm(x, fit, log = TRUE)
-
-  if (d$source == "kld_is") {
-    ## Use IS weights normalised to sum to 1.
-    log_W <- d$log_w
-    log_W <- log_W - max(log_W[is.finite(log_W)])
-    log_W <- log_W - log(sum(exp(log_W)))
-    W <- exp(log_W)
-    ## h^2 = 1 - E_q [ sqrt(f g) / q ] but we are sampling from q via x and
-    ## weighting with f/q already absorbed: instead express
-    ##   integral sqrt(f g) dx = E_W[sqrt(g/f)] when sampling from p~f.
-    ## We use the self-normalised IS form: integral sqrt(f g) dx
-    ##   approximately sum_n (W_n / f(x_n)) * sqrt(f(x_n) * g(x_n))
-    ##   = sum_n W_n * sqrt(g(x_n) / f(x_n))
-    ratio <- exp(0.5 * (log_g - log_f))
-    finite <- is.finite(ratio) & is.finite(W)
-    integral_est <- sum(W[finite] * ratio[finite])
-    ## Standard error of the SELF-NORMALISED weighted estimator: with a
-    ## skewed weight profile (the norm in regime iii) the naive
-    ## sd(ratio)/sqrt(n) treats the weights as uniform and can understate
-    ## the Monte Carlo error by orders of magnitude.
-    se <- sqrt(sum(W[finite]^2 * (ratio[finite] - integral_est)^2))
-    n_used <- sum(finite)
-  } else {
-    ## Sampling from g_theta directly. integral sqrt(f g) dx
-    ##   = E_g [ sqrt(f / g) ] (sample x ~ g).
-    ratio <- exp(0.5 * (log_f - log_g))
-    finite <- is.finite(ratio)
-    integral_est <- mean(ratio[finite])
-    se <- stats::sd(ratio[finite]) / sqrt(sum(finite))
-    n_used <- sum(finite)
-  }
-  h2 <- 1 - integral_est
+  n <- as.integer(n_mc)
+  x <- if (is.null(seed)) rgmm(n, fit) else withr::with_seed(seed, rgmm(n, fit))
+  ## integral sqrt(f g) dx = E_g[sqrt(f / g)], with x ~ g.
+  ratio <- exp(0.5 * (tgt@log_density(x) - dgmm(x, fit, log = TRUE)))
+  finite <- is.finite(ratio)
+  n_used <- sum(finite)
+  h2 <- 1 - mean(ratio[finite])
+  se <- stats::sd(ratio[finite]) / sqrt(n_used)
   list(h2 = h2, se = se, n_mc = n_used, trustworthy = trustworthy)
 }
 
@@ -214,7 +175,10 @@ ess_summary <- function(fit) {
 #'   by an operator over several operands has `regime = "composite"`, the
 #'   conservative worst-case value of each numeric field across the operands,
 #'   and an additional `quality_sources` element holding the operands' own
-#'   certificates.
+#'   certificates. `kld_final` is estimated on the importance draws the fit
+#'   was tuned to, so it reads low; `validation_gap` is the held-out
+#'   `validation_kld` (see [ess_summary()]) minus `kld_final`, and is `NA`
+#'   when the fit was made with `validation_size = 0`.
 #' @family diagnostics
 #' @export
 #' @examples

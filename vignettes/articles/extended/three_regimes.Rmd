@@ -1,0 +1,1186 @@
+---
+title: "Choosing between the three fitting regimes"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Choosing between the three fitting regimes}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+<!-- Render time: ~20 s under rmarkdown::render() with ggplot2, mclust,
+     mixtools, flexmix and ks installed, the simulation and the NUTS
+     reference read from their stored results; macOS arm64 (Apple silicon),
+     R 4.6.1, one core. -->
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4.5,
+  dpi = 150,
+  out.width = "100%"
+)
+```
+
+```{r library}
+library(proxymix)
+```
+
+```{r engines}
+has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
+```
+
+```{r fixed-notation, include = FALSE}
+## Small numbers are written as plain decimals rather than in the
+## scientific notation knitr's inline hook would otherwise typeset.
+fixed <- function(v, digits) {
+  format(round(v, digits), nsmall = digits, scientific = FALSE)
+}
+## A small number as a power of ten in LaTeX, to two significant digits.
+power_ten <- function(v) {
+  if (v == 0) return("$0$")
+  e <- floor(log10(abs(v)))
+  m <- signif(v / 10^e, 2L)
+  if (m == 1) sprintf("$10^{%d}$", e) else sprintf("$%s \\times 10^{%d}$", format(m), e)
+}
+```
+
+## The problem
+
+A modeller with a target in hand and three regimes on offer asks the
+practical question: *which of the three does my problem actually need, and
+what do I give up if I pick the wrong one?* The routing rule is easy to
+state and easy to over-trust, because two of the regimes will happily run
+on the same target and return visibly similar mixtures while answering
+subtly different questions.
+
+## Package capabilities
+
+The three regimes are those of van der Hoek and Elliott (2024), and they
+differ in what they need to know about the target rather than in what they
+return. All three return a `gmm_fit`.
+
+`fit_moment_match()` is regime (i). At `N == 1` the KL-optimal Gaussian
+proxy is the one that shares the target's mean and covariance, so the fit
+is closed form and needs no iteration at all. It reads moments, which in
+practice means it reads the samples the target carries.
+
+`fit_em_samples()` is regime (ii): textbook expectation-maximisation on
+independent draws, maximising the likelihood of the samples under an
+`N`-component mixture. It needs samples and nothing else.
+
+`fit_kld_em()` is regime (iii): importance-sampled KLD-EM, which minimises
+$\mathrm{KL}(f \Vert g_\theta)$ using only point-wise evaluations of the
+target's log-density, re-weighted by self-normalised importance weights
+against a `proposal_mvt()` proposal. It needs no samples.
+
+`fit_proxymix()` dispatches across all three, and `bic_aic()` and
+`select_N()` choose the component count, which none of the three does for
+you.
+
+## Addressing the problem
+
+The bundled three-component mixture target is the right test bench: its
+log-density is known exactly, and because the target is itself a Gaussian
+mixture its true samples are available too. That is the one setting in
+which all three regimes can be run on the same object and compared.
+
+```{r target}
+tgt <- mixture_target(with_samples = TRUE, n = 1500L, seed = 1L)
+tgt
+```
+
+### Regime (i): closed-form moment matching
+
+At `N == 1` the KL-optimal Gaussian proxy has the same mean and covariance
+as the target. There is nothing to iterate.
+
+```{r moment}
+m_fit <- fit_proxymix(tgt, N = 1L, regime = "moment")
+m_fit
+```
+
+The recovered moments are the empirical moments of the samples the target
+carries, not an approximation to them. The only discrepancy is the
+diagonal ridge `ridge_eps` that keeps the covariance positive-definite,
+and setting it to zero removes even that.
+
+```{r moment-recover}
+m_fit_bare <- fit_proxymix(tgt, N = 1L, regime = "moment", ridge_eps = 0)
+moment_gap <- c(
+  mean = max(abs(m_fit@means[[1L]] - colMeans(tgt@samples))),
+  covariance = max(abs(m_fit@covariances[[1L]] - cov(tgt@samples))),
+  covariance_no_ridge = max(abs(m_fit_bare@covariances[[1L]] -
+                                  cov(tgt@samples)))
+)
+signif(moment_gap, 3L)
+```
+
+A single Gaussian is a poor description of a three-mode mixture, but it is
+the KL-optimal single Gaussian, and it makes a deterministic seed for the
+two iterative regimes at `N > 1`.
+
+### Regime (ii): classical EM on samples
+
+When the target carries samples, the textbook algorithm applies:
+
+* **E-step** -- \(\gamma_{nk} = \pi_k \mathcal{N}(x_n \mid \mu_k, \Sigma_k) /
+  \sum_j \pi_j \mathcal{N}(x_n \mid \mu_j, \Sigma_j)\).
+* **M-step** -- re-weight \(\pi_k, \mu_k, \Sigma_k\) by the
+  responsibilities, with a diagonal ridge `ridge_eps` keeping
+  \(\Sigma_k\) positive-definite.
+* **Convergence** -- relative change in the empirical log-likelihood below
+  `tol`.
+
+```{r em}
+s_fit <- fit_proxymix(tgt, N = 3L, regime = "sample",
+                      max_iter = 200L, n_starts = 4L, seed = 1L)
+s_fit
+```
+
+### Regime (iii): importance-sampled KLD-EM
+
+Regime (iii) fits a proxy when the target's `log_density` is evaluable
+but no samples are available, which is the situation for Bayesian
+posteriors and for downscaling targets in spatial statistics. The algorithm
+draws `is_size` points from the proposal $q$, forms self-normalised weights
+\(W_n \propto f(x_n) / q(x_n)\), and runs EM iterations in which the M-step
+minimises \(\mathrm{KL}(f \Vert g_\theta)\) by re-weighting the
+responsibilities with $W$.
+
+The proposal is the only free knob beyond the usual mixture configuration,
+and a Student-t with five degrees of freedom is a robust default.
+
+```{r kld}
+k_fit <- fit_proxymix(tgt, N = 3L, regime = "kld",
+                      proposal = proposal_mvt(n_dim = 2L,
+                                              mean = c(0, 0),
+                                              sigma = 6 * diag(2),
+                                              df = 5),
+                      is_size = 3000L,
+                      max_iter = 60L,
+                      seed = 1L)
+k_fit
+```
+
+### The three fits side by side
+
+```{r overlay-grid}
+grid_x <- seq(-4.5, 4.5, length.out = 100L)
+grid_base <- expand.grid(x1 = grid_x, x2 = grid_x)
+grid_mat <- as.matrix(grid_base)
+target_d <- exp(tgt@log_density(grid_mat))
+panel_of <- function(fit, label) {
+  data.frame(
+    x1 = grid_base$x1, x2 = grid_base$x2,
+    target = target_d,
+    proxy = dgmm(grid_mat, fit),
+    regime = label,
+    stringsAsFactors = FALSE
+  )
+}
+overlay_df <- rbind(
+  panel_of(m_fit, "(i) moment, N = 1"),
+  panel_of(s_fit, "(ii) sample EM, N = 3"),
+  panel_of(k_fit, "(iii) KLD-EM, N = 3")
+)
+overlay_df$regime <- factor(overlay_df$regime,
+                            levels = unique(overlay_df$regime))
+```
+
+```{r overlay, eval = has_ggplot2, echo = has_ggplot2, fig.height = 3.4, fig.cap = "The three-mixture target (filled contours, identical in all three panels) with each regime's fitted proxy overlaid as dashed contours. Regime (i) is one Gaussian spread across all three modes; regimes (ii) and (iii) both place one component per mode and are visually indistinguishable, despite reading entirely different information about the target.", fig.alt = "Three side-by-side contour panels of the same three-mode target, overlaid with the single-Gaussian moment fit, the sample-EM fit and the KLD-EM fit."}
+ggplot2::ggplot(overlay_df, ggplot2::aes(x1, x2)) +
+  ggplot2::geom_contour_filled(ggplot2::aes(z = target), bins = 10L,
+                               alpha = 0.85) +
+  ggplot2::geom_contour(ggplot2::aes(z = proxy), colour = "white",
+                        linetype = "dashed", linewidth = 0.4, bins = 5L) +
+  ggplot2::scale_fill_viridis_d(option = "mako", guide = "none") +
+  ggplot2::facet_wrap(~ regime) +
+  ggplot2::coord_equal() +
+  ggplot2::labs(x = expression(x[1]), y = expression(x[2])) +
+  ggplot2::theme_minimal(base_size = 11)
+```
+
+```{r overlay-skip, eval = !has_ggplot2, echo = FALSE, results = "asis"}
+cat("ggplot2 is not installed on this build, so the three-panel overlay",
+    "figure is skipped.\n")
+```
+
+### What each iterative regime optimises
+
+```{r traces}
+trace_df <- rbind(
+  data.frame(
+    iteration = seq_along(s_fit@diagnostics$loglik_trace),
+    value = s_fit@diagnostics$loglik_trace,
+    panel = "(ii) sample EM: log-likelihood (up)",
+    stringsAsFactors = FALSE
+  ),
+  data.frame(
+    iteration = seq_along(kld_trace(k_fit)),
+    value = kld_trace(k_fit),
+    panel = "(iii) KLD-EM: in-sample KL estimate (down)",
+    stringsAsFactors = FALSE
+  )
+)
+```
+
+```{r traces-plot, eval = has_ggplot2, echo = has_ggplot2, fig.height = 3.2, fig.cap = "The two iterative regimes optimise different objectives and take different numbers of steps to do it. Sample EM climbs the empirical log-likelihood; KLD-EM drives down the importance-sampled Kullback-Leibler divergence, estimated on the draws the fit is tuned to, which can fall below zero.", fig.alt = "Two panels of iteration traces: a monotone increasing log-likelihood curve for sample EM and a decreasing Kullback-Leibler curve for KLD-EM."}
+ggplot2::ggplot(trace_df, ggplot2::aes(iteration, value)) +
+  ggplot2::geom_line(colour = "#0072B2", linewidth = 0.8) +
+  ggplot2::geom_point(colour = "#0072B2", size = 1.1) +
+  ggplot2::facet_wrap(~ panel, scales = "free") +
+  ggplot2::labs(x = "iteration", y = "objective") +
+  ggplot2::theme_minimal(base_size = 11)
+```
+
+```{r traces-skip, eval = !has_ggplot2, echo = FALSE, results = "asis"}
+cat("ggplot2 is not installed on this build, so the two-panel iteration",
+    "trace figure is skipped.\n")
+```
+
+```{r kld-quadrature, include = FALSE}
+# KL(target || k_fit) by quadrature; the grid holds all but 1e-7 of the mass
+quad_step <- 0.06
+kq_x <- seq(-6, 6, by = quad_step)
+kq_grid <- as.matrix(expand.grid(x1 = kq_x, x2 = kq_x))
+kq_log_f <- tgt@log_density(kq_grid)
+k_fit_kl_quad <- sum(exp(kq_log_f) *
+                       (kq_log_f - dgmm(kq_grid, k_fit, log = TRUE))) *
+  quad_step^2
+kq_mass <- sum(exp(kq_log_f)) * quad_step^2
+```
+
+### Regimes (i) and (iii) at N = 1, against an exact oracle
+
+At `N = 1` both regime (i) and regime (iii) target the KL-optimal single
+Gaussian, so they should agree. They are compared here on the banana
+target, where regime (iii) would be the only option if the samples were
+withheld, and both are compared against a third quantity neither of them
+produced: the exact mean and covariance of the banana density. The banana
+is $x_1 = z_1$, $x_2 = z_2 + b\,(z_1^2 - 1)$ with $z_1$ and $z_2$
+independent standard normal and $b = 1/2$. Its mean is $(0, 0)$, its two
+coordinates are uncorrelated, and because $\mathrm{Var}(z_1^2) = 2$ the
+trace of its covariance is $1 + (1 + 2b^2) = 5/2$.
+
+```{r n1-fits}
+banana <- banana_target(with_samples = TRUE, n = 2000L, seed = 1L)
+m_b <- fit_proxymix(banana, N = 1L, regime = "moment")
+k_b <- fit_proxymix(banana, N = 1L, regime = "kld",
+                    proposal = proposal_mvt(n_dim = 2L,
+                                            sigma = 4 * diag(2),
+                                            df = 5),
+                    is_size = 3000L, max_iter = 50L, seed = 1L)
+```
+
+```{r n1-oracle}
+# the warp of banana_target(): x2 = z2 + b * (z1^2 - 1)
+b <- 0.5
+exact_mean <- c(0, 0)
+exact_trace <- 1 + (1 + 2 * b^2)
+```
+
+```{r n1-grid, include = FALSE}
+# a grid quadrature of the same moments, for the Limitations section
+quad_x <- seq(-8, 8, length.out = 400L)
+quad_g <- as.matrix(expand.grid(x1 = quad_x, x2 = quad_x))
+quad_cell <- (quad_x[2L] - quad_x[1L])^2
+quad_f <- exp(banana@log_density(quad_g))
+quad_mass <- sum(quad_f) * quad_cell
+quad_trace <- sum(quad_f * (quad_g[, 1L]^2 + quad_g[, 2L]^2)) *
+  quad_cell / quad_mass
+```
+
+```{r n1-compare}
+tr_of <- function(f) sum(diag(f@covariances[[1L]]))
+n1 <- list(
+  mean_gap = max(abs(m_b@means[[1L]] - k_b@means[[1L]])),
+  trace_gap = tr_of(m_b) - tr_of(k_b),
+  moment_error = tr_of(m_b) - exact_trace,
+  kld_error = tr_of(k_b) - exact_trace,
+  sample_error = sum(diag(cov(banana@samples))) - exact_trace
+)
+n1$closer <- abs(n1$moment_error) / abs(n1$kld_error)
+data.frame(value = signif(unlist(n1), 3L))
+```
+
+```{r n1-table, echo = FALSE}
+n1_tbl <- data.frame(
+  Source = c("regime (i), moment match", "regime (iii), KLD-EM",
+             "attached samples", "exact moments (closed form)"),
+  Reads = c("the attached samples", "the log-density",
+            "the attached samples", "the definition of the target"),
+  `Trace of covariance` = round(
+    c(tr_of(m_b), tr_of(k_b), sum(diag(cov(banana@samples))), exact_trace),
+    3L
+  ),
+  `Error against oracle` = round(
+    c(tr_of(m_b), tr_of(k_b), sum(diag(cov(banana@samples))), exact_trace) -
+      exact_trace,
+    3L
+  ),
+  check.names = FALSE,
+  stringsAsFactors = FALSE
+)
+knitr::kable(
+  n1_tbl,
+  caption = paste(
+    "The single-Gaussian proxy at `N = 1`, fitted two ways and scored",
+    "against the exact moments of the banana density. The error is the",
+    "trace minus the exact trace, so a negative error is an understatement.",
+    "The final row is the oracle, so its error is zero by construction."
+  )
+)
+```
+
+The attached samples and the importance draws are one realisation each.
+Repeating both over fresh draws shows how far each trace moves by chance.
+
+```{r n1-spread}
+sample_traces <- vapply(seq_len(500L), function(s) {
+  sum(diag(cov(banana_target(with_samples = TRUE, n = 2000L,
+                             seed = s)@samples)))
+}, numeric(1L))
+kld_traces <- vapply(seq_len(100L), function(s) {
+  tr_of(fit_proxymix(banana, N = 1L, regime = "kld",
+                     proposal = proposal_mvt(n_dim = 2L,
+                                             sigma = 4 * diag(2),
+                                             df = 5),
+                     is_size = 3000L, max_iter = 50L, seed = s))
+}, numeric(1L))
+spread <- data.frame(
+  replicates = c(length(sample_traces), length(kld_traces)),
+  mean = c(mean(sample_traces), mean(kld_traces)),
+  sd = c(sd(sample_traces), sd(kld_traces)),
+  row.names = c("trace of 2000 samples", "regime (iii) trace")
+)
+round(spread, 3L)
+```
+
+## Interpretation
+
+The moment fit is exact rather than approximate. It reproduces the
+empirical mean of the target's samples with a gap of
+`r power_ten(moment_gap[["mean"]])`, and the empirical covariance
+with a gap of `r power_ten(moment_gap[["covariance"]])` -- which is
+not a fitting error but the diagonal ridge itself, since removing the ridge
+closes that gap to
+`r power_ten(moment_gap[["covariance_no_ridge"]])` as well. Regime
+(i) does not approximate the moments; it copies them.
+
+The two iterative regimes land in the same place by different routes.
+Sample EM took `r length(s_fit@diagnostics$loglik_trace)` iterations to
+converge and KLD-EM took `r length(kld_trace(k_fit))`, and the fitted
+weights agree to
+`r format(signif(max(abs(sort(s_fit@weights) - sort(k_fit@weights))), 2L))`.
+The overlay shows why they look alike here: both put one component on each
+mode, which is the correct answer for a target that is itself a
+three-component Gaussian mixture. The KLD-EM fit retained an effective
+sample size of `r round(k_fit@diagnostics$ess, 0L)` out of
+`r k_fit@diagnostics$is_size` importance draws, so it reached that answer
+without leaning on a few high-weight points.
+
+The KLD-EM trace ends at
+`r fixed(k_fit@diagnostics$kld_final, 4)`, below zero, although a
+divergence cannot be negative. The trace is estimated on the importance
+draws the fit was tuned to, so it reads low. On
+`r k_fit@diagnostics$validation_size` held-out draws the estimate is
+`r fixed(k_fit@diagnostics$validation_kld, 4)` with a Monte Carlo standard
+error of `r fixed(k_fit@diagnostics$validation_mc_se, 4)`, and quadrature of
+the exact target density on a grid over $[-6, 6]^2$, which leaves out
+`r power_ten(1 - kq_mass)` of the target's mass, gives
+`r fixed(k_fit_kl_quad, 4)`.
+
+The `N = 1` comparison is where the cost of the choice becomes visible.
+The two fits differ in mean by `r format(signif(n1$mean_gap, 2L))` and in
+trace-covariance by `r fixed(n1$trace_gap, 3)`.
+Regime (i) matches the moments of the `r nrow(banana@samples)` samples the
+target happens to carry, and those samples
+`r if (n1$sample_error > 0) "overstate" else "understate"` the exact
+trace-covariance of `r exact_trace` by `r fixed(abs(n1$sample_error), 3)`.
+Regime (iii) never sees those samples; it reads the density, and its
+trace-covariance is `r fixed(abs(n1$kld_error), 3)`
+`r if (n1$kld_error < 0) "below" else "above"` the exact value, about
+`r round(n1$closer, 1L)` times closer in this realisation. Both errors are
+single draws. Over `r length(sample_traces)` fresh samples of
+`r nrow(banana@samples)` points the sample trace has a standard deviation
+of `r fixed(sd(sample_traces), 3)`, so this sample's error is
+`r fixed(abs(n1$sample_error) / sd(sample_traces), 1)` standard deviations.
+Over `r length(kld_traces)` importance seeds the regime-(iii) trace has a
+standard deviation of `r fixed(sd(kld_traces), 3)` and a mean
+`r fixed(abs(mean(kld_traces) - exact_trace), 3)`
+`r if (mean(kld_traces) < exact_trace) "below" else "above"` the exact
+value, `r if (abs(mean(kld_traces) - exact_trace) > 2 * sd(kld_traces) / sqrt(length(kld_traces))) "more" else "less"`
+than two standard errors of that mean.
+
+So regime (iii) is not merely the fallback when samples are missing. When
+the log-density is available, it is fitting to the density itself, while
+regimes (i) and (ii) are fitting to whatever finite sample was drawn from
+it. With plentiful samples the distinction is immaterial. With
+`r nrow(banana@samples)` samples the sampling error of the trace is of the
+same order as the importance-sampling error of regime (iii) at
+`r k_b@diagnostics$is_size` draws, so which fit lands closer in a single
+run is partly chance. What you give up by choosing regime (iii)
+when samples are plentiful is speed and simplicity: it needs a proposal, it
+costs `r k_fit@diagnostics$n_target_evals` target evaluations here
+(`r k_fit@diagnostics$is_size` importance draws and
+`r k_fit@diagnostics$validation_size` held-out draws), and it
+carries an importance-sampling diagnostic that has to be read.
+
+## Limitations
+
+This vignette does not choose the number of components. Every fit above
+was told `N` by hand, and the three-mixture target was picked precisely
+because the right answer is known to be three. On a real target the
+component count is the first thing that has to be settled, and `bic_aic()`
+and `select_N()` are what settle it; a count set too low shows up as a
+residual divergence that more importance draws will not reduce.
+
+The comparison between regimes (ii) and (iii) is flattering to both here
+for a reason worth stating. The target is itself a Gaussian mixture with
+the same number of components as the proxies, so the model is correctly
+specified and there is no approximation error for either regime to trade
+against the other. On a target outside the Gaussian-mixture family the two
+regimes minimise genuinely different objectives, and the fits separate.
+
+The `N = 1` oracle is closed form only because the banana is a warped
+Gaussian. A grid quadrature of the same moments on $[-8, 8]^2$, with
+`r length(quad_x)` points a side, leaves out `r power_ten(1 - quad_mass)`
+of the mass and puts the trace at `r fixed(quad_trace, 3)`,
+`r fixed(exact_trace - quad_trace, 3)` below the exact value, because the
+mass it leaves out lies far out in the $x_2$ tail, where it weighs heavily
+on the variance. Grid quadrature is an independent check in two or three
+dimensions once its captured mass has been checked, and it stops being one
+well before the dimension at which importance sampling itself becomes the
+binding constraint.
+
+Regime (ii) is compared above only with the package's own regimes. The
+numerical illustration that follows puts it beside three established
+mixture packages on real data and in simulation, and puts regime (iii)
+beside a Markov chain Monte Carlo route to the same density.
+
+## Numerical illustration
+
+```{r engines-illustration, include = FALSE}
+has_mclust <- requireNamespace("mclust", quietly = TRUE)
+has_mixtools <- requireNamespace("mixtools", quietly = TRUE)
+has_flexmix <- requireNamespace("flexmix", quietly = TRUE)
+has_ks <- requireNamespace("ks", quietly = TRUE)
+run_illustration <- has_mclust && has_mixtools && has_flexmix && has_ks
+```
+
+```{r illustration-skip, eval = !run_illustration, echo = FALSE, results = "asis"}
+cat("mclust, mixtools, flexmix or ks is not installed on this build, so",
+    "the real-data illustration is skipped.\n")
+```
+
+### Fitting the Old Faithful eruptions with four packages
+
+The question is which fitted two-component mixture predicts eruptions it
+has not seen, and whether regime (iii) reaches the same answer from a
+density alone. The data are the `r nrow(datasets::faithful)` eruptions of
+the Old Faithful geyser shipped with R as `faithful` (Azzalini and Bowman,
+1990), each an eruption length in minutes and the waiting time to the next
+eruption in minutes. The scatter has two clusters. Half of the eruptions
+are held out, every mixture is fitted to the other half, and each is scored
+by the mean log-likelihood it assigns to the held-out half. mclust (Scrucca
+et al., 2016), mixtools (Benaglia et al., 2009) and flexmix (Leisch, 2004;
+Grün and Leisch, 2008) fit the mixture by expectation-maximisation on the
+training half, as regime (ii) does.
+
+Regime (iii) is given no samples. Its target is the kernel density estimate
+of the training half from ks (Duong, 2007), read as a function that can be
+evaluated at any point, and its competitor on that target is the route an
+analyst without proxymix would take: draw from the density with the
+No-U-Turn sampler in Stan (Carpenter et al., 2017) through cmdstanr, then
+fit a two-component mixture to the draws with mclust. The kernel density
+estimate itself is scored on the held-out half as the reference for both.
+
+mclust, mixtools, flexmix and ks install from CRAN. cmdstanr is not on
+CRAN and installs from the Stan R-universe repository,
+stan-dev.r-universe.dev. It also needs a CmdStan installation, which
+`cmdstanr::install_cmdstan()` provides:
+
+```{r install-competitors, eval = FALSE}
+install.packages(c("mclust", "mixtools", "flexmix", "ks"))
+install.packages("cmdstanr",
+                 repos = c("https://stan-dev.r-universe.dev",
+                           getOption("repos")))
+```
+
+```{r load-competitors, eval = run_illustration, message = FALSE}
+library(mclust)
+library(mixtools)
+library(flexmix)
+library(ks)
+```
+
+```{r faithful-split, eval = run_illustration}
+faithful_mat <- as.matrix(datasets::faithful)
+set.seed(20260925)
+i_train <- sort(sample.int(nrow(faithful_mat), nrow(faithful_mat) / 2L))
+train <- faithful_mat[i_train, ]
+test <- faithful_mat[-i_train, ]
+```
+
+Each fit below is converted to a `gmm` object, so one function,
+`dgmm()`, scores every mixture on the held-out half. mclust chooses its
+covariance structure by BIC from its full list; flexmix is run through
+`stepFlexmix()` with five random starts, the number proxymix uses by
+default, where `flexmix()` itself makes one start from a random
+assignment and `stepFlexmix()` defaults to three; mixtools runs with its
+defaults.
+
+```{r regime-ii-fits, eval = run_illustration, results = "hide"}
+as_gmm_mclust <- function(fit) {
+  gmm(
+    weights = fit$parameters$pro,
+    means = lapply(seq_len(fit$G), function(k) fit$parameters$mean[, k]),
+    covariances = lapply(seq_len(fit$G), function(k) {
+      fit$parameters$variance$sigma[, , k]
+    })
+  )
+}
+as_gmm_mixtools <- function(fit) {
+  gmm(weights = fit$lambda, means = fit$mu, covariances = fit$sigma)
+}
+as_gmm_flexmix <- function(fit) {
+  comps <- lapply(fit@components, function(cc) cc[[1L]]@parameters)
+  gmm(
+    weights = prior(fit),
+    means = lapply(comps, function(p) unname(p$center)),
+    covariances = lapply(comps, function(p) unname(p$cov))
+  )
+}
+timed <- function(expr) {
+  secs <- system.time(g <- expr)[["elapsed"]]
+  list(g = g, secs = secs)
+}
+
+train_df <- data.frame(eruptions = train[, 1L], waiting = train[, 2L])
+sample_target <- gmm_target_from_samples(train)
+set.seed(1L)
+fits <- list(
+  "proxymix, regime (i), N = 1" =
+    timed(fit_proxymix(sample_target, N = 1L, regime = "moment")),
+  "proxymix, regime (ii)" =
+    timed(fit_proxymix(sample_target, N = 2L, regime = "sample")),
+  mclust = timed(as_gmm_mclust(Mclust(train, G = 2L, verbose = FALSE))),
+  mixtools = timed(as_gmm_mixtools(mvnormalmixEM(train, k = 2L,
+                                                 verb = FALSE))),
+  flexmix = timed(as_gmm_flexmix(stepFlexmix(
+    cbind(eruptions, waiting) ~ 1, data = train_df, k = 2L, nrep = 5L,
+    model = FLXMCmvnorm(diagonal = FALSE), verbose = FALSE
+  )))
+)
+```
+
+The kernel density estimate uses the ks plug-in bandwidth matrix. Its log
+density is written out as a log-sum-exp over the training points, so it
+stays finite far from the data, and it is checked against the estimate
+that `kde()` from ks computes directly at the data points before being
+wrapped as a target with no samples.
+
+```{r kde-target, eval = run_illustration}
+kde_fit <- kde(train)
+H_inv <- solve(kde_fit$H)
+log_det_H <- determinant(kde_fit$H)$modulus[[1L]]
+centre_q <- rowSums((train %*% H_inv) * train)
+log_kde <- function(x) {
+  if (is.null(dim(x))) x <- matrix(x, nrow = 1L)
+  q <- outer(rowSums((x %*% H_inv) * x), centre_q, "+") -
+    2 * x %*% H_inv %*% t(train)
+  lk <- -0.5 * q - log(2 * pi) - 0.5 * log_det_H
+  m <- apply(lk, 1L, max)
+  m + log(rowSums(exp(lk - m))) - log(nrow(train))
+}
+kde_direct <- kde(train, H = kde_fit$H, eval.points = faithful_mat)$estimate
+kde_check <- max(abs(exp(log_kde(faithful_mat)) - kde_direct))
+kde_target <- gmm_target(n_dim = 2L, log_density = log_kde,
+                         normalised = TRUE, log_normalizer = 0,
+                         name = "kde of the training half")
+
+fits[["proxymix, regime (iii), on the KDE"]] <- timed(fit_proxymix(
+  kde_target, N = 2L, regime = "kld",
+  proposal = proposal_mvt(n_dim = 2L, mean = colMeans(train),
+                          sigma = 2 * cov(train), df = 5),
+  is_size = 4000L, seed = 1L
+))
+k_faithful <- fits[["proxymix, regime (iii), on the KDE"]]$g
+```
+
+```{r ref-read, echo = FALSE}
+ref <- readRDS("three_regimes_ref.rds")
+if (!identical(ref$code, as.character(knitr::knit_code$get("ref-code")))) {
+  stop("The stored sampling results were produced by code other than ",
+       "the chunk shown; rerun the reference computation.", call. = FALSE)
+}
+```
+
+Four chains of the No-U-Turn sampler draw from the same kernel density
+estimate, and mclust fits a two-component mixture to the pooled draws. The
+sampler reads the Stan program below from the file `kde_target.stan` in a
+folder `three_regimes_stan` under the working directory.
+
+```stan
+data {
+  int<lower=1> K;                 // number of kernel centres
+  int<lower=1> D;                 // dimension
+  array[K] vector[D] centre;      // kernel centres, the training data
+  cov_matrix[D] H;                // kernel bandwidth matrix
+}
+transformed data {
+  matrix[D, D] L = cholesky_decompose(H);
+}
+parameters {
+  vector[D] x;
+}
+model {
+  vector[K] lp;
+  for (k in 1:K) lp[k] = multi_normal_cholesky_lpdf(x | centre[k], L);
+  target += log_sum_exp(lp) - log(K);
+}
+```
+
+This chunk is complete and runs as shown, but it took about
+`r format(round(ref$elapsed_secs / 30) / 2)` minutes on one core (R
+`r ref$versions[["R"]]`, Apple silicon); the results below are read from
+its stored output. That time covers the whole chunk: compiling the Stan
+program, the kernel density estimate, the four chains and the mclust fit.
+For a quick run, change `iter_sampling = 25000L` to
+`iter_sampling = 1000L`.
+
+```{r ref-code, eval = FALSE}
+library(cmdstanr)
+library(ks)
+library(mclust)
+
+faithful_mat <- as.matrix(datasets::faithful)
+set.seed(20260925)
+i_train <- sort(sample.int(nrow(faithful_mat), nrow(faithful_mat) / 2L))
+train <- faithful_mat[i_train, ]
+kde_fit <- kde(train)
+
+model <- cmdstan_model(file.path("three_regimes_stan", "kde_target.stan"),
+                       dir = tempdir())
+nuts <- model$sample(
+  data = list(K = nrow(train), D = 2L, centre = train, H = kde_fit$H),
+  chains = 4L, parallel_chains = 1L,
+  iter_warmup = 2000L, iter_sampling = 25000L,
+  seed = 1L, refresh = 0L
+)
+draws <- nuts$draws("x", format = "matrix")
+nuts_summary <- as.data.frame(nuts$summary("x"))
+nuts_divergent <- sum(nuts$diagnostic_summary()$num_divergent)
+two_stage <- Mclust(draws, G = 2L, verbose = FALSE)
+two_stage_par <- two_stage$parameters[c("pro", "mean", "variance")]
+```
+
+```{r ref-use, eval = run_illustration, echo = FALSE}
+if (!identical(ref$i_train, i_train)) {
+  stop("The stored sampling results used a different training half.",
+       call. = FALSE)
+}
+fits[["NUTS draws from the KDE, then mclust"]] <- list(
+  g = as_gmm_mclust(list(G = 2L, parameters = ref$two_stage_par)),
+  secs = ref$elapsed_secs
+)
+nuts_rhat <- max(ref$nuts_summary$rhat)
+nuts_ess <- min(ref$nuts_summary$ess_bulk)
+```
+
+```{r faithful-table, eval = run_illustration, echo = FALSE}
+held_out <- function(g) mean(dgmm(test, g, log = TRUE))
+faithful_tbl <- data.frame(
+  method = c(names(fits), "kernel density estimate (ks)"),
+  reads = c(rep("the training half", 5L), "the KDE as a density",
+            "the KDE as a density", "the training half"),
+  loglik = c(vapply(fits, function(f) held_out(f$g), numeric(1L)),
+             mean(log_kde(test))),
+  secs = c(vapply(fits, function(f) f$secs, numeric(1L)), NA_real_),
+  stringsAsFactors = FALSE
+)
+faithful_show <- faithful_tbl
+faithful_show$loglik <- fixed(faithful_show$loglik, 3)
+is_nuts <- faithful_show$method == "NUTS draws from the KDE, then mclust"
+faithful_show$secs <- ifelse(is_nuts, fixed(faithful_show$secs, 0),
+                             fixed(faithful_show$secs, 2))
+faithful_show$secs[is.na(faithful_tbl$secs)] <- "--"
+knitr::kable(
+  faithful_show, row.names = FALSE, align = c("l", "l", "r", "r"),
+  # the padded header widens the column so the word fits inside the rule
+  col.names = c("Method", "Reads", "Held-out mean log-likelihood",
+                "\u00a0\u00a0\u00a0Seconds"),
+  caption = paste0(
+    "Mean log-likelihood per eruption assigned to the ", nrow(test),
+    " held-out eruptions by each fitted mixture, and the seconds each ",
+    "fit took. The seconds of the NUTS row cover the whole reference ",
+    "chunk (compiling the Stan program, the kernel density estimate, the ",
+    "four chains and the mclust fit); the other rows time the fit alone. ",
+    "The kernel density estimate is the target of the two ",
+    "density-reading rows and their reference, and is not timed."
+  )
+)
+ll_of <- function(method) {
+  faithful_tbl$loglik[faithful_tbl$method == method]
+}
+secs_of <- function(method) {
+  faithful_tbl$secs[faithful_tbl$method == method]
+}
+ll_ii <- ll_of("proxymix, regime (ii)")
+ll_iii <- ll_of("proxymix, regime (iii), on the KDE")
+ll_kde <- ll_of("kernel density estimate (ks)")
+ll_nuts <- ll_of("NUTS draws from the KDE, then mclust")
+ll_two <- c(ll_ii, ll_of("mclust"), ll_of("mixtools"), ll_of("flexmix"))
+```
+
+```{r fig-faithful, eval = run_illustration && has_ggplot2, echo = run_illustration && has_ggplot2, fig.height = 4.2, fig.cap = "The held-out half of the Old Faithful eruptions with the two-component mixture fitted by regime (ii) to the training half (solid contours) and by regime (iii) to the kernel density estimate of the training half (dashed contours), both drawn at the same density levels. Both routes place one component on each cluster. The regime-(iii) mixture is wider and lower, because the kernel density estimate it fitted adds the kernel bandwidth to the spread of each cluster, so fewer of its contours reach the upper levels.", fig.alt = "Scatter of held-out eruption length against waiting time in two clusters, overlaid with two sets of density contours that both enclose the two clusters."}
+plot_x <- seq(1.2, 5.8, length.out = 120L)
+plot_y <- seq(35, 105, length.out = 120L)
+plot_grid <- as.matrix(expand.grid(eruptions = plot_x, waiting = plot_y))
+contour_df <- rbind(
+  data.frame(plot_grid, density = dgmm(plot_grid, fits[[2L]]$g),
+             route = "regime (ii), training half"),
+  data.frame(plot_grid, density = dgmm(plot_grid, k_faithful),
+             route = "regime (iii), KDE")
+)
+test_df <- data.frame(eruptions = test[, 1L], waiting = test[, 2L])
+ggplot2::ggplot() +
+  ggplot2::geom_point(data = test_df,
+                      ggplot2::aes(eruptions, waiting),
+                      colour = "grey45", size = 1.2) +
+  ggplot2::geom_contour(data = contour_df,
+                        ggplot2::aes(eruptions, waiting, z = density,
+                                     colour = route, linetype = route),
+                        bins = 6L, linewidth = 0.6) +
+  ggplot2::scale_colour_manual(name = NULL,
+                               values = c("#0072B2", "#D55E00")) +
+  ggplot2::scale_linetype_manual(name = NULL,
+                                 values = c("solid", "dashed")) +
+  ggplot2::labs(x = "eruption length, minutes",
+                y = "waiting time to the next eruption, minutes") +
+  ggplot2::theme_minimal(base_size = 11) +
+  ggplot2::theme(legend.position = "top")
+```
+
+```{r fig-faithful-skip, eval = run_illustration && !has_ggplot2, echo = FALSE, results = "asis"}
+cat("ggplot2 is not installed on this build, so the Old Faithful",
+    "figure is skipped.\n")
+```
+
+```{r faithful-facts, eval = run_illustration, include = FALSE}
+mclust_model <- Mclust(train, G = 2L, verbose = FALSE)$modelName
+weight_ii <- max(fits[[2L]]$g@weights)
+weight_iii <- max(k_faithful@weights)
+kde_peak <- max(kde_direct)
+```
+
+The four regime-(ii) fits are within
+`r fixed(max(ll_two) - min(ll_two), 3)` of one another on the held-out
+half: proxymix gives `r fixed(ll_ii, 3)`, mclust `r fixed(ll_of("mclust"), 3)`
+with its `r mclust_model` covariance structure, mixtools
+`r fixed(ll_of("mixtools"), 3)` and flexmix `r fixed(ll_of("flexmix"), 3)`.
+The fits took `r fixed(secs_of("proxymix, regime (ii)"), 2)`,
+`r fixed(secs_of("mclust"), 2)`, `r fixed(secs_of("mixtools"), 2)` and
+`r fixed(secs_of("flexmix"), 2)` s in that order. The single Gaussian of regime (i) scores
+`r fixed(ll_of("proxymix, regime (i), N = 1"), 3)`, the cost of one
+component for two clusters.
+
+Regime (iii) never saw the training points directly. From the kernel density estimate
+alone it reaches `r fixed(ll_iii, 3)`, beside the estimate's own
+`r fixed(ll_kde, 3)`, in `r fixed(secs_of("proxymix, regime (iii), on the KDE"), 2)`
+s with an effective sample size of
+`r round(k_faithful@diagnostics$ess)` of `r k_faithful@diagnostics$is_size`
+importance draws. Its larger component carries weight
+`r fixed(weight_iii, 3)`, against `r fixed(weight_ii, 3)` for the regime-(ii)
+fit to the same half. The sampling route reaches `r fixed(ll_nuts, 3)` from
+`r format(ref$n_draws, big.mark = " ")` draws in
+`r round(ref$elapsed_secs)` s for the whole reference chunk, with `r ref$nuts_divergent` divergent
+transitions, a largest R-hat of `r fixed(nuts_rhat, 2)` over the two
+coordinates and a smallest bulk effective sample size of
+`r format(round(nuts_ess), big.mark = " ")`. The density is checked: the
+largest absolute difference between the density from the log-sum-exp form
+and the estimate `kde()` computes at the `r nrow(faithful_mat)` eruptions
+is `r power_ten(kde_check)`, where the largest density at those points is
+`r fixed(kde_peak, 4)`. This
+is one split of one dataset, so the simulation below repeats the regime-(ii)
+comparison where the truth is known.
+
+### A simulation benchmark
+
+```{r sim-read, echo = FALSE}
+sim <- readRDS("three_regimes_sim.rds")
+if (!identical(sim$code, as.character(knitr::knit_code$get("sim-code")))) {
+  stop("The stored simulation results were produced by code other than ",
+       "the chunk shown; rerun the simulation.", call. = FALSE)
+}
+```
+
+One split is one draw. The simulation repeats the fit on `r sim$n_rep`
+datasets at each of two sample sizes, `r sim$n_sizes[1L]` and
+`r sim$n_sizes[2L]`, drawn from the three-component mixture of the
+`mixture_target()` bench above, whose weights are 0.3, 0.4 and 0.3 and
+whose means sit at $(-2, -2)$, $(0, 0)$ and $(2, 2)$. Every method is told
+$N = 3$. proxymix regime (ii), mclust and flexmix fit the sample. proxymix
+regime (iii) is given the mixture's log density and no sample, with an
+importance-sampling seed of its own per dataset, so its row shows what the
+density route returns while the sample route sees `r sim$n_sizes[1L]` or
+`r sim$n_sizes[2L]` points. mixtools is left out of the simulation: one fit
+of a `r sim$n_sizes[2L]`-point dataset with three components, timed at the
+end of the chunk, took `r round(sim$mixtools_secs)` s, so
+`r 2L * sim$n_rep` datasets would take hours.
+
+Two scores are computed against quantities no method produced. The first
+is $\mathrm{KL}(f \Vert g) = \int f \log (f / g)$, with $f$ the true
+mixture and $g$ the fitted mixture, by quadrature on a grid of `r format(length(seq(-6, 6, by = 0.06))^2, big.mark = " ")`
+points over $[-6, 6]^2$, which leaves out `r power_ten(1 - kq_mass)` of the
+true mixture's mass. The second is the adjusted Rand index
+(Hubert and Arabie, 1985) between the component that generated each point
+and the component each fitted mixture assigns it to, computed by one rule
+for every method, the largest posterior responsibility. The share of fits
+whose divergence exceeds 0.1 is reported as the misfit rate.
+This chunk is complete and runs as shown, but it took about
+`r round(sim$elapsed_secs / 60)` minutes on one core (R
+`r sim$versions[["R"]]`, Apple silicon); the results below are read from
+its stored output. For a quick run, change
+`n_rep <- 300L` to `n_rep <- 3L`.
+
+```{r sim-code, eval = FALSE}
+library(proxymix)
+library(mclust)
+library(flexmix)
+
+n_rep <- 300L  # datasets per sample size
+n_sizes <- c(200L, 1000L)
+
+# the mixture behind mixture_target(): three components in two dimensions
+w_true <- c(0.3, 0.4, 0.3)
+mu_true <- list(c(-2, -2), c(0, 0), c(2, 2))
+S_true <- list(matrix(c(0.6, 0.0, 0.0, 0.6), 2L, 2L),
+               matrix(c(0.5, 0.2, 0.2, 0.5), 2L, 2L),
+               matrix(c(0.4, -0.1, -0.1, 0.4), 2L, 2L))
+truth <- gmm(weights = w_true, means = mu_true, covariances = S_true)
+density_only <- mixture_target()
+
+# KL(truth || g) by quadrature; the grid holds all but 1e-7 of the mass
+grid_x <- seq(-6, 6, by = 0.06)
+grid <- as.matrix(expand.grid(x1 = grid_x, x2 = grid_x))
+cell <- (grid_x[2L] - grid_x[1L])^2
+log_f <- dgmm(grid, truth, log = TRUE)
+f_grid <- exp(log_f)
+kl_quad <- function(g) {
+  sum(f_grid * (log_f - dgmm(grid, g, log = TRUE))) * cell
+}
+
+# component with the largest posterior responsibility for each row
+hard_assign <- function(x, g) {
+  lp <- vapply(seq_along(g@weights), function(k) {
+    one <- gmm(weights = 1, means = g@means[k], covariances = g@covariances[k])
+    log(g@weights[k]) + dgmm(x, one, log = TRUE)
+  }, numeric(nrow(x)))
+  max.col(lp)
+}
+
+as_gmm_mclust <- function(fit) {
+  gmm(
+    weights = fit$parameters$pro,
+    means = lapply(seq_len(fit$G), function(k) fit$parameters$mean[, k]),
+    covariances = lapply(seq_len(fit$G), function(k) {
+      fit$parameters$variance$sigma[, , k]
+    })
+  )
+}
+as_gmm_flexmix <- function(fit) {
+  comps <- lapply(fit@components, function(cc) cc[[1L]]@parameters)
+  gmm(
+    weights = prior(fit),
+    means = lapply(comps, function(p) unname(p$center)),
+    covariances = lapply(comps, function(p) unname(p$cov))
+  )
+}
+timed <- function(expr) {
+  secs <- system.time(g <- expr)[["elapsed"]]
+  list(g = g, secs = secs)
+}
+
+draw_dataset <- function(n, r) {
+  set.seed(r)
+  z <- sample.int(3L, n, replace = TRUE, prob = w_true)
+  x <- matrix(0, n, 2L)
+  for (k in seq_len(3L)) {
+    one <- gmm(weights = 1, means = mu_true[k], covariances = S_true[k])
+    x[z == k, ] <- rgmm(sum(z == k), one)
+  }
+  list(x = x, z = z)
+}
+
+one_dataset <- function(n, r) {
+  d <- draw_dataset(n, r)
+  x <- d$x
+  z <- d$z
+  df <- data.frame(x1 = x[, 1L], x2 = x[, 2L])
+  runs <- list(
+    "proxymix, regime (ii)" = timed(fit_proxymix(
+      gmm_target_from_samples(x), N = 3L, regime = "sample"
+    )),
+    "proxymix, regime (iii)" = timed(fit_proxymix(
+      density_only, N = 3L, regime = "kld",
+      proposal = proposal_mvt(n_dim = 2L, sigma = 6 * diag(2L), df = 5),
+      is_size = 3000L, seed = n + r
+    )),
+    mclust = timed(as_gmm_mclust(Mclust(x, G = 3L, verbose = FALSE))),
+    flexmix = timed(as_gmm_flexmix(stepFlexmix(
+      cbind(x1, x2) ~ 1, data = df, k = 3L, nrep = 5L,
+      model = FLXMCmvnorm(diagonal = FALSE), verbose = FALSE
+    )))
+  )
+  data.frame(
+    n = n, rep = r, method = names(runs),
+    kl = vapply(runs, function(f) kl_quad(f$g), numeric(1L)),
+    ari = vapply(runs, function(f) {
+      adjustedRandIndex(hard_assign(x, f$g), z)
+    }, numeric(1L)),
+    secs = vapply(runs, function(f) f$secs, numeric(1L))
+  )
+}
+
+res <- do.call(rbind, lapply(n_sizes, function(n) {
+  do.call(rbind, lapply(seq_len(n_rep), function(r) one_dataset(n, r)))
+}))
+
+sim_tab <- aggregate(
+  cbind(kl = kl, misfit = kl > 0.1, ari = ari, secs = secs) ~ n + method,
+  data = res, FUN = mean
+)
+sim_tab
+
+# one mixtools fit at the larger size, timed to justify leaving it out
+mixtools_secs <- system.time(
+  mixtools::mvnormalmixEM(draw_dataset(n_sizes[2L], 1L)$x, k = 3L,
+                          verb = FALSE)
+)[["elapsed"]]
+mixtools_secs
+```
+
+```{r sim-table, echo = FALSE}
+tab_sim <- sim$sim_tab
+method_order <- c("proxymix, regime (ii)", "mclust", "flexmix",
+                  "proxymix, regime (iii)")
+tab_sim <- tab_sim[order(tab_sim$n, match(tab_sim$method, method_order)), ]
+knitr::kable(
+  tab_sim[, c("n", "method", "kl", "misfit", "ari", "secs")],
+  digits = c(0L, 0L, 4L, 3L, 3L, 3L), row.names = FALSE,
+  # the padded header widens the column so the word fits inside the rule
+  col.names = c("n", "Method", "KL to the truth", "Misfit rate",
+                "Adjusted Rand index", "\u00a0\u00a0\u00a0Seconds"),
+  caption = paste0(
+    "Mean Kullback-Leibler divergence $\\mathrm{KL}(f \\Vert g)$, with $f$ ",
+    "the true mixture and $g$ the fitted one, by quadrature, share of ",
+    "fits with divergence above 0.1, mean adjusted Rand index against the ",
+    "generating components, and mean seconds per fit, over ", sim$n_rep,
+    " simulated datasets at each sample size."
+  )
+)
+sim_value <- function(n, method, what) {
+  s1 <- sim$sim_tab$n == n & sim$sim_tab$method == method
+  sim$sim_tab[[what]][s1]
+}
+n_small <- sim$n_sizes[1L]
+n_large <- sim$n_sizes[2L]
+mcse_rate <- sqrt(0.5 * 0.5 / sim$n_rep)
+# mean and standard error of the per-dataset difference a - b
+paired <- function(n, a, b, what) {
+  x <- sim$res[sim$res$n == n & sim$res$method == a, ]
+  y <- sim$res[sim$res$n == n & sim$res$method == b, ]
+  d <- x[[what]][order(x$rep)] - y[[what]][order(y$rep)]
+  c(diff = mean(d), se = sd(d) / sqrt(length(d)))
+}
+resolved <- function(p) abs(p[["diff"]]) > 2 * p[["se"]]
+ii <- "proxymix, regime (ii)"
+iii <- "proxymix, regime (iii)"
+kl_large <- paired(n_large, ii, "mclust", "kl")
+ari_large <- paired(n_large, ii, "mclust", "ari")
+kl_small <- paired(n_small, ii, "mclust", "kl")
+ari_small <- paired(n_small, ii, "mclust", "ari")
+kl_iii <- rbind(paired(n_small, ii, iii, "kl"), paired(n_large, ii, iii, "kl"))
+# misfits at the smaller size, and the exact McNemar test on the discordant pairs
+misfit_of <- function(method) {
+  x <- sim$res[sim$res$n == n_small & sim$res$method == method, ]
+  x$kl[order(x$rep)] > 0.1
+}
+mis_ii <- misfit_of(ii)
+mis_mc <- misfit_of("mclust")
+mcnemar_p <- binom.test(sum(mis_ii & !mis_mc),
+                        sum(xor(mis_ii, mis_mc)))$p.value
+# a version as its DESCRIPTION writes it, when the installed one is the one stored
+desc_version <- function(pkg, stored) {
+  if (identical(as.character(packageVersion(pkg)), stored)) {
+    utils::packageDescription(pkg)$Version
+  } else {
+    stored
+  }
+}
+flexmix_version <- desc_version("flexmix", sim$versions[["flexmix"]])
+```
+
+At `r n_large` points neither proxymix regime (ii) nor mclust exceeds the
+divergence threshold. Their divergences are
+`r fixed(sim_value(n_large, ii, "kl"), 4)` and
+`r fixed(sim_value(n_large, "mclust", "kl"), 4)`, a paired difference,
+proxymix minus mclust over the same datasets, of
+`r fixed(kl_large[["diff"]], 4)` with a standard error of
+`r fixed(kl_large[["se"]], 4)`. Their adjusted Rand indices are
+`r fixed(sim_value(n_large, ii, "ari"), 3)` and
+`r fixed(sim_value(n_large, "mclust", "ari"), 3)`, a paired difference of
+`r fixed(ari_large[["diff"]], 4)` (standard error
+`r fixed(ari_large[["se"]], 4)`). At `r n_small` points their divergences
+rise to `r fixed(sim_value(n_small, ii, "kl"), 4)` and
+`r fixed(sim_value(n_small, "mclust", "kl"), 4)`, a paired difference of
+`r fixed(kl_small[["diff"]], 4)` (standard error
+`r fixed(kl_small[["se"]], 4)`), and their adjusted Rand indices differ by
+`r fixed(ari_small[["diff"]], 4)` (standard error
+`r fixed(ari_small[["se"]], 4)`), which
+`r if (resolved(ari_small)) "is" else "is not"` resolved. The divergence
+exceeds 0.1 in `r sum(mis_ii)` of the `r sim$n_rep` datasets for proxymix
+and `r sum(mis_mc)` for mclust; `r sum(mis_ii & !mis_mc)` datasets are
+misfits for proxymix alone and `r sum(mis_mc & !mis_ii)` for mclust alone,
+for an exact McNemar test p-value of `r fixed(mcnemar_p, 2)`. flexmix
+`r flexmix_version` with five random starts exceeds it in
+`r fixed(sim_value(n_small, "flexmix", "misfit"), 3)` of the
+`r n_small`-point datasets and
+`r fixed(sim_value(n_large, "flexmix", "misfit"), 3)` of the
+`r n_large`-point ones, which lifts its mean divergence to
+`r fixed(sim_value(n_small, "flexmix", "kl"), 4)` and
+`r fixed(sim_value(n_large, "flexmix", "kl"), 4)` and lowers its adjusted
+Rand index to `r fixed(sim_value(n_small, "flexmix", "ari"), 3)` and
+`r fixed(sim_value(n_large, "flexmix", "ari"), 3)`. A rate estimated from
+`r sim$n_rep` datasets carries a Monte Carlo standard error of at most
+`r fixed(mcse_rate, 2)`.
+
+The regime-(iii) row does not move with the sample size, because it reads
+the density and not the sample. Its divergence is
+`r fixed(sim_value(n_small, "proxymix, regime (iii)", "kl"), 4)` and
+`r fixed(sim_value(n_large, "proxymix, regime (iii)", "kl"), 4)` at the two
+sizes, `r round(sim_value(n_small, "proxymix, regime (ii)", "kl") / sim_value(n_small, "proxymix, regime (iii)", "kl"), 1)`
+times below the sample route at `r n_small` points and
+`r round(sim_value(n_large, "proxymix, regime (ii)", "kl") / sim_value(n_large, "proxymix, regime (iii)", "kl"), 1)`
+times below it at `r n_large`; the paired differences, regime (ii) minus
+regime (iii), are `r fixed(kl_iii[1L, "diff"], 4)` and
+`r fixed(kl_iii[2L, "diff"], 4)`, with standard errors of
+`r fixed(kl_iii[1L, "se"], 4)` and `r fixed(kl_iii[2L, "se"], 4)`. Its
+assignments of the sample it never fitted reach an adjusted Rand index of
+`r fixed(sim_value(n_large, "proxymix, regime (iii)", "ari"), 3)` at
+`r n_large` points. Per fit at `r n_large` points, proxymix regime (ii)
+took `r fixed(sim_value(n_large, "proxymix, regime (ii)", "secs"), 3)` s,
+regime (iii)
+`r fixed(sim_value(n_large, "proxymix, regime (iii)", "secs"), 3)` s,
+mclust `r fixed(sim_value(n_large, "mclust", "secs"), 3)` s and flexmix
+with five starts `r fixed(sim_value(n_large, "flexmix", "secs"), 3)` s.
+
+In this run proxymix regime (ii) had
+`r if (resolved(kl_small) && resolved(kl_large) && kl_small[["diff"]] < 0 && kl_large[["diff"]] < 0) "a lower mean divergence than mclust at both sizes, by more than two paired standard errors" else "a mean divergence that the paired comparison does not separate from mclust's at one or both sizes"`,
+and regime (iii) returned a closer mixture than any sample route because
+it read the density the samples came from. At `r n_small` points mclust
+exceeded the divergence threshold in fewer datasets than proxymix regime
+(ii), `r sum(mis_mc)` against `r sum(mis_ii)` with a McNemar p-value of
+`r fixed(mcnemar_p, 2)`, and mclust chose its covariance structure as it
+went, which no other method did. The comparison covers one mixture in two
+dimensions with the component count supplied, and neither a mis-specified
+target, a chosen component count nor a higher dimension was tried.
+
+## Where next
+
+*Fitting a proxy to a density you cannot sample* is the shorter route into
+regime (iii) alone, and reads the fit certificate that this vignette only
+glances at.
+
+*How well a mixture proxies four awkward shapes* takes regime (iii) to
+targets outside the Gaussian-mixture family, where the correctly-specified
+comfort of this vignette's test bench no longer holds.
+
+*Reading the entropy of a fitted mixture* covers the component-count
+question this vignette defers, including the annealed path that discovers a
+count rather than being told one.
+
+*One mixture, many methods* shows what a single fitted mixture replaces
+once the regime question is settled.
+
+*Mapping the optima of an objective* points regime (iii) at a function that
+is not a density at all: an objective read as a Gibbs measure, so that the
+fitted mixture returns every basin of a multimodal landscape at once rather
+than the one a local optimiser happened to reach.
+
+## References
+
+* Azzalini, A. and Bowman, A. W. (1990). *A look at some data on the Old
+  Faithful geyser.* Journal of the Royal Statistical Society, Series C
+  (Applied Statistics) 39(3), 357--365.\
+  <doi:10.2307/2347385>.
+* Benaglia, T., Chauveau, D., Hunter, D. R. and Young, D. S. (2009).
+  *mixtools: An R package for analyzing finite mixture models.* Journal of
+  Statistical Software 32(6), 1--29.\
+  <doi:10.18637/jss.v032.i06>.
+* Carpenter, B., Gelman, A., Hoffman, M. D., Lee, D., Goodrich, B.,
+  Betancourt, M., Brubaker, M., Guo, J., Li, P. and Riddell, A. (2017).
+  *Stan: A probabilistic programming language.* Journal of Statistical
+  Software 76(1), 1--32.\
+  <doi:10.18637/jss.v076.i01>.
+* Duong, T. (2007). *ks: Kernel density estimation and kernel discriminant
+  analysis for multivariate data in R.* Journal of Statistical Software
+  21(7), 1--16.\
+  <doi:10.18637/jss.v021.i07>.
+* Grün, B. and Leisch, F. (2008). *FlexMix version 2: Finite mixtures
+  with concomitant variables and varying and constant parameters.* Journal
+  of Statistical Software 28(4), 1--35.\
+  <doi:10.18637/jss.v028.i04>.
+* Hubert, L. and Arabie, P. (1985). *Comparing partitions.* Journal of
+  Classification 2(1), 193--218.\
+  <doi:10.1007/BF01908075>.
+* Leisch, F. (2004). *FlexMix: A general framework for finite mixture
+  models and latent class regression in R.* Journal of Statistical Software
+  11(8), 1--18.\
+  <doi:10.18637/jss.v011.i08>.
+* Scrucca, L., Fop, M., Murphy, T. B. and Raftery, A. E. (2016). *mclust
+  5: Clustering, classification and density estimation using Gaussian
+  finite mixture models.* The R Journal 8(1), 289--317.\
+  <doi:10.32614/RJ-2016-021>.
+* van der Hoek, J. and Elliott, R. J. (2024). *Mixtures of multivariate
+  Gaussians.* Stochastic Analysis and Applications.\
+  <doi:10.1080/07362994.2024.2372605>.
+
+## Reproduce
+
+The target carries `seed = 1L`, the regime-(ii) fit and both regime-(iii)
+fits on the bench are seeded with `seed = 1L`, the moment oracle is closed
+form, and the replicate traces use seeds 1 to `r length(sample_traces)` for
+the samples and 1 to `r length(kld_traces)` for the importance draws, so
+every number in the first five sections is reproducible from the package
+alone.
+
+The numerical illustration splits the eruptions after `set.seed(20260925)`,
+runs the four regime-(ii) fits after `set.seed(1L)`, and gives the
+regime-(iii) fit `seed = 1L`. The stored sampling results come from the
+code shown, run on `r ref$run_date` with R `r ref$versions[["R"]]`,
+cmdstanr `r ref$versions[["cmdstanr"]]`, CmdStan
+`r ref$versions[["CmdStan"]]`, ks `r ref$versions[["ks"]]` and mclust
+`r ref$versions[["mclust"]]`, and that run raised
+`r length(ref$warnings)` warnings. In the simulation each dataset is
+generated after `set.seed()` with its own index, and the regime-(iii)
+importance sampler is seeded with that index plus the sample size. The
+stored simulation results come from the code shown, run on `r sim$run_date` with R `r sim$versions[["R"]]`,
+proxymix `r sim$versions[["proxymix"]]`, mclust
+`r sim$versions[["mclust"]]` and flexmix `r flexmix_version`,
+and that run raised `r length(sim$warnings)` warnings. The mixtools
+version used above is `r format(packageVersion("mixtools"))`.
+
+```{r session-info}
+old_opt <- options(width = 72L)
+si_vec <- trimws(capture.output(sessionInfo()), "right")
+options(old_opt)
+# library paths are single long words, so a long line breaks after a slash
+long_vec <- nchar(si_vec) > 72L
+si_vec[long_vec] <- gsub("(.{1,68}/)(?=.{8,})", "\\1\n        ",
+                         si_vec[long_vec], perl = TRUE)
+writeLines(si_vec)
+```

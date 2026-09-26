@@ -2,7 +2,7 @@
 % Please edit documentation in R/entropy.R
 \name{gmm_conditional_entropy}
 \alias{gmm_conditional_entropy}
-\title{Conditional predictive entropy of a Gaussian mixture}
+\title{Renyi-2 or Shannon entropy of a conditional Gaussian mixture}
 \usage{
 gmm_conditional_entropy(
   g,
@@ -25,14 +25,16 @@ convention).}
 \item{n_mc, seed}{Passed to \code{\link[=gmm_entropy]{gmm_entropy()}} for \code{order = "shannon"}.}
 }
 \value{
-A numeric scalar for a single configuration, or a numeric vector
-with one entropy per row of \code{given}.
+The entropy of the chosen \code{order} in nats: a numeric scalar for a
+single configuration, or a numeric vector with one entropy per row of
+\code{given}.
 }
 \description{
-Returns the differential entropy of the conditional mixture \eqn{g_{Y \mid X
-= x}} obtained from \code{\link[=gmm_conditionalise]{gmm_conditionalise()}} -- the predictive uncertainty of
-the target coordinates given the conditioned ones. The order-2 Renyi entropy
-is closed-form; \code{order = "shannon"} falls back to Monte Carlo. Multiple
+Returns the order-2 Renyi entropy (the default) or the Shannon differential
+entropy of the conditional mixture \eqn{g_{Y \mid X = x}} obtained from
+\code{\link[=gmm_conditionalise]{gmm_conditionalise()}} -- the predictive uncertainty of the target
+coordinates given the conditioned ones. The Renyi-2 entropy is closed-form;
+\code{order = "shannon"} is a Monte Carlo estimate. Multiple
 conditioning configurations are evaluated row-by-row.
 }
 \examples{

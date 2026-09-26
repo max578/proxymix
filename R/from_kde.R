@@ -1,13 +1,6 @@
-## Compile a kernel density estimate into a closed-form Gaussian-mixture
-## proxy via regime (iii). Added in v0.2.0.
-##
-## The KDE itself is *not* the proxy: a KDE has as many components as
-## samples, no closed-form marginal / conditional, and no aggregation
-## algebra. `from_kde()` re-fits a smaller (`N`-component) Gaussian
-## mixture against the KDE as a normalised target via [fit_kld_em()].
-## The result has the closed-form operator set of the rest of the
-## package while keeping the KDE's bias-variance trade-off as its
-## empirical anchor.
+## Compress a Gaussian-kernel KDE, itself an n-component Gaussian mixture,
+## into an N-component proxy by regime (iii) against the KDE as a normalised
+## target.
 
 ## Per-coordinate bandwidth selection.
 ##   "silverman"  : (4 / (p + 2))^(1 / (p + 4)) * n^(-1 / (p + 4)) * sd
@@ -88,14 +81,18 @@ make_kde_log_density <- function(samples, h, chunk = 256L) {
 #'
 #' Fits an `N`-component Gaussian-mixture proxy to a (Gaussian, diagonal-
 #' bandwidth) kernel-density estimate over `samples`, via regime (iii)
-#' KLD-EM. The proxy is closed-form marginalisable, conditionable, and
-#' samplable; the KDE is none of those things on its own.
+#' KLD-EM.
 #'
-#' This is a **compression** operation: take an `n`-sample KDE and replace
-#' it with the closest `N`-component mixture in the Kullback-Leibler sense
-#' (which is much smaller than `n` for typical use). Bias inherited from
-#' the KDE is reproduced in the proxy; the bandwidth controls the
-#' bias-variance trade-off.
+#' A Gaussian-kernel KDE on `n` points is already an `n`-component Gaussian
+#' mixture with equal weights, so it can be marginalised, conditioned and
+#' sampled in closed form as it stands. `from_kde()` is a **compression**:
+#' it replaces the `n` components with the closest `N`-component mixture in
+#' the Kullback-Leibler sense, with `N` much smaller than `n`. Density
+#' evaluation, storage and the operator calculus then cost in proportion to
+#' `N` rather than `n` (products and convolutions of two mixtures have as
+#' many components as the product of their counts). Bias inherited from the
+#' KDE is reproduced in the proxy; the bandwidth controls the bias-variance
+#' trade-off.
 #'
 #' Dimensional scope. The dimensional guard is `p <= 5` (recommended),
 #' `p <= 10` (allowed with warning), `p > 10` (rejected). Regime-(iii)
@@ -112,7 +109,10 @@ make_kde_log_density <- function(samples, h, chunk = 256L) {
 #' @param proposal Optional [is_proposal]. Default is a multivariate-t
 #'   centred at `colMeans(samples)`, scale = ridge(cov(samples)) +
 #'   diag(h^2), `df = 5`.
-#' @param is_size Importance-sample size for fitting. Default `5000L`.
+#' @param is_size Importance-sample size for fitting. The default `NULL`
+#'   uses `10000 + 2500 * N`: the fitted components overfit a fixed draw, and
+#'   larger `N` needs more draws to keep the held-out divergence close to its
+#'   large-sample value.
 #' @param max_iter Maximum EM iterations. Forwarded to [fit_kld_em()].
 #' @param tol Convergence tolerance. Forwarded to [fit_kld_em()].
 #' @param ridge_eps Ridge added to each component covariance at every
@@ -120,8 +120,9 @@ make_kde_log_density <- function(samples, h, chunk = 256L) {
 #' @param min_ess Minimum effective sample size below which a warning is
 #'   issued. Forwarded to [fit_kld_em()].
 #' @param seed Optional integer seed for the fitting IS draw.
-#' @param validation_size Held-out IS sample size. Forwarded to
-#'   [fit_kld_em()].
+#' @param validation_size Held-out IS sample size. The default `NULL` uses
+#'   `ceiling(is_size / 4)`, so the fit carries a held-out `validation_kld`;
+#'   `0L` disables it. Forwarded to [fit_kld_em()].
 #' @param validation_proposal Optional [is_proposal] for the held-out
 #'   sample. Forwarded to [fit_kld_em()].
 #' @param validation_seed Optional integer seed for the held-out IS draw.
@@ -131,7 +132,9 @@ make_kde_log_density <- function(samples, h, chunk = 256L) {
 #'   post-processed by [gmm_canonicalise()]. Forwarded to [fit_kld_em()].
 #'
 #' @returns A [gmm_fit] with `regime = "kld"` and metadata recording the
-#'   KDE inputs (`kde_samples_n`, `bandwidth`, `bandwidth_method`).
+#'   KDE inputs (`kde_samples_n`, `bandwidth`, `bandwidth_method`). Its
+#'   in-sample `kld_final` reads low, often below zero; the held-out
+#'   `validation_kld` (see [ess_summary()]) measures the compression error.
 #' @family fitting
 #' @export
 #' @examples
@@ -145,11 +148,11 @@ make_kde_log_density <- function(samples, h, chunk = 256L) {
 #' ess_summary(fit)
 from_kde <- function(samples, N = 3L,
                      bandwidth = "silverman",
-                     proposal = NULL, is_size = 5000L,
+                     proposal = NULL, is_size = NULL,
                      max_iter = 100L, tol = 1e-5,
                      ridge_eps = 1e-6, min_ess = 50L,
                      seed = NULL,
-                     validation_size = 0L,
+                     validation_size = NULL,
                      validation_proposal = NULL,
                      validation_seed = NULL,
                      support_warn = TRUE,
@@ -184,6 +187,9 @@ from_kde <- function(samples, N = 3L,
   N <- as.integer(N)
   if (length(N) != 1L || is.na(N) || N < 1L) {
     cli::cli_abort("`N` must be a positive integer scalar.")
+  }
+  if (is.null(is_size)) {
+    is_size <- 10000L + 2500L * N
   }
 
   h <- choose_bandwidth(samples, bandwidth)

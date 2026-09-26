@@ -121,10 +121,10 @@ mixture is post-processed by \code{\link[=gmm_canonicalise]{gmm_canonicalise()}}
 }
 \value{
 A \link{gmm_fit} with \code{regime = "kld"}. The diagnostics list
-contains, among others, \code{kld_trace}, \code{kld_final},
+contains, among others, \code{kld_trace}, \code{kld_final} (in-sample),
 \code{kld_is_shifted}, \code{kld_final_absolute} (when computable), \code{ess},
 \code{ess_relative} (\code{ess / is_size}), \code{max_weight}, \code{support_fraction},
-\code{mc_se_kld}, \code{validation_kld}, \code{validation_ess}, and
+\code{mc_se_kld}, \code{validation_kld} (held-out), \code{validation_ess}, and
 \code{validation_max_weight}.
 }
 \description{
@@ -159,11 +159,12 @@ et al. (2008) with the defensive-mixture safeguard of Owen and Zhou
 (2000); it re-draws rather than recycles batches (compare the adaptive
 multiple importance sampling of Cornuet et al., 2012).
 
-Since v0.1.1 the function also draws an \emph{independent} validation IS
-sample when \code{validation_size > 0} and reports its own KLD estimate,
-effective sample size, and largest weight share. This lets users tell
-the difference between in-sample EM overfit to one particular IS draw
-and a fit that generalises across independent IS draws.
+\code{kld_final} is estimated on the same importance draws the fit was tuned
+to, so it reads low and can come out negative, more so for large \code{N} and
+small \code{is_size}. When \code{validation_size > 0} the function also draws an
+\emph{independent} validation IS sample and reports its KLD estimate
+(\code{validation_kld}), effective sample size, and largest weight share;
+\code{validation_kld} is the estimate to quote as the fit's accuracy.
 
 When the target's \code{normalised} property is \code{FALSE} or \code{NA}, the
 importance-sampled \code{kld_final} and \code{kld_trace} measure

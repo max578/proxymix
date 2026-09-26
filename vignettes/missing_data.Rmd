@@ -50,9 +50,9 @@ Imputation here is conditioning. If the joint distribution of the data is a
 Gaussian mixture, the conditional distribution of a missing entry given the
 observed entries of its own row is itself a Gaussian mixture, available in
 closed form through the Schur-complement algebra of
-[`gmm_conditionalise()`]. Nothing is simulated to get it.
+`gmm_conditionalise()`. Nothing is simulated to get it.
 
-[`gmm_impute()`] fits that mixture to a matrix containing holes and draws `m`
+`gmm_impute()` fits that mixture to a matrix containing holes and draws `m`
 completed datasets from the per-row conditionals. Its `N` argument is the
 number of mixture components, chosen by the Bayesian information criterion
 when left at its default. A mixture can be multimodal and heteroscedastic,
@@ -60,12 +60,12 @@ which is the point: it represents shapes that a single-Gaussian model, or a
 linear-Gaussian conditional such as normal regression imputation, cannot,
 so the imputations stay faithful to data those models mis-specify.
 
-[`gmm_complete()`] extracts one completed dataset. [`proxy_pool()`] combines
-an estimand across the completions, and [`proxy_fmi()`] reports the fraction
+`gmm_complete()` extracts one completed dataset. `proxy_pool()` combines
+an estimand across the completions, and `proxy_fmi()` reports the fraction
 of missing information. For a column mean the pooling is closed form -- the
 exact large-sample limit of the between-imputation variance -- so no Monte
 Carlo noise enters at the pooling step. For any other estimand,
-[`as_mids()`] packages the completions as a `mice` object so the joint
+`as_mids()` packages the completions as a `mice` object so the joint
 mixture imputations flow into `mice::pool()` unchanged: proxymix supplies
 the imputation model, `mice` the pooling.
 

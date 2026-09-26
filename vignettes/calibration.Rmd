@@ -49,9 +49,9 @@ low regions of $f$ as the temperature $T$ falls. That density can be
 evaluated point-wise but not directly sampled, which is exactly regime (iii)
 of van der Hoek and Elliott (2024).
 
-[`from_objective()`] fits a Gaussian-mixture proxy to $\exp(-f / T)$ by
+`from_objective()` fits a Gaussian-mixture proxy to $\exp(-f / T)$ by
 cooling a short temperature ladder through the same importance-sampled
-KLD-EM that [`fit_kld_em()`] runs, warm-starting each step from the previous
+KLD-EM that `fit_kld_em()` runs, warm-starting each step from the previous
 fit. Its `lower` and `upper` arguments are the search region: they set where
 the optima are sought, and they scale the temperature ladder, the uniform
 exploration of the proposal, and the initialisation. The objective may still
@@ -59,14 +59,14 @@ be evaluated outside the box during fitting, where non-finite values are
 treated as a finite penalty. Setting `minimise = FALSE` concentrates the map
 on the maxima of $f$ instead of the minima.
 
-[`gmm_modes()`] reads the distinct optima off the fitted map. It returns the
+`gmm_modes()` reads the distinct optima off the fitted map. It returns the
 mode locations, the mixture density at each one, and how many distinct modes
 survived deduplication. The density at a mode is the height of the map over
 that basin, and ranking the basins by it is the "which basins are wide" half
 of the question: a basin the Gibbs measure concentrates on stands higher
 than one it barely notices.
 
-[`ess_summary()`] reports the importance-sampling diagnostics that travel
+`ess_summary()` reports the importance-sampling diagnostics that travel
 with the fit, so the map can be judged before it is trusted.
 
 The point of the construction is not a single best point but the whole

@@ -1,0 +1,1130 @@
+---
+title: "Missing data that depends on the missing value"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Missing data that depends on the missing value}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+<!-- Render time: ~45 s under rmarkdown::render() with ggplot2, mice, Amelia,
+     AER, survival and sampleSelection installed, the simulation read from
+     its stored results; macOS arm64 (Apple silicon), R 4.6.1, one core. The
+     two sensitivity sweeps are the cost: five slope values each, at m = 10
+     and m = 20 completions. -->
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4.5,
+  dpi = 150,
+  out.width = "100%"
+)
+options(cli.width = 70)
+```
+
+```{r library}
+library(proxymix)
+```
+
+```{r engines}
+has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
+has_mice <- requireNamespace("mice", quietly = TRUE)
+```
+
+```{r fixed-notation, include = FALSE}
+## Small errors are written as plain decimals rather than in the
+## scientific notation knitr's inline hook would otherwise typeset.
+fixed <- function(v, digits) {
+  format(round(v, digits), nsmall = digits, scientific = FALSE)
+}
+```
+
+## The problem
+
+An analyst has a column where the large values are the ones that went
+missing: an assay that saturates, a yield that was never recorded on the
+paddocks that did badly, a follow-up that the worst cases did not attend.
+The question is: *the bigger values are exactly the ones I did not get, so
+the mean I am about to report is too small -- by how much, and how do I put
+a defensible number on that when the data I would need to check is the data
+I do not have?*
+
+This vignette answers it on a synthetic toy where the deleted values are
+retained, so every estimate can be scored against the complete-data truth
+it was hiding.
+
+## Package capabilities
+
+In proxymix you do not impute a missing entry so much as condition the
+fitted mixture on what its being missing tells you. For an entry missing at
+random that is nothing beyond the other coordinates, so the imputation law
+is the plain mixture conditional. Two common situations carry more
+information than that. An entry can be missing because it fell in a known
+interval -- below a detection limit, above a ceiling -- which is
+*censoring*. Or it can be missing with a probability that depends on its own
+unobserved value, larger values dropping out more often, which is *missing
+not at random*; modelling that probability directly is the selection-model
+formulation of Diggle and Kenward (1994). Each is a gate $\delta(y)$ multiplying the mixture
+conditional before the value is drawn.
+
+`mar()`, `censored()` and `mnar()` build those three gates, and
+`gmm_impute()` takes one through its `mechanism` argument.
+`proxy_pool()` combines an estimand across the completions.
+`proxy_mnar_sensitivity()` is the verb for the case where the selection
+slope is assumed: it sweeps the slope and reports, at each value, the pooled
+estimate with its interval and the observed-data log-likelihood, so the
+reader sees the estimate across the whole range of assumed slopes.
+
+```{r gate-table, echo = FALSE}
+knitr::kable(
+  data.frame(
+    Mechanism = c("missing at random", "censored",
+                  "missing not at random"),
+    Gate = c("constant", "interval indicator", "selection probability"),
+    Constructor = c("mar()", "censored()", "mnar()"),
+    Identified = c("yes, given the model", "yes, bound known",
+                   "only through the assumed shape"),
+    stringsAsFactors = FALSE
+  ),
+  align = "llll",
+  caption = paste0(
+    "The three missingness gates, the shape each one multiplies into the ",
+    "mixture conditional, and how far the observed data identify it."
+  )
+)
+```
+
+## Addressing the problem
+
+### A value-dependent mechanism biases the ordinary fit
+
+The data are a synthetic two-component mixture in which the second
+coordinate `y` goes missing with a probability that grows with `y` itself, so the larger values
+are under-represented among the observed. The complete data is generated
+first and kept, so the truth is available to score against.
+
+```{r dgp}
+set.seed(20260622)
+n <- 600L
+comp <- sample(1:2, n, replace = TRUE)
+mu <- rbind(c(0, 0), c(1.5, 0.5))
+chol_r <- chol(matrix(c(1, 0.6, 0.6, 1), 2L))
+z_full <- matrix(rnorm(2 * n), n, 2L) %*% chol_r + mu[comp, ]
+colnames(z_full) <- c("x1", "y")
+truth <- mean(z_full[, 2L])
+
+beta_true <- 0.7
+miss <- runif(n) < plogis(-0.5 + beta_true * z_full[, 2L])
+dat <- z_full
+dat[miss, "y"] <- NA
+```
+
+An imputer that assumes the data are missing at random fills the gap from
+the conditional of the observed, which is itself short of the large values,
+so it stays biased. Supplying the selection slope to `mnar()` lets the fit
+account for the mechanism. Both fits use `m` = 10 completions and allow 500
+iterations, the limit `proxy_mnar_sensitivity()` uses below.
+
+```{r recover}
+m_draws <- 10L
+mar_fit <- gmm_impute(dat, N = 2L, m = m_draws, mechanism = mar(),
+                      seed = 1L, max_iter = 500L)
+mnar_fit <- gmm_impute(dat, N = 2L, m = m_draws,
+                       mechanism = mnar("y", beta = beta_true), seed = 1L,
+                       max_iter = 500L)
+mar_est <- proxy_pool(mar_fit, "y")$estimate
+mnar_est <- proxy_pool(mnar_fit, "y")$estimate
+```
+
+Analytic pooling is defined for the plain conditional but not for a gated
+one, so the gated fits fall back to Rubin's rules (Rubin, 1987) and say so; the returned
+`method` attribute records which was used.
+
+```{r recover-table, echo = FALSE}
+rec_tbl <- data.frame(
+  estimator = c("complete-data truth", "available cases only",
+                "missing at random", "missing not at random"),
+  estimate = c(truth, mean(dat[!miss, "y"]), mar_est, mnar_est),
+  stringsAsFactors = FALSE
+)
+rec_tbl$bias <- rec_tbl$estimate - truth
+knitr::kable(
+  rec_tbl, digits = 3L,
+  col.names = c("Estimator of the mean of y", "Estimate", "Bias"),
+  caption = paste0(
+    "The mean of y recovered three ways, against the complete-data truth ",
+    "the deletion hid. ", sum(miss), " of ", n, " values are missing."
+  )
+)
+```
+
+The slope `beta` is the strength of the dependence on the log-odds scale,
+and `beta = 0` is the missing-at-random case. The intercept is not supplied:
+it is calibrated to the observed fraction missing.
+
+### Sweeping the selection slope
+
+Under this selection model the observed data carry information about the
+slope, but only through the assumed shape of the distribution of `y`. A
+different shape can fit the observed data equally well at another slope. A
+single estimate at one slope would therefore rest on that shape, and the
+appropriate summary is a curve (Little, 1993). `proxy_mnar_sensitivity()`
+sweeps the slope and reports at each value the pooled mean with its
+interval, the observed-data log-likelihood of the selection model, and
+whether the fit converged. The analyst reads off where a conclusion would
+change. Five slope values from 0 to 1.2 are enough to show the shape.
+
+```{r sweep}
+sweep <- proxy_mnar_sensitivity(dat, "y",
+                                beta_grid = seq(0, 1.2, by = 0.3),
+                                N = 2L, m = m_draws, seed = 1L)
+covers <- sweep$conf.low <= truth & sweep$conf.high >= truth
+beta_first <- sweep$beta[min(which(covers))]
+beta_best <- sweep$beta[which.max(sweep$loglik)]
+ll_gain <- max(sweep$loglik) - sweep$loglik[1L]
+```
+
+```{r sweep-table, echo = FALSE}
+sweep_tbl <- as.data.frame(sweep)[, c("beta", "estimate", "conf.low",
+                                      "conf.high", "loglik", "converged")]
+sweep_tbl$converged <- ifelse(sweep_tbl$converged, "yes", "no")
+knitr::kable(
+  sweep_tbl,
+  digits = c(1L, 3L, 3L, 3L, 1L, 0L),
+  col.names = c("Assumed slope", "Pooled mean", "CI lower", "CI upper",
+                "Log-likelihood", "Converged"),
+  caption = paste0(
+    "The pooled mean of y at each assumed selection slope, with the ",
+    "observed-data log-likelihood of the selection model and whether the ",
+    "mixture fit converged. The complete-data truth is ", round(truth, 3), "."
+  )
+)
+# Monte Carlo standard error of a Rubin-pooled mean: sqrt(B / m)
+mc_se0 <- sqrt(sweep$fmi[1L] * sweep$std.error[1L]^2 /
+                 (1 + 1 / m_draws) / m_draws)
+```
+
+The slope-0 row makes the same missing-at-random assumption as the
+missing-at-random row of the previous table, but it is a separate
+computation. `proxy_mnar_sensitivity()` refits the mixture through the gated
+engine, draws the completions and pools them by Rubin's rules, while the
+earlier row pools the plain fit analytically, without drawing. The two
+estimates, `r fixed(sweep$estimate[1L], 3)` and `r fixed(mar_est, 3)`, differ
+by `r fixed(abs(sweep$estimate[1L] - mar_est), 3)`. With `m` = `r m_draws`
+completions, the slope-0 estimate alone has a Monte Carlo standard error of
+`r fixed(mc_se0, 3)`.
+
+```{r fig-tornado, eval = has_ggplot2, echo = has_ggplot2, fig.cap = "The pooled mean of y rises with the assumed selection slope, and its interval reaches the complete-data truth near the slope that actually generated the data. The observed data inform the slope only through the assumed shape of y, so the result is the whole curve.", fig.alt = "Pooled mean of y against the assumed selection slope, with a shaded confidence band, a marked point at each swept value, a dashed horizontal line at the complete-data truth, and a vertical rule at the generating slope."}
+sweep_df <- as.data.frame(sweep)
+ggplot2::ggplot(sweep_df, ggplot2::aes(beta, estimate)) +
+  ggplot2::geom_ribbon(
+    ggplot2::aes(ymin = conf.low, ymax = conf.high),
+    fill = "#56B4E9", alpha = 0.3
+  ) +
+  ggplot2::geom_line(colour = "#0072B2", linewidth = 0.9) +
+  ggplot2::geom_point(colour = "#0072B2", size = 2) +
+  ggplot2::geom_hline(yintercept = truth, linetype = "dashed",
+                      colour = "#000000") +
+  ggplot2::geom_vline(xintercept = beta_true, linetype = "dotted",
+                      colour = "#D55E00") +
+  ggplot2::annotate("text", x = min(sweep_df$beta), y = truth,
+                    label = "complete-data truth", hjust = 0, vjust = -0.6,
+                    size = 3.2) +
+  ggplot2::annotate("text", x = beta_true, y = min(sweep_df$conf.low),
+                    label = "generating slope", hjust = 1.05, vjust = 0,
+                    size = 3.2, colour = "#D55E00") +
+  ggplot2::labs(
+    x = "assumed selection slope (log-odds per unit of y)",
+    y = "pooled mean of y",
+    title = "A sensitivity curve, not a single estimate"
+  ) +
+  ggplot2::theme_minimal(base_size = 11)
+```
+
+```{r fig-tornado-skip, eval = !has_ggplot2, echo = FALSE, results = "asis"}
+cat("ggplot2 is not installed on this build, so the sensitivity-curve",
+    "figure is skipped; the swept values are in the table above.\n")
+```
+
+### Censoring is the exact, identifiable case
+
+When the reason for missingness is a known bound, the mechanism is
+identified and there is no sensitivity parameter. A detection limit that
+hides values of `y` below a threshold is `censored("y", upper = threshold)`,
+and proxymix draws from the mixture conditional truncated to the censored
+interval rather than substituting a constant such as half the limit.
+
+```{r censor}
+thr <- 0.3
+cmiss <- z_full[, 2L] < thr
+cdat <- z_full
+cdat[cmiss, "y"] <- NA
+cfit <- gmm_impute(cdat, N = 2L, m = m_draws,
+                   mechanism = censored("y", upper = thr), seed = 1L)
+cens_est <- proxy_pool(cfit, "y")$estimate
+```
+
+```{r censor-table, echo = FALSE}
+cens_tbl <- data.frame(
+  estimator = c("complete-data truth", "available cases only",
+                "half the detection limit", "proxymix, truncated draw"),
+  estimate = c(truth, mean(cdat[!cmiss, "y"]),
+               mean(ifelse(cmiss, thr / 2, z_full[, 2L])), cens_est),
+  stringsAsFactors = FALSE
+)
+cens_tbl$bias <- cens_tbl$estimate - truth
+below_half <- mean(z_full[cmiss, 2L] < thr / 2)
+knitr::kable(
+  cens_tbl, digits = 3L,
+  col.names = c("Estimator of the mean of y", "Estimate", "Bias"),
+  caption = paste0(
+    "The mean of y under a detection limit at ", thr, ", which hides ",
+    sum(cmiss), " of ", n, " values."
+  )
+)
+```
+
+## Interpretation
+
+`r sum(miss)` of the `r n` values of `y` went missing, and because the
+larger ones dropped out preferentially the available cases give
+`r round(mean(dat[!miss, "y"]), 3)` against a complete-data truth of
+`r round(truth, 3)`, understating it by
+`r round(truth - mean(dat[!miss, "y"]), 3)`. Assuming missingness at random
+recovers only part of that: the pooled mean is `r round(mar_est, 3)`, still
+`r round(truth - mar_est, 3)` low, because the conditional it imputes from
+is itself built on the shortened observed values. Supplying the generating
+slope to `mnar()` brings the pooled mean to `r round(mnar_est, 3)`, within
+`r round(abs(mnar_est - truth), 3)` of the truth. That is the answer to the
+first half of the opening question: the bias is real, it is about
+`r round(truth - mean(dat[!miss, "y"]), 1)` on this scale, and assuming it
+away does not remove it.
+
+The second half is the sensitivity curve. The pooled mean rises
+monotonically across the swept slopes, from `r round(sweep$estimate[1], 3)`
+at slope 0 to `r round(sweep$estimate[nrow(sweep)], 3)` at slope
+`r max(sweep$beta)`, and its interval first reaches the complete-data truth
+at an assumed slope of `r beta_first`, against the
+`r beta_true` that generated the data. The mixture fit
+`r if (all(sweep$converged)) "converged at every slope" else paste0("did not converge at slope ", paste(sweep$beta[!sweep$converged], collapse = ", "))`.
+The log-likelihood is highest at slope `r beta_best`,
+`r fixed(ll_gain, 1)` units above its value at slope 0, so under this model
+the observed data lean towards the larger slopes. That lean comes from the
+assumed two-component shape of `y`, not from anything the data show about
+why values went missing. What belongs in a report is the curve itself, with
+the reader's own view of a plausible slope applied to it.
+
+Censoring is the case where no sweep is needed. With `r sum(cmiss)` values
+hidden below a limit of `r thr`, the available cases give
+`r round(mean(cdat[!cmiss, "y"]), 3)`, overstating the truth by
+`r round(mean(cdat[!cmiss, "y"]) - truth, 3)`. The common substitution of
+half the detection limit gives `r round(mean(ifelse(cmiss, thr / 2,
+z_full[, 2L])), 3)`, still `r round(mean(ifelse(cmiss, thr / 2,
+z_full[, 2L])) - truth, 3)` high. Half the limit is a convention for
+concentrations, which cannot fall below zero; here `y` is unbounded below,
+and `r round(100 * below_half)` per cent of the hidden values lie below
+`r thr / 2`, so the substitute sits above most of them. Drawing from the mixture conditional
+truncated to the censored interval gives `r round(cens_est, 3)`, within
+`r round(abs(cens_est - truth), 3)` of the truth, because the bound is
+known and so the gate is exact rather than assumed.
+
+## Limitations
+
+The interval and value-dependent gates act on a single coordinate, and a row
+missing that coordinate is assumed to have its other coordinates observed,
+which is the detection-limit or single-outcome setting rather than a general
+pattern of holes across many columns. A model estimand other than a
+coordinate mean is pooled by handing the completions to `mice` through
+`as_mids()`, and inherits Rubin's large-sample assumptions.
+
+The sensitivity sweep prices one departure at a time: the selection
+probability is a logistic function of the missing coordinate alone, with the
+intercept calibrated to the observed missing fraction, so a mechanism that
+depends jointly on the missing value and an unobserved third variable is
+outside what the sweep brackets. The sweep is also not a test. Its
+log-likelihood favours some slopes only because of the assumed shape of
+`y`, so it cannot tell an analyst which slope is right. The sweep shows how
+the estimate moves with the assumed slope, and the range is only as wide as
+the grid the analyst chose.
+
+The numbers here come from one synthetic realisation at `n` = `r n` with
+`m` = `r m_draws` completions, and would move under a different seed. What
+would change the answer most is the component count and the assumed slope:
+a mixture with too few components cannot represent the two clusters that
+make the conditional informative, and a slope far from the truth moves the
+pooled mean roughly linearly, which is what the sensitivity table shows.
+The numerical illustration that follows places both gates beside the
+established tools for each case, the Tobit regression for censoring and
+delta-adjusted multiple imputation for the sensitivity sweep, on real data
+and in simulation.
+
+```{=latex}
+\vspace{0pt plus 10\baselineskip}\penalty-200\vspace{0pt plus -10\baselineskip}
+```
+
+## Numerical illustration
+
+```{r engines-illustration, include = FALSE}
+has_amelia <- requireNamespace("Amelia", quietly = TRUE)
+has_aer <- requireNamespace("AER", quietly = TRUE)
+has_survival <- requireNamespace("survival", quietly = TRUE)
+has_selection <- requireNamespace("sampleSelection", quietly = TRUE)
+has_penguins <- exists("penguins", envir = asNamespace("datasets"))
+run_illustration <- has_mice && has_amelia && has_aer && has_survival &&
+  has_selection && has_penguins
+```
+
+```{r illustration-skip, eval = !run_illustration, echo = FALSE, results = "asis"}
+cat("mice, Amelia, AER, survival, sampleSelection or the penguins data",
+    "(R 4.5.0 or later) is not available on this build, so the real-data",
+    "illustration is skipped.\n")
+```
+
+### A censored outcome: the Affairs data with three estimators
+
+The censored case has an established estimator, the Tobit regression of
+Tobin (1958), which treats an outcome recorded as zero as a latent value at
+or below zero and maximises the likelihood of a linear-Gaussian model for
+the latent value. `tobit()` in AER (Kleiber and Zeileis, 2008) and
+`survreg()` in survival (Therneau and Grambsch, 2000) both fit it, the
+first by calling the second. The proxymix route reaches the same model from the other
+side: the zeros are set to missing, `censored()` says they lie at or below
+zero, and the fitted mixture conditional, truncated to that interval,
+supplies completed values that an ordinary regression is then run on and
+pooled.
+
+The competitors install from CRAN once and load as usual:
+
+```{r install-competitors, eval = FALSE}
+install.packages(c("mice", "Amelia", "AER", "survival", "sampleSelection"))
+```
+
+```{r load-competitors, eval = run_illustration, message = FALSE}
+library(mice)
+library(Amelia)
+library(AER)
+library(survival)
+library(sampleSelection)
+```
+
+The data are the `Affairs` survey of Fair (1978), shipped with AER and the
+package's own Tobit example. The number of affairs in the past year is
+regressed on age, years married, religiousness, occupation and a
+self-rating of the marriage:
+
+```{r affairs-data, eval = run_illustration}
+data("Affairs", package = "AER")
+cols_aff <- c("affairs", "age", "yearsmarried", "religiousness",
+              "occupation", "rating")
+aff <- Affairs[, cols_aff]
+f_aff <- affairs ~ age + yearsmarried + religiousness + occupation + rating
+```
+
+Of the `r nrow(aff)` respondents, `r sum(aff$affairs == 0)` reported no
+affairs, which the Tobit model reads as a latent value at or below zero.
+
+```{r affairs-fit, eval = run_illustration}
+fit_tobit <- tobit(f_aff, data = aff)
+fit_survreg <- survreg(
+  Surv(affairs, affairs > 0, type = "left") ~ age + yearsmarried +
+    religiousness + occupation + rating,
+  data = aff, dist = "gaussian"
+)
+
+aff_holes <- aff
+aff_holes$affairs[aff$affairs == 0] <- NA
+imp_aff <- gmm_impute(aff_holes, N = 1L, m = 20L,
+                      mechanism = censored("affairs", upper = 0), seed = 1L)
+imp_aff_bic <- gmm_impute(aff_holes, m = 20L,
+                          mechanism = censored("affairs", upper = 0),
+                          seed = 1L)
+pool_aff <- function(imp) {
+  fits <- lapply(complete(as_mids(imp), "all"),
+                 function(d) lm(f_aff, data = d))
+  summary(pool(fits))
+}
+pooled_aff <- pool_aff(imp_aff)
+pooled_aff_bic <- pool_aff(imp_aff_bic)
+```
+
+```{r affairs-table, eval = run_illustration, echo = FALSE}
+k_aff <- length(coef(fit_tobit))
+est_se <- function(est, se, digits = 3L) {
+  num <- function(v) format(round(v, digits), nsmall = digits)
+  paste0(num(est), " (", num(se), ")")
+}
+aff_tbl <- data.frame(
+  term = c("intercept", "age", "years married", "religiousness",
+           "occupation", "rating"),
+  tobit = est_se(coef(fit_tobit), sqrt(diag(vcov(fit_tobit)))[seq_len(k_aff)]),
+  survreg = est_se(coef(fit_survreg),
+                   sqrt(diag(vcov(fit_survreg)))[seq_len(k_aff)]),
+  proxymix = est_se(pooled_aff$estimate, pooled_aff$std.error),
+  proxymix_bic = est_se(pooled_aff_bic$estimate, pooled_aff_bic$std.error),
+  stringsAsFactors = FALSE
+)
+knitr::kable(
+  aff_tbl, align = c("l", "r", "r", "r", "r"),
+  col.names = c("Coefficient", "AER tobit", "survival survreg",
+                "proxymix, N = 1", paste0("proxymix, N = ",
+                                          imp_aff_bic@n_components)),
+  caption = paste0(
+    "Coefficients of the latent regression of affairs on five covariates, ",
+    "with standard errors in brackets, from the Tobit likelihood in two ",
+    "packages and from proxymix's truncated imputations pooled by Rubin's ",
+    "rules, with the component count fixed at one and selected by BIC."
+  )
+)
+gap_aff <- abs(pooled_aff$estimate - coef(fit_tobit)) /
+  sqrt(diag(vcov(fit_tobit)))[seq_len(k_aff)]
+slopes_aff <- seq_len(k_aff)[-1L]
+towards_zero <- slopes_aff[abs(pooled_aff_bic$estimate[slopes_aff]) <
+                             abs(coef(fit_tobit)[slopes_aff])]
+# shift from the Tobit estimate in units of the Tobit standard error
+shift_aff <- abs(pooled_aff_bic$estimate - coef(fit_tobit)) /
+  sqrt(diag(vcov(fit_tobit)))[seq_len(k_aff)]
+largest_shift <- towards_zero[which.max(shift_aff[towards_zero])]
+name_list <- function(v) {
+  if (length(v) == 1L) return(v)
+  paste(paste(v[-length(v)], collapse = ", "), "and", v[length(v)])
+}
+```
+
+The two Tobit fits are the same fit, as the identical columns show. With a
+single component, proxymix's model of the latent value given the covariates
+is the same linear-Gaussian model, estimated by expectation-maximisation
+over the truncated conditional rather than by direct maximisation, and its
+pooled coefficients fall within
+`r fixed(ceiling(10 * max(gap_aff)) / 10, 1)` Tobit standard errors of the
+Tobit estimates.
+Left to choose its component count, proxymix selects
+`r imp_aff_bic@n_components` components for the joint distribution of the
+six columns, all of them coarsely coded and three of them integer scores,
+and that fit
+`r if (imp_aff_bic@diagnostics$converged) "converged" else "had not converged"`
+after `r imp_aff_bic@diagnostics$iterations` iterations, the default limit.
+The regression on its completions is then the linear projection of a
+conditional that is no longer linear. Against the Tobit estimates, the
+coefficients on `r name_list(aff_tbl$term[towards_zero])` move towards zero,
+the largest in Tobit standard errors being on
+`r aff_tbl$term[largest_shift]`, from
+`r fixed(coef(fit_tobit)[largest_shift], 3)` to
+`r fixed(pooled_aff_bic$estimate[largest_shift], 3)`, or
+`r fixed(shift_aff[largest_shift], 2)` standard errors. On this data the Tobit model is the natural
+reading, and the single component is the like-for-like comparison; the
+simulation below scores it against the truth.
+
+### Value-dependent deletion: the Palmer penguins data
+
+Established estimators for the missing-not-at-random case exist under a
+parametric selection model, such as the two-step estimator of Heckman
+(1979). Their answer rests on the assumed shape of the outcome distribution,
+so the standard practice is a sensitivity analysis, and the standard tool is
+delta adjustment in multiple imputation (van Buuren, 2018, Section 9.2),
+available in mice (van Buuren and Groothuis-Oudshoorn, 2011). Delta
+adjustment keeps the imputation model fixed and shifts its draws: impute
+under the missing-at-random assumption, add a shift $\delta$ to every
+imputed value, and repeat over a grid of shifts. The proxymix sweep is a
+different kind of sweep. At each slope of the log-odds of being missing in
+the missing value, it refits the mixture under the selection model and
+imputes from that fit. Two further estimators are run for reference. Amelia (Honaker et al.,
+2011) imputes under missing at random and shows what ignoring the mechanism
+costs. The Heckman two-step estimator, from sampleSelection (Toomet and
+Henningsen, 2008), fits a probit selection equation and corrects the outcome
+regression with its inverse Mills ratio.
+
+The data are the Palmer penguins (Gorman et al., 2014), shipped with R as
+`penguins` since version 4.5.0 (Horst et al., 2022), with body mass in kilograms. Body mass is deleted with a
+probability that rises with body mass itself, at a log-odds slope of 1.5
+per kilogram, and the deleted values stay aside for scoring.
+
+```{r penguins-data, eval = run_illustration}
+cols <- c("bill_len", "bill_dep", "flipper_len", "body_mass")
+peng <- na.omit(penguins[, cols])
+peng$body_mass <- peng$body_mass / 1000
+
+set.seed(20260925)
+gone <- runif(nrow(peng)) < plogis(1.5 * (peng$body_mass - 4.5))
+peng_holes <- peng
+peng_holes$body_mass[gone] <- NA
+mass_truth <- mean(peng$body_mass)
+```
+
+That leaves `r nrow(peng)` birds, of which `r sum(gone)` lose their body
+mass. The mean of the retained masses is
+`r fixed(mean(peng_holes$body_mass, na.rm = TRUE), 3)` kg against
+`r fixed(mass_truth, 3)` kg over all the birds.
+
+The proxymix sweep covers five slopes from 0 to 3 per kilogram, which
+bracket the generating slope, at 20 completions each. The mice sweep covers
+five shifts from 0 to
+0.6 kg, three quarters of a standard deviation of body mass, with
+imputation by the normal linear model so that the shift acts on a
+model-based draw:
+
+```{r penguins-sweep, eval = run_illustration}
+beta_peng <- seq(0, 3, by = 0.75)
+delta_peng <- seq(0, 0.6, by = 0.15)
+
+sweep_peng <- proxy_mnar_sensitivity(peng_holes, "body_mass",
+                                     beta_grid = beta_peng, m = 20L,
+                                     seed = 1L)
+
+pool_mean <- function(fits) {
+  s <- summary(pool(fits), conf.int = TRUE)
+  unlist(s[1L, c("estimate", "conf.low", "conf.high")])
+}
+mice_delta <- function(delta) {
+  post <- make.post(peng_holes)
+  post["body_mass"] <- paste0("imp[[j]][, i] <- imp[[j]][, i] + ", delta)
+  imp <- mice(peng_holes, m = 20L, method = "norm", post = post, seed = 1L,
+              printFlag = FALSE)
+  pool_mean(with(imp, lm(body_mass ~ 1))$analyses)
+}
+sweep_mice <- t(vapply(delta_peng, mice_delta, numeric(3L)))
+
+set.seed(1L)
+imp_amelia <- amelia(peng_holes, m = 20L, p2s = 0L)
+mean_amelia <- pool_mean(lapply(imp_amelia$imputations,
+                                function(d) lm(body_mass ~ 1, data = d)))
+
+peng_sel <- peng_holes
+peng_sel$seen <- !is.na(peng_sel$body_mass)
+fit_heckit <- heckit(seen ~ bill_len + bill_dep + flipper_len,
+                     body_mass ~ bill_len + bill_dep + flipper_len,
+                     data = peng_sel)
+# the mean of the outcome equation over every bird, delta-method interval
+heckit_mean <- function(fit, data, outcome_cols) {
+  x_bar <- c(1, colMeans(data[, outcome_cols]))
+  b <- coef(fit)[seq_along(x_bar) + length(x_bar)]
+  v <- vcov(fit)[seq_along(x_bar) + length(x_bar),
+                 seq_along(x_bar) + length(x_bar)]
+  est <- sum(x_bar * b)
+  se <- sqrt(as.numeric(t(x_bar) %*% v %*% x_bar))
+  c(estimate = est, conf.low = est - qnorm(0.975) * se,
+    conf.high = est + qnorm(0.975) * se)
+}
+mean_heckit <- heckit_mean(fit_heckit, peng_sel, cols[1:3])
+```
+
+```{r penguins-values, eval = run_illustration, echo = FALSE}
+mean_ci <- function(x) {
+  c(mean(x), mean(x) + c(-1, 1) * qt(0.975, length(x) - 1) *
+      sd(x) / sqrt(length(x)))
+}
+peng_rows <- rbind(
+  mean_ci(peng$body_mass),
+  mean_ci(peng_holes$body_mass[!gone]),
+  as.matrix(sweep_peng[, c("estimate", "conf.low", "conf.high")]),
+  sweep_mice,
+  mean_amelia,
+  mean_heckit
+)
+peng_tbl <- data.frame(
+  method = c("complete data", "available cases",
+             rep("proxymix, slope", length(beta_peng)),
+             rep("mice, shift, kg", length(delta_peng)),
+             "Amelia", "heckit"),
+  parameter = c("--", "--", format(beta_peng), format(delta_peng), "--", "--"),
+  mass = paste0(
+    format(round(peng_rows[, 1L], 3), nsmall = 3), " (",
+    format(round(peng_rows[, 2L], 3), nsmall = 3), ", ",
+    format(round(peng_rows[, 3L], 3), nsmall = 3), ")"),
+  error = fixed(peng_rows[, 1L] - mass_truth, 3),
+  loglik = c("--", "--", fixed(sweep_peng$loglik, 1),
+             rep("--", length(delta_peng) + 2L)),
+  stringsAsFactors = FALSE
+)
+beta_peng_best <- beta_peng[which.max(sweep_peng$loglik)]
+covers_peng <- peng_rows[, 2L] <= mass_truth & mass_truth <= peng_rows[, 3L]
+names(covers_peng) <- c("complete", "available",
+                        paste0("proxymix_", beta_peng),
+                        paste0("mice_", delta_peng), "Amelia", "heckit")
+gen_row <- 2L + which(beta_peng == 1.5)
+## the Heckman fit's error correlation and outcome coefficient on flipper
+## length, beside the complete-data regression
+heck_rho <- coef(fit_heckit)[["rho"]]
+heck_flipper <- coef(fit_heckit)[8L]  # outcome coefficients are 5 to 8
+ols_flipper <- coef(lm(body_mass ~ bill_len + bill_dep + flipper_len,
+                       data = peng))[["flipper_len"]]
+```
+
+Deleting the heavier birds pulls the mean of the available cases down by
+`r fixed(mass_truth - peng_rows[2L, 1L], 3)` kg. The proxymix curve at slope
+0 and Amelia both impute under missing at random, and both recover most of
+that from the three observed measurements, which carry the species
+structure: their errors are `r fixed(peng_rows[3L, 1L] - mass_truth, 3)`
+and `r fixed(mean_amelia[["estimate"]] - mass_truth, 3)` kg. At the
+generating slope of 1.5 the proxymix estimate is
+`r fixed(peng_rows[gen_row, 1L] - mass_truth, 3)` kg from the truth. The
+mice curve starts lower, at
+`r fixed(sweep_mice[1L, 1L] - mass_truth, 3)` kg, and crosses the truth
+between shifts of `r delta_peng[max(which(sweep_mice[, 1L] < mass_truth))]`
+and `r delta_peng[min(which(sweep_mice[, 1L] > mass_truth))]` kg. Both
+curves reach the truth. Every mice shift uses the same imputation model, so
+the observed data fit equally well at every shift. The proxymix fit
+`r if (all(sweep_peng$converged)) "converged at every slope" else paste0("did not converge at slope ", paste(sweep_peng$beta[!sweep_peng$converged], collapse = ", "))`,
+and its log-likelihood is highest at slope `r beta_peng_best`. That lean
+comes from the assumed mixture shape of the four measurements, not from the
+deletion mechanism. The Heckman estimator's selection equation has no variable that predicts
+deletion but not body mass, so it is identified by the shape of the inverse
+Mills ratio alone. Here that fit breaks down. Its mean is
+`r fixed(mean_heckit[["estimate"]], 2)` kg, with an interval from
+`r fixed(mean_heckit[["conf.low"]], 2)` to
+`r fixed(mean_heckit[["conf.high"]], 2)` kg, while the lightest bird weighs
+`r fixed(min(peng$body_mass), 2)` kg. Its estimated correlation between the
+selection and outcome errors is `r fixed(heck_rho, 2)`, outside $[-1, 1]$,
+and its coefficient on flipper length is `r fixed(heck_flipper, 3)` kg per
+millimetre against `r fixed(ols_flipper, 3)` in the complete data. This is one deletion of one dataset, so the simulation repeats
+it.
+
+```{=latex}
+\par\penalty-100\begingroup\dimen0=26\baselineskip\dimen2=\pagegoal
+\advance\dimen2 by -\pagetotal
+\ifdim\dimen0>\dimen2 \ifdim\dimen2>0pt \vfil\fi\break\fi\endgroup
+```
+
+```{r penguins-table, eval = run_illustration, echo = FALSE}
+knitr::kable(
+  peng_tbl, align = c("l", "r", "r", "r", "r"),
+  col.names = c("Method", "Value", "Mean body mass, kg",
+                "Error", "Log-likelihood"),
+  caption = paste0(
+    "The mean body mass of ", nrow(peng), " penguins with ", sum(gone),
+    " masses deleted with a probability that increases with the mass, ",
+    "logistic in the mass minus 4.5 kg, from each estimator, with a 95% ",
+    "interval, its error against the mean of the complete data before ",
+    "deletion, and for proxymix the observed-data log-likelihood of the ",
+    "selection model. Value is the sensitivity parameter, and a dash marks ",
+    "an estimator that has none. heckit is the Heckman two-step estimator ",
+    "from sampleSelection."
+  )
+)
+```
+
+```{r fig-penguins, eval = run_illustration && has_ggplot2, echo = FALSE, fig.height = 3.8, fig.cap = "The two sensitivity curves for the mean body mass of the penguins, proxymix over the assumed selection slope and mice over the shift added to each imputed value, with 95% bands and the complete-data mean as a dashed line. Each curve crosses the truth somewhere along its grid. The observed data inform the proxymix slope only through the assumed mixture shape, and do not inform the mice shift.", fig.alt = "Two panels. Left, the proxymix pooled mean of body mass against the assumed selection slope from 0 to 3, with a shaded band. Right, the mice delta-adjusted mean against the shift from 0 to 0.6 kg, with a shaded band. A dashed horizontal line marks the complete-data mean in both panels."}
+curve_df <- rbind(
+  data.frame(method = "proxymix: selection slope, log-odds per kg",
+             parameter = beta_peng,
+             estimate = sweep_peng$estimate,
+             conf.low = sweep_peng$conf.low,
+             conf.high = sweep_peng$conf.high),
+  data.frame(method = "mice: shift added to each imputed value, kg",
+             parameter = delta_peng,
+             estimate = sweep_mice[, 1L],
+             conf.low = sweep_mice[, 2L],
+             conf.high = sweep_mice[, 3L])
+)
+curve_df$method <- factor(curve_df$method, levels = unique(curve_df$method))
+ggplot2::ggplot(curve_df, ggplot2::aes(parameter, estimate)) +
+  ggplot2::geom_ribbon(ggplot2::aes(ymin = conf.low, ymax = conf.high),
+                       fill = "#56B4E9", alpha = 0.3) +
+  ggplot2::geom_line(colour = "#0072B2", linewidth = 0.9) +
+  ggplot2::geom_point(colour = "#0072B2", size = 2) +
+  ggplot2::geom_hline(yintercept = mass_truth, linetype = "dashed") +
+  ggplot2::facet_wrap(~ method, scales = "free_x") +
+  ggplot2::labs(x = "sensitivity parameter", y = "mean body mass, kg",
+                title = "Two sensitivity curves for one mean") +
+  ggplot2::theme_minimal(base_size = 11)
+```
+
+```{r fig-penguins-skip, eval = run_illustration && !has_ggplot2, echo = FALSE, results = "asis"}
+cat("ggplot2 is not installed on this build, so the sensitivity-curve",
+    "figure is skipped; the swept values are in the table above.\n")
+```
+
+```{=latex}
+\FloatBarrier
+```
+
+### A simulation benchmark
+
+```{r sim-read, echo = FALSE}
+sim <- readRDS("missing_data_mnar_sim.rds")
+if (!identical(sim$code, as.character(knitr::knit_code$get("sim-code")))) {
+  stop("The stored simulation results were produced by code other than ",
+       "the chunk shown; rerun the simulation.", call. = FALSE)
+}
+y_density <- function(y) 0.5 * dnorm(y, 0) + 0.5 * dnorm(y, 0.5)
+share_mnar <- integrate(function(y) plogis(-0.5 + 0.7 * y) * y_density(y),
+                        -Inf, Inf)$value
+```
+
+The simulation repeats each analysis on `r sim$n_rep` datasets of
+`r sim$n` rows in two designs whose population values are known. The
+missing-not-at-random design is the toy above at half its size: two equally
+likely components centred at $(0, 0)$ and $(1.5, 0.5)$ with unit variances
+and correlation 0.6, and $y$ deleted with probability
+$\mathrm{logit}^{-1}(-0.5 + 0.7\, y)$, which removes
+`r round(100 * share_mnar)` per cent of $y$ on average. The estimand is the
+mean of $y$, whose population value is `r sim$truth[["mnar_mean"]]`.
+The proxymix sweep covers the slopes `r paste(sim$beta_grid, collapse = ", ")`, so
+that the generating slope is on the grid, and the mice sweep covers the shifts
+`r paste(sim$delta_grid, collapse = ", ")` in units of $y$, about a fifth
+of its standard deviation per step. Amelia, the Heckman two-step estimator
+with $x_1$ in both equations, and the available cases are scored beside
+them. In the censored design, $x$ is standard normal and
+$y^* = a + x + \varepsilon$ with standard normal $\varepsilon$ and $a$ set
+so that 30 per cent of $y^*$ falls below zero; the recorded $y$ is
+$\max(y^*, 0)$. The estimands are the intercept and slope of the latent
+regression, scored for the Tobit likelihood in AER and survival, for
+proxymix's truncated imputations with the component count selected by BIC,
+and for the regression that takes the recorded zeros at face value.
+
+Each imputer makes `r sim$m` completions, and every interval is a 95 per
+cent interval: Rubin's rules for the imputers, Wald for the Tobit fits and
+the Heckman mean, and the usual regression or $t$ interval otherwise. The
+analysis of the complete data, before deletion or censoring, is the
+reference. `proxy_mnar_sensitivity()` warns when a fit does not converge,
+and the stored run raised `r length(sim$warnings)` warnings, so
+`r if (length(sim$warnings) == 0L) "every sweep fit converged within its 500 iterations" else "some sweep fits did not converge; the Reproduce section lists the warnings"`.
+This chunk is complete and runs as shown, but it took about
+`r round(sim$elapsed_secs / 60)` minutes on one core (R
+`r sim$versions[["R"]]`, Apple silicon), so it is not run when the
+vignette builds and the tables below it are read from its stored output. For a quick reduced run, change the line `n_rep <- 300L` to a small
+number such as `n_rep <- 3L`.
+
+```{r sim-code, eval = FALSE}
+library(proxymix)
+library(mice)
+library(Amelia)
+library(AER)
+library(survival)
+library(sampleSelection)
+
+n <- 300L      # rows in each dataset
+m <- 10L       # completions per imputer
+n_rep <- 300L  # datasets per design
+
+beta_grid <- c(0, 0.35, 0.7, 1.05)   # proxymix selection slopes
+delta_grid <- c(0, 0.2, 0.4, 0.6)    # mice shifts, in units of y
+a_cens <- -sqrt(2) * qnorm(0.3)      # 30% of the latent values fall below 0
+
+truth <- c(mnar_mean = 0.25, cens_intercept = a_cens, cens_slope = 1)
+
+# estimate and 95% interval for every coefficient: the usual interval for
+# one dataset, Rubin's rules over several completions
+ci_fits <- function(fits) {
+  if (length(fits) == 1L) {
+    return(cbind(coef(fits[[1L]]), confint(fits[[1L]])))
+  }
+  s <- summary(pool(fits), conf.int = TRUE)
+  as.matrix(s[, c("estimate", "conf.low", "conf.high")])
+}
+
+# Wald interval for the regression coefficients of a Tobit fit
+ci_wald <- function(fit, k) {
+  est <- coef(fit)[seq_len(k)]
+  se <- sqrt(diag(vcov(fit)))[seq_len(k)]
+  cbind(est, est - qnorm(0.975) * se, est + qnorm(0.975) * se)
+}
+
+# the mean of a Heckman outcome equation over every row, delta method
+ci_heckit_mean <- function(fit, x_bar) {
+  idx <- seq_along(x_bar) + length(x_bar)
+  est <- sum(x_bar * coef(fit)[idx])
+  v <- as.numeric(t(x_bar) %*% vcov(fit)[idx, idx] %*% x_bar)
+  se <- if (is.finite(v) && v >= 0) sqrt(v) else NA_real_
+  cbind(est, est - qnorm(0.975) * se, est + qnorm(0.975) * se)
+}
+
+rows_of <- function(design, estimand, method, ci) {
+  data.frame(design = design, estimand = estimand, method = method,
+             estimate = ci[, 1L], lower = ci[, 2L], upper = ci[, 3L])
+}
+
+mu <- rbind(c(0, 0), c(1.5, 0.5))
+chol_r <- chol(matrix(c(1, 0.6, 0.6, 1), 2L))
+
+one_mnar <- function(r) {
+  set.seed(r)
+  comp <- sample(1:2, n, replace = TRUE)
+  z <- matrix(rnorm(2 * n), n, 2L) %*% chol_r + mu[comp, ]
+  full <- data.frame(x1 = z[, 1L], y = z[, 2L])
+  obs <- full
+  obs$y[runif(n) < plogis(-0.5 + 0.7 * full$y)] <- NA
+  seen <- !is.na(obs$y)
+  out <- list(
+    rows_of("mnar", "mean", "complete data",
+            ci_fits(list(lm(y ~ 1, data = full)))),
+    rows_of("mnar", "mean", "available cases",
+            ci_fits(list(lm(y ~ 1, data = obs[seen, ]))))
+  )
+  sw <- proxy_mnar_sensitivity(obs, "y", beta_grid = beta_grid, m = m,
+                               seed = r)
+  out[[3L]] <- rows_of("mnar", "mean", paste0("proxymix, slope ", sw$beta),
+                       as.matrix(sw[, c("estimate", "conf.low", "conf.high")]))
+  out[[4L]] <- do.call(rbind, lapply(delta_grid, function(delta) {
+    post <- make.post(obs)
+    post["y"] <- paste0("imp[[j]][, i] <- imp[[j]][, i] + ", delta)
+    imp <- mice(obs, m = m, method = "norm", post = post, seed = r,
+                printFlag = FALSE)
+    rows_of("mnar", "mean", paste0("mice, shift ", delta),
+            ci_fits(with(imp, lm(y ~ 1))$analyses))
+  }))
+  out[[5L]] <- rows_of("mnar", "mean", "Amelia",
+                       ci_fits(lapply(amelia(obs, m = m, p2s = 0L)$imputations,
+                                      function(d) lm(y ~ 1, data = d))))
+  obs$seen <- seen
+  fit <- heckit(seen ~ x1, y ~ x1, data = obs)
+  out[[6L]] <- rows_of("mnar", "mean", "sampleSelection heckit",
+                       ci_heckit_mean(fit, c(1, mean(obs$x1))))
+  do.call(rbind, out)
+}
+
+one_censored <- function(r) {
+  set.seed(r)
+  x <- rnorm(n)
+  y_star <- a_cens + x + rnorm(n)
+  full <- data.frame(x = x, y = y_star)
+  obs <- data.frame(x = x, y = pmax(y_star, 0))
+  holes <- obs
+  holes$y[obs$y == 0] <- NA
+  imp <- gmm_impute(holes, m = m, mechanism = censored("y", upper = 0),
+                    seed = r)
+  cis <- list(
+    "complete data" = ci_fits(list(lm(y ~ x, data = full))),
+    "zeros at face value" = ci_fits(list(lm(y ~ x, data = obs))),
+    "AER tobit" = ci_wald(tobit(y ~ x, data = obs), 2L),
+    "survival survreg" = ci_wald(
+      survreg(Surv(y, y > 0, type = "left") ~ x, data = obs,
+              dist = "gaussian"), 2L),
+    proxymix = ci_fits(lapply(complete(as_mids(imp), "all"),
+                              function(d) lm(y ~ x, data = d)))
+  )
+  do.call(rbind, lapply(names(cis), function(method) {
+    rows_of("censored", c("intercept", "slope"), method, cis[[method]])
+  }))
+}
+
+res <- rbind(
+  do.call(rbind, lapply(seq_len(n_rep), one_mnar)),
+  do.call(rbind, lapply(seq_len(n_rep), one_censored))
+)
+res$truth <- truth[ifelse(res$design == "mnar", "mnar_mean",
+                          paste0("cens_", res$estimand))]
+n_undefined <- sum(is.na(res$lower))
+
+sim_tab <- aggregate(
+  cbind(bias = estimate - truth, rmse = (estimate - truth)^2,
+        coverage = lower <= truth & truth <= upper,
+        width = upper - lower) ~ design + estimand + method,
+  data = res, FUN = function(v) mean(v, na.rm = TRUE),
+  na.action = na.pass
+)
+sim_tab$rmse <- sqrt(sim_tab$rmse)
+sim_tab
+```
+
+```{=latex}
+\par\penalty-100\begingroup\dimen0=20\baselineskip\dimen2=\pagegoal
+\advance\dimen2 by -\pagetotal
+\ifdim\dimen0>\dimen2 \ifdim\dimen2>0pt \vfil\fi\break\fi\endgroup
+```
+
+```{r sim-tables, echo = FALSE}
+tab_sim <- sim$sim_tab
+method_mnar <- c("complete data", "available cases",
+                 paste0("proxymix, slope ", sim$beta_grid),
+                 paste0("mice, shift ", sim$delta_grid),
+                 "Amelia", "sampleSelection heckit")
+method_cens <- c("complete data", "zeros at face value", "AER tobit",
+                 "survival survreg", "proxymix")
+tab_mnar <- tab_sim[tab_sim$design == "mnar", ]
+tab_mnar <- tab_mnar[match(method_mnar, tab_mnar$method), ]
+tab_cens <- tab_sim[tab_sim$design == "censored", ]
+tab_cens <- tab_cens[order(match(tab_cens$estimand, c("intercept", "slope")),
+                           match(tab_cens$method, method_cens)), ]
+knitr::kable(
+  tab_mnar[, c("method", "bias", "rmse", "coverage", "width")],
+  digits = 3L, row.names = FALSE,
+  col.names = c("Method", "Bias", "RMSE", "Coverage", "Width"),
+  caption = paste0(
+    "The mean of y under value-dependent deletion: bias and root mean ",
+    "squared error of the point estimate, coverage of the nominal 95% ",
+    "interval and its average width, over ", sim$n_rep, " simulated ",
+    "datasets, each scored against the population mean of ",
+    sim$truth[["mnar_mean"]], "."
+  )
+)
+```
+
+```{r sim-table-cens, echo = FALSE}
+knitr::kable(
+  tab_cens[, c("estimand", "method", "bias", "rmse", "coverage", "width")],
+  digits = 3L, row.names = FALSE,
+  col.names = c("Estimand", "Method", "Bias", "RMSE", "Coverage", "Width"),
+  caption = paste0(
+    "The latent regression under 30% censoring at zero: bias and root mean ",
+    "squared error, coverage of the nominal 95% interval and its average ",
+    "width, over ", sim$n_rep, " simulated datasets, each scored against ",
+    "the generating intercept of ", round(sim$truth[["cens_intercept"]], 3),
+    " and slope of ", sim$truth[["cens_slope"]], "."
+  )
+)
+sim_value <- function(design, estimand, method, what) {
+  s1 <- sim$sim_tab$design == design & sim$sim_tab$estimand == estimand &
+    sim$sim_tab$method == method
+  sim$sim_tab[[what]][s1]
+}
+mv <- function(method, what) sim_value("mnar", "mean", method, what)
+cv <- function(estimand, method, what) {
+  sim_value("censored", estimand, method, what)
+}
+mcse_coverage <- sqrt(0.95 * 0.05 / sim$n_rep)
+# a version as its DESCRIPTION writes it, when the installed one is the one stored
+desc_version <- function(pkg, stored) {
+  if (identical(as.character(packageVersion(pkg)), stored)) {
+    utils::packageDescription(pkg)$Version
+  } else {
+    stored
+  }
+}
+pv <- function(pkg) desc_version(pkg, sim$versions[[pkg]])
+cov_mar <- c(mv("proxymix, slope 0", "coverage"),
+             mv("mice, shift 0", "coverage"), mv("Amelia", "coverage"))
+```
+
+Under value-dependent deletion, every estimator that assumes missing at
+random shares one bias. The available cases understate the mean by
+`r fixed(-mv("available cases", "bias"), 3)`, and proxymix at slope 0, mice
+at shift 0 and Amelia by
+`r fixed(-mv("proxymix, slope 0", "bias"), 3)`,
+`r fixed(-mv("mice, shift 0", "bias"), 3)` and
+`r fixed(-mv("Amelia", "bias"), 3)`, with coverage of
+`r fixed(min(cov_mar), 2)` to `r fixed(max(cov_mar), 2)`, because $x_1$ carries only part of
+what the deletion depends on. Along each grid the bias falls through zero.
+At the generating slope of 0.7, proxymix has a bias of
+`r fixed(mv("proxymix, slope 0.7", "bias"), 3)` and covers the population
+mean in `r fixed(mv("proxymix, slope 0.7", "coverage"), 3)` of datasets,
+against `r fixed(mv("complete data", "coverage"), 3)` for the complete data.
+At a shift of 0.4, mice has a bias of
+`r fixed(mv("mice, shift 0.4", "bias"), 3)` and coverage of
+`r fixed(mv("mice, shift 0.4", "coverage"), 3)`. Both curves reach the
+truth somewhere on their grids. What differs is the parameter the analyst
+must have a view about: a slope on the log-odds scale, which the observed
+data inform only through the assumed mixture shape, or a shift in the units
+of $y$, which they do not inform. The Heckman two-step estimator, with $x_1$ in both
+equations and no exclusion restriction, has a root mean squared error of
+`r round(mv("sampleSelection heckit", "rmse"))` and an average interval
+width of `r round(mv("sampleSelection heckit", "width"))`, and in
+`r sim$n_undefined` datasets its interval was undefined because the
+delta-method variance was not positive; its coverage is over the remaining
+datasets. A coverage near 0.95 estimated from `r sim$n_rep` datasets carries
+a Monte Carlo standard error of about `r fixed(mcse_coverage, 3)`, so
+differences of a hundredth or two can be noise.
+
+In the censored design, the two Tobit fits are again one fit, with slope
+bias `r fixed(cv("slope", "AER tobit", "bias"), 3)` and coverage
+`r fixed(cv("slope", "AER tobit", "coverage"), 3)`, against
+`r fixed(cv("slope", "complete data", "bias"), 3)` and
+`r fixed(cv("slope", "complete data", "coverage"), 3)` for the complete
+data. Taking the zeros at face value biases the slope by
+`r fixed(cv("slope", "zeros at face value", "bias"), 3)` and never covers
+it. The truncated imputations of proxymix remove almost all of that bias, to
+`r fixed(cv("slope", "proxymix", "bias"), 3)` on the slope and
+`r fixed(cv("intercept", "proxymix", "bias"), 3)` on the intercept, but not
+all of it, and its intervals cover in
+`r fixed(cv("slope", "proxymix", "coverage"), 3)` of datasets although they
+are wider than the Tobit intervals,
+`r fixed(cv("slope", "proxymix", "width"), 3)` against
+`r fixed(cv("slope", "AER tobit", "width"), 3)`. The Tobit likelihood is
+the correctly specified maximum-likelihood estimator for this design, and
+the imputation route, with its
+component count chosen by BIC and its parameters refitted on bootstrap
+resamples, pays a small price in both bias and coverage for reaching the
+same model from the imputation side.
+
+In this run, proxymix's sweep and mice's delta adjustment did about
+equally well in the value-dependent design, each at the grid value nearest
+the truth: a bias of `r fixed(mv("proxymix, slope 0.7", "bias"), 3)` and
+coverage of `r fixed(mv("proxymix, slope 0.7", "coverage"), 3)` for
+proxymix at slope 0.7, against
+`r fixed(mv("mice, shift 0.4", "bias"), 3)` and
+`r fixed(mv("mice, shift 0.4", "coverage"), 3)` for mice at a shift of 0.4.
+The Tobit likelihood in AER and survival did better than proxymix's
+imputations in the censored design, with a slope root mean squared error of
+`r fixed(cv("slope", "AER tobit", "rmse"), 3)` against
+`r fixed(cv("slope", "proxymix", "rmse"), 3)` and coverage of
+`r fixed(cv("slope", "AER tobit", "coverage"), 3)` against
+`r fixed(cv("slope", "proxymix", "coverage"), 3)`. The comparison covers one mixture shape, one sample
+size, a logistic mechanism on one coordinate, censoring at a single known
+bound, and grids that both contain a value near the truth; it says nothing
+about a mechanism that depends on an unobserved third variable, about
+interval censoring, or about how either sweep behaves when the grid does not
+reach the truth.
+
+## Where next
+
+*Imputing missing data with a mixture* is the companion case this vignette
+assumes away, where missingness depends only on what was observed, and it
+shows how the mixture conditional differs from a single Gaussian in the
+shape of the imputations.
+
+*The closed-form operator calculus on a mixture* covers the conditioning
+step that every gate multiplies into, and what else it buys.
+
+## References
+
+* Diggle, P. and Kenward, M. G. (1994). *Informative drop-out in
+  longitudinal data analysis.* Journal of the Royal Statistical Society C
+  43(1), 49--93. <doi:10.2307/2986113>.
+* Fair, R. C. (1978). *A theory of extramarital affairs.* Journal of
+  Political Economy 86(1), 45--61. <doi:10.1086/260646>.
+* Gorman, K. B., Williams, T. D. and Fraser, W. R. (2014). *Ecological
+  sexual dimorphism and environmental variability within a community of
+  Antarctic penguins (genus Pygoscelis).* PLoS ONE 9(3), e90081.
+  <doi:10.1371/journal.pone.0090081>.
+* Heckman, J. J. (1979). *Sample selection bias as a specification error.*
+  Econometrica 47(1), 153--161. <doi:10.2307/1912352>.
+* Honaker, J., King, G. and Blackwell, M. (2011). *Amelia II: A program for
+  missing data.* Journal of Statistical Software 45(7), 1--47.
+  <doi:10.18637/jss.v045.i07>.
+* Horst, A. M., Presmanes Hill, A. and Gorman, K. B. (2022). *Palmer
+  Archipelago penguins data in the palmerpenguins R package -- an
+  alternative to Anderson's irises.* The R Journal 14(1), 244--254.
+  <doi:10.32614/RJ-2022-020>.
+* Kleiber, C. and Zeileis, A. (2008). *Applied Econometrics with R.*
+  Springer. <doi:10.1007/978-0-387-77318-6>.
+* Little, R. J. A. (1993). *Pattern-mixture models for multivariate
+  incomplete data.* Journal of the American Statistical Association
+  88(421), 125--134. <doi:10.1080/01621459.1993.10594302>.
+* Rubin, D. B. (1987). *Multiple Imputation for Nonresponse in Surveys.*
+  Wiley.
+* Therneau, T. M. and Grambsch, P. M. (2000). *Modeling Survival Data:
+  Extending the Cox Model.* Springer. <doi:10.1007/978-1-4757-3294-8>.
+* Tobin, J. (1958). *Estimation of relationships for limited dependent
+  variables.* Econometrica 26(1), 24--36. <doi:10.2307/1907382>.
+* Toomet, O. and Henningsen, A. (2008). *Sample selection models in R:
+  Package sampleSelection.* Journal of Statistical Software 27(7), 1--23.
+  <doi:10.18637/jss.v027.i07>.
+* van Buuren, S. (2018). *Flexible Imputation of Missing Data*, second
+  edition. Chapman and Hall/CRC. <doi:10.1201/9780429492259>.
+* van Buuren, S. and Groothuis-Oudshoorn, K. (2011). *mice: Multivariate
+  imputation by chained equations in R.* Journal of Statistical Software
+  45(3), 1--67. <doi:10.18637/jss.v045.i03>.
+
+## Reproduce
+
+The data-generating seed is `20260622`, set in the chunk that builds the
+toy; every call to `gmm_impute()` and `proxy_mnar_sensitivity()` is given
+`seed = 1L`, which makes the completions reproducible without disturbing the
+ambient random-number state.
+
+The numerical illustration deletes body mass after `set.seed(20260925)` and
+gives each imputer the seed 1, through `set.seed(1L)` for Amelia; the
+Affairs fits draw nothing beyond proxymix's seeded completions. In the
+simulation each dataset is generated after `set.seed()` with its own index,
+which is also the seed given to each imputer. The stored simulation results
+come from the code shown, run on `r sim$run_date` with R
+`r sim$versions[["R"]]`, proxymix `r pv("proxymix")`, mice `r pv("mice")`,
+Amelia `r pv("Amelia")`, AER `r pv("AER")`, survival `r pv("survival")` and
+sampleSelection `r pv("sampleSelection")`, and the run raised
+`r length(sim$warnings)` warnings.
+
+```{r session-info}
+sessionInfo()
+```

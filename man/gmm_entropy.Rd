@@ -2,7 +2,7 @@
 % Please edit documentation in R/entropy.R
 \name{gmm_entropy}
 \alias{gmm_entropy}
-\title{Differential entropy of a Gaussian mixture}
+\title{Renyi-2 or Shannon entropy of a Gaussian mixture}
 \usage{
 gmm_entropy(g, order = c("renyi2", "shannon"), n_mc = 5000L, seed = NULL)
 }
@@ -17,13 +17,13 @@ gmm_entropy(g, order = c("renyi2", "shannon"), n_mc = 5000L, seed = NULL)
 \item{seed}{Optional integer seed for the Monte Carlo draw.}
 }
 \value{
-For \code{order = "renyi2"}, a numeric scalar. For \code{order = "shannon"}, a
-list with components \code{mc} (the estimate), \code{mc_se} (its standard error),
+For \code{order = "renyi2"}, the Renyi-2 entropy in nats, a numeric
+scalar. For \code{order = "shannon"}, a list with components \code{mc} (the estimate), \code{mc_se} (its standard error),
 \code{upper_bound} (the analytic upper bound), and \code{n_mc}.
 }
 \description{
-Computes the differential entropy of a Gaussian mixture. The quadratic
-(order-2) Renyi entropy \eqn{H_2(g) = -\log \int g(x)^2 \, dx} is available in
+Computes the order-2 Renyi entropy (the default) or the Shannon differential
+entropy of a Gaussian mixture. The quadratic (order-2) Renyi entropy \eqn{H_2(g) = -\log \int g(x)^2 \, dx} is available in
 closed form, because \eqn{\int g^2} is a finite sum of Gaussian-density
 evaluations. Shannon entropy has no closed form for a mixture (the integrand
 carries the logarithm of a sum) and is estimated by Monte Carlo, reported

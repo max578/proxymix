@@ -43,20 +43,20 @@ independent hand computation rather than asserting it.
 ## What
 
 Four operator families act on a mixture and return a mixture, so they
-compose without ever leaving closed form. [`gmm_affine()`] pushes a mixture
+compose without ever leaving closed form. `gmm_affine()` pushes a mixture
 through a linear map with additive Gaussian noise, $y = Ax + b + \epsilon$;
-[`gmm_aggregate()`] is the same operator specialised to a coarsening matrix.
-[`gmm_observe()`] performs the Bayesian update on a noisy linear
+`gmm_aggregate()` is the same operator specialised to a coarsening matrix.
+`gmm_observe()` performs the Bayesian update on a noisy linear
 observation, the finite-mixture analogue of a Kalman update: it reweights
 the components by their marginal evidence and Kalman-updates each one.
-[`gmm_marginalise()`] integrates out a coordinate subset, and
-[`gmm_conditionalise()`] and [`gmm_missing()`] condition on coordinates
+`gmm_marginalise()` integrates out a coordinate subset, and
+`gmm_conditionalise()` and `gmm_missing()` condition on coordinates
 observed exactly, through the Schur-complement algebra.
 
 Two further verbs turn those operators into a recursion.
-[`gmm_reduce()`] collapses a mixture to a budget of at most `k_max`
+`gmm_reduce()` collapses a mixture to a budget of at most `k_max`
 components by a greedy, moment-preserving pairwise merge, so a filter whose
-component count would otherwise grow stays bounded. [`gmm_filter()`]
+component count would otherwise grow stays bounded. `gmm_filter()`
 packages the predict, update and reduce loop as a single verb: with Gaussian
 noise it is the Kalman filter, and with a Gaussian-sum process or
 measurement noise it is the Gaussian-sum filter of Alspach and Sorenson

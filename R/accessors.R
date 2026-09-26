@@ -86,10 +86,18 @@ NULL
 #' count, and the regime's headline fit statistics. Available as
 #' `generics::glance(fit)` when the `generics` package is installed.
 #'
+#' For a regime-(iii) fit, `kld_final` is estimated on the same importance
+#' draws the fit was tuned to, so it reads low and can be negative.
+#' `validation_kld` is the estimate on an independent draw and is the one to
+#' quote as the fit's accuracy; it is `NA` when the fit was made with
+#' `validation_size = 0`.
+#'
 #' @param x A [gmm_fit].
 #' @param ... Ignored, for generic compatibility.
 #'
-#' @returns A one-row data frame.
+#' @returns A one-row data frame with columns `regime`, `n_components`,
+#'   `dim`, `converged`, `iterations`, `ess`, `kld_final`, `validation_kld`,
+#'   `loglik_final` and `bic` (`NA` where not applicable to the regime).
 #' @family classes
 #' @name glance.gmm_fit
 #' @examplesIf requireNamespace("generics", quietly = TRUE)
@@ -108,6 +116,7 @@ NULL
     iterations = x@iterations,
     ess = d$ess %||% NA_real_,
     kld_final = d$kld_final %||% NA_real_,
+    validation_kld = d$validation_kld %||% NA_real_,
     loglik_final = d$loglik_final %||% NA_real_,
     bic = d$bic %||% NA_real_
   )

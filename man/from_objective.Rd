@@ -17,7 +17,8 @@ from_objective(
   is_size = 10000L,
   max_iter = 70L,
   ridge_eps = 1e-04,
-  seed = NULL
+  seed = NULL,
+  scale = c("objective", "loglik")
 )
 }
 \arguments{
@@ -27,7 +28,9 @@ maximise; see \code{minimise}).}
 
 \item{lower, upper}{Numeric vectors of equal length \code{p} giving the box
 over which the optima are sought. Every \code{upper} must exceed its
-\code{lower}.}
+\code{lower}. \code{objective} is only evaluated inside the box; points outside
+it are treated like points where \code{objective} is not finite and receive
+a strongly unattractive value.}
 
 \item{N}{Number of mixture components. Default \code{max(10L, 5L * p)}. Raise
 it for objectives with many optima or strong symmetry.}
@@ -37,12 +40,19 @@ values are better (the proxy concentrates on the minima); if \code{FALSE}
 the proxy concentrates on the maxima.}
 
 \item{temperature}{Optional control of the cooling ladder. \code{NULL} (the
-default) derives a ladder automatically from a uniform probe of the
-landscape. A positive scalar sets the final (lowest) temperature; a
-length-2 numeric \code{c(high, low)} sets both ends explicitly.}
+default) derives a ladder from the range \code{r} of \code{objective} over a
+uniform probe of the box: from \code{r / 2} down to \code{r / 80} when
+\code{scale = "objective"}, and from \code{max(r / 2, 1)} down to 1 when
+\code{scale = "loglik"}. A positive scalar sets the final (lowest)
+temperature; a length-2 numeric \code{c(high, low)} sets both ends
+explicitly. A supplied \code{temperature} is used as given, whatever
+\code{scale} is.}
 
 \item{n_steps}{Number of temperatures in the cooling ladder. Default
-\code{6L}.}
+\code{6L}. When \code{scale = "loglik"}, \code{temperature} is \code{NULL} and \code{n_steps} is
+not supplied, the ladder takes as many steps as it needs to cool by no
+more than the default factor of \eqn{40^{1/5} \approx 2.1} per step,
+and never fewer than 6.}
 
 \item{exploration}{Probability mass the importance proposal places on
 uniform exploration of the box at each step, in \verb{[0, 1]}. Default
@@ -61,10 +71,19 @@ inflated when used as the exploitation part of the proposal. Default
 M-step. Forwarded to \code{\link[=fit_kld_em]{fit_kld_em()}}.}
 
 \item{seed}{Optional integer seed for reproducibility.}
+
+\item{scale}{What the objective's values mean, which sets the default
+temperature ladder. \code{"objective"} (the default) is any objective to
+optimise: the ladder scales with its range, so the result does not
+depend on the objective's units. \code{"loglik"} is a negative
+log-likelihood (or a log-likelihood with \code{minimise = FALSE}): the
+ladder ends at temperature 1, where the Gibbs measure is the
+likelihood itself.}
 }
 \value{
 A \link{gmm_fit} (the fitted proxy) carrying a \code{from_objective}
-metadata record with the temperature ladder and box. Pass it to
+metadata record with the box, the temperature ladder, \code{scale}, and the
+effective sample size at each cooling step (\code{ess}). Pass it to
 \code{\link[=gmm_modes]{gmm_modes()}} to extract the distinct optima.
 }
 \description{
@@ -96,6 +115,19 @@ Dimensional scope. As with the rest of regime (iii), the importance-
 sampling effective sample size falls sharply with dimension; the guard is
 \code{p <= 5} (recommended), \code{p <= 10} (allowed with a warning), \code{p > 10}
 (rejected).
+
+Effective sample size. Each cooling step records its importance-sampling
+effective sample size in the \code{from_objective} metadata. A classed
+\code{proxymix_low_ess} warning is raised at most once per call, and only when
+the final step, the one that produced the returned fit, falls below 50;
+its message gives the final effective sample size, how many steps were
+low, and the lowest value with its step.
+
+Likelihoods. With \code{scale = "loglik"} the objective is read as a negative
+log-likelihood (or, with \code{minimise = FALSE}, a log-likelihood) and the
+ladder ends at temperature 1. The fitted map is then a proxy for the
+likelihood itself, restricted to the box, which is the posterior under a
+uniform prior on the box.
 }
 \examples{
 ## A bimodal 1-D objective with minima at +/- 2.
@@ -103,6 +135,14 @@ f <- function(v) (v[1]^2 - 4)^2
 fit <- from_objective(f, lower = -5, upper = 5, N = 6L,
                       is_size = 2000L, n_steps = 5L, seed = 1L)
 gmm_modes(fit)$modes
+
+## The likelihood surface of a logistic-regression slope.
+x <- c(-1.2, -0.6, -0.1, 0.3, 0.8, 1.4)
+y <- c(0, 0, 1, 0, 1, 1)
+nll <- function(b) sum(log1p(exp(b[1] * x))) - sum(y * b[1] * x)
+lik <- from_objective(nll, lower = -5, upper = 10, N = 4L,
+                      is_size = 2000L, seed = 1L, scale = "loglik")
+lik@metadata$from_objective$temperatures
 }
 \seealso{
 \code{\link[=gmm_modes]{gmm_modes()}} to resolve the fitted map into distinct optima.

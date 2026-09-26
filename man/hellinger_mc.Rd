@@ -9,25 +9,27 @@ hellinger_mc(fit, n_mc = 5000L, seed = NULL)
 \arguments{
 \item{fit}{A \link{gmm_fit} whose target carries a \code{log_density}.}
 
-\item{n_mc}{Number of Monte Carlo samples.}
+\item{n_mc}{Number of Monte Carlo draws from the fit.}
 
-\item{seed}{Optional integer seed.}
+\item{seed}{Optional integer seed for the draws.}
 }
 \value{
 A list with components
 \itemize{
 \item \code{h2} - estimate of \code{H^2(f, g)},
 \item \code{se} - Monte Carlo standard error,
-\item \code{n_mc} - sample size used.
+\item \code{n_mc} - number of draws with a finite density ratio,
+\item \code{trustworthy} - \code{TRUE} when the target is declared normalised.
 }
 }
 \description{
-Estimates the squared Hellinger distance \verb{H^2(f, g) = 1 - integral sqrt(f(x) g(x)) dx} by importance sampling against the proposal stored
-in the fit (for regime \code{"kld"}) or by sampling from the fit itself (for
-regime \code{"sample"}). The target's \code{log_density} must be supplied \strong{and
-normalised}; otherwise the Monte Carlo integral is biased by the
-missing \eqn{\sqrt{Z(f)}}. When the target's \code{normalised} property is
-not \code{TRUE}, a warning is issued and the returned value is flagged.
+Estimates the squared Hellinger distance \verb{H^2(f, g) = 1 - integral sqrt(f(x) g(x)) dx} as \code{1 - mean(sqrt(f(x) / g(x)))} over \code{n_mc} fresh
+draws \code{x} from the fit \code{g}, for every regime. The draws are independent of
+any sample used to fit, so the estimate is unbiased, with standard error
+\code{se}. The target's \code{log_density} must be supplied \strong{and normalised};
+otherwise the Monte Carlo integral is biased by the missing
+\eqn{\sqrt{Z(f)}}. When the target's \code{normalised} property is not \code{TRUE},
+a warning is issued and the returned value is flagged.
 }
 \examples{
 fit <- fit_proxymix(banana_target(), N = 3L, regime = "kld",

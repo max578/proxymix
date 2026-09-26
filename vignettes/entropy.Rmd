@@ -41,25 +41,25 @@ and what each quantity is safe to conclude.
 
 ## What
 
-Six verbs carry the vignette. [`gmm_entropy()`] returns the order-2 Renyi
+Six verbs carry the vignette. `gmm_entropy()` returns the order-2 Renyi
 entropy of a mixture in closed form by default, and a Monte Carlo Shannon
 estimate with its standard error and an analytic upper bound under
-`order = "shannon"`. [`gmm_divergence()`] returns the symmetric
+`order = "shannon"`. `gmm_divergence()` returns the symmetric
 Cauchy-Schwarz divergence between two mixtures in closed form, and delegates
 to the Monte Carlo Kullback-Leibler estimator under `type = "kl"`.
 
-[`gmm_mutual_information()`] measures dependence between two coordinate
+`gmm_mutual_information()` measures dependence between two coordinate
 blocks of a fitted joint as the Cauchy-Schwarz divergence between the joint
 and the product of its marginals, and
-[`gmm_conditional_entropy()`] returns the predictive uncertainty of the
-target coordinates given the conditioned ones, row by row.
+`gmm_conditional_entropy()` returns the order-2 Renyi entropy of the target
+coordinates given the conditioned ones, row by row.
 
-[`gmm_anneal_path()`] cools a deterministic-annealing schedule and records
+`gmm_anneal_path()` cools a deterministic-annealing schedule and records
 where the components bifurcate, which both stabilises a fit and discovers a
-component count. [`bic_aic()`] reports the integrated completed likelihood
-beside the usual criteria, and [`gmm_independence_graph()`] reads the
+component count. `bic_aic()` reports the integrated completed likelihood
+beside the usual criteria, and `gmm_independence_graph()` reads the
 second-order conditional-independence structure of a fitted mixture.
-[`maxent_target()`] runs the argument the other way, from a set of
+`maxent_target()` runs the argument the other way, from a set of
 constraints to the least-committal density consistent with them.
 
 ## Do
@@ -183,9 +183,9 @@ knitr::kable(
 
 ### Mutual information and predictive entropy
 
-Two further reads come from the same closed-form spine. Mutual information
-is non-negative and zero exactly when the blocks are independent;
-conditional entropy is the order-2 Renyi entropy of the conditional mixture
+Two further reads come from the same closed-form spine. Cauchy-Schwarz
+mutual information is non-negative and zero exactly when the blocks are
+independent; conditional entropy is the order-2 Renyi entropy of the conditional mixture
 `gmm_conditionalise()` returns, evaluated row by row, with `NA` marking the
 target coordinate.
 
@@ -210,18 +210,18 @@ h_cond <- gmm_conditional_entropy(joint, given = given_grid)
 knitr::kable(
   data.frame(
     quantity = c(
-      "mutual information, correlation 0.7",
-      "mutual information, independent block",
-      "conditional entropy at x2 = 0",
-      "conditional entropy at x2 = 1",
-      "conditional entropy at x2 = 2"
+      "Cauchy-Schwarz mutual information, correlation 0.7",
+      "Cauchy-Schwarz mutual information, independent block",
+      "conditional Renyi-2 entropy at x2 = 0",
+      "conditional Renyi-2 entropy at x2 = 1",
+      "conditional Renyi-2 entropy at x2 = 2"
     ),
     value = round(c(mi, mi_independent, h_cond), 6L)
   ),
   col.names = c("Quantity", "Value (nats)"),
   caption = paste(
-    "Dependence between the two coordinates, and the predictive",
-    "uncertainty of the first given the second."
+    "Cauchy-Schwarz mutual information between the two coordinates, and",
+    "the order-2 Renyi entropy of the first given the second."
   )
 )
 ```
@@ -408,12 +408,17 @@ knitr::kable(
 
 `gmm_independence_graph()` reads the undirected second-order
 conditional-independence (Gaussian graphical model) structure of a fitted
-mixture: an edge $i - j$ is absent exactly when the partial correlation of
-coordinates $i$ and $j$, given all the others, is below a threshold -- the
-Markov statement $x_i \perp x_j \mid x_{\mathrm{rest}}$ at second order. The
-overall covariance of a mixture is closed-form in its parameters, so no
-sampling is needed. A tridiagonal precision matrix is a chain, and the
-recovered graph should be that chain.
+mixture: an edge $i - j$ is absent when the partial correlation of
+coordinates $i$ and $j$, given all the others, is judged to be zero -- the
+Markov statement $x_i \perp x_j \mid x_{\mathrm{rest}}$ at second order.
+When the sample size is known (from a regime `"sample"` or `"moment"` fit,
+or given as `n`), each partial correlation is tested with Fisher's z at
+level `alpha`. Otherwise an edge is drawn when the partial correlation
+exceeds `threshold` in magnitude. Both mixtures below, a `gmm()` built by
+hand and a regime (iii) fit, carry no sample size, so both graphs use the
+default `threshold` of 0.05. The overall covariance of a mixture is
+closed-form in its parameters, so no sampling is needed. A tridiagonal
+precision matrix is a chain, and the recovered graph should be that chain.
 
 ```{r graph-chain}
 omega <- diag(4L)
@@ -504,11 +509,11 @@ approximation takes on well-separated components. The Cauchy-Schwarz and
 Kullback-Leibler divergences are not on a common scale and should not be
 compared to each other, only across pairs of fits under one definition.
 
-Mutual information reads `r round(mi, 4L)` nats between two coordinates
-correlated at 0.7, and
+Cauchy-Schwarz mutual information reads `r round(mi, 4L)` nats between two
+coordinates correlated at 0.7, and
 `r formatC(mi_independent, format = "g", digits = 2)` between two
 independent ones, which is the zero the definition requires. The conditional
-entropy is `r round(h_cond[1L], 4L)` nats at every point of the grid,
+Renyi-2 entropy is `r round(h_cond[1L], 4L)` nats at every point of the grid,
 identical across the three conditioning values because a single-component
 joint has a conditional whose spread does not depend on what is conditioned
 on; a multi-component joint would vary across the grid.
@@ -574,8 +579,9 @@ causal-discovery method. It returns the undirected Markov skeleton, not edge
 directions, and being second order it sees only dependence that enters the
 covariance. A pair of coordinates coupled purely through a higher moment, or
 through a mixture-gate that leaves the overall covariance untouched, will
-appear as an absent edge. The threshold on the partial correlation is a
-choice, and a graph read at one threshold is not the graph read at another.
+appear as an absent edge. The test level `alpha`, or the `threshold` on the
+partial correlation when no sample size is known, is a choice, and a graph
+read at one setting is not the graph read at another.
 
 The annealing path discovers a component count on data whose clusters are
 well separated, which is the case where every method agrees. The staircase

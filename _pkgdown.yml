@@ -76,3 +76,20 @@ articles:
   - missing_data
   - missing_data_mnar
   - end_of_sample
+- title: Extended articles
+  desc: >
+    Longer versions of the vignettes. Each compares proxymix with other R
+    packages on the same task, using stored simulation results.
+  contents:
+  - articles/extended/quickstart
+  - articles/extended/posterior_proxy
+  - articles/extended/three_regimes
+  - articles/extended/density_shapes
+  - articles/extended/operator_calculus
+  - articles/extended/from_kde
+  - articles/extended/many_methods
+  - articles/extended/entropy
+  - articles/extended/calibration
+  - articles/extended/missing_data
+  - articles/extended/missing_data_mnar
+  - articles/extended/end_of_sample

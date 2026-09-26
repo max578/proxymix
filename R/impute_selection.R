@@ -229,6 +229,33 @@
        iterations = iter_done, converged = converged, p_miss = p_miss)
 }
 
+## Observed-data log-likelihood of the selection model at a fitted mixture `g`
+## and intercept `alpha`: observed rows contribute g(x, y) (1 - s(alpha + beta y)),
+## rows missing coordinate `cj` contribute g(x) times the integral of s over the
+## conditional of y. The EM objective above omits the observed rows' factor.
+.mnar_obs_loglik <- function(g, X, cj, alpha, beta, link) {
+  rest <- setdiff(seq_len(ncol(X)), cj)
+  miss <- is.na(X[, cj])
+  Xo <- X[, rest, drop = FALSE]
+  s_obs <- if (link == "logit") stats::plogis(alpha + beta * X[!miss, cj]) else
+    stats::pnorm(alpha + beta * X[!miss, cj])
+  logr <- vapply(seq_along(g@weights), function(k) {
+    cc <- .coord_cond_k(g@means[[k]], g@covariances[[k]], cj, Xo, rest)
+    lk <- log(g@weights[k]) + cc$logo
+    if (any(!miss)) {
+      lk[!miss] <- lk[!miss] + stats::dnorm(X[!miss, cj], cc$cmean[!miss],
+                                            sqrt(cc$cvar), log = TRUE)
+    }
+    if (any(miss)) {
+      lk[miss] <- lk[miss] +
+        log(.gated_smooth(cc$cmean[miss], cc$cvar, alpha, beta, link)$I)
+    }
+    lk
+  }, numeric(nrow(X)))
+  logr <- matrix(logr, nrow = nrow(X))
+  sum(.logsumexp_rows(logr)) + sum(log1p(-s_obs))
+}
+
 ## Calibrate the MNAR intercept so the mixture-marginal missingness rate of the
 ## gated coordinate equals the observed rate `p_miss`. Monotone in alpha.
 .calibrate_alpha <- function(w, mu, S, cj, beta, link, p_miss) {

@@ -39,15 +39,15 @@ consistent with the model I fitted, or has something just changed?* It is
 awkward because the suspect window is tiny. With a single new point, or a
 handful, the usual structural-break tests (Chow, sup-Wald) are undefined:
 the parameters of the post-break regime cannot be estimated from so few
-observations. [`gmm_eos_test()`] answers the question in exactly this
-regime, following Andrews (2003).
+observations. `gmm_eos_test()` answers the question in exactly this
+regime, after the end-of-sample tests of Andrews (2003).
 
 ## What
 
-[`gmm_eos_test()`] runs the Gaussian-sum filter implied by the operator
+`gmm_eos_test()` runs the Gaussian-sum filter implied by the operator
 calculus over the series, scores the last `m` one-step filter innovations,
 and calibrates that score. It takes the model exactly as
-[`gmm_filter()`] does: a single-component [`gmm()`] prior, a `dynamics`
+`gmm_filter()` does: a single-component `gmm()` prior, a `dynamics`
 list carrying the state-transition and process-noise matrices, and a
 `measurement` list carrying the observation and observation-noise matrices.
 
@@ -63,11 +63,15 @@ which a break inflates.
 Two calibrations are offered. `method = "chisq"` refers the statistic to a
 $\chi^2$ distribution on `m` times the observation dimension degrees of
 freedom, exact when the innovations are Gaussian and the model is given.
-`method = "andrews"` is the distribution-free subsampling test of Andrews
-(2003): the statistic's rank among the in-sample overlapping `m`-blocks of
-the same innovations gives the p-value, which stays calibrated when the
-innovations are not Gaussian. The returned object also carries those
-in-sample block statistics, so the calibration can be inspected directly.
+`method = "andrews"` is a subsampling calibration after the P-test of
+Andrews (2003): the statistic's rank among the in-sample overlapping
+`m`-blocks of the same innovations gives the p-value. It does not assume
+Gaussian innovations, but it needs the end block to be exchangeable with the
+earlier blocks, and it differs from Andrews' test in two ways: the p-value
+counts the tested block itself, and the block statistics are computed at the
+supplied model rather than re-estimated without each block. The returned
+object also carries those in-sample block statistics, so the calibration can
+be inspected directly.
 
 ## Do
 

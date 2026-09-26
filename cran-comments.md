@@ -1,21 +1,26 @@
-## Submission: proxymix 0.15.1 (first submission)
+## Submission: proxymix 0.16.0 (first submission)
+
+An earlier attempt to submit version 0.15.1 was not completed, so this is
+the first submission of the package to CRAN.
 
 ## Test environments
 
-* local: macOS (Apple silicon), R release
-* win-builder (devel): submitted alongside
+* local: macOS 26.6 (Apple silicon), R 4.6.1
 
 ## R CMD check results
 
-0 errors | 0 warnings | 0 notes on the local platform.
+0 errors | 0 warnings | 1 note
 
-Expected on incoming checks: the "New submission" NOTE.
+* This is a new submission.
 
 ## Comments
 
-* First CRAN release of a package that has been developed publicly at
-  https://github.com/max578/proxymix through eighteen tagged releases,
-  with an independent-oracle validation battery shipped under
-  inst/validation.
-* All vignettes build with knitr::rmarkdown; the heavier simulation
-  studies are pre-computed and the vignette code paths are fast.
+* The package fits Gaussian mixtures that approximate a target density in
+  Kullback-Leibler divergence, including targets that can be evaluated but
+  not sampled, following van der Hoek and Elliott (2024)
+  <doi:10.1080/07362994.2024.2372605>.
+* Examples run in about 14 s in total. The slowest single example takes
+  about 3 s.
+* The twelve vignettes build in about 40 s. Longer versions that compare
+  the package with other methods are published only on the package website
+  and are excluded from the build.

@@ -48,10 +48,11 @@ constant such as half the detection limit.
 \code{mnar()} is missing not at random through a selection model: an entry of
 \code{coord} is missing with probability \eqn{g(\alpha + \beta\, y)} in its own
 unobserved value \eqn{y}, where \eqn{g} is the logistic or normal link. The
-slope \code{beta} is the sensitivity parameter and is supplied, not estimated --
-missing-not-at-random departures are not identified from the observed data, so
-the appropriate use is to posit \code{beta}, propagate it, and report how conclusions
-move with it (see \code{\link[=proxy_mnar_sensitivity]{proxy_mnar_sensitivity()}}). The intercept is calibrated to
+slope \code{beta} is the sensitivity parameter and is supplied, not estimated.
+The observed data inform the slope only through the assumed shape of the
+outcome distribution, so the appropriate use is to posit \code{beta}, propagate it,
+and report how conclusions move with it (see \code{\link[=proxy_mnar_sensitivity]{proxy_mnar_sensitivity()}},
+which also reports the observed-data log-likelihood). The intercept is calibrated to
 the observed missingness rate. \code{beta = 0} is missing at random.
 }
 \examples{

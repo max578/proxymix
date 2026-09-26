@@ -9,13 +9,22 @@
 \item{...}{Ignored, for generic compatibility.}
 }
 \value{
-A one-row data frame.
+A one-row data frame with columns \code{regime}, \code{n_components},
+\code{dim}, \code{converged}, \code{iterations}, \code{ess}, \code{kld_final}, \code{validation_kld},
+\code{loglik_final} and \code{bic} (\code{NA} where not applicable to the regime).
 }
 \description{
 A broom-style \code{glance()} method: a one-row summary of a \link{gmm_fit} with
 the regime, the component count and dimension, convergence, iteration
 count, and the regime's headline fit statistics. Available as
 \code{generics::glance(fit)} when the \code{generics} package is installed.
+}
+\details{
+For a regime-(iii) fit, \code{kld_final} is estimated on the same importance
+draws the fit was tuned to, so it reads low and can be negative.
+\code{validation_kld} is the estimate on an independent draw and is the one to
+quote as the fit's accuracy; it is \code{NA} when the fit was made with
+\code{validation_size = 0}.
 }
 \examples{
 \dontshow{if (requireNamespace("generics", quietly = TRUE)) withAutoprint(\{ # examplesIf}

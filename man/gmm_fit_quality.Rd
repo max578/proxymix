@@ -18,7 +18,10 @@ never fitted (e.g. built directly with \code{\link[=gmm]{gmm()}}). A certificate
 by an operator over several operands has \code{regime = "composite"}, the
 conservative worst-case value of each numeric field across the operands,
 and an additional \code{quality_sources} element holding the operands' own
-certificates.
+certificates. \code{kld_final} is estimated on the importance draws the fit
+was tuned to, so it reads low; \code{validation_gap} is the held-out
+\code{validation_kld} (see \code{\link[=ess_summary]{ess_summary()}}) minus \code{kld_final}, and is \code{NA}
+when the fit was made with \code{validation_size = 0}.
 }
 \description{
 Returns the fit-quality certificate: a small list recording the fitting

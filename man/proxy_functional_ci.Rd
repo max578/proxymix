@@ -4,7 +4,7 @@
 \alias{proxy_functional_ci}
 \title{Percentile interval for any functional of a fitted proxy}
 \usage{
-proxy_functional_ci(ensemble, fn, level = 0.9, ...)
+proxy_functional_ci(ensemble, fn, level = 0.9, ..., tail_warn = 0.001)
 }
 \arguments{
 \item{ensemble}{A \code{gmm_ensemble} from \code{\link[=gmm_fit_ensemble]{gmm_fit_ensemble()}}.}
@@ -14,6 +14,9 @@ proxy_functional_ci(ensemble, fn, level = 0.9, ...)
 \item{level}{Confidence level. Default \code{0.9}.}
 
 \item{...}{Forwarded to \code{fn}.}
+
+\item{tail_warn}{Threshold for the tail-probability warning described
+in Details. Default \code{1e-3}; \code{NULL} or \code{0} turns the warning off.}
 }
 \value{
 A data frame with one row per element of \code{fn}'s value:
@@ -26,6 +29,20 @@ limits. The functional may return a scalar or a fixed-length numeric
 vector -- the moments (\code{\link[=gmm_mean]{gmm_mean()}}, \code{\link[=gmm_cov]{gmm_cov()}}), a tail probability
 via \code{\link[=pgmm]{pgmm()}} on a marginal, an entropy, a conditional mean, or any
 composition of the operator calculus.
+}
+\details{
+The interval measures how much the functional moves when the fit is
+repeated on re-weighted draws. It does not measure how far the
+Gaussian-mixture family itself is from the target, so it can exclude
+the target's true value when the mixture has too few components. The
+gap is widest far in a tail: a mixture of Gaussians has Gaussian tails
+and can misstate a small tail probability by orders of magnitude while
+the interval stays narrow. A warning of class
+\code{proxymix_tail_functional} is raised when every value of \code{fn} (at the
+base fit and at every member) lies in \verb{[0, 1]} and some element of the
+base fit's estimate, or its complement, is below \code{tail_warn}. Check such
+a probability against numerical integration of the target or a method
+built for tails.
 }
 \examples{
 fit <- fit_proxymix(banana_target(), N = 2L, regime = "kld",

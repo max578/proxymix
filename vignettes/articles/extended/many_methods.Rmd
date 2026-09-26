@@ -527,6 +527,10 @@ what the model explicitly does not identify.
 proxy_identification_report(model, grid_up)
 ```
 
+On these data the confounding gap in the report equals the whole estimated
+effect and is not a separate check on it. Each of the two components holds
+one treatment arm, and the effect within a component is zero.
+
 **Idea.** Under ignorability the conditional treatment effect is a contrast
 of two conditional means of the same joint mixture, $E[y \mid t_1, x]$ minus
 $E[y \mid t_0, x]$, so the operator that produced the regression above
@@ -1016,10 +1020,12 @@ an outcome regression (MatchIt, then `lm()` with a standard error
 clustered on the matched pairs by sandwich; Zeileis et al., 2020), and a T-learner of two generalised
 additive models (mgcv; Wood, 2011), one per arm, with the effect read as
 the average difference of their predictions over the treated men and a
-standard error from the two fitted models. They install from CRAN once:
+standard error from the two fitted models. They install from CRAN once,
+with gam and dbarts for the learners in tmle's SuperLearner library:
 
 ```{r install-treatment, eval = FALSE}
-install.packages(c("grf", "tmle", "MatchIt", "mgcv", "sandwich"))
+install.packages(c("grf", "tmle", "gam", "dbarts", "MatchIt", "mgcv",
+                   "sandwich"))
 ```
 
 ```{r load-treatment, eval = run_treatment, message = FALSE}
@@ -1482,7 +1488,7 @@ carry, many covariates, or the case where the Gaussian components fit the
 outcome badly, and it uses a lighter learner library for tmle than its
 default.
 
-## Where next
+## Further reading
 
 *Choosing between the three fitting regimes* explains what the `"moment"`
 and `"sample"` arguments used throughout this page actually do, when each

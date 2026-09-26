@@ -9,8 +9,21 @@
   also used when no sample size is known.
 * `from_kde()` uses `is_size = 10000 + 2500 * N` importance draws instead of
   5000, which reduces overfitting at larger `N`.
-* `from_kde()` holds out `ceiling(is_size / 4)` validation draws, so its fits
-  report `validation_kld`. Use `validation_size = 0L` for the old behaviour.
+* `from_kde()` holds out validation draws by default, so its fits report
+  `validation_kld`. Use `validation_size = 0L` for the old behaviour.
+* `fit_kld_em()` and `fit_proxymix(regime = "kld")` draw validation points in
+  batches of `is_size` until the standard error of `validation_kld` is at most
+  a tenth of the estimate, up to `10 * is_size` draws. The old default of
+  `ceiling(is_size / 4)` draws left a standard error about as large as the
+  estimate on a close fit. Give `validation_size` to fix the number of draws.
+* The fit-quality advisory (class `proxymix_low_quality`) no longer fires on
+  relative ESS below 0.05. With a fixed proposal, relative ESS describes the
+  proposal rather than the fit, so the advisory fired on about half of good
+  regime `"kld"` fits and more often as `is_size` grew. It now fires when a fit
+  did not converge, is degenerate, or has `kld_approx` above 0.3.
+  `gmm_fit_quality()` reports the new field `kld_approx`: half the weighted
+  variance of `log f - log g`, which approximates the KL divergence and does
+  not depend on the target's normalising constant.
 
 ### New features
 
@@ -41,6 +54,10 @@
 * `hellinger_mc()` draws `n_mc` fresh samples from the fit, using `seed`, for
   regime `"kld"` fits too. The estimate is no longer biased low and its
   standard error is no longer `NaN`.
+* `proxy_confounding_gap()` and `proxy_regime_segments()` warn, with class
+  `proxymix_constant_treatment`, when each regime holds a single treatment
+  arm. The within-regime effect is then zero, so the gap equals the whole
+  estimated effect and the segment effects are all zero.
 
 * The decision family (`proxy_cate()`, `proxy_uplift()`, `proxy_overlap()`,
   `proxy_decide()`, `proxy_confounding_gap()`, `proxy_policy_value()`,

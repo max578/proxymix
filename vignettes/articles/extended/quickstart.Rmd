@@ -185,7 +185,7 @@ knitr::kable(
 
 The in-sample KL estimate is computed on the draws the fit was tuned to,
 so it reads lower than the held-out estimate, which the fit computes on
-`r fit@diagnostics$validation_size` fresh draws.
+`r format(fit@diagnostics$validation_size, big.mark = ",")` fresh draws.
 
 ### Overlay the proxy on the target
 
@@ -260,7 +260,7 @@ for fitting a mixture instead of a single Gaussian.
 The certificate answers the second half. The iteration converged, and the
 fit is not flagged as degenerate. The importance sample retained an
 effective size of `r round(fit@diagnostics$ess, 0L)` out of
-`r fit@diagnostics$is_size` draws, a retention of
+`r format(fit@diagnostics$is_size, big.mark = ",")` draws, a retention of
 `r round(100 * fit@diagnostics$ess_relative, 1L)` per cent, and the largest
 single self-normalised weight is
 `r format(signif(fit@diagnostics$max_weight, 2L))`, so no individual draw
@@ -271,9 +271,9 @@ from a handful. The held-out KL estimate is
 `r fixed(fit@diagnostics$validation_kld, 4)` with a Monte Carlo standard
 error of `r fixed(fit@diagnostics$validation_mc_se, 4)`. The in-sample
 estimate of `r fixed(quality$kld_final, 4)` is lower by the validation gap
-of `r fixed(quality$validation_gap, 4)`, which is
-`r if (abs(quality$validation_gap) < fit@diagnostics$validation_mc_se) "within" else "outside"`
-one standard error of the held-out estimate.
+of `r fixed(quality$validation_gap, 4)`, which is about
+`r round(abs(quality$validation_gap) / fit@diagnostics$validation_mc_se)`
+standard errors of the held-out estimate.
 
 Read the certificate in that order -- converged, degenerate, effective
 sample size, largest weight, validation gap -- and a fit that has failed
@@ -355,7 +355,7 @@ warm-up and 1000 sampling iterations run in sequence (Carpenter et al.,
 `G = 1:6`, the candidate set `select_N()` uses, and the unconstrained
 covariance family, which is the family proxymix fits; and the
 differential-evolution sampler DEzs (ter Braak and Vrugt, 2008) of
-BayesianTools (Hartig et al., 2026) at its default of 10 000 iterations,
+BayesianTools (Hartig et al., 2026) at its default of 10,000 iterations,
 which version `r sim$versions[["BayesianTools"]]` spreads over three
 internal chains, given a box prior wide enough to hold all of the target's
 mass, with the first 999 iterations of each chain discarded. The Laplace route is one call to
@@ -608,7 +608,7 @@ probability; it says nothing about higher dimensions, multimodal targets,
 unnormalised posteriors, or tails further out than $x_1 = 2$, and none of
 the samplers was tuned beyond its defaults.
 
-## Where next
+## Further reading
 
 *Choosing between the three fitting regimes* takes the routing table above
 and works all three regimes end to end on a target whose ground truth is

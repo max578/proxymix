@@ -19,8 +19,8 @@ the first submission of the package to CRAN.
   Kullback-Leibler divergence, including targets that can be evaluated but
   not sampled, following van der Hoek and Elliott (2024)
   <doi:10.1080/07362994.2024.2372605>.
-* Examples run in about 14 s in total. The slowest single example takes
-  about 3 s.
-* The twelve vignettes build in about 40 s. Longer versions that compare
+* Examples run in about 20 s in total. The slowest single example takes
+  about 4 s.
+* The twelve vignettes build in about 60 s. Longer versions that compare
   the package with other methods are published only on the package website
   and are excluded from the build.

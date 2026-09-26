@@ -8,6 +8,25 @@
 ## regimes (`proxy_regime_segments()`), and assemble the executive one-pager
 ## (`proxy_identification_report()`).
 
+## Constant treatment within regimes -----------------------------------------
+
+## TRUE when the treatment is effectively constant inside every component:
+## the variance of T given X in each component is below `tol` times the
+## mixture's overall variance of T. A binary treatment whose components each
+## hold one arm sits at the fit's ridge floor, about 1e-6 of the overall
+## variance; a treatment that genuinely varies within a component sits well
+## above 1e-3.
+.treatment_constant_within_regimes <- function(model, cache, tol = 1e-3) {
+  g <- model@fit
+  t_idx <- model@roles$treatment
+  mu_t <- vapply(g@means, function(m) m[t_idx], numeric(1L))
+  var_t <- vapply(g@covariances, function(S) S[t_idx, t_idx], numeric(1L))
+  mean_t <- sum(g@weights * mu_t)
+  total_var <- sum(g@weights * (var_t + mu_t^2)) - mean_t^2
+  cond_var <- vapply(cache, function(ck) 1 / ck$var_t, numeric(1L))
+  all(cond_var < tol * total_var)
+}
+
 ## proxy_confounding_gap -----------------------------------------------------
 
 #' Confounding gap: the sensitivity of the effect to the latent regime
@@ -18,6 +37,11 @@
 #' **sensitivity signal** -- how much the estimated effect would move if a
 #' fitted regime confounded treatment and outcome beyond `X` -- not a
 #' correction the data licenses.
+#'
+#' When each regime holds a single treatment arm, as often happens with a
+#' binary treatment, the within-regime effect is zero, the gap equals the whole
+#' estimated effect, and a warning of class `proxymix_constant_treatment` is
+#' raised.
 #'
 #' @param model An [uplift_model].
 #' @param newdata A data frame carrying the covariate columns.
@@ -31,9 +55,10 @@
 #' @examples
 #' set.seed(1)
 #' n <- 600L
+#' u <- stats::rbinom(n, 1L, 0.5) # unobserved group
 #' x <- stats::rnorm(n)
-#' t <- stats::rbinom(n, 1L, 0.5)
-#' y <- 0.5 * t + x + stats::rnorm(n, sd = 0.5)
+#' t <- stats::rbinom(n, 1L, 0.3 + 0.4 * u)
+#' y <- 1 + 5 * u + 0.5 * t + x + stats::rnorm(n, sd = 0.5)
 #' dat <- data.frame(y = y, t = t, x = x)
 #' m <- fit_uplift(dat, "y", "t", "x", N = 2L, regime = "sample",
 #'                 max_iter = 80L, seed = 1L)
@@ -51,6 +76,12 @@ proxy_confounding_gap <- function(model, newdata, t1 = NULL, t0 = NULL) {
   X <- .newdata_x(model, newdata)
   cache <- .uplift_cache(model)
   arms <- c(t0, t1)
+  if (.treatment_constant_within_regimes(model, cache)) {
+    cli::cli_warn(c(
+      "The treatment is almost constant within every regime, so the within-regime effect is zero and the gap equals the whole estimated effect.",
+      "i" = "The gap carries no information about confounding for this model."
+    ), class = "proxymix_constant_treatment")
+  }
 
   n_units <- nrow(X)
   tau_obs <- numeric(n_units)
@@ -279,6 +310,10 @@ proxy_retrospective_uplift <- function(model, observed, t1 = NULL, t0 = NULL) {
 #' treatment slope), its residual standard deviation, and its covariate centre.
 #' This is the interpretable by-product the closed-form reading gives for free.
 #'
+#' When each regime holds a single treatment arm, as often happens with a
+#' binary treatment, every within-segment effect is zero and a warning of
+#' class `proxymix_constant_treatment` is raised.
+#'
 #' @param model An [uplift_model].
 #' @param t1,t0 The treated and control treatment values used to scale the
 #'   within-segment effect. Default the treatment levels observed at fit time (`model@treatment_levels`).
@@ -290,9 +325,10 @@ proxy_retrospective_uplift <- function(model, observed, t1 = NULL, t0 = NULL) {
 #' @examples
 #' set.seed(1)
 #' n <- 600L
+#' u <- stats::rbinom(n, 1L, 0.5) # unobserved group
 #' x <- stats::rnorm(n)
-#' t <- stats::rbinom(n, 1L, 0.5)
-#' y <- 1 + (0.5 + x) * t + stats::rnorm(n, sd = 0.5)
+#' t <- stats::rbinom(n, 1L, 0.3 + 0.4 * u)
+#' y <- 1 + 5 * u + 0.5 * t + x + stats::rnorm(n, sd = 0.5)
 #' dat <- data.frame(y = y, t = t, x = x)
 #' m <- fit_uplift(dat, "y", "t", "x", N = 2L, regime = "sample",
 #'                 max_iter = 80L, seed = 1L)
@@ -309,6 +345,12 @@ proxy_regime_segments <- function(model, t1 = NULL, t0 = NULL) {
   cache <- .uplift_cache(model)
   K <- length(cache)
   dt <- t1 - t0
+  if (.treatment_constant_within_regimes(model, cache)) {
+    cli::cli_warn(c(
+      "The treatment is almost constant within every regime, so each regime's effect is zero.",
+      "i" = "The {.field effect} column carries no information about the treatment effect for this model."
+    ), class = "proxymix_constant_treatment")
+  }
 
   eff <- vapply(cache, function(ck) ck$beta_t * dt, numeric(1L))
   sig <- vapply(cache, function(ck) sqrt(ck$sigma2), numeric(1L))
@@ -351,9 +393,10 @@ proxy_regime_segments <- function(model, t1 = NULL, t0 = NULL) {
 #' @examples
 #' set.seed(1)
 #' n <- 600L
+#' u <- stats::rbinom(n, 1L, 0.5) # unobserved group
 #' x <- stats::rnorm(n)
-#' t <- stats::rbinom(n, 1L, 0.5)
-#' y <- 0.5 * t + x + stats::rnorm(n, sd = 0.5)
+#' t <- stats::rbinom(n, 1L, 0.3 + 0.4 * u)
+#' y <- 1 + 5 * u + 0.5 * t + x + stats::rnorm(n, sd = 0.5)
 #' dat <- data.frame(y = y, t = t, x = x)
 #' m <- fit_uplift(dat, "y", "t", "x", N = 2L, regime = "sample",
 #'                 max_iter = 80L, seed = 1L)

@@ -532,9 +532,10 @@ knitr::kable(
 
 The distinctive use is regime (iii) of van der Hoek and Elliott (2024).
 Composed with `fit_kld_em()`, the
-diagnostic recovers the dependency structure of a target you can only
+diagnostic can recover the dependency structure of a target you can only
 *evaluate* -- an unnormalised energy density -- where no sample exists to
-drive a conventional structure estimator. The energy of the continuous
+drive a conventional structure estimator. Whether it does depends on the
+quality of the fit, which the example below shows. The energy of the continuous
 field below couples $x_1$ with $x_2$ and $x_2$ with $x_3$ and has no term in
 $x_1 x_3$, so $x_1$ and $x_3$ are conditionally independent given $x_2$.
 
@@ -592,7 +593,7 @@ threshold of 0.05 is the two-edge chain $x_1 - x_2 - x_3$.
 q_field <- gmm_fit_quality(fit_field)
 pcor_field <- attr(adj_field, "pcor")
 field_flagged <- isTRUE(q_field$degenerate) || isFALSE(q_field$converged) ||
-  q_field$ess_relative < 0.05
+  q_field$kld_approx > 0.3
 field_has_13 <- adj_field[1L, 3L] == 1L
 field_is_chain <- edges_field == 2L && !field_has_13
 field_edges <- which(adj_field == 1L & upper.tri(adj_field), arr.ind = TRUE)
@@ -614,7 +615,7 @@ knitr::kable(
 ## Interpretation
 
 The closed-form Rényi-2 entropy of the single Gaussian and its analytic
-formula differ by `r formatC(h2_gap, format = "g", digits = 2)` nats, which
+formula `r if (abs(h2_gap) < 1e-12) "agree to machine precision," else paste("differ by", formatC(h2_gap, format = "g", digits = 2), "nats,")` which
 confirms that the closed form is the formula it claims to be. The
 two-component mixture carries a higher entropy,
 `r round(h2_mixture, 3L)` nats against
@@ -634,7 +635,7 @@ which is the zero the definition requires. The Monte Carlo
 Kullback-Leibler estimate is `r round(d_kl$mc, 3L)` nats with a standard
 error of
 `r round(d_kl$mc_se, 4L)`, and the deterministic approximation of Hershey
-and Olsen (2007) returned beside it is `r round(d_kl$variational, 3L)`,
+and Olsen (2007) returned beside it is `r fixed(d_kl$variational, 3)`,
 `r round(d_kl_gap, 3L)` nats below the estimate. The Cauchy-Schwarz and
 Kullback-Leibler divergences are not on a common scale and should not be
 compared to each other, only across pairs of fits under one definition.
@@ -703,12 +704,13 @@ The fit's quality certificate is
 The fit
 `r if (isTRUE(q_field$converged)) "converged" else "did not converge"` and
 `r if (isTRUE(q_field$degenerate)) "is" else "is not"` degenerate. Its
-relative effective sample size is `r signif(q_field$ess_relative, 2L)`,
-about `r round(q_field$ess)` effective draws of
-`r fit_field@diagnostics$is_size`, which is
-`r if (q_field$ess_relative < 0.05) "below" else "above"` the relative
-level of 0.05 at which the package flags a fit. The graph read off this fit
-rests on that importance sample.
+approximate KL divergence, half the weighted variance of the log ratio of
+target to proxy over the fitting draws, is
+`r fixed(q_field$kld_approx, 3)` nats. The package flags a fit that did not
+converge, is degenerate, or has an approximate KL divergence above 0.3. The
+fit's effective sample size is about `r round(q_field$ess)` of
+`r fit_field@diagnostics$is_size` draws. The graph read off this fit rests
+on that importance sample.
 
 Taken together, the opening question has three answers. Spread is the
 Rényi-2 entropy, exact and cheap. Distance between two fits is the
@@ -794,10 +796,14 @@ and the PC algorithm in pcalg (Kalisch et al., 2012). Real data carry no
 reference value for either quantity, so this section places the estimates
 side by side and the simulation that follows scores them.
 
-The competitors install from CRAN once and load as usual:
+The competitors install from CRAN once and load as usual. pcalg also needs
+the graph and RBGL packages, which install from Bioconductor through
+BiocManager:
 
 ```{r install-competitors, eval = FALSE}
-install.packages(c("FNN", "glasso", "huge", "pcalg"))
+install.packages("BiocManager")
+BiocManager::install(c("graph", "RBGL"))
+install.packages(c("mclust", "FNN", "glasso", "huge", "pcalg", "cubature"))
 ```
 
 ```{r load-competitors, eval = run_illustration, message = FALSE}
@@ -1677,7 +1683,7 @@ components, higher dimensions, other neighbour counts for the
 nearest-neighbour estimators, or the choice of level, and no method
 here was run on a target that could only be evaluated.
 
-## Where next
+## Further reading
 
 *How well a mixture proxies four awkward shapes* runs regime (iii) across
 targets of different geometry and reports the fit-quality diagnostics these

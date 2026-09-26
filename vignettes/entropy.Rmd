@@ -7,8 +7,8 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-<!-- Render time: ~5 s under rmarkdown::render() with ggplot2 installed;
-     macOS arm64 (Apple silicon), R 4.5.2, one core. -->
+<!-- Render time: ~3 s under rmarkdown::render() with ggplot2 installed;
+     macOS arm64 (Apple silicon), R 4.6.1, one core. -->
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
@@ -29,65 +29,96 @@ library(proxymix)
 has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
 ```
 
-## Why
+```{r stored-results, include = FALSE}
+## The comparison table reads stored simulation results. They must come
+## from the same major.minor version of proxymix as this build.
+res <- readRDS("results/entropy.rds")
+major_minor <- function(v) paste(unlist(package_version(v))[1:2],
+                                 collapse = ".")
+if (major_minor(res$proxymix_version) !=
+    major_minor(as.character(packageVersion("proxymix")))) {
+  stop("results/entropy.rds was built under proxymix ",
+       res$proxymix_version, ", but this is proxymix ",
+       packageVersion("proxymix"), ". Rerun the simulation and ",
+       "data-raw/vignette_results/entropy.R.", call. = FALSE)
+}
 
-An analyst has a fitted mixture on the screen and three questions that the
-parameter list does not answer on its own: *how spread out is this mixture,
-how far is it from the other fit I ran yesterday, and how many components
-does my data actually support?* All three are entropy questions, and on a
-Gaussian mixture most of them have closed-form answers. This vignette walks
-the entropy surface of a fitted mixture: what is exact, what is estimated,
-and what each quantity is safe to conclude.
+## Small numbers are written as plain decimals rather than in the
+## scientific notation that knitr's inline hook would otherwise use.
+fixed <- function(v, digits) {
+  format(round(v, digits), nsmall = digits, scientific = FALSE)
+}
+## a small number as a \times 10^{b}, in LaTeX math
+sci <- function(v, digits) {
+  e <- floor(log10(abs(v)))
+  paste0("$", formatC(v / 10^e, format = "f", digits = digits),
+         " \\times 10^{", e, "}$")
+}
+```
 
-## What
+## The problem
 
-Six verbs carry the vignette. `gmm_entropy()` returns the order-2 Renyi
-entropy of a mixture in closed form by default, and a Monte Carlo Shannon
-estimate with its standard error and an analytic upper bound under
-`order = "shannon"`. `gmm_divergence()` returns the symmetric
-Cauchy-Schwarz divergence between two mixtures in closed form, and delegates
-to the Monte Carlo Kullback-Leibler estimator under `type = "kl"`.
+A fitted mixture is a list of weights, means and covariance matrices. From
+the list alone it is hard to tell how spread out the distribution is, how
+far it is from another fit, how many components the data support, or which
+variables depend on each other. Information theory has a measure for each
+of these questions. Entropy measures spread. Mutual information measures
+the dependence between variables and is zero when they are independent. A
+divergence measures how different two distributions are and is zero when
+they are equal. For a mixture of normal distributions, some of these
+measures have exact formulas and others must be estimated by simulation.
 
-`gmm_mutual_information()` measures dependence between two coordinate
-blocks of a fitted joint as the Cauchy-Schwarz divergence between the joint
-and the product of its marginals, and
-`gmm_conditional_entropy()` returns the order-2 Renyi entropy of the target
-coordinates given the conditioned ones, row by row.
+## Package capabilities
 
-`gmm_anneal_path()` cools a deterministic-annealing schedule and records
-where the components bifurcate, which both stabilises a fit and discovers a
-component count. `bic_aic()` reports the integrated completed likelihood
-beside the usual criteria, and `gmm_independence_graph()` reads the
-second-order conditional-independence structure of a fitted mixture.
-`maxent_target()` runs the argument the other way, from a set of
-constraints to the least-committal density consistent with them.
+- `gmm_entropy()` returns the Rényi entropy of order 2, a variant of
+  entropy that has an exact formula for mixtures.
+  With `order = "shannon"` it returns a simulation estimate of the Shannon
+  entropy, with its standard error and an exact upper bound.
+- `gmm_divergence()` returns the exact Cauchy-Schwarz divergence between
+  two mixtures. With `type = "kl"` it returns a simulation estimate of the
+  Kullback-Leibler divergence from `gmm_kld()`.
+- `gmm_mutual_information()` measures the dependence between two groups of
+  variables. `gmm_conditional_entropy()` returns the entropy of one
+  variable when the others are held at given values.
+- `gmm_anneal_path()` fits mixtures while a "temperature" is lowered, and
+  records where the components split apart. With `anneal = TRUE`,
+  `fit_em_samples()` and `fit_kld_em()` use this cooling to start a fit.
+- `bic_aic()` reports the integrated completed likelihood (ICL) beside the
+  BIC and AIC.
+- `gmm_independence_graph()` shows which pairs of variables remain related
+  once all the other variables are taken into account.
+- `maxent_target()` builds the most spread-out density that meets given
+  constraints.
 
-## Do
+## Addressing the problem
 
 ```{r seed}
 set.seed(20260618)
 ```
 
-### The closed-form spine
+### Why some quantities are exact
 
-The integral of a product of two Gaussian densities is itself a Gaussian
-density evaluation: writing $\mathcal{N}(x; m, S)$ for a Gaussian density,
-the integral over $x$ of
-$\mathcal{N}(x; a, A)\, \mathcal{N}(x; b, B)$ equals
-$\mathcal{N}(a; b, A + B)$. Any quantity that is *quadratic* in a mixture --
-the integral of $g(x)^2$, or of $p(x)\, q(x)$ -- is therefore a finite sum
-of such evaluations, and closed-form. Shannon entropy carries the logarithm
-of a sum and has no such closed form, so it is estimated by Monte Carlo.
+The Shannon entropy of a density $f$ is the average of $-\log f(x)$ over
+draws from $f$. The Rényi-2 entropy is $-\log \int f(x)^2\, dx$. Both are
+measured in nats, the unit of natural logarithms. Write
+$\phi(x; m, S)$ for the normal density with mean $m$ and covariance
+matrix $S$. The integral of a product of two normal densities has an exact value:
+$\int \phi(x; a, A)\, \phi(x; b, B)\, dx = \phi(a; b, A + B)$.
+The square of a mixture, or the product of two mixtures, is a sum of such
+products, and its integral is therefore exact too. The Rényi-2 entropy, the
+Cauchy-Schwarz divergence and the Cauchy-Schwarz mutual information are
+built from these integrals. The Shannon entropy needs the logarithm of a
+sum of densities, which has no exact formula.
 
-### Renyi-2 entropy against its analytic value
+### Entropy of a mixture
 
-`gmm_entropy()` returns the closed-form order-2 Renyi entropy by default.
-For a single Gaussian the value is exact and matches the analytic form
-$H_2(\mathcal{N}(\mu, \Sigma)) =
-\tfrac{p}{2}\log(4\pi) + \tfrac{1}{2}\log\det\Sigma$, which is an
-independent check on the implementation.
+The code below builds a mixture of two normal distributions with centres 4
+apart, and a single normal distribution with correlation 0.3. For a single
+normal distribution in $p$ variables with covariance matrix $\Sigma$, the
+Rényi-2 entropy is $\tfrac{p}{2}\log(4\pi) + \tfrac{1}{2}\log\det\Sigma$,
+an independent check on the package.
 
-```{r renyi}
+```{r entropy}
 g <- gmm(
   weights = c(0.5, 0.5),
   means = list(c(-2, 0), c(2, 0)),
@@ -101,58 +132,41 @@ h2_closed <- gmm_entropy(one)
 h2_analytic <- 0.5 * (2 * log(4 * pi) +
   as.numeric(determinant(sigma_one, logarithm = TRUE)$modulus))
 h2_gap <- abs(h2_closed - h2_analytic)
-```
 
-```{r renyi-kable, echo = FALSE}
-knitr::kable(
-  data.frame(
-    quantity = c(
-      "two-component mixture, closed form",
-      "single Gaussian, closed form",
-      "single Gaussian, analytic formula"
-    ),
-    value = round(c(h2_mixture, h2_closed, h2_analytic), 6L)
-  ),
-  col.names = c("Quantity", "Renyi-2 entropy (nats)"),
-  caption = "Closed-form order-2 Renyi entropy, and the analytic check."
-)
-```
-
-### Shannon entropy, bracketed from above
-
-Shannon entropy is returned as a Monte Carlo estimate with its standard
-error and an analytic upper bound.
-
-```{r shannon}
 sh <- gmm_entropy(g, order = "shannon", n_mc = 5000L, seed = 1L)
 sh_slack <- sh$upper_bound - sh$mc
 sh_slack_se <- sh_slack / sh$mc_se
 ```
 
-```{r shannon-kable, echo = FALSE}
+```{r entropy-kable, echo = FALSE}
 knitr::kable(
   data.frame(
     quantity = c(
-      "Monte Carlo estimate", "Monte Carlo standard error",
-      "analytic upper bound", "draws"
+      "Rényi-2, two-component mixture",
+      "Rényi-2, single normal, from the package",
+      "Rényi-2, single normal, from the formula",
+      "Shannon, two-component mixture, simulation estimate",
+      "Shannon, standard error of the estimate",
+      "Shannon, exact upper bound"
     ),
-    value = c(
-      round(sh$mc, 4L), round(sh$mc_se, 4L),
-      round(sh$upper_bound, 4L), sh$n_mc
-    )
+    value = formatC(c(h2_mixture, h2_closed, h2_analytic, sh$mc, sh$mc_se,
+                      sh$upper_bound), format = "f", digits = 4L)
   ),
-  col.names = c("Quantity", "Value"),
-  caption = "Shannon entropy of the two-component mixture, in nats."
+  col.names = c("Quantity", "Value (nats)"), align = c("l", "r"),
+  caption = paste0(
+    "Entropy of the two-component mixture and of the single normal ",
+    "distribution. The Shannon estimate uses ", sh$n_mc, " draws."
+  )
 )
 ```
 
-### Cauchy-Schwarz divergence, and the Kullback-Leibler alternative
+### Distance between two mixtures
 
-`gmm_divergence()` returns the closed-form, symmetric Cauchy-Schwarz
-divergence by default. It is non-negative and zero exactly when the two
-mixtures are proportional. When the asymmetric Kullback-Leibler divergence
-is wanted instead, `type = "kl"` delegates to the package's Monte Carlo
-estimator `gmm_kld()`.
+The Cauchy-Schwarz divergence is symmetric, and zero only when the two
+mixtures are equal. The Kullback-Leibler divergence is not symmetric and
+has no exact formula for mixtures. With `type = "kl"`, `gmm_divergence()`
+returns a simulation estimate and the approximation of Hershey and Olsen
+(2007), which needs no simulation.
 
 ```{r divergence}
 q <- gmm(
@@ -161,7 +175,6 @@ q <- gmm(
 d_cs <- gmm_divergence(g, q)
 d_self <- gmm_divergence(g, g)
 d_kl <- gmm_divergence(g, q, type = "kl", n_mc = 2000L)
-d_kl_gap <- d_kl$mc - d_kl$variational
 ```
 
 ```{r divergence-kable, echo = FALSE}
@@ -169,25 +182,25 @@ knitr::kable(
   data.frame(
     quantity = c(
       "Cauchy-Schwarz, g against q", "Cauchy-Schwarz, g against itself",
-      "Kullback-Leibler, Monte Carlo", "Kullback-Leibler, Monte Carlo se",
+      "Kullback-Leibler, simulation estimate",
+      "Kullback-Leibler, standard error of the estimate",
       "Kullback-Leibler, Hershey-Olsen approximation"
     ),
-    value = round(
-      c(d_cs, d_self, d_kl$mc, d_kl$mc_se, d_kl$variational), 4L
-    )
+    value = formatC(c(d_cs, d_self, d_kl$mc, d_kl$mc_se, d_kl$variational),
+                    format = "f", digits = 4L)
   ),
-  col.names = c("Quantity", "Value (nats)"),
+  col.names = c("Quantity", "Value (nats)"), align = c("l", "r"),
   caption = "Two divergences between the same pair of mixtures."
 )
 ```
 
-### Mutual information and predictive entropy
+### Dependence between variables
 
-Two further reads come from the same closed-form spine. Cauchy-Schwarz
-mutual information is non-negative and zero exactly when the blocks are
-independent; conditional entropy is the order-2 Renyi entropy of the conditional mixture
-`gmm_conditionalise()` returns, evaluated row by row, with `NA` marking the
-target coordinate.
+The Cauchy-Schwarz mutual information compares the joint distribution with
+the distribution the variables would have if they were independent. The
+conditional entropy of $x_1$ given $x_2$ is the Rényi-2 entropy of $x_1$
+when $x_2$ is held at a value. `gmm_conditional_entropy()` takes one row
+per value, with `NA` marking the free variable.
 
 ```{r mutual-information}
 sigma_joint <- matrix(c(1, 0.7, 0.7, 1), 2L, 2L)
@@ -196,9 +209,8 @@ joint <- gmm(
 )
 mi <- gmm_mutual_information(joint, 1L, 2L)
 
-sigma_free <- diag(2)
 independent <- gmm(
-  weights = 1, means = list(c(0, 0)), covariances = list(sigma_free)
+  weights = 1, means = list(c(0, 0)), covariances = list(diag(2))
 )
 mi_independent <- gmm_mutual_information(independent, 1L, 2L)
 
@@ -210,34 +222,38 @@ h_cond <- gmm_conditional_entropy(joint, given = given_grid)
 knitr::kable(
   data.frame(
     quantity = c(
-      "Cauchy-Schwarz mutual information, correlation 0.7",
-      "Cauchy-Schwarz mutual information, independent block",
-      "conditional Renyi-2 entropy at x2 = 0",
-      "conditional Renyi-2 entropy at x2 = 1",
-      "conditional Renyi-2 entropy at x2 = 2"
+      "mutual information, correlation 0.7",
+      "mutual information, independent variables",
+      "conditional entropy of $x_1$ at $x_2 = 0$",
+      "conditional entropy of $x_1$ at $x_2 = 1$",
+      "conditional entropy of $x_1$ at $x_2 = 2$"
     ),
-    value = round(c(mi, mi_independent, h_cond), 6L)
+    value = formatC(c(mi, mi_independent, h_cond), format = "f",
+                    digits = 4L)
   ),
-  col.names = c("Quantity", "Value (nats)"),
+  col.names = c("Quantity", "Value (nats)"), align = c("l", "r"),
   caption = paste(
-    "Cauchy-Schwarz mutual information between the two coordinates, and",
-    "the order-2 Renyi entropy of the first given the second."
+    "Cauchy-Schwarz mutual information between two variables, and the",
+    "Rényi-2 entropy of the first given the second."
   )
 )
 ```
 
-### Cooling the fit: annealing and phase transitions
+### Cooling the fit
 
-The same statistical-mechanics framing -- the fitting objective is a
-variational free energy $F = \langle E \rangle - T H$ -- yields a robustness
-tool. Softening the E-step responsibilities by a temperature $T$, so that
-$\gamma_{ik} \propto \pi_k\, \mathcal{N}(x_i;\ \mu_k, \Sigma_k)^{1/T}$, and
-cooling $T$ from a high value toward one, turns the fit into a homotopy: at
-high $T$ the objective has a single smooth basin, and as $T$ falls the
-components bifurcate at critical temperatures. Setting `anneal = TRUE` on
-`fit_em_samples()` or `fit_kld_em()` uses this annealed path as a warm start
-for the unchanged cold EM loop, which is less sensitive to local optima than
-a cold multi-start.
+The EM algorithm, the usual fitting method for a mixture, repeats two
+steps: it shares each data point among the components, then refits each
+component to its share. Deterministic annealing (Rose, 1998) softens the shares with a
+temperature $T$: point $i$ goes to component $k$ in proportion to
+$\pi_k\, \phi(x_i;\ \mu_k, \Sigma_k)^{1/T}$, where $\pi_k$ is the
+weight of the component. At a high temperature every component sits at the
+mean of the data. As $T$ falls towards one, the components split apart at
+critical temperatures. The quantity minimised is the free energy
+$F = \langle E \rangle - T H$, where $\langle E \rangle$ is the average of
+$-\log \phi(x_i;\ \mu_k, \Sigma_k)$ over the shares and $H$ is the
+entropy of the shares. With `anneal = TRUE`, `fit_em_samples()` and
+`fit_kld_em()` cool first and start the usual fit from the result. The data
+below are three far-apart clusters of 100 points each.
 
 ```{r anneal-fit}
 x_three <- rbind(
@@ -253,58 +269,52 @@ fit_annealed <- fit_em_samples(tgt_three, N = 3L, anneal = TRUE, seed = 1L)
 fit_annealed@diagnostics$annealed
 ```
 
-Cooling also discovers the component count. `gmm_anneal_path()` tracks the
-number of distinct centroids as the temperature falls; the count occupying
-the widest temperature range is the discovered number of components, and
-the first bifurcation has the closed-form critical temperature
-$T_c = \lambda_{\max}(\Sigma^{-1} C)$, returned as `t_critical_analytic`
-for an independent check.
+`gmm_anneal_path()` counts the distinct component centres at each
+temperature. It returns the count that held for the largest number of
+cooling steps, which are evenly spaced in log temperature. The temperature
+of the first split can be computed from the covariance matrix of the data,
+$C$. It is $T_c = \lambda_{\max}(\Sigma^{-1} C)$, the largest eigenvalue of
+$\Sigma^{-1} C$, where $\Sigma = \sigma^2 I$ is the covariance matrix of
+every component during cooling. With the default $\sigma = 1$, $T_c$ is the
+largest eigenvalue of $C$, which is the variance of the data along the
+direction in which they are most spread out.
 
 ```{r anneal-path}
 path <- gmm_anneal_path(x_three, k_max = 6L, n_steps = 60L, seed = 1L)
 k_found <- path$k_selected
 t_empirical <- path$first_critical_temperature
 t_analytic <- path$t_critical_analytic
-t_ratio <- t_empirical / t_analytic
 ```
 
 ```{r anneal-kable, echo = FALSE}
 knitr::kable(
   data.frame(
     quantity = c(
-      "components discovered", "first critical temperature, empirical",
-      "first critical temperature, analytic", "ratio empirical to analytic",
-      "cooling steps recorded"
+      "components found", "first critical temperature, recorded",
+      "first critical temperature, exact", "cooling steps"
     ),
     value = c(
-      k_found, round(t_empirical, 2L), round(t_analytic, 2L),
-      round(t_ratio, 3L), nrow(path$path)
+      formatC(k_found, format = "d"),
+      formatC(c(t_empirical, t_analytic), format = "f", digits = 2L),
+      formatC(nrow(path$path), format = "d")
     )
   ),
-  col.names = c("Quantity", "Value"),
-  caption = paste(
-    "What the cooling schedule discovered on three well-separated",
-    "clusters."
-  )
+  col.names = c("Quantity", "Value"), align = c("l", "r"),
+  caption = "What the cooling found on three well-separated clusters."
 )
 ```
 
-The table gives two numbers where the cooling gives a whole curve. The
-figure below is the curve: the number of distinct centroids against
-temperature on the upper panel, the variational free energy on the lower,
-with the empirical and analytic first critical temperatures marked.
-
-```{r fig-anneal, eval = has_ggplot2, echo = has_ggplot2, fig.height = 5, fig.cap = "Deterministic annealing on three well-separated clusters. The upper panel is the staircase of distinct centroids as the temperature falls, the lower panel the variational free energy over the same schedule. The dashed rule is the empirical first critical temperature, the dotted rule the closed-form analytic one; the first bifurcation happens between them.", fig.alt = "Two stacked panels against a logarithmic temperature axis running from hot to cold: the upper panel is a rising staircase of the number of distinct centroids, the lower panel a descending free-energy curve, both annotated with two nearly coincident vertical rules marking the first critical temperature."}
+```{r fig-anneal, eval = has_ggplot2, echo = has_ggplot2, fig.height = 4.4, fig.cap = "Cooling on three well-separated clusters. Upper panel: the number of distinct component centres at each temperature. Lower panel: the free energy. The dashed line marks the temperature at which the first split was recorded, the dotted line the exact critical temperature.", fig.alt = "Two stacked panels against a logarithmic temperature axis: the upper panel is a staircase of the number of distinct component centres, the lower panel a free-energy curve that is flat at the hot end and then falls, both with two nearly coincident vertical lines marking the first critical temperature."}
 anneal_df <- rbind(
   data.frame(
     temperature = path$path$temperature,
     value = path$path$n_effective,
-    panel = "distinct centroids"
+    panel = "distinct centres"
   ),
   data.frame(
     temperature = path$path$temperature,
     value = path$path$free_energy,
-    panel = "variational free energy"
+    panel = "free energy"
   )
 )
 ggplot2::ggplot(anneal_df, ggplot2::aes(temperature, value)) +
@@ -316,62 +326,72 @@ ggplot2::ggplot(anneal_df, ggplot2::aes(temperature, value)) +
     xintercept = t_empirical, linetype = "dashed",
     colour = "#D55E00", linewidth = 0.7
   ) +
-  ggplot2::geom_step(linewidth = 0.8, colour = "#000000") +
+  # a count recorded at one temperature holds until the next, cooler step
+  ggplot2::geom_step(direction = "vh", linewidth = 0.8,
+                     colour = "#000000") +
   ggplot2::facet_wrap(~ panel, ncol = 1L, scales = "free_y") +
   ggplot2::scale_x_log10() +
   ggplot2::labs(
-    x = "temperature (log scale, cooling to the left)",
+    x = "temperature (log scale, cooling from right to left)",
     y = NULL,
-    title = "Where the components bifurcate as the fit cools"
+    title = "Where the components split as the fit cools"
   ) +
   ggplot2::theme_minimal(base_size = 11)
 ```
 
 ```{r fig-anneal-skip, eval = !has_ggplot2, echo = FALSE, results = "asis"}
-cat("ggplot2 is not installed on this build, so the annealing-path figure",
+cat("ggplot2 is not installed on this build, so the cooling figure",
     "is skipped.\n")
 ```
 
 ### Maximum-entropy targets
 
-Entropy also points the other way -- from a set of constraints to the
-least-committal density consistent with them. `maxent_target()` builds that
-maximum-entropy density: the Gaussian under first- and second-moment
-constraints on the full space, the uniform under a support constraint alone,
-and a truncated Gaussian under second moments on a box. The bounded cases
-declare their support, so regime (iii) fits them under an automatically
-selected support-matched proposal.
+Among all densities that meet a set of constraints, the one with the
+largest entropy assumes nothing beyond them (Jaynes, 1957).
+`maxent_target()` builds it. For a given mean and covariance matrix it is
+the normal distribution, for a given range alone the uniform, and for a
+mean and covariance matrix on a bounded box a truncated normal. A bounded
+target records its range. When such a target is fitted from its formula
+alone (`regime = "kld"`, van der Hoek and Elliott, 2024), the random points that the fit weights are then
+drawn over that range.
 
 ```{r maxent}
 me_gauss <- maxent_target(moments = list(mean = c(0, 0), cov = diag(2)))
 me_unif <- maxent_target(support = list(lower = c(0, 0), upper = c(1, 1)))
 unif_density <- exp(me_unif@log_density(matrix(c(0.5, 0.5), nrow = 1L)))
+gauss_density <- exp(me_gauss@log_density(matrix(c(0, 0), nrow = 1L)))
 ```
 
 ```{r maxent-kable, echo = FALSE}
 knitr::kable(
   data.frame(
-    constraint = c("mean and covariance", "unit-square support"),
+    constraint = c("mean and covariance matrix", "the unit square as range"),
     family = c(me_gauss@metadata$family, me_unif@metadata$family),
-    check = c(NA_real_, round(unif_density, 6L))
+    check = formatC(c(gauss_density, unif_density), format = "f",
+                    digits = 3L)
   ),
-  col.names = c("Constraint supplied", "Maximum-entropy family",
-                "Density at the centre"),
+  col.names = c("Constraint", "Family returned", "Density at the centre"),
+  align = c("l", "l", "r"),
   caption = paste(
-    "The least-committal density under each constraint set. The unit",
-    "square has area one, so its uniform density is one."
+    "The maximum-entropy density under each constraint, with mean zero and",
+    "identity covariance matrix for the first. The unit square has area",
+    "one, so the uniform density on it is one."
   )
 )
 ```
 
-### Selecting a component count with the ICL
+### Choosing the number of components
 
-`bic_aic()` reports the integrated completed likelihood alongside the BIC
-and AIC. The ICL adds to the BIC twice the entropy of the fitted
-classification, $\mathrm{ICL} = \mathrm{BIC} + 2 E_N$ with
-$E_N = -\sum_{i,k} \gamma_{ik} \log \gamma_{ik} \geq 0$, so it penalises
-mixtures whose components overlap and favours well-separated solutions. It
-equals the BIC for a single component and is never smaller.
+The BIC (Bayesian information criterion) and the AIC (Akaike information
+criterion, with a lighter penalty) balance how well a mixture fits against
+its number of parameters. In `bic_aic()`, smaller is better. The
+ICL (Biernacki et al., 2000) adds a penalty for overlap,
+$\mathrm{ICL} = \mathrm{BIC} + 2 E_N$ with
+$E_N = -\sum_{i,k} \gamma_{ik} \log \gamma_{ik}$, where $\gamma_{ik}$ is the
+share of point $i$ given to component $k$. $E_N$ is zero when every point
+belongs clearly to one component and grows with overlap. The ICL equals the
+BIC for one component, is never smaller than the BIC, and favours well-separated
+components.
 
 ```{r icl}
 x_two <- rbind(
@@ -380,23 +400,19 @@ x_two <- rbind(
 )
 fit_two <- fit_em_samples(gmm_target_from_samples(x_two), N = 2L)
 crit <- bic_aic(fit_two)
-icl_gap <- crit$icl - crit$bic
 ```
 
 ```{r icl-kable, echo = FALSE}
 knitr::kable(
   data.frame(
-    criterion = c("BIC", "AIC", "ICL", "classification entropy",
-                  "free parameters"),
+    criterion = c("BIC", "AIC", "ICL", "$E_N$", "free parameters"),
     value = c(
-      formatC(crit$bic, format = "f", digits = 2L),
-      formatC(crit$aic, format = "f", digits = 2L),
-      formatC(crit$icl, format = "f", digits = 2L),
-      formatC(crit$classification_entropy, format = "e", digits = 1L),
+      formatC(c(crit$bic, crit$aic, crit$icl), format = "f", digits = 2L),
+      sci(crit$classification_entropy, 1L),
       formatC(crit$n_params, format = "d")
     )
   ),
-  col.names = c("Criterion", "Value"),
+  col.names = c("Criterion", "Value"), align = c("l", "r"),
   caption = paste(
     "Information criteria for a two-component fit to two well-separated",
     "clusters."
@@ -404,21 +420,19 @@ knitr::kable(
 )
 ```
 
-### Dependency structure of a mixture
+### Which variables are related
 
-`gmm_independence_graph()` reads the undirected second-order
-conditional-independence (Gaussian graphical model) structure of a fitted
-mixture: an edge $i - j$ is absent when the partial correlation of
-coordinates $i$ and $j$, given all the others, is judged to be zero -- the
-Markov statement $x_i \perp x_j \mid x_{\mathrm{rest}}$ at second order.
-When the sample size is known (from a regime `"sample"` or `"moment"` fit,
-or given as `n`), each partial correlation is tested with Fisher's z at
-level `alpha`. Otherwise an edge is drawn when the partial correlation
-exceeds `threshold` in magnitude. Both mixtures below, a `gmm()` built by
-hand and a regime (iii) fit, carry no sample size, so both graphs use the
-default `threshold` of 0.05. The overall covariance of a mixture is
-closed-form in its parameters, so no sampling is needed. A tridiagonal
-precision matrix is a chain, and the recovered graph should be that chain.
+The partial correlation of two variables is their correlation after the
+linear effect of all the other variables is removed.
+`gmm_independence_graph()` computes it for every pair from the overall
+covariance matrix of the mixture, which is exact, and draws an edge where
+it is judged non-zero. For a mixture fitted to data, each pair is tested
+at level `alpha` (default 0.05) with Fisher's $z$ test, a standard test of
+whether a correlation is zero. For a mixture with
+no data behind it, an edge is drawn where the partial correlation exceeds
+0.05 in size. The first example is a normal distribution in four variables whose
+inverse covariance matrix links each variable only to its neighbours. Its
+graph should be the chain $x_1 - x_2 - x_3 - x_4$.
 
 ```{r graph-chain}
 omega <- diag(4L)
@@ -436,21 +450,17 @@ edges_chain <- sum(adj_chain) / 2L
 ```{r graph-chain-kable, echo = FALSE}
 knitr::kable(
   as.data.frame(adj_chain[, ]),
-  caption = paste(
-    "Recovered adjacency of a chain precision matrix: an edge between",
-    "neighbouring coordinates and nowhere else."
-  )
+  caption = "Edges of the four-variable chain (1 = edge)."
 )
 ```
 
-The distinctive use is **regime (iii)**. Composed with `fit_kld_em()`, the
-diagnostic recovers the dependency structure of a target you can only
-*evaluate* -- an unnormalised energy density -- where no sample exists to
-drive a conventional structure estimator. The continuous field below couples
-only neighbouring coordinates, so the recovered graph should again be the
-chain.
+The second example is a density in three variables known only by its
+formula. Its log density is minus the energy below, which links $x_1$ with
+$x_2$ and $x_2$ with $x_3$ but has no term in $x_1 x_3$. Given $x_2$, the
+variables $x_1$ and $x_3$ are independent, and the graph of the target is
+the chain $x_1 - x_2 - x_3$.
 
-```{r graph-regime-iii}
+```{r graph-field}
 energy <- function(x_mat) {
   x_mat <- matrix(x_mat, ncol = 3L)
   rowSums((x_mat^2 - 1)^2) -
@@ -470,168 +480,404 @@ adj_field <- gmm_independence_graph(fit_field)
 edges_field <- sum(adj_field) / 2L
 ```
 
-```{r graph-regime-iii-kable, echo = FALSE}
+```{r graph-field-facts, include = FALSE}
+## the target's partial correlations, by summation over a grid on [-3, 3]^3
+g_axis <- seq(-3, 3, length.out = 61L)
+g_pts <- as.matrix(expand.grid(g_axis, g_axis, g_axis))
+g_w <- exp(-energy(g_pts))
+g_w <- g_w / sum(g_w)
+g_mean <- colSums(g_pts * g_w)
+prec_exact <- solve(crossprod(g_pts * sqrt(g_w)) - tcrossprod(g_mean))
+pcor_exact <- -prec_exact / tcrossprod(sqrt(diag(prec_exact)))
+pcor_field <- attr(adj_field, "pcor")
+q_field <- gmm_fit_quality(fit_field)
+field_flagged <- isTRUE(q_field$degenerate) || isFALSE(q_field$converged) ||
+  q_field$kld_approx > 0.3
+field_is_chain <- edges_field == 2L && adj_field[1L, 3L] == 0L
+```
+
+```{r graph-field-kable, echo = FALSE}
 knitr::kable(
   as.data.frame(adj_field[, ]),
-  caption = paste(
-    "Recovered adjacency of a three-coordinate energy field fitted in",
-    "regime (iii), where only the density can be evaluated."
+  caption = "Edges of the mixture fitted to the three-variable density (1 = edge)."
+)
+```
+
+### Comparison with FNN, mclust and pcalg
+
+```{r compare-facts, include = FALSE}
+d2 <- "2-d, three components"
+d4 <- "4-d, two components"
+e_value <- function(design, quantity, method, what) {
+  s1 <- res$entropy_tab$design == design &
+    res$entropy_tab$quantity == quantity & res$entropy_tab$method == method
+  res$entropy_tab[[what]][s1]
+}
+k_value <- function(design, selector) {
+  res$k_tab$share_true[res$k_tab$design == design &
+                         res$k_tab$selector == selector]
+}
+g_value <- function(method, what) {
+  res$graph_tab[[what]][res$graph_tab$method == method]
+}
+pair_z <- abs(res$pair_tab$diff / res$pair_tab$diff_se)
+mi_4d <- res$pair_tab$design == d4 &
+  res$pair_tab$quantity == "Shannon mutual information"
+k_two <- function(design, selector) {
+  res$k_two_tab$share_two[res$k_two_tab$design == design &
+                            res$k_two_tab$selector == selector]
+}
+## pairs with no edge in the six-variable chain of the graph design
+n_absent <- choose(6L, 2L) - 5L
+t_s <- function(s1) fixed(res$time_secs[[s1]], 3)
+```
+
+The FNN package estimates the Shannon entropy from the distances between
+each data point and its nearest neighbours (Kozachenko and Leonenko, 1987).
+Its `mutinfo()` estimates the mutual information in the same way (Kraskov
+et al., 2004). Neither estimator fits a model. In a simulation,
+`r res$n_rep` datasets of `r res$n` rows were drawn from each of two
+mixtures with known entropy. One has three overlapping components in two
+variables. The other has two components in four variables, and its mutual
+information is between the first two variables and the last two. proxymix
+was given the true number of components, which FNN does not need, and used
+5000 simulation draws. FNN used `r res$k_nn` neighbours. The true values came
+from numerical integration of the true density. The measure is the mean
+absolute error, and smaller is better.
+
+```{r compare-table, echo = FALSE}
+cmp <- res$pair_tab
+cmp$truth <- mapply(function(d, q) {
+  res$truth$truth[res$truth$design == d & res$truth$quantity == q]
+}, cmp$design, cmp$quantity)
+cmp$err_proxymix <- mapply(e_value, cmp$design, cmp$quantity, "proxymix",
+                           "abs_error")
+cmp$err_fnn <- mapply(e_value, cmp$design, cmp$quantity, cmp$rival,
+                      "abs_error")
+cmp_tbl <- data.frame(
+  design = ifelse(cmp$design == d2, "three components, 2 variables",
+                  "two components, 4 variables"),
+  quantity = sub("Shannon ", "", cmp$quantity),
+  truth = fixed(cmp$truth, 3),
+  err_proxymix = fixed(cmp$err_proxymix, 3),
+  err_fnn = fixed(cmp$err_fnn, 3),
+  diff = paste0(fixed(cmp$diff, 3), " (", fixed(cmp$diff_se, 3), ")"),
+  stringsAsFactors = FALSE
+)
+cmp_tbl <- cmp_tbl[order(cmp_tbl$quantity, decreasing = FALSE), ]
+knitr::kable(
+  cmp_tbl, row.names = FALSE,
+  align = c("l", "l", "r", "r", "r", "r"),
+  col.names = c("Design", "Shannon quantity", "True value",
+                "Error, proxymix", "Error, FNN",
+                "Difference (standard error)"),
+  caption = paste0(
+    "Mean absolute error in nats over ", res$n_rep, " datasets of ", res$n,
+    " rows per design. The difference is the proxymix error minus the FNN ",
+    "error, paired by dataset. A negative value favours proxymix."
   )
 )
 ```
 
-## Read
+proxymix had the smaller error for the entropy in both designs and for the
+mutual information with two variables, each by at least
+`r fixed(floor(10 * min(pair_z[!mi_4d])) / 10, 1)` standard errors. With four variables, the
+difference in mutual information is `r fixed(pair_z[mi_4d], 1)` standard
+errors, too small to separate the two methods.
 
-The closed-form Renyi-2 entropy of the single Gaussian and its analytic
-formula differ by `r formatC(h2_gap, format = "g", digits = 2)` nats, which
-confirms that the closed form is the formula it claims to be. The
-two-component mixture carries a higher entropy,
-`r round(h2_mixture, 3L)` nats against
-`r round(h2_closed, 3L)` for the single Gaussian, because its mass is
-spread across two separated modes rather than one.
+Where the same simulation chose the number of components or recovered a
+graph, other packages did better. With three overlapping components, the
+BIC of the mclust package (Scrucca et al., 2016) chose the true count in
+`r fixed(k_value(d2, "mclust, BIC"), 2)` of datasets and proxymix's BIC in
+`r fixed(k_value(d2, "proxymix, BIC"), 2)`. Both ICLs mostly chose two
+components, and found the true count in
+`r fixed(k_value(d2, "mclust, ICL"), 2)` of datasets for mclust and
+`r fixed(k_value(d2, "proxymix, ICL"), 2)` for proxymix. With two
+components in four variables, mclust's ICL found the true count in
+`r fixed(k_value(d4, "mclust, ICL"), 2)` of datasets and proxymix's in
+`r fixed(k_value(d4, "proxymix, ICL"), 2)`. On a six-variable
+chain with two components, the PC algorithm of the pcalg package (Kalisch
+et al., 2012), which removes edges by repeated tests of partial
+correlations, was run at level 0.01 and recovered the graph exactly in
+`r fixed(g_value("pcalg", "share_exact"), 3)` of datasets.
+`gmm_independence_graph()`, at level 0.05 per pair, did so in
+`r fixed(g_value("proxymix", "share_exact"), 2)`. The chain leaves
+`r n_absent` pairs without an edge. Were their tests independent, all
+`r n_absent` would be left out at level 0.05 with probability
+`r fixed(0.95^n_absent, 2)`, close to proxymix's share, so most of the gap
+comes from the looser level.
 
-The Shannon estimate is `r round(sh$mc, 3L)` nats with a standard error of
-`r round(sh$mc_se, 4L)`, and the analytic bound sits
-`r round(sh_slack, 3L)` nats above it, a gap of
-`r round(sh_slack_se, 1L)` standard errors. The estimate sitting clear
-below the bound is the coherence check the bound is there to provide.
+proxymix was slower than FNN and pcalg. On one dataset of `r res$n` rows,
+the FNN estimates took
+`r t_s("entropy_FNN")` seconds and the proxymix fit with its estimates
+`r t_s("entropy_proxymix")` seconds. The PC algorithm took
+`r t_s("graph_pcalg")` seconds and proxymix `r t_s("graph_proxymix")`.
+proxymix's five fits for the component count took `r t_s("count_proxymix")`
+seconds and mclust's ICL `r t_s("count_mclust")` (median of five runs on
+one computer).
 
-The two divergences answer different questions about the same pair. The
-Cauchy-Schwarz divergence is `r round(d_cs, 4L)` nats and is exact; against
-itself the mixture scores `r formatC(d_self, format = "g", digits = 2)`,
-which is the zero the definition requires. The Monte Carlo
-Kullback-Leibler estimate is `r round(d_kl$mc, 3L)` nats with a standard
-error of
-`r round(d_kl$mc_se, 4L)`, and the deterministic Hershey-Olsen
-approximation returned beside it is `r round(d_kl$variational, 3L)`,
-`r round(d_kl_gap, 3L)` nats below the estimate, which is the direction that
-approximation takes on well-separated components. The Cauchy-Schwarz and
-Kullback-Leibler divergences are not on a common scale and should not be
-compared to each other, only across pairs of fits under one definition.
+The code below runs the three competitors and the proxymix estimates on
+one dataset from each design.
 
-Cauchy-Schwarz mutual information reads `r round(mi, 4L)` nats between two
-coordinates correlated at 0.7, and
-`r formatC(mi_independent, format = "g", digits = 2)` between two
-independent ones, which is the zero the definition requires. The conditional
-Renyi-2 entropy is `r round(h_cond[1L], 4L)` nats at every point of the grid,
-identical across the three conditioning values because a single-component
-joint has a conditional whose spread does not depend on what is conditioned
-on; a multi-component joint would vary across the grid.
+```{r compare-code, eval = FALSE}
+library(proxymix)
+library(FNN)
+library(mclust)
+library(pcalg)
 
-Cooling discovered `r k_found` components, which is the number of clusters
-the data was built from. The first bifurcation was recorded at temperature
-`r round(t_empirical, 1L)` against the closed-form
-$T_c = \lambda_{\max}(\Sigma^{-1} C) =$ `r round(t_analytic, 1L)`, a ratio
-of `r round(t_ratio, 2L)`. The two rules in the figure sit close together
-but not on top of each other: the empirical value is the first temperature
-on a `r nrow(path$path)`-step grid at which the split was *detected*, so it
-lags the temperature at which the split becomes available, and the size of
-that lag is set by the grid spacing rather than by the data. The staircase
-in the upper panel is the discovery itself -- one centroid held over the
-hot end of the schedule, then a jump, then the plateau at `r k_found` that
-occupies the widest temperature range and is therefore the count returned.
-The lower panel shows the free energy falling smoothly through the same
-bifurcations, which is why a cold multi-start has no comparable signal to
-follow.
+# one dataset of 500 rows from the design with three overlapping components
+w <- c(0.4, 0.35, 0.25)
+mu <- list(c(-2, 0), c(2, 1), c(0, 3))
+sig <- list(matrix(c(1, 0.5, 0.5, 1), 2L),
+            matrix(c(1.5, -0.6, -0.6, 0.8), 2L),
+            diag(c(0.5, 1.2)))
+set.seed(1L)
+z <- sample.int(3L, 500L, replace = TRUE, prob = w)
+x <- matrix(rnorm(500L * 2L), 500L, 2L)
+for (k in 1:3) {
+  x[z == k, ] <- x[z == k, , drop = FALSE] %*% chol(sig[[k]]) +
+    matrix(mu[[k]], sum(z == k), 2L, byrow = TRUE)
+}
 
-The maximum-entropy constructions return the families the theory names: the
-Gaussian under moment constraints, the uniform under a support constraint,
-whose density at the centre of the unit square is
-`r round(unif_density, 3L)`, the reciprocal of an area of one.
+# Shannon entropy and mutual information by nearest neighbours
+entropy(x, k = 10L)[10L]
+mutinfo(x[, 1L, drop = FALSE], x[, 2L, drop = FALSE], k = 10L)
 
-For the two-cluster fit the BIC is `r round(crit$bic, 1L)` and the ICL is
-`r round(crit$icl, 1L)`, differing by
-`r formatC(icl_gap, format = "e", digits = 1)` because the classification
-entropy is `r formatC(crit$classification_entropy, format = "e", digits = 1)`.
-Two clusters this well separated leave no ambiguity about which component a
-point belongs to, so the ICL has nothing to penalise and coincides with the
-BIC to the precision the table reports; on overlapping components the two
-criteria separate, and the ICL prefers the smaller count.
+# the same two quantities from a fitted three-component mixture
+fit <- fit_em_samples(gmm_target_from_samples(x), N = 3L, seed = 1L)
+h_mc <- function(g) {
+  gmm_entropy(g, order = "shannon", n_mc = 5000L, seed = 1L)$mc
+}
+h_mc(fit)
+h_mc(gmm_marginalise(fit, 1L)) + h_mc(gmm_marginalise(fit, 2L)) - h_mc(fit)
 
-Both dependency graphs come back as the chain. The analytic case recovers
-`r edges_chain` edges from a tridiagonal precision matrix, and the regime
-(iii) case recovers `r edges_field` edges from a three-coordinate energy
-field that was never sampled, only evaluated. That is the answer to the
-third part of the opening question in its sharpest form: the structure of a
-target can be read off a fitted proxy even when no sample of the target
-exists.
+# number of components by mclust's BIC and ICL, one to five offered
+Mclust(x, G = 1:5, verbose = FALSE)$G
+icl_m <- mclustICL(x, G = 1:5, verbose = FALSE)
+which(icl_m == max(icl_m, na.rm = TRUE), arr.ind = TRUE)[1L]
 
-Taken together, the opening question has three answers. Spread is the
-Renyi-2 entropy, exact and cheap. Distance between two fits is the
-Cauchy-Schwarz divergence, also exact, with the Kullback-Leibler estimate
-available when a downstream consumer requires that definition. The number of
-components the data supports is read from the annealing staircase, and
-confirmed against the ICL.
+# one dataset from the graph design: a six-variable chain, two components
+omega <- diag(6L)
+omega[abs(row(omega) - col(omega)) == 1L] <- -0.4
+set.seed(1L)
+z_g <- sample.int(2L, 500L, replace = TRUE, prob = c(0.5, 0.5))
+x_g <- matrix(rnorm(500L * 6L), 500L, 6L) %*% chol(solve(omega))
+x_g[z_g == 2L, 1L] <- x_g[z_g == 2L, 1L] + 4
 
-## Limits
+# the graph by the PC algorithm, and by proxymix
+pc_fit <- pc(suffStat = list(C = cor(x_g), n = nrow(x_g)),
+             indepTest = gaussCItest, alpha = 0.01, p = ncol(x_g))
+adj <- as(pc_fit@graph, "matrix")
+((adj + t(adj)) > 0) * 1L
+sel <- select_N(gmm_target_from_samples(x_g), candidates = 1:4, seed = 1L)
+gmm_independence_graph(sel$best_fit)
+```
 
-The Renyi-2 entropy and the Cauchy-Schwarz divergence are exact and cheap,
-costing $O(K^2)$ Gaussian evaluations, and are the recommended defaults for
-reporting the spread of a fitted mixture and the discrepancy between two
-fits. The Shannon entropy and the Kullback-Leibler divergence are the more
-familiar quantities but are Monte Carlo estimates, so they carry the
-standard error the tables report and should be read against it rather than
-to the last digit printed. Reach for them when a downstream consumer
-requires those specific definitions, not by default.
+It needs FNN and mclust from CRAN, and pcalg, which needs graph and RBGL
+from Bioconductor. It is not run when this vignette is built.
 
-The independence graph is a graphical-model diagnostic, not a
-causal-discovery method. It returns the undirected Markov skeleton, not edge
-directions, and being second order it sees only dependence that enters the
-covariance. A pair of coordinates coupled purely through a higher moment, or
-through a mixture-gate that leaves the overall covariance untouched, will
-appear as an absent edge. The test level `alpha`, or the `threshold` on the
-partial correlation when no sample size is known, is a choice, and a graph
-read at one setting is not the graph read at another.
+```{r compare-install, eval = FALSE}
+install.packages(c("FNN", "mclust", "BiocManager"))
+BiocManager::install(c("graph", "RBGL"))
+install.packages("pcalg")
+```
 
-The annealing path discovers a component count on data whose clusters are
-well separated, which is the case where every method agrees. The staircase
-becomes hard to read when clusters overlap, the widest-plateau rule can then
-select a count no criterion would endorse, and the analytic critical
-temperature governs only the *first* bifurcation, not the later ones. The
-ICL is a criterion, not a test: it ranks candidate counts and offers no
-significance statement about the winner.
+The [extended version of this
+article](https://max578.github.io/proxymix/articles/extended/entropy.html)
+gives the full simulation, adds the graphical lasso and the huge package to
+the graph comparison, and applies each method to the Palmer penguins data.
 
-Everything on this page is read off a mixture that has already been fitted.
-Nothing here checks that the mixture is a good proxy for the target it was
-fitted to; that is the job of the importance-sampling diagnostics and the
-fit-quality certificate, and a confident entropy computed on a degenerate
-fit is confidently wrong.
+## Interpretation
 
-## What to read next
+The Rényi-2 entropy of the single normal distribution
+`r if (h2_gap < 1e-12) "matches the formula to machine precision" else paste("differs from the formula by", formatC(h2_gap, format = "g", digits = 2), "nats")`.
+The mixture's Rényi-2 entropy is higher, `r fixed(h2_mixture, 3)` nats
+against `r fixed(h2_closed, 3)`, because its mass is spread over two
+centres. Its Shannon entropy is estimated at `r fixed(sh$mc, 3)` nats, and
+the exact upper bound lies `r fixed(sh_slack_se, 1)` standard errors above
+the estimate.
 
-*How well a mixture proxies four awkward shapes* runs regime (iii) across
-targets of different geometry and reports the fit-quality diagnostics these
-entropy reads assume are healthy. *Choosing between the three fitting
-regimes* explains the annealed fit's starting point, the difference between
-fitting from samples and fitting from a density you can only evaluate. *The
-closed-form operator calculus on a mixture* covers the conditioning
-operation that `gmm_conditional_entropy()` calls row by row, and the rest of
-the exact algebra on a fitted mixture. *Fitting a proxy to a density you
-cannot sample* is the shortest route into the regime (iii) fit used for the
-energy-field graph above.
+The Cauchy-Schwarz divergence of $g$ from itself is
+`r formatC(d_self, format = "g", digits = 2)`, as the definition requires.
+The Kullback-Leibler estimate of `r fixed(d_kl$mc, 3)` nats has a standard
+error of `r fixed(d_kl$mc_se, 3)`, and the Hershey-Olsen approximation is
+`r fixed(d_kl$variational, 3)`. The Cauchy-Schwarz and Kullback-Leibler
+divergences are on different scales. Compare fits with one of them, never
+one with the other.
+
+The mutual information is zero for independent variables, as it should be.
+The conditional entropy is `r fixed(h_cond[1L], 4)` nats at all three
+values of $x_2$. For a single normal distribution the spread of $x_1$ given
+$x_2$ does not depend on $x_2$, but for a mixture of several components it
+would.
+
+Cooling found `r k_found` components, the number of clusters in the data.
+The first split was recorded at temperature `r fixed(t_empirical, 1)`,
+against the exact `r fixed(t_analytic, 1)`. A split is recorded only on the
+grid of `r nrow(path$path)` steps and once two centres are clearly apart,
+so the recorded value lags the exact one. The free energy is flat while all
+centres sit at the mean of the data, and falls as they move apart.
+
+`maxent_target()` returned the normal family, with density
+`r fixed(gauss_density, 3)` $= 1/(2\pi)$ at its mean, and the uniform family
+on the unit square, with density `r fixed(unif_density, 3)`.
+
+For two well-separated clusters the ICL equals the BIC to the precision
+shown, because $E_N$ is only
+`r sci(crit$classification_entropy, 1L)`. With
+overlapping components the ICL favours fewer of them. In the comparison,
+proxymix's ICL chose two components in
+`r fixed(k_two(d2, "proxymix, ICL"), 2)` of the datasets drawn with three
+overlapping components.
+
+The graph of the four-variable chain has `r edges_chain` edges and is the
+chain. The graph of the density fitted from its formula has
+`r edges_field` edges and
+`r if (field_is_chain) "is the chain of the target" else "is not the chain of the target"`.
+The fitted mixture puts the partial correlation of $x_1$ and $x_3$ at
+`r fixed(pcor_field[1L, 3L], 3)`, above the threshold of 0.05. The
+target's own partial correlation, computed by summation over a fine grid,
+is `r fixed(pcor_exact[1L, 3L], 4)`.
+The fit's certificate from `gmm_fit_quality()` reports that the fit
+`r if (isTRUE(q_field$converged)) "converged" else "did not converge"`,
+`r if (isTRUE(q_field$degenerate)) "is" else "is not"` degenerate, and has
+an approximate KL divergence of `r fixed(q_field$kld_approx, 3)` nats. The
+package flags a fit that did not converge, is degenerate, or has an
+approximate KL divergence above 0.3.
+`r if (field_flagged) "This fit is flagged, and \x60gmm_independence_graph()\x60 printed a notice. Do not trust a graph from a flagged fit without refitting." else "This fit is not flagged."`
+
+```{r field-seeds, include = FALSE}
+## refits of the same example over seeds 1 to 10, stored by the builder
+seed_count <- function(size, what) sum(res$field_tab[[what]][res$field_tab$is_size == size])
+seed_n <- function(size) sum(res$field_tab$is_size == size)
+ft <- res$field_tab
+n_flag <- sum(ft$flagged)
+flag_chain <- sum(ft$flagged & ft$chain)
+n_miss <- sum(!ft$chain)
+miss_flag <- sum(ft$flagged & !ft$chain)
+## TRUE when every flag came from a fit that reached its round limit
+flag_by_rounds <- n_flag > 0L && all(!ft$converged[ft$flagged]) &&
+  !any(ft$degenerate[ft$flagged]) && all(ft$kld_approx[ft$flagged] <= 0.3)
+miss_text <- if (n_miss == 0L) {
+  "No fit missed the chain."
+} else if (n_miss == 1L) {
+  if (miss_flag == 1L) "The one fit that missed the chain was flagged." else
+    "The one fit that missed the chain was not flagged."
+} else {
+  paste0(miss_flag, " of the ", n_miss, " fits that missed the chain were flagged.")
+}
+```
+
+Refitted with seeds 1 to `r seed_n(6000L)` and 6000 trial points each,
+the mixture recovered the chain in `r seed_count(6000L, "chain")` of
+`r seed_n(6000L)` fits, and with 12000 trial points in
+`r seed_count(12000L, "chain")` of `r seed_n(12000L)`. With more trial points,
+recovery was more reliable here. The flag was raised on
+`r seed_count(6000L, "flagged")` of the fits with 6000 points and
+`r seed_count(12000L, "flagged")` of those with 12000.
+`r if (flag_by_rounds) "Each flagged fit reached its round limit without converging. None was degenerate or had an approximate KL divergence above 0.3." else ""`
+`r if (n_flag > 0L && flag_chain == n_flag) "Every flagged fit recovered the chain." else paste0("Of the ", n_flag, " flagged fits, ", flag_chain, " recovered the chain.")`
+`r miss_text` The flag checks the fit, not the graph read from it. To check
+a graph, refit with more trial points and see whether it stays the same.
+
+## Limitations
+
+The Rényi-2 entropy and the Cauchy-Schwarz divergence are exact and cheap,
+about $K^2$ normal-density evaluations for $K$ components. They are the
+natural defaults for the spread of a fit and the difference between two
+fits. The Shannon entropy and the Kullback-Leibler divergence are
+simulation estimates. Read them against their standard errors, and use them
+when your analysis calls for those particular definitions.
+
+The independence graph shows which variables are related, not which causes
+which, and has no edge directions. It uses only the covariance matrix, so
+it misses dependence that leaves the covariance unchanged. Fisher's $z$
+test assumes normally distributed data. The level, or the threshold, is a
+choice, and a different choice can give a different graph. Testing each
+pair at 0.05 lets false edges add up. The six-variable chain has
+`r n_absent` pairs without an edge, and `r n_absent` independent tests at
+0.05 would give at least one false edge with probability
+`r fixed(1 - 0.95^n_absent, 2)`. `alpha = 0.05 / choose(p, 2)` for $p$
+variables keeps that probability below 0.05. The PC algorithm recovered the
+simulated chain more often.
+
+Cooling found the right count on well-separated clusters, where other
+methods also succeed. On overlapping clusters the staircase is hard to
+read, and the rule of the most steps can pick a count no criterion
+supports. The exact critical temperature applies only to the first split.
+The ICL ranks the counts that were fitted but gives no test of the winner. It
+undercounts overlapping components, and mclust's ICL did better than
+proxymix's in the comparison.
+
+Every number here is read from a mixture already fitted, and none of these
+numbers checks that the mixture is a good proxy for its target. Check that
+with `gmm_fit_quality()` first. An entropy computed on a poor fit can
+be precise and still wrong.
+
+## Further reading
+
+The quality checks that these measures rely on are shown for several
+target shapes in *How well a mixture proxies four awkward shapes*.
+
+*Choosing between the three fitting regimes* explains the difference
+between fitting from data and fitting from a formula alone.
+
+Conditioning and the other exact operations on a fitted mixture are in
+*The closed-form operator calculus on a mixture*.
+
+For a first fit from a formula, the method used for the three-variable
+density above, start with *Fitting a proxy to a density you cannot sample*.
 
 ## References
 
-* Biernacki, C., Celeux, G. and Govaert, G. (2000). *Assessing a mixture
-  model for clustering with the integrated completed likelihood.* IEEE
-  Transactions on Pattern Analysis and Machine Intelligence 22(7),
-  719--725. <doi:10.1109/34.865189>.
-* Hoek, J. van der and Elliott, R. J. (2024). *Mixtures of multivariate
-  Gaussians.* Stochastic Analysis and Applications.
-  <doi:10.1080/07362994.2024.2372605>.
-* Jaynes, E. T. (1957). *Information theory and statistical mechanics.*
-  Physical Review 106(4), 620--630. <doi:10.1103/PhysRev.106.620>.
-* Rose, K. (1998). *Deterministic annealing for clustering, compression,
-  classification, regression, and related optimization problems.*
-  Proceedings of the IEEE 86(11), 2210--2239. <doi:10.1109/5.726788>.
+Biernacki, C., Celeux, G. and Govaert, G. (2000). *Assessing a mixture
+model for clustering with the integrated completed likelihood.* IEEE
+Transactions on Pattern Analysis and Machine Intelligence 22(7),
+719--725. <https://doi.org/10.1109/34.865189>.
+
+Hershey, J. R. and Olsen, P. A. (2007). *Approximating the Kullback
+Leibler divergence between Gaussian mixture models.* 2007 IEEE
+International Conference on Acoustics, Speech and Signal Processing
+(ICASSP '07), IV-317--IV-320. <https://doi.org/10.1109/ICASSP.2007.366913>.
+
+Hoek, J. van der and Elliott, R. J. (2024). *Mixtures of multivariate
+Gaussians.* Stochastic Analysis and Applications.
+<https://doi.org/10.1080/07362994.2024.2372605>.
+
+Jaynes, E. T. (1957). *Information theory and statistical mechanics.*
+Physical Review 106(4), 620--630. <https://doi.org/10.1103/PhysRev.106.620>.
+
+Kalisch, M., Mächler, M., Colombo, D., Maathuis, M. H. and Bühlmann, P.
+(2012). *Causal inference using graphical models with the R package
+pcalg.* Journal of Statistical Software 47(11), 1--26.
+<https://doi.org/10.18637/jss.v047.i11>.
+
+Kozachenko, L. F. and Leonenko, N. N. (1987). *Sample estimate of the
+entropy of a random vector.* Problems of Information Transmission 23(2),
+95--101.
+
+Kraskov, A., Stögbauer, H. and Grassberger, P. (2004). *Estimating
+mutual information.* Physical Review E 69(6), 066138.
+<https://doi.org/10.1103/PhysRevE.69.066138>.
+
+Rose, K. (1998). *Deterministic annealing for clustering, compression,
+classification, regression, and related optimization problems.*
+Proceedings of the IEEE 86(11), 2210--2239. <https://doi.org/10.1109/5.726788>.
+
+Scrucca, L., Fop, M., Murphy, T. B. and Raftery, A. E. (2016). *mclust 5:
+Clustering, classification and density estimation using Gaussian finite
+mixture models.* The R Journal 8(1), 289--317.
+<https://doi.org/10.32614/RJ-2016-021>.
 
 ## Reproduce
 
-The vignette sets `set.seed(20260618)` once before the first simulated
-dataset, and every verb that draws its own Monte Carlo sample is given an
-explicit `seed` argument, so the numbers above are reproducible from this
-source alone.
+The vignette sets `set.seed(20260618)` once. Each function that draws its
+own simulation sample gets a `seed` argument, except
+`gmm_divergence(type = "kl")`, which uses the stream that `set.seed()`
+started. The comparison reads stored results of the simulation in the
+extended article, run under proxymix `r res$proxymix_version` on
+`r res$run_date`.
 
-```{r session-info}
+```{r session-info, collapse = FALSE, class.output = "session-info"}
 sessionInfo()
 ```

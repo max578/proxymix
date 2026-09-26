@@ -12,16 +12,21 @@ gmm_fit_quality(g)
 \value{
 A list with elements \code{regime}, \code{converged}, \code{degenerate},
 \code{ess}, \code{ess_relative}, \code{min_component_ess}, \code{max_weight},
-\code{support_fraction}, \code{kld_final}, and \code{validation_gap} (fields not
-applicable to the regime are \code{NA}), or \code{NULL} for a mixture that was
-never fitted (e.g. built directly with \code{\link[=gmm]{gmm()}}). A certificate produced
-by an operator over several operands has \code{regime = "composite"}, the
-conservative worst-case value of each numeric field across the operands,
-and an additional \code{quality_sources} element holding the operands' own
-certificates. \code{kld_final} is estimated on the importance draws the fit
-was tuned to, so it reads low; \code{validation_gap} is the held-out
-\code{validation_kld} (see \code{\link[=ess_summary]{ess_summary()}}) minus \code{kld_final}, and is \code{NA}
-when the fit was made with \code{validation_size = 0}.
+\code{support_fraction}, \code{kld_final}, \code{kld_approx}, and \code{validation_gap}
+(fields not applicable to the regime are \code{NA}), or \code{NULL} for a mixture
+that was never fitted (e.g. built directly with \code{\link[=gmm]{gmm()}}). A certificate
+produced by an operator over several operands has \code{regime = "composite"},
+the conservative worst-case value of each numeric field across the
+operands, and an additional \code{quality_sources} element holding the
+operands' own certificates. \code{kld_final} is estimated on the importance
+draws the fit was tuned to, so it reads low; \code{validation_gap} is the
+held-out \code{validation_kld} (see \code{\link[=ess_summary]{ess_summary()}}) minus \code{kld_final}, and is
+\code{NA} when the fit was made with \code{validation_size = 0}. \code{kld_approx} is
+half the importance-weighted variance of \verb{log f - log g} over the fitting
+draws. To second order it equals the KL divergence from the target to
+the proxy, in nats. It does not depend on the target's normalising
+constant, so it is available when \code{kld_final} is shifted. It is \code{NA}
+outside regime \code{"kld"}.
 }
 \description{
 Returns the fit-quality certificate: a small list recording the fitting
@@ -40,7 +45,11 @@ chain of operations that produced it.
 }
 \details{
 Downstream verbs read the same certificate and raise a one-shot
-advisory (class \code{proxymix_low_quality}) when the source fit is flagged.
+advisory (class \code{proxymix_low_quality}) when the source fit is flagged. A
+fit is flagged when it did not converge, when it is degenerate (fewer
+effective importance draws than \code{min_ess}), or when \code{kld_approx} exceeds
+0.3. Relative ESS is not used: with a fixed proposal it describes the
+proposal, not the fit, and stays the same however good the fit is.
 }
 \examples{
 fit <- fit_proxymix(banana_target(), N = 2L, regime = "kld",

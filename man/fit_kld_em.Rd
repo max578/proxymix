@@ -75,10 +75,15 @@ all derived from it. When \code{NULL}, those draws consume the ambient
 random-number stream.}
 
 \item{validation_size}{Number of independent importance-sampling draws
-to use for held-out validation. The default \code{NULL} uses
-\code{ceiling(is_size / 4)}, so the overfit-vs-generalise diagnostic
-(\code{validation_kld} and the certificate's \code{validation_gap}) exists by
-default; set \code{0L} to disable the validation split.}
+for the held-out estimate \code{validation_kld} and its standard error
+\code{validation_mc_se}. The standard error is roughly
+\code{sqrt(2 * KL / ESS)}, where ESS is the effective sample size of the
+validation draws, so a close fit needs many draws before the estimate
+is precise. The default \code{NULL} draws batches of \code{is_size} until the
+standard error is at most a tenth of the estimate (at most 0.001 when
+the estimate is below 0.01), stopping at \code{10 * is_size} draws. When the
+target's normalising constant is unknown, the goal is a standard error
+of 0.001. A number draws exactly that many; \code{0L} skips validation.}
 
 \item{validation_proposal}{Optional \link{is_proposal} for the validation
 sample. Defaults to the same proposal used for fitting.}

@@ -84,10 +84,15 @@
 #'   all derived from it. When `NULL`, those draws consume the ambient
 #'   random-number stream.
 #' @param validation_size Number of independent importance-sampling draws
-#'   to use for held-out validation. The default `NULL` uses
-#'   `ceiling(is_size / 4)`, so the overfit-vs-generalise diagnostic
-#'   (`validation_kld` and the certificate's `validation_gap`) exists by
-#'   default; set `0L` to disable the validation split.
+#'   for the held-out estimate `validation_kld` and its standard error
+#'   `validation_mc_se`. The standard error is roughly
+#'   `sqrt(2 * KL / ESS)`, where ESS is the effective sample size of the
+#'   validation draws, so a close fit needs many draws before the estimate
+#'   is precise. The default `NULL` draws batches of `is_size` until the
+#'   standard error is at most a tenth of the estimate (at most 0.001 when
+#'   the estimate is below 0.01), stopping at `10 * is_size` draws. When the
+#'   target's normalising constant is unknown, the goal is a standard error
+#'   of 0.001. A number draws exactly that many; `0L` skips validation.
 #' @param validation_proposal Optional [is_proposal] for the validation
 #'   sample. Defaults to the same proposal used for fitting.
 #' @param validation_seed Optional integer seed used when drawing the
@@ -190,8 +195,9 @@ fit_kld_em <- function(target,
   }
   N <- as.integer(N)
   is_size <- as.integer(is_size)
-  validation_size <- if (is.null(validation_size)) {
-    as.integer(ceiling(is_size / 4))
+  adaptive_validation <- is.null(validation_size)
+  validation_size <- if (adaptive_validation) {
+    is_size
   } else {
     as.integer(validation_size)
   }
@@ -505,6 +511,10 @@ fit_kld_em <- function(target,
   finite_d <- is.finite(d_n) & is.finite(W) & W > 0
   kld_final <- sum(W[finite_d] * d_n[finite_d])
   mc_se_kld <- sqrt(sum(W[finite_d]^2 * (d_n[finite_d] - kld_final)^2))
+  ## Half the weighted variance of log f - log g equals KL(f || g) to second
+  ## order and does not depend on the target's normalising constant.
+  W_d <- W[finite_d] / sum(W[finite_d])
+  kld_approx <- 0.5 * sum(W_d * (d_n[finite_d] - sum(W_d * d_n[finite_d]))^2)
 
   ## Per-component Kish ESS at the final responsibilities: a tail component
   ## can sit on a handful of effective draws while the global ESS looks
@@ -538,13 +548,40 @@ fit_kld_em <- function(target,
       cli::cli_abort("`validation_proposal@n_dim` must equal {p}.")
     }
     v_seed <- validation_seed %||% (if (!is.null(seed)) as.integer(seed) + 1L else NULL)
-    vdraws <- draw_is_weights(target, vp, validation_size, v_seed)
-    log_g_v <- dgmm_log_via_components(vdraws$x, weights, means, covs)
-    d_v <- vdraws$log_f - log_g_v
-    finite_v <- is.finite(d_v) & is.finite(vdraws$W) & vdraws$W > 0
-    val_kld <- sum(vdraws$W[finite_v] * d_v[finite_v])
-    val_mc_se <- sqrt(sum(vdraws$W[finite_v]^2 *
-                            (d_v[finite_v] - val_kld)^2))
+    ## Default size: add batches of `is_size` until the standard error
+    ## meets its goal or the pool reaches 10 * is_size. An explicit size is
+    ## one batch.
+    max_validation <- if (adaptive_validation) 10L * is_size else validation_size
+    log_z_shift <- if (!kld_is_shifted) 0 else target@log_normalizer
+    draw_validation <- function() {
+      log_f_v <- log_q_v <- log_g_v <- numeric(0)
+      repeat {
+        x_v <- vp@sample(validation_size)
+        log_f_v <- c(log_f_v, target@log_density(x_v))
+        log_q_v <- c(log_q_v, vp@log_density(x_v))
+        log_g_v <- c(log_g_v, dgmm_log_via_components(x_v, weights, means, covs))
+        wts <- .finalise_is_weights(log_f_v, log_q_v)
+        d_v <- log_f_v - log_g_v
+        finite_v <- is.finite(d_v) & is.finite(wts$W) & wts$W > 0
+        est <- sum(wts$W[finite_v] * d_v[finite_v])
+        se <- sqrt(sum(wts$W[finite_v]^2 * (d_v[finite_v] - est)^2))
+        kl_abs <- est + log_z_shift
+        se_goal <- if (is.finite(kl_abs)) 0.1 * max(kl_abs, 0.01) else 0.001
+        if (se <= se_goal ||
+              length(log_f_v) + validation_size > max_validation) {
+          break
+        }
+      }
+      c(wts, list(kld = est, mc_se = se, n = length(log_f_v)))
+    }
+    vdraws <- if (is.null(v_seed)) {
+      draw_validation()
+    } else {
+      withr::with_seed(v_seed, draw_validation())
+    }
+    val_kld <- vdraws$kld
+    val_mc_se <- vdraws$mc_se
+    validation_size <- vdraws$n
     list(
       validation_kld = val_kld,
       validation_mc_se = val_mc_se,
@@ -618,6 +655,7 @@ fit_kld_em <- function(target,
     max_weight = max_weight,
     support_fraction = support_fraction,
     kld_final = kld_final,
+    kld_approx = kld_approx,
     validation_gap = if (validation_size > 0L) {
       validation_diag$validation_kld - kld_final
     } else {

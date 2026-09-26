@@ -58,7 +58,7 @@ van der Hoek and Elliott (2024) against it. Its `bandwidth` argument takes a rul
 of thumb by name (`"silverman"` or `"scott"`, after Silverman, 1986, and
 Scott, 1992) or a numeric value, and `validation_size`
 sets the number of held-out importance draws used to report fit quality
-(a quarter of `is_size` by default). The proxy
+(by default, draws are added until the held-out estimate is precise). The proxy
 then supports the same closed-form operator set exposed by the rest of the
 package -- `dgmm()`, `rgmm()`, `gmm_marginalise()`,
 `gmm_conditionalise()`, and the affine-Gaussian calculus of
@@ -326,7 +326,7 @@ the two densities agree on the probability of any event to within about
 `r fixed(mass_grid[["kde"]], 4)` of the kernel estimate's mass and
 `r fixed(mass_grid[["proxy"]], 4)` of the proxy's. The squared Hellinger
 distance, estimated by `hellinger_mc()` from
-`r format(hell[["n_mc"]], big.mark = " ")` fresh
+`r format(hell[["n_mc"]], big.mark = ",")` fresh
 draws from the proxy, is `r fixed(hell[["h2"]], 4)` with a Monte Carlo standard
 error of `r fixed(hell[["se"]], 4)`, about `r round(hell[["h2"]] / hell[["se"]])` standard
 errors from zero. The figure shows where the remaining
@@ -518,9 +518,10 @@ conditional_scores <- function(xy, label) {
          "ks, kde (reference)" = kde_cond)
   )
   curves <- lapply(names(queries), function(method) {
-    secs <- system.time(
-      est <- t(vapply(x_eval, queries[[method]], numeric(2L)))
-    )[[3L]]
+    run_query <- function() t(vapply(x_eval, queries[[method]], numeric(2L)))
+    est <- run_query()
+    # median of five timed passes over the evaluation points
+    secs <- median(replicate(5L, system.time(run_query())[[3L]]))
     data.frame(data = label, method = method, x = x_eval,
                mean = est[, 1L], q90 = est[, 2L],
                ms_per_query = 1000 * secs / length(x_eval),
@@ -597,7 +598,7 @@ mc_mean_dev <- max(abs(dev_of("mclust, G by BIC", "mean")))
 mc_q90_drop <- -min(dev_of("mclust, G by BIC", "q90"))
 ```
 
-```{r fig-conditionals, eval = run_illustration && has_ggplot2, echo = run_illustration && has_ggplot2, fig.pos = "!ht", fig.cap = paste0("Conditional mean (left) and 90% conditional quantile (right) of waiting time given eruption duration on the faithful data, from the ks kernel estimate that is the reference, the proxy compressed from it at three and eight components, mclust fitted to the raw data and the np conditional-density estimate. The eight-component proxy stays within ", sprintf("%.1f", k8_mean_dev), " minutes of the reference in the conditional mean and within ", sprintf("%.1f", k8_q90_dev), " minutes in the 90% quantile. In the conditional mean, mclust stays within ", sprintf("%.1f", mc_mean_dev), " minutes of the reference, and the three-component proxy falls up to ", sprintf("%.1f", k3_mean_drop), " minutes below it at a duration of ", sprintf("%.1f", k3_drop_at), " minutes, the upper end of the jump between the two groups. In the 90% quantile, mclust falls up to ", sprintf("%.1f", mc_q90_drop), " minutes below the reference from the jump to the long eruptions."), fig.alt = "Two panels of curves over eruption duration from 1.8 to 4.8 minutes. In each panel the reference kernel estimate, the three- and eight-component proxies, mclust and np all rise from about 55 to about 80 minutes across the middle of the range. In the conditional-mean panel the three-component proxy dips below the reference at the upper end of the jump; in the quantile panel mclust runs below the reference from the jump onwards."}
+```{r fig-conditionals, eval = run_illustration && has_ggplot2, echo = run_illustration && has_ggplot2, fig.pos = "!ht", fig.cap = paste0("Conditional mean (left) and 90% conditional quantile (right) of waiting time given eruption duration on the faithful data, from the ks kernel estimate that is the reference, the proxy compressed from it at three and eight components, mclust fitted to the raw data and the np conditional-density estimate. The eight-component proxy stays within ", sprintf("%.1f", ceiling(10 * k8_mean_dev) / 10), " minutes of the reference in the conditional mean and within ", sprintf("%.1f", ceiling(10 * k8_q90_dev) / 10), " minutes in the 90% quantile. In the conditional mean, mclust stays within ", sprintf("%.1f", ceiling(10 * mc_mean_dev) / 10), " minutes of the reference, and the three-component proxy falls up to ", sprintf("%.1f", ceiling(10 * k3_mean_drop) / 10), " minutes below it at a duration of ", sprintf("%.1f", k3_drop_at), " minutes, the upper end of the jump between the two groups. In the 90% quantile, mclust falls up to ", sprintf("%.1f", ceiling(10 * mc_q90_drop) / 10), " minutes below the reference from the jump to the long eruptions."), fig.alt = "Two panels of curves over eruption duration from 1.8 to 4.8 minutes. In each panel the reference kernel estimate, the three- and eight-component proxies, mclust and np all rise from about 55 to about 80 minutes across the middle of the range. In the conditional-mean panel the three-component proxy dips below the reference at the upper end of the jump; in the quantile panel mclust runs below the reference from the jump onwards."}
 show <- c("ks, kde (reference)", "proxymix, K = 3", "proxymix, K = 8",
           "mclust, G by BIC", "np, npcdens")
 plot_df <- curves[curves$data == "faithful" & curves$method %in% show, ]
@@ -734,11 +735,11 @@ and dearer than the mixtures. The binned KernSmooth grid is the cheapest of
 all, since a conditional is one interpolation between two stored grid rows.
 On faithful the figure shows the differences around the jump between the
 short and the long eruptions. There the three-component proxy's conditional
-mean falls up to `r fixed(k3_mean_drop, 1)` minutes below the reference while
-the eight-component proxy stays within `r fixed(k8_mean_dev, 1)` minutes of
-it. mclust's conditional mean stays within `r fixed(mc_mean_dev, 1)` minutes
+mean falls up to `r fixed(ceiling(10 * k3_mean_drop) / 10, 1)` minutes below the reference while
+the eight-component proxy stays within `r fixed(ceiling(10 * k8_mean_dev) / 10, 1)` minutes of
+it. mclust's conditional mean stays within `r fixed(ceiling(10 * mc_mean_dev) / 10, 1)` minutes
 of the reference, and its 90 per cent
-quantile falls up to `r fixed(mc_q90_drop, 1)` minutes below the reference
+quantile falls up to `r fixed(ceiling(10 * mc_q90_drop) / 10, 1)` minutes below the reference
 from the jump to the long eruptions. Two datasets are too few to rank the methods, so the
 simulation below repeats the comparison on data drawn from a known density.
 
@@ -977,7 +978,7 @@ well-separated mixture at one sample size and one bandwidth rule were tried;
 heavier tails, overlapping components, higher dimensions and bandwidths
 chosen by cross-validation are not covered.
 
-## Where next
+## Further reading
 
 *Choosing between the three fitting regimes* sets out why compressing an
 evaluable-but-unsampleable target is regime (iii) work, and what the

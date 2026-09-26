@@ -1352,7 +1352,7 @@ filter a scale fitted to the mixture. Noise with more components, a
 higher-dimensional state, a process-noise mixture and estimated rather than
 known parameters were not tried.
 
-## Where next
+## Further reading
 
 *Fitting a proxy to a density you cannot sample* produces the mixtures this
 vignette operates on, and reports the fit-quality certificate that says

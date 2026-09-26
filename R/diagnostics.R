@@ -163,22 +163,31 @@ ess_summary <- function(fit) {
 #' chain of operations that produced it.
 #'
 #' Downstream verbs read the same certificate and raise a one-shot
-#' advisory (class `proxymix_low_quality`) when the source fit is flagged.
+#' advisory (class `proxymix_low_quality`) when the source fit is flagged. A
+#' fit is flagged when it did not converge, when it is degenerate (fewer
+#' effective importance draws than `min_ess`), or when `kld_approx` exceeds
+#' 0.3. Relative ESS is not used: with a fixed proposal it describes the
+#' proposal, not the fit, and stays the same however good the fit is.
 #'
 #' @param g A [gmm] or [gmm_fit].
 #'
 #' @returns A list with elements `regime`, `converged`, `degenerate`,
 #'   `ess`, `ess_relative`, `min_component_ess`, `max_weight`,
-#'   `support_fraction`, `kld_final`, and `validation_gap` (fields not
-#'   applicable to the regime are `NA`), or `NULL` for a mixture that was
-#'   never fitted (e.g. built directly with [gmm()]). A certificate produced
-#'   by an operator over several operands has `regime = "composite"`, the
-#'   conservative worst-case value of each numeric field across the operands,
-#'   and an additional `quality_sources` element holding the operands' own
-#'   certificates. `kld_final` is estimated on the importance draws the fit
-#'   was tuned to, so it reads low; `validation_gap` is the held-out
-#'   `validation_kld` (see [ess_summary()]) minus `kld_final`, and is `NA`
-#'   when the fit was made with `validation_size = 0`.
+#'   `support_fraction`, `kld_final`, `kld_approx`, and `validation_gap`
+#'   (fields not applicable to the regime are `NA`), or `NULL` for a mixture
+#'   that was never fitted (e.g. built directly with [gmm()]). A certificate
+#'   produced by an operator over several operands has `regime = "composite"`,
+#'   the conservative worst-case value of each numeric field across the
+#'   operands, and an additional `quality_sources` element holding the
+#'   operands' own certificates. `kld_final` is estimated on the importance
+#'   draws the fit was tuned to, so it reads low; `validation_gap` is the
+#'   held-out `validation_kld` (see [ess_summary()]) minus `kld_final`, and is
+#'   `NA` when the fit was made with `validation_size = 0`. `kld_approx` is
+#'   half the importance-weighted variance of `log f - log g` over the fitting
+#'   draws. To second order it equals the KL divergence from the target to
+#'   the proxy, in nats. It does not depend on the target's normalising
+#'   constant, so it is available when `kld_final` is shifted. It is `NA`
+#'   outside regime `"kld"`.
 #' @family diagnostics
 #' @export
 #' @examples

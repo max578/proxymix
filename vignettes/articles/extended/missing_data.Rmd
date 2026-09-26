@@ -763,7 +763,7 @@ and one sample size do not map every setting in which imputers differ, and
 the penguins were imputed without their species. Supplied as a column,
 species would let mice and Amelia model the groups directly.
 
-## Where next
+## Further reading
 
 *Missing data that depends on the missing value* takes up the two
 mechanisms assumed away here, censoring at a known bound and

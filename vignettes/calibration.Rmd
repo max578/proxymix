@@ -7,7 +7,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-<!-- Render time: ~5 s under rmarkdown::render() with ggplot2 installed;
+<!-- Render time: ~2 s under rmarkdown::render() with ggplot2 installed;
      macOS arm64 (Apple silicon), R 4.5.2, one core. -->
 
 ```{r setup, include = FALSE}
@@ -29,59 +29,80 @@ library(proxymix)
 has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
 ```
 
-## Why
+## The problem
 
-A calibration problem has landed on the desk of someone who has run
-optimisers before and does not trust them here. The loss surface has more
-than one basin, and every run from a different starting point lands
-somewhere else. The question is: *my objective has more than one minimum,
-so how do I get all of them, and some sense of which basins are wide,
-instead of whichever one a local optimiser happened to fall into?*
+Calibrating a model means choosing values for its unknown parameters so that
+its output matches what was observed. Each choice is scored by a function
+called the objective, for example the sum of squared differences between the
+model output and the data. A lower score is a better fit, and the lowest
+point of the objective is its minimum.
 
-The answer this vignette gives is that the whole set of optima is a density,
-and a density is something the package already knows how to fit.
+The usual tool for this search is an optimiser, such as R's `optim()`. It
+starts from one point, moves downhill until it can go no lower, and returns
+that single point. Many objectives have several low valleys, called basins.
+The basin an optimiser ends in depends on where it started. A single run
+gives no information about the basins the optimiser never visited.
 
-## What
+In calibration, one point is often not enough. Several quite different
+parameter settings may fit the data about equally well, and you need to
+know all of them before you report any one.
 
-An objective $f(x)$ to be minimised over a box defines an unnormalised
-density, the Gibbs measure $\exp(-f(x) / T)$, whose mass concentrates on the
-low regions of $f$ as the temperature $T$ falls. That density can be
-evaluated point-wise but not directly sampled, which is exactly regime (iii)
-of van der Hoek and Elliott (2024).
+proxymix builds a map of the good regions of an objective instead. The map
+is a Gaussian mixture, a few normal distributions added together, with a
+peak over each low basin. A single fit gives the locations of the basins,
+and the height of each peak shows how low that basin goes.
 
-`from_objective()` fits a Gaussian-mixture proxy to $\exp(-f / T)$ by
-cooling a short temperature ladder through the same importance-sampled
-KLD-EM that `fit_kld_em()` runs, warm-starting each step from the previous
-fit. Its `lower` and `upper` arguments are the search region: they set where
-the optima are sought, and they scale the temperature ladder, the uniform
-exploration of the proposal, and the initialisation. The objective may still
-be evaluated outside the box during fitting, where non-finite values are
-treated as a finite penalty. Setting `minimise = FALSE` concentrates the map
-on the maxima of $f$ instead of the minima.
+Both objectives in this vignette have known minima, which lets you check
+the result.
 
-`gmm_modes()` reads the distinct optima off the fitted map. It returns the
-mode locations, the mixture density at each one, and how many distinct modes
-survived deduplication. The density at a mode is the height of the map over
-that basin, and ranking the basins by it is the "which basins are wide" half
-of the question: a basin the Gibbs measure concentrates on stands higher
-than one it barely notices.
+## Package capabilities
 
-`ess_summary()` reports the importance-sampling diagnostics that travel
-with the fit, so the map can be judged before it is trusted.
+- `from_objective()` builds the map. You supply the objective and a box,
+  given as a lower and an upper limit for each parameter, inside which the
+  optima are sought.
+- `gmm_modes()` finds the peaks of the map, called modes, with the
+  fixed-point search of Carreira-Perpiñán (2000). It returns their
+  locations, the height of the map at each one, and how many distinct modes
+  there are.
+- `ess_summary()` reports the effective sample size of the fit, a check on
+  whether the map can be trusted.
+- The map is an ordinary fitted mixture. The tools from *Fitting a proxy
+  to a density you cannot sample* also work on it. `dgmm()` gives density
+  values, `rgmm()` gives random draws, and `gmm_marginalise()` and
+  `gmm_conditionalise()` give the distribution of one parameter on its own
+  or with another held fixed.
 
-The point of the construction is not a single best point but the whole
-picture. A multimodal $f$ gives a multimodal Gibbs measure, so the fitted
-mixture spreads its components across the basins and recovers the optima
-*together*. The result is an ordinary `gmm`, so the closed-form operator
-calculus -- marginalisation, conditioning, divergence -- applies to the map
-of solutions like any other fitted mixture.
+## Addressing the problem
 
-## Do
+### From an objective to a distribution
 
-### A bimodal objective in one dimension
+For an objective $f(x)$, the formula $\exp(-f(x) / T)$, once scaled to
+integrate to one over the box, defines a distribution known as the Gibbs
+distribution. Here $T$ is a positive number called the temperature. Where
+$f$ is low, the formula is high, and the distribution puts most of its
+probability there. As $T$ falls, that probability gathers more
+tightly around the minima.
+
+The formula can be evaluated at any point, but there is no direct way to
+draw from the Gibbs distribution. The third fitting method of van der Hoek and
+Elliott (2024) is built for this setting: a density you can evaluate but
+cannot sample. *Fitting a proxy to a density you cannot sample* describes
+that method. It draws trial points, weights each one by the formula, and
+fits the mixture to the weighted points. `from_objective()` runs this method at a short sequence of
+falling temperatures, and each fit starts from the one before it.
+
+The box sets where the optima are sought. It also sets the scale of the
+temperatures and of the trial points. The
+objective is evaluated only inside the box. Points outside the box, and
+points where the objective is not a finite number, receive a large penalty
+value instead. Setting `minimise = FALSE` maps the maxima of the objective
+instead of its minima.
+
+### Two minima in one dimension
 
 The objective $(\theta^2 - 4)^2$ has two minima, at $\theta = -2$ and
-$\theta = 2$. Fit the map and resolve it.
+$\theta = 2$. The call below fits a map with six components, using 3,000
+trial points at each of five temperatures, and then finds its modes.
 
 ```{r bimodal}
 set.seed(20260619)
@@ -95,8 +116,13 @@ modes <- gmm_modes(fit)
 sort(round(modes$modes[, 1], 3))
 ```
 
-The fitted object is a `gmm_fit`, so the importance-sampling diagnostics are
-available alongside the map.
+### Check the fit before using it
+
+Weighted trial points can fail in the way a survey fails when a few
+respondents carry most of the weight. The effective sample size is the
+number of equally weighted points that the weighted sample is worth. A
+value far below the number of trial points means the map depends on a few
+points and should not be trusted.
 
 ```{r bimodal-ess}
 ess_1d <- ess_summary(fit)
@@ -104,12 +130,11 @@ c(ess = round(ess_1d$ess, 1), is_size = ess_1d$is_size,
   ess_relative = round(ess_1d$ess_relative, 3))
 ```
 
-### Four minima at once: Himmelblau
+### Four minima in two dimensions
 
-Himmelblau's function has four equal minima. A single-point optimiser would
-return one of them and miss the rest. `from_objective()` returns all four in
-one fit, provided the number of components `N` is comfortably larger than the
-number of optima so that a component can settle on each basin.
+Himmelblau's function has four minima, all with the same value of zero.
+An optimiser run from one starting point returns one of them. The map below
+has ten components, which leaves room for one on each basin.
 
 ```{r himmelblau}
 himmelblau <- function(v) {
@@ -125,10 +150,9 @@ found <- gmm_modes(fit2)
 found$n
 ```
 
-Himmelblau's optima are known in closed form, so the recovered map can be
-checked against them rather than against itself. Each recovered mode is
-matched to its nearest analytic optimum, and the distance between the two is
-the error the reader should judge the fit on.
+The four minima of Himmelblau's function are known exactly. The code below pairs each mode with the nearest
+true minimum and measures the distance between the two. It also evaluates
+the objective at each mode.
 
 ```{r match}
 truth <- rbind(c(3, 2), c(-2.805118, 3.131312),
@@ -139,10 +163,11 @@ n_found <- nrow(found$modes)
 pair_dist <- pair_dist[seq_len(n_found), n_found + seq_len(nrow(truth))]
 nearest <- apply(pair_dist, 1L, which.min)
 gap <- apply(pair_dist, 1L, min)
+f_at_mode <- apply(found$modes, 1L, himmelblau)
 
 all_distinct <- length(unique(nearest)) == nrow(truth)
 worst_gap <- max(gap)
-c(modes_found = found$n, one_per_optimum = all_distinct,
+c(modes_found = found$n, one_per_minimum = all_distinct,
   worst_gap = round(worst_gap, 3))
 ```
 
@@ -151,25 +176,27 @@ knitr::kable(
   data.frame(
     recovered_x1 = round(found$modes[, 1], 3),
     recovered_x2 = round(found$modes[, 2], 3),
-    analytic_x1 = round(truth[nearest, 1], 3),
-    analytic_x2 = round(truth[nearest, 2], 3),
+    true_x1 = round(truth[nearest, 1], 3),
+    true_x2 = round(truth[nearest, 2], 3),
     distance = round(gap, 3),
-    mixture_density = round(found$density, 3)
+    objective = round(f_at_mode, 3),
+    height = round(found$density, 3)
   ),
-  col.names = c("Recovered $x_1$", "Recovered $x_2$", "Analytic $x_1$",
-                "Analytic $x_2$", "Distance", "Mixture density"),
-  caption = paste0(
-    "Each recovered mode beside the analytic optimum nearest to it, with ",
-    "the distance between them and the mixture density at the mode."
+  col.names = c("Mode $x_1$", "Mode $x_2$", "True $x_1$", "True $x_2$",
+                "Distance", "Objective at mode", "Height of map"),
+  caption = paste(
+    "Each mode of the map beside the true minimum nearest to it, with the",
+    "distance between them, the objective at the mode (zero at a true",
+    "minimum) and the height of the map at the mode."
   )
 )
 ```
 
-The figure below puts the recovered modes and the analytic truth on the
-log-objective surface, so a basin that was missed would be visible as a
-valley with no orange point in it.
+The figure shows the modes and the true minima on the surface of the
+objective. A basin with no mode in it would appear as a light patch with no
+orange point.
 
-```{r himmelblau-map, eval = has_ggplot2, echo = has_ggplot2, fig.height = 5.4, fig.cap = "The recovered modes sit on the four analytic optima of Himmelblau's function, one per basin of the log-objective surface. No basin is left without a recovered mode.", fig.alt = "Log-objective surface of Himmelblau's function as a viridis raster with contour lines, the four recovered modes as orange circles and the analytic optima as black crosses, each pair coinciding."}
+```{r himmelblau-map, eval = has_ggplot2, echo = has_ggplot2, fig.height = 5.4, fig.cap = "The four modes of the map (orange circles) sit on the four true minima of Himmelblau's function (black crosses). The background shows the objective on a log scale, light where it is low.", fig.alt = "Surface of Himmelblau's function on a log scale as a shaded raster with contour lines, the four modes of the map as orange circles and the four true minima as black crosses, each pair close together."}
 xs <- seq(-5, 5, length.out = 140L)
 ys <- seq(-5, 5, length.out = 140L)
 surface <- expand.grid(x1 = xs, x2 = ys)
@@ -192,8 +219,8 @@ ggplot2::ggplot(surface, ggplot2::aes(x1, x2)) +
                                 direction = -1) +
   ggplot2::coord_equal(expand = FALSE) +
   ggplot2::labs(
-    title = "One fit, four basins: the map over Himmelblau's minima",
-    subtitle = "crosses: analytic optima; filled circles: recovered modes",
+    title = "One fit, four basins of Himmelblau's function",
+    subtitle = "crosses: true minima; filled circles: modes of the map",
     x = expression(x[1]), y = expression(x[2])
   ) +
   ggplot2::theme_minimal(base_size = 11) +
@@ -202,98 +229,107 @@ ggplot2::ggplot(surface, ggplot2::aes(x1, x2)) +
 ```
 
 ```{r himmelblau-map-skip, eval = !has_ggplot2, echo = FALSE, results = "asis"}
-cat("ggplot2 is not installed on this build, so the log-objective surface",
-    "figure is skipped.\n")
+cat("ggplot2 is not installed on this build, so the figure of the",
+    "objective surface is skipped.\n")
 ```
 
-## Read
+## Interpretation
 
-Both minima of the one-dimensional objective are recovered. The resolved
-modes are
-`r paste(sprintf("%.3f", sort(modes$modes[, 1])), collapse = " and ")`,
-against the analytic $-2$ and $2$, a largest departure of
-`r signif(max(abs(abs(modes$modes[, 1]) - 2)), 2)`. The importance sampler
-behind that map was healthy, carrying an effective sample size of
-`r round(ess_1d$ess)` out of `r ess_1d$is_size` draws, or
-`r round(100 * ess_1d$ess_relative)` per cent of the nominal sample.
+The map of the one-dimensional objective has modes at
+`r paste(sprintf("%.3f", sort(modes$modes[, 1])), collapse = " and ")`.
+The true minima are at $-2$ and $2$, and the largest difference is
+`r signif(max(abs(abs(modes$modes[, 1]) - 2)), 2)`. The
+`r format(ess_1d$is_size, big.mark = ",")` trial points at the last temperature were worth
+`r round(ess_1d$ess)` equally weighted points, or
+`r round(100 * ess_1d$ess_relative)` per cent of the total. The weights
+did not collapse onto a few points.
 
-On Himmelblau, one fit returns `r found$n` distinct modes, and each is
-matched to a *different* analytic optimum, so no optimum is claimed twice
-and none is missed. The largest distance between a recovered mode and the
-optimum it sits on is `r signif(worst_gap, 2)`, on a search box ten units
-wide, so each mode locates its basin to well under a fiftieth of the
-domain. The map's height over the four basins runs from
-`r signif(min(found$density), 3)` to `r signif(max(found$density), 3)`, a
-spread of about
+On Himmelblau's function, one fit gives `r found$n` modes. Each mode lies
+next to a different true minimum. No minimum is missed or counted twice.
+The largest distance between a mode and its true minimum is
+`r signif(worst_gap, 2)`, in a box ten units wide. The objective at the
+modes ranges from `r signif(min(f_at_mode), 2)` to
+`r signif(max(f_at_mode), 2)` rather than zero. The modes therefore show
+where each basin lies, but they are not the exact bottom of the basin.
+
+The height of the map at a mode reflects how low that basin goes. For an
+exact map, a basin with a lower minimum has a higher peak. Himmelblau's four
+minima have the same value. An exact map would therefore have four peaks of
+equal height. Here the heights run from `r signif(min(found$density), 3)` to
+`r signif(max(found$density), 3)`, and the highest is about
 `r round(100 * (max(found$density) / min(found$density) - 1))` per cent
-between the lowest and the highest peak. Himmelblau's four optima are equal
-in objective value, so a perfectly resolved map would put the same height on
-each; the spread here is what a finite importance sample and ten components
-covering four basins leave behind, and it is the quantity to watch when the
-optima are *not* known to be equal.
+above the lowest. That spread is the error left by a finite number of trial
+points and ten components. When the minima are not known to be equal,
+compare the basins by the objective at each mode as well as by height.
 
-That answers the question. The optima come out together rather than one at a
-time, and the height of the map at each mode ranks the basins by how sharply
-the Gibbs measure concentrates on them -- a ranking a single-point optimiser
-cannot produce, because it never sees more than one basin.
+## Limitations
 
-## Limits
+The map is a calibration tool, not an optimiser. To find the single best
+point, a dedicated optimiser such as `GenSA` or `DEoptim` is faster and gets
+closer to the minimum. In the comparison in the [extended version of this
+article](https://max578.github.io/proxymix/articles/extended/calibration.html),
+proxymix was the slowest method tested. Optimisers run from many random
+starting points found all four Himmelblau basins in at least 98 per cent of
+runs, against 55 per cent for the map at the same budget. To locate a
+minimum precisely, start a dedicated optimiser from each mode of the map.
 
-Recovery is most reliable when the number of components `N` is larger than
-the number of optima, because a component has to be free to settle on each
-basin. Symmetric landscapes, where several optima are exchangeable, need the
-most headroom; when in doubt, raise `N`. This vignette used ten components
-for four optima and six for two, and does not establish what happens when
-the headroom is removed.
+The number of components must be larger than the number of optima. Each
+basin needs a component that is free to settle on it. Objectives with several
+interchangeable optima, such as Himmelblau's function, need the most room.
+This vignette used ten components for four optima and six for two, and
+does not show what happens with fewer. When in doubt, raise `N`.
 
-The box is a modelling choice and not a formality. It sets where the optima
-are sought and it scales the temperature ladder, the exploration of the
-proposal, and the initialisation, so an optimum outside the box is not
-merely harder to find, it is outside the question being asked. Both examples
-here were given boxes that comfortably contain every optimum, which is the
-easy case.
+An optimum outside the box cannot be found, because the objective is
+never evaluated there. Both examples
+here use boxes that contain every optimum with room to spare.
 
-Neither example is high-dimensional. Regime (iii) is driven by importance
-sampling, whose effective sample size falls sharply as the dimension grows,
-and the two objectives fitted here are one- and two-dimensional. The
-effective sample size reported alongside every fit is the diagnostic to
-watch, and a map fitted at a low effective sample size should not be read as
-a reliable inventory of basins.
+Both examples have one or two parameters. The weighted trial points lose
+efficiency quickly as the number of parameters grows. `from_objective()`
+is recommended for up to five parameters, warns between six and ten, and
+refuses more than ten. At any size, a low effective sample size means the
+map should not be read as a complete list of basins.
 
-Finally, the height of the map at a mode is a property of the Gibbs measure
-at the final temperature, not of the objective. It is not the objective
-value, and it is not a basin mass either: a wide shallow basin can carry more
-total mass than a narrow deep one while standing lower at its peak. The
-objective itself remains available and should be evaluated at the recovered
-modes when what matters is which optimum is lowest rather than which the map
-concentrates on.
+The height of the map at a mode depends on the final temperature, not on
+the objective alone. It is not the objective value. Nor is it the share of
+probability in the basin: a wide, shallow basin can hold more probability
+than a narrow, deep one while having a lower peak. To find which optimum
+is lowest, evaluate the objective at each mode, as in the table above.
 
-## What to read next
+## Further reading
+
+The [extended version of this
+article](https://max578.github.io/proxymix/articles/extended/calibration.html)
+fits the likelihood of a two-component mixture to the Old Faithful geyser
+data and runs the full comparison with five optimisers.
 
 *Choosing between the three fitting regimes* explains why an objective that
-can be evaluated but not sampled lands in regime (iii), and what the other
-two regimes do instead. *Fitting a proxy to a density you cannot sample* is
-the shortest route into the same fitting verb on a target rather than an
-objective. *The closed-form operator calculus on a mixture* covers the
-marginalisation, conditioning and divergence operators that apply to the map
-of solutions once it has been fitted, since the map is an ordinary mixture.
+can be evaluated but not sampled needs the third fitting method.
+
+*Fitting a proxy to a density you cannot sample* works through the same
+fitting method on a distribution rather than an objective.
+
+*The closed-form operator calculus on a mixture* covers the exact
+operations that apply to the map once it has been fitted.
 
 ## References
 
-Hoek, J. van der and Elliott, R. J. (2024). *Mixtures of multivariate
-Gaussians.* Stochastic Analysis and Applications.
-[doi:10.1080/07362994.2024.2372605](https://doi.org/10.1080/07362994.2024.2372605).
-
-Carreira-Perpinan, M. A. (2000). Mode-finding for mixtures of Gaussian
+Carreira-Perpiñán, M. Á. (2000). Mode-finding for mixtures of Gaussian
 distributions. *IEEE Transactions on Pattern Analysis and Machine
 Intelligence*, 22(11), 1318-1323.
+<https://doi.org/10.1109/34.888716>.
+
+Himmelblau, D. M. (1972). *Applied Nonlinear Programming.* McGraw-Hill.
+
+Hoek, J. van der and Elliott, R. J. (2024). *Mixtures of multivariate
+Gaussians.* Stochastic Analysis and Applications.
+<https://doi.org/10.1080/07362994.2024.2372605>.
 
 ## Reproduce
 
-The ambient seed is 20260619, and both fits additionally pass `seed = 1L`
-to `from_objective()`, so the importance draws are reproducible
-independently of the ambient random-number state.
+The session seed is 20260619. Both fits also pass `seed = 1L` to
+`from_objective()`, so the trial points are the same on every run whatever
+the random-number state before the call.
 
-```{r session-info}
+```{r session-info, collapse = FALSE, class.output = "session-info"}
 sessionInfo()
 ```

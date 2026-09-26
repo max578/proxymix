@@ -129,6 +129,7 @@ symmetrise <- function(S) 0.5 * (S + t(S))
       max_weight        = worst("max_weight", max),
       support_fraction  = worst("support_fraction", min),
       kld_final         = NA_real_,
+      kld_approx        = worst("kld_approx", max),
       validation_gap    = worst("validation_gap", max, abs),
       quality_sources   = lapply(gs, function(g) {
         list(name = g@name, quality = g@metadata$quality)
@@ -150,17 +151,24 @@ symmetrise <- function(S) 0.5 * (S + t(S))
 
 ## One-shot advisory when a downstream verb consumes a fit whose quality
 ## certificate is flagged. Plain mixtures (no certificate) pass silently.
+## Relative ESS is not a criterion: with a fixed proposal it measures the
+## proposal against the target, not the fit, and does not fall as the fit
+## improves. Too few effective draws is caught by `degenerate` (ESS below
+## `min_ess`).
+.kld_approx_limit <- 0.3
+
 .check_quality <- function(g, verb) {
   q <- g@metadata$quality
   if (is.null(q)) return(invisible(NULL))
-  low_ess <- is.finite(q$ess_relative %||% NA_real_) && q$ess_relative < 0.05
-  bad <- isTRUE(q$degenerate) || isFALSE(q$converged) || low_ess
+  kl <- q$kld_approx %||% NA_real_
+  misfit <- is.finite(kl) && kl > .kld_approx_limit
+  bad <- isTRUE(q$degenerate) || isFALSE(q$converged) || misfit
   if (bad) {
     rlang::inform(
       c(sprintf(
-        "`%s` received a fit whose quality certificate is flagged (converged = %s, degenerate = %s, relative ESS = %s).",
+        "`%s` received a fit whose quality certificate is flagged (converged = %s, degenerate = %s, approximate KL = %s).",
         verb, format(q$converged), format(isTRUE(q$degenerate)),
-        format(signif(q$ess_relative %||% NA_real_, 2L))),
+        format(signif(kl, 2L))),
         "i" = "Downstream quantities condition on this proxy; consider refitting before relying on them."),
       class = "proxymix_low_quality",
       .frequency = "once",

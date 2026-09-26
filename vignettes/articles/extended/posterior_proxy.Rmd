@@ -416,16 +416,17 @@ effective sample size is `r round(cert$ess)` out of 3000 importance draws,
 or `r round(100 * cert$ess_relative)` per cent, with the leanest single
 component still carrying `r round(cert$min_component_ess)` effective draws
 and no single weight above `r sprintf("%.5f", cert$max_weight)`. The fit is not
-flagged degenerate, and the held-out validation gap of
-`r signif(cert$validation_gap, 2)` says the fit does not depend on the
-particular importance realisation it was estimated from. The proposal was
+flagged degenerate. The held-out validation gap of
+`r signif(cert$validation_gap, 2)` is about
+`r round(abs(cert$validation_gap) / fit@diagnostics$validation_mc_se)` Monte Carlo
+standard errors, detectable but small next to the divergence itself. The proposal was
 refreshed `r n_refresh` times over the run. The certificate's in-sample divergence entry,
 `r round(cert$kld_final, 3)`, is negative because the target is
 unnormalised: for such a target the importance-sampled divergence is offset
 by the unknown $\log Z$, and the entry is read as a relative quantity across
 fits of the same target rather than as an absolute divergence. It is
 computed on the draws the fit was tuned to and reads lower than the
-held-out value, `r round(fit@diagnostics$validation_kld, 3)` with a Monte
+held-out value, `r sprintf("%.3f", fit@diagnostics$validation_kld)` with a Monte
 Carlo standard error of `r signif(fit@diagnostics$validation_mc_se, 1)`.
 
 The log normalising constant comes out at `r round(ev$log_z, 3)`, with a
@@ -460,7 +461,7 @@ density, against a peak density of `r signif(max(marg_quad), 3)`, or about
 largest gap is on the right shoulder, at a slope of
 `r round(gap_at, 1)`, where the mixture sits
 `r if (marg_proxy[b_grid == gap_at] < marg_quad[b_grid == gap_at]) "below" else "above"`
-the exact curve. The mixture is also slightly higher at the mode, lower on
+the exact curve. The mixture is also higher at the mode, lower on
 the left shoulder, higher over the inner part of the left tail and slightly
 lower over its far end. The upper end of the 90 per cent
 interval agrees with quadrature, `r round(interval[2L], 2)` against
@@ -941,12 +942,12 @@ time_order <- ordered_text(aff_tbl$method, aff_tbl$secs, 2L, " s")
 ```
 
 The reference run's smallest bulk effective sample size over the five
-coefficients is `r format(round(ref$long$ess_min), big.mark = " ")`, so
+coefficients is `r format(round(ref$long$ess_min), big.mark = ",")`, so
 its posterior means carry a Monte Carlo standard error of at most about
 `r fixed(max(ref_se_mean / ref_aff[, "sd"]), 3)` reference standard
 deviations. The 4000-draw NUTS run is independent of the reference, with a
 smallest bulk effective sample size of
-`r format(round(ref$short$ess_min), big.mark = " ")`, so a difference in a
+`r format(round(ref$short$ess_min), big.mark = ",")`, so a difference in a
 mean between the two runs has a standard error of about
 `r fixed(se_diff_nuts, 3)` reference standard deviations. Its means differ
 from the reference by `r fixed(aff_value("NUTS, 4000 draws", "mean"), 3)`
@@ -1317,7 +1318,7 @@ for `r round(sim$cpu_secs / 60)` minutes of processor time. They compare the
 methods within one value of $p$, not across the two values.
 
 The reference's smallest bulk effective sample size over every dataset was
-`r format(round(sim$ref_ess_min), big.mark = " ")`. At that size the
+`r format(round(sim$ref_ess_min), big.mark = ",")`. At that size the
 reference mean is itself off by about
 `r fixed(sqrt(2 / pi) / sqrt(sim$ref_ess_min), 3)` posterior standard
 deviations on average, and mean errors of that size are the noise of the
@@ -1396,7 +1397,7 @@ separated data, or dimensions above five, the lower end of the five to ten
 parameters beyond which the Limitations section places the
 importance-sampling floor.
 
-## Where next
+## Further reading
 
 *Fitting a proxy to a density you cannot sample* is the shorter first pass
 over the same fitting verb, on a target whose shape is known in advance.

@@ -1057,7 +1057,7 @@ about a mechanism that depends on an unobserved third variable, about
 interval censoring, or about how either sweep behaves when the grid does not
 reach the truth.
 
-## Where next
+## Further reading
 
 *Imputing missing data with a mixture* is the companion case this vignette
 assumes away, where missingness depends only on what was observed, and it

@@ -378,14 +378,14 @@ The overlay shows why they look alike here: both put one component on each
 mode, which is the correct answer for a target that is itself a
 three-component Gaussian mixture. The KLD-EM fit retained an effective
 sample size of `r round(k_fit@diagnostics$ess, 0L)` out of
-`r k_fit@diagnostics$is_size` importance draws, so it reached that answer
+`r format(k_fit@diagnostics$is_size, big.mark = ",")` importance draws, so it reached that answer
 without leaning on a few high-weight points.
 
 The KLD-EM trace ends at
 `r fixed(k_fit@diagnostics$kld_final, 4)`, below zero, although a
 divergence cannot be negative. The trace is estimated on the importance
 draws the fit was tuned to, so it reads low. On
-`r k_fit@diagnostics$validation_size` held-out draws the estimate is
+`r format(k_fit@diagnostics$validation_size, big.mark = ",")` held-out draws the estimate is
 `r fixed(k_fit@diagnostics$validation_kld, 4)` with a Monte Carlo standard
 error of `r fixed(k_fit@diagnostics$validation_mc_se, 4)`, and quadrature of
 the exact target density on a grid over $[-6, 6]^2$, which leaves out
@@ -420,12 +420,12 @@ regimes (i) and (ii) are fitting to whatever finite sample was drawn from
 it. With plentiful samples the distinction is immaterial. With
 `r nrow(banana@samples)` samples the sampling error of the trace is of the
 same order as the importance-sampling error of regime (iii) at
-`r k_b@diagnostics$is_size` draws, so which fit lands closer in a single
+`r format(k_b@diagnostics$is_size, big.mark = ",")` draws, so which fit lands closer in a single
 run is partly chance. What you give up by choosing regime (iii)
 when samples are plentiful is speed and simplicity: it needs a proposal, it
-costs `r k_fit@diagnostics$n_target_evals` target evaluations here
-(`r k_fit@diagnostics$is_size` importance draws and
-`r k_fit@diagnostics$validation_size` held-out draws), and it
+costs `r format(k_fit@diagnostics$n_target_evals, big.mark = ",")` target evaluations here
+(`r format(k_fit@diagnostics$is_size, big.mark = ",")` importance draws and
+`r format(k_fit@diagnostics$validation_size, big.mark = ",")` held-out draws), and it
 carries an importance-sampling diagnostic that has to be read.
 
 ## Limitations
@@ -777,7 +777,7 @@ kde_peak <- max(kde_direct)
 ```
 
 The four regime-(ii) fits are within
-`r fixed(max(ll_two) - min(ll_two), 3)` of one another on the held-out
+`r fixed(ceiling(1000 * (max(ll_two) - min(ll_two))) / 1000, 3)` of one another on the held-out
 half: proxymix gives `r fixed(ll_ii, 3)`, mclust `r fixed(ll_of("mclust"), 3)`
 with its `r mclust_model` covariance structure, mixtools
 `r fixed(ll_of("mixtools"), 3)` and flexmix `r fixed(ll_of("flexmix"), 3)`.
@@ -791,15 +791,15 @@ Regime (iii) never saw the training points directly. From the kernel density est
 alone it reaches `r fixed(ll_iii, 3)`, beside the estimate's own
 `r fixed(ll_kde, 3)`, in `r fixed(secs_of("proxymix, regime (iii), on the KDE"), 2)`
 s with an effective sample size of
-`r round(k_faithful@diagnostics$ess)` of `r k_faithful@diagnostics$is_size`
+`r round(k_faithful@diagnostics$ess)` of `r format(k_faithful@diagnostics$is_size, big.mark = ",")`
 importance draws. Its larger component carries weight
 `r fixed(weight_iii, 3)`, against `r fixed(weight_ii, 3)` for the regime-(ii)
 fit to the same half. The sampling route reaches `r fixed(ll_nuts, 3)` from
-`r format(ref$n_draws, big.mark = " ")` draws in
+`r format(ref$n_draws, big.mark = ",")` draws in
 `r round(ref$elapsed_secs)` s for the whole reference chunk, with `r ref$nuts_divergent` divergent
 transitions, a largest R-hat of `r fixed(nuts_rhat, 2)` over the two
 coordinates and a smallest bulk effective sample size of
-`r format(round(nuts_ess), big.mark = " ")`. The density is checked: the
+`r format(round(nuts_ess), big.mark = ",")`. The density is checked: the
 largest absolute difference between the density from the log-sum-exp form
 and the estimate `kde()` computes at the `r nrow(faithful_mat)` eruptions
 is `r power_ten(kde_check)`, where the largest density at those points is
@@ -833,7 +833,7 @@ end of the chunk, took `r round(sim$mixtools_secs)` s, so
 
 Two scores are computed against quantities no method produced. The first
 is $\mathrm{KL}(f \Vert g) = \int f \log (f / g)$, with $f$ the true
-mixture and $g$ the fitted mixture, by quadrature on a grid of `r format(length(seq(-6, 6, by = 0.06))^2, big.mark = " ")`
+mixture and $g$ the fitted mixture, by quadrature on a grid of `r format(length(seq(-6, 6, by = 0.06))^2, big.mark = ",")`
 points over $[-6, 6]^2$, which leaves out `r power_ten(1 - kq_mass)` of the
 true mixture's mass. The second is the adjusted Rand index
 (Hubert and Arabie, 1985) between the component that generated each point
@@ -1089,7 +1089,7 @@ went, which no other method did. The comparison covers one mixture in two
 dimensions with the component count supplied, and neither a mis-specified
 target, a chosen component count nor a higher dimension was tried.
 
-## Where next
+## Further reading
 
 *Fitting a proxy to a density you cannot sample* is the shorter route into
 regime (iii) alone, and reads the fit certificate that this vignette only

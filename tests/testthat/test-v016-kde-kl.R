@@ -47,7 +47,7 @@ test_that("hellinger_mc on a regime kld fit agrees with grid quadrature", {
 test_that("from_kde carries a held-out validation estimate by default", {
   x <- withr::with_seed(1L, matrix(stats::rnorm(160L), ncol = 2L))
   fit <- from_kde(x, N = 2L, is_size = 1000L, max_iter = 20L, seed = 1L)
-  expect_equal(fit@diagnostics$validation_size, 250L)
+  expect_gte(fit@diagnostics$validation_size, 1000L)
   expect_true(is.finite(fit@diagnostics$validation_kld))
 })
 

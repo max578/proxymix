@@ -123,6 +123,7 @@ fit_moment_match <- function(target, N = 1L, ridge_eps = 1e-6,
     max_weight = NA_real_,
     support_fraction = NA_real_,
     kld_final = NA_real_,
+    kld_approx = NA_real_,
     validation_gap = NA_real_
   )
 }

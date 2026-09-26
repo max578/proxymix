@@ -54,9 +54,9 @@ issued. Forwarded to \code{\link[=fit_kld_em]{fit_kld_em()}}.}
 
 \item{seed}{Optional integer seed for the fitting IS draw.}
 
-\item{validation_size}{Held-out IS sample size. The default \code{NULL} uses
-\code{ceiling(is_size / 4)}, so the fit carries a held-out \code{validation_kld};
-\code{0L} disables it. Forwarded to \code{\link[=fit_kld_em]{fit_kld_em()}}.}
+\item{validation_size}{Held-out IS sample size. The default \code{NULL} adds
+draws until \code{validation_kld} is precise, as described in
+\code{\link[=fit_kld_em]{fit_kld_em()}}; \code{0L} disables it. Forwarded to \code{\link[=fit_kld_em]{fit_kld_em()}}.}
 
 \item{validation_proposal}{Optional \link{is_proposal} for the held-out
 sample. Forwarded to \code{\link[=fit_kld_em]{fit_kld_em()}}.}

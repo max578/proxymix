@@ -7,8 +7,11 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-<!-- Render time: ~3 s under rmarkdown::render() with ggplot2 installed;
-     macOS arm64 (Apple silicon), R 4.5.2, one core. -->
+<!-- Render time: ~4 s under rmarkdown::render() with ggplot2 installed;
+     macOS arm64 (Apple silicon), R 4.6.1, one core. The comparison with
+     Stan, INLA, LearnBayes and BayesianTools is read from
+     results/posterior_proxy.rds, built by
+     data-raw/vignette_results/posterior_proxy.R. -->
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
@@ -29,56 +32,96 @@ library(proxymix)
 has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
 ```
 
-## Why
+```{r stored-results, include = FALSE}
+## The comparison table reads stored simulation results. They must come
+## from the same major.minor version of proxymix as this build.
+res <- readRDS("results/posterior_proxy.rds")
+major_minor <- function(v) paste(unlist(package_version(v))[1:2],
+                                 collapse = ".")
+if (major_minor(res$proxymix_version) !=
+    major_minor(as.character(packageVersion("proxymix")))) {
+  stop("results/posterior_proxy.rds was built under proxymix ",
+       res$proxymix_version, ", but this is proxymix ",
+       packageVersion("proxymix"), ". Rerun the simulation and ",
+       "data-raw/vignette_results/posterior_proxy.R.", call. = FALSE)
+}
 
-A modeller has written down a likelihood and a prior, can evaluate their
-product at any parameter value, and does not want to spend the afternoon
-tuning a sampler to get four numbers out of it. The question is: *I have an
-unnormalised log-posterior I can evaluate and no appetite for tuning a
-sampler -- can I get the marginal, the tail probability, the evidence and an
-error bar out of it?*
+## Small numbers are written as plain decimals rather than in the
+## scientific notation that knitr's inline hook would otherwise use.
+fixed <- function(v, digits) {
+  format(round(v, digits), nsmall = digits, scientific = FALSE)
+}
+## A small probability as "1 in N", with N rounded to two figures.
+one_in <- function(prob) {
+  format(signif(1 / prob, 2L), big.mark = ",", scientific = FALSE)
+}
+```
 
-This is the workflow the package exists for, end to end: an unnormalised
-log-posterior in, and a compact object out that can be marginalised,
-conditioned, integrated, and given error bars, with no Markov chain in
-between.
+## The problem
 
-## What
+A Bayesian analysis starts with two ingredients. The prior states what is
+believed about the parameters before seeing the data. The likelihood states
+how probable the observed data are for each value of the parameters. The
+posterior distribution, which describes what is believed after seeing the
+data, is proportional to their product.
 
-`gmm_target()` wraps a log-density into the object the fitting verbs
-consume. Declaring `normalised = FALSE` records that the normalising
-constant is unknown, which is what an unnormalised posterior is.
+The constant that turns the product into a proper distribution, one that
+integrates to one, is usually unknown. This
+constant is called the normalising constant. When the prior is a proper
+distribution, it is also called the evidence or marginal likelihood, and it
+is used to compare models.
 
-`fit_proxymix()` with `regime = "kld"` runs the importance-sampled KLD-EM
-of van der Hoek and Elliott (2024) against that target. Its `proposal`
-argument takes the importance proposal, and `adapt = "pmc"` refreshes that
-proposal from the current fit as the run proceeds, so the initial proposal
-only has to be survivable rather than good. `proposal_mvt()` builds a
-multivariate Student-t proposal, whose heavy tails are the robust default.
+The analyst therefore has a formula that can be evaluated at any
+parameter value, but no way to draw from it. The usual remedy is Markov chain Monte Carlo
+(MCMC), which produces a long, correlated sample from the posterior. A chain
+must be run long enough and checked for convergence. It also gives no
+normalising constant without a further method.
 
-`gmm_fit_quality()` returns the certificate that travels with the fit: the
-effective sample size of the importance weights, a degeneracy flag, the
-support fraction, and a held-out validation gap. It is the part to read
-before anything else.
+proxymix fits a stand-in, or proxy, for the posterior: a mixture of a few
+normal distributions, known as a Gaussian mixture. From the proxy you can
+read the posterior of each parameter, probabilities, intervals and the
+normalising constant, with a report on how close the proxy is to the
+posterior.
 
-`gmm_evidence()` estimates the log marginal likelihood, using the fitted
-proxy as its own importance proposal. `gmm_marginalise()`, `pgmm()` and
-`qgmm()` read marginals, tail probabilities and quantiles off the fitted
-mixture in closed form, with no further target evaluations.
+This vignette fits a proxy to the posterior of a small logistic regression
+and checks it against exact numerical integration. It then compares proxymix
+with four established methods in a simulation.
 
-`gmm_fit_ensemble()` and `proxy_functional_ci()` price the fit's own
-sampling variability: the ensemble re-weights the fit's cached importance
-draws, so a bootstrap interval on any functional of the mixture costs no new
-posterior evaluations at all.
+## Package capabilities
 
-## Do
+- `gmm_target()` describes the distribution to approximate, called the
+  target. You supply the number of parameters and a function that returns
+  the log of the posterior. `normalised = FALSE` records that the
+  normalising constant is unknown.
+- `fit_proxymix()` fits the proxy. With `regime = "kld"`, named after the
+  Kullback-Leibler divergence defined below, it weights trial
+  points drawn from a broad distribution that you set up with
+  `proposal_mvt()`. With `adapt = "pmc"`, it replaces the broad distribution
+  by one built from the current fit as the rounds go on. This scheme is
+  called population Monte Carlo (Cappé et al., 2008). With it, the first
+  broad distribution needs to be only roughly right.
+- `gmm_fit_quality()` returns a short report on the quality of the fit,
+  called its certificate.
+- `gmm_evidence()` estimates the log of the normalising constant.
+- `gmm_marginalise()`, `pgmm()` and `qgmm()` give the distribution of one
+  parameter on its own, probabilities and quantiles. They use exact formulas
+  for the mixture and do not evaluate the posterior again.
+- `gmm_fit_ensemble()` and `proxy_functional_ci()` give an interval for any
+  number read from the proxy. They refit the proxy to reweighted copies of
+  the trial points already drawn, a form of bootstrap (Rubin, 1981). No
+  new posterior evaluations are needed.
 
-### A real unnormalised posterior
+## Addressing the problem
 
-A Bayesian logistic regression of transmission type on weight for the
-built-in `mtcars` data, under a flat prior. The log-posterior is the
-log-likelihood, known only up to its normalising constant, which is the
-model evidence.
+### A posterior with no sampler
+
+The built-in `mtcars` data record, for 32 cars, whether the transmission is
+manual (`am = 1`) or automatic, and the weight in thousands of pounds
+(`wt`). A logistic regression models the log-odds of a manual transmission,
+$\log\{p/(1-p)\}$ where $p$ is its probability, as a straight line in weight, with an intercept $\alpha$ and a slope
+$\beta$. Here the prior is flat: it gives the same weight to every value
+of the parameters. The log-posterior then equals the log-likelihood up to a
+constant.
 
 ```{r posterior}
 set.seed(20260705)
@@ -102,15 +145,17 @@ tgt <- gmm_target(
 
 ### Fit the proxy
 
-A cheap point fit locates the proposal. This is the usual workflow: any
-rough guess of location and scale will do, because with `adapt = "pmc"` the
-proposal is refreshed from the fit itself.
+The broad distribution is a Student-t distribution, a relative of the normal
+with heavier tails. It is centred on the maximum-likelihood estimate from
+`glm()`, with a spread three times the standard errors in each direction.
+The call asks for a proxy with two components, with 3,000 trial points
+(`is_size`), and sets a seed. The fit works in rounds, each of which refits
+the mixture to the weighted trial points.
 
-Population Monte Carlo re-estimates the fitting objective on a refreshed
-importance sample at each refresh, so consecutive values of that objective
-are not measured against the same draws and the run's monotonicity check
-reports the jump. The handler below captures that notice so it can be read
-alongside the certificate rather than passing unremarked.
+Each time the broad distribution is replaced, the trial points change. The
+fitting criterion can then drop from one round to the next, and the package
+reports this in a warning. The handler below collects the warning and prints
+its first line.
 
 ```{r fit}
 mle <- stats::glm(am ~ wt, data = mtcars, family = stats::binomial())
@@ -127,41 +172,56 @@ fit <- withCallingHandlers(
     invokeRestart("muffleWarning")
   }
 )
-
-cert <- gmm_fit_quality(fit)
-n_refresh <- fit@diagnostics$n_refresh
-cat(fit_notes, sep = "\n")
+cat(sub("\n.*", "", fit_notes), sep = "\n")
 ```
 
-```{r fit-quality-table, echo = FALSE}
-knitr::kable(
-  data.frame(
-    quantity = c("regime", "converged", "degenerate",
-                 "effective sample size", "effective sample size, relative",
-                 "smallest per-component effective size", "largest weight",
-                 "support fraction", "importance-sampled divergence",
-                 "held-out validation gap"),
-    value = c(cert$regime, cert$converged, cert$degenerate,
-              round(cert$ess, 1), round(cert$ess_relative, 3),
-              round(cert$min_component_ess, 1),
-              signif(cert$max_weight, 3), cert$support_fraction,
-              round(cert$kld_final, 3), signif(cert$validation_gap, 3))
+### Check the fit before using it
+
+The certificate shows whether a few trial points carry most of the weight.
+If they do, the fit rests on those few points and is unstable.
+
+```{r certificate}
+cert <- gmm_fit_quality(fit)
+```
+
+```{r certificate-table, echo = FALSE}
+cert_tbl <- data.frame(
+  Check = c("fitting method", "rounds settled before the limit",
+            "weights collapsed onto a few draws",
+            "effective sample size",
+            "effective sample size as a share of all draws",
+            "smallest effective sample size of any component",
+            "largest share of the weight held by one draw",
+            "share of draws where the posterior could be evaluated"),
+  Value = c(
+    cert$regime,
+    as.character(cert$converged),
+    as.character(cert$degenerate),
+    format(round(cert$ess, 1L), nsmall = 1L),
+    format(round(cert$ess_relative, 3L), nsmall = 3L),
+    format(round(cert$min_component_ess, 1L), nsmall = 1L),
+    format(signif(cert$max_weight, 3L), scientific = FALSE),
+    format(cert$support_fraction)
   ),
-  row.names = FALSE,
-  col.names = c("Certificate entry", "Value"),
-  caption = paste0(
-    "The fit-quality certificate that travels with the proxy through every ",
-    "operation below."
-  )
+  stringsAsFactors = FALSE
+)
+knitr::kable(
+  cert_tbl,
+  caption = "The fit certificate returned by `gmm_fit_quality()`."
 )
 ```
 
-### The evidence, with an independent check
+The effective sample size is the number of equally weighted draws that the
+weighted sample is worth. The closeness of the proxy to the posterior is
+measured below, once the normalising constant is known.
 
-The fitted proxy doubles as the importance proposal for the model evidence,
-the log marginal likelihood under the flat prior. A Laplace approximation
-computed directly from the maximum-likelihood fit gives an independent
-first-order check that shares none of the importance machinery.
+### The normalising constant
+
+`gmm_evidence()` uses the fitted proxy as the broad distribution for a fresh
+set of weighted draws. The average weight estimates the normalising
+constant. A Laplace approximation (Tierney and Kadane, 1986) gives a check
+that does not use the proxy. It replaces the posterior by one normal
+distribution centred at its peak, with a spread set by the curvature there.
 
 ```{r evidence}
 ev <- gmm_evidence(fit, n = 4000L, seed = 2L)
@@ -173,60 +233,86 @@ log_z_laplace <- log_post(matrix(stats::coef(mle), nrow = 1L)) +
   log(2 * pi) -
   0.5 * as.numeric(determinant(-H, logarithm = TRUE)$modulus)
 
-evidence_gap <- abs(ev$log_z - log_z_laplace)
-c(importance = round(ev$log_z, 3), se = signif(ev$se_log_z, 3),
-  laplace = round(log_z_laplace, 3), gap = round(evidence_gap, 3))
+c(proxymix = round(ev$log_z, 3), se = signif(ev$se_log_z, 2),
+  laplace = round(log_z_laplace, 3))
 ```
 
-### Closed-form reads off the proxy
+The closeness of the proxy to the posterior is measured by the
+Kullback-Leibler (KL) divergence, which is zero when the two distributions
+match and grows as they differ. The package estimates it during the fit,
+on a fresh set of draws. For a posterior with an unknown normalising constant, that estimate
+includes the log of the constant. Subtracting the log normalising constant
+from `gmm_evidence()` leaves the KL divergence itself.
 
-Everything below is exact algebra on the fitted mixture: no chains, no
-further target evaluations. The marginal posterior of the slope, the
-probability that the slope is negative, and a central 90 per cent interval.
+```{r kl-fresh}
+kl_fresh <- fit@diagnostics$validation_kld - ev$log_z
+# the held-out estimate and log Z come from separate sets of draws
+kl_fresh_se <- sqrt(fit@diagnostics$validation_mc_se^2 + ev$se_log_z^2)
+c(kl = signif(kl_fresh, 2), se = signif(kl_fresh_se, 1))
+```
+
+### Read the answers off the proxy
+
+The distribution of the slope on its own, the probability that the slope is
+negative, and a central 90 per cent interval for the slope all come from
+exact formulas for the mixture.
 
 ```{r reads}
 slope <- gmm_marginalise(fit, keep = 2L)
 p_negative <- pgmm(0, slope)
 interval <- qgmm(c(0.05, 0.95), slope)
 c(p_slope_negative = round(p_negative, 5),
-  lower = round(interval[1L], 3), upper = round(interval[2L], 3))
+  lower = round(interval[1L], 2), upper = round(interval[2L], 2))
 ```
 
-### An independent reference for the marginal
+### Check the answers against exact integration
 
-The reads above are all functions of the fitted mixture, so on their own
-they cannot say whether the mixture is right. In two dimensions the exact
-posterior can be integrated on a grid instead, which uses the log-posterior
-directly and never touches the fit. Exponentiating against the grid maximum
-keeps the sum numerically stable; summing over the intercept axis leaves the
-slope marginal, which the trapezoid rule then normalises.
+The answers above come from the proxy, so on their own they cannot show
+whether the proxy is right. With only two parameters, the posterior can be
+integrated directly on a fine grid of values, without using the proxy. The
+intercept and the slope are strongly correlated, so the grid has to be wide.
+Subtracting the largest log-density before exponentiating keeps the numbers
+within range. Summing over the intercept gives the distribution of the
+slope.
 
 ```{r quadrature}
-a_grid <- seq(2, 30, length.out = 220L)      # intercept
-b_grid <- seq(-11, -1, length.out = 260L)    # slope
+a_grid <- seq(-2, 70, length.out = 600L)     # intercept
+b_grid <- seq(-21, 0, length.out = 400L)     # slope
 quad <- as.matrix(expand.grid(a = a_grid, b = b_grid))
 
 log_dens <- log_post(quad)
 dens <- matrix(exp(log_dens - max(log_dens)), nrow = length(a_grid))
 da <- a_grid[2L] - a_grid[1L]
 db <- b_grid[2L] - b_grid[1L]
+log_z_grid <- log(sum(dens) * da * db) + max(log_dens)
 
 marg_quad <- colSums(dens) * da
 marg_quad <- marg_quad / (sum(marg_quad) * db)
 marg_proxy <- dgmm(matrix(b_grid, ncol = 1L), slope)
 
+cdf_quad <- cumsum(marg_quad) * db
+interval_quad <- stats::approx(cdf_quad, b_grid + db / 2,
+                               xout = c(0.05, 0.95), ties = mean)$y
 curve_gap <- max(abs(marg_quad - marg_proxy))
-c(peak_density = signif(max(marg_quad), 3),
-  max_curve_gap = signif(curve_gap, 3),
+c(log_z = round(log_z_grid, 3), lower = round(interval_quad[1L], 2),
+  upper = round(interval_quad[2L], 2),
   gap_pct_of_peak = round(100 * curve_gap / max(marg_quad), 1))
 ```
 
-```{r marginal-figure, eval = has_ggplot2, echo = has_ggplot2, fig.height = 4.2, fig.cap = "The slope marginal read off the fitted mixture in closed form (orange, dashed) against the same marginal obtained by numerical quadrature of the exact log-posterior (blue, solid). The quadrature curve uses the log-posterior directly and never touches the fit, so the agreement is an independent check rather than a self-consistency check.", fig.alt = "Two nearly coincident density curves for the slope parameter, one from the fitted Gaussian-mixture proxy and one from numerical quadrature of the exact posterior."}
+```{r grid-edge, include = FALSE}
+## The log-density on the edges of the grid, relative to its peak.
+edge_vec <- c(log_dens[quad[, "a"] %in% range(a_grid)],
+              log_dens[quad[, "b"] %in% range(b_grid)])
+edge_drop <- max(edge_vec) - max(log_dens)
+```
+
+```{r marginal-figure, eval = has_ggplot2, echo = has_ggplot2, fig.height = 4.2, fig.cap = "The posterior of the slope from the proxy (orange, dashed) and from direct integration of the posterior on a grid (blue, solid). The grid curve does not use the proxy. Both curves are drawn where the grid density exceeds a thousandth of its peak.", fig.alt = "Two close density curves for the slope, one from the fitted Gaussian-mixture proxy and one from grid integration of the exact posterior."}
+shown <- marg_quad > 1e-3 * max(marg_quad)
 marg_df <- rbind(
-  data.frame(slope = b_grid, density = marg_quad,
-             source = "Quadrature of the exact posterior"),
-  data.frame(slope = b_grid, density = marg_proxy,
-             source = "Mixture proxy, closed form")
+  data.frame(slope = b_grid[shown], density = marg_quad[shown],
+             source = "Grid integration of the posterior"),
+  data.frame(slope = b_grid[shown], density = marg_proxy[shown],
+             source = "Mixture proxy")
 )
 
 ggplot2::ggplot(marg_df,
@@ -235,17 +321,17 @@ ggplot2::ggplot(marg_df,
   ggplot2::geom_line(linewidth = 0.8) +
   ggplot2::scale_colour_manual(
     name = NULL,
-    values = c("Quadrature of the exact posterior" = "#0072B2",
-               "Mixture proxy, closed form" = "#D55E00")
+    values = c("Grid integration of the posterior" = "#0072B2",
+               "Mixture proxy" = "#D55E00")
   ) +
   ggplot2::scale_linetype_manual(
     name = NULL,
-    values = c("Quadrature of the exact posterior" = "solid",
-               "Mixture proxy, closed form" = "dashed")
+    values = c("Grid integration of the posterior" = "solid",
+               "Mixture proxy" = "dashed")
   ) +
   ggplot2::labs(
-    title = "The slope marginal, two ways",
-    x = expression(paste("slope ", beta[wt], " (log-odds per 1000 lb)")),
+    title = "Posterior of the slope, two ways",
+    x = expression(paste("slope ", beta, " (log-odds per 1000 lb)")),
     y = "posterior density"
   ) +
   ggplot2::theme_minimal(base_size = 11) +
@@ -254,20 +340,31 @@ ggplot2::ggplot(marg_df,
 ```
 
 ```{r marginal-figure-skip, eval = !has_ggplot2, echo = FALSE, results = "asis"}
-cat("ggplot2 is not installed on this build, so the marginal-comparison",
-    "figure is skipped.\n")
+cat("ggplot2 is not installed on this build, so the figure comparing the",
+    "two slope curves is skipped.\n")
+```
+
+The grid above stops at a slope of zero. A second, finer grid gives the
+probability that the slope is positive, far out in the tail.
+
+```{r quadrature-tail}
+a_tail <- seq(-10 + 0.01, 10, by = 0.02)     # cell centres, intercept
+b_tail <- seq(0.005, 3, by = 0.01)           # cell centres, slope > 0
+log_tail <- vapply(b_tail, function(b) log_post(cbind(a_tail, b)),
+                   numeric(length(a_tail)))
+p_positive_quad <- sum(exp(log_tail - log_z_grid)) * 0.02 * 0.01
+p_positive <- pgmm(0, slope, lower.tail = FALSE)
+c(grid = signif(p_positive_quad, 2), proxy = signif(p_positive, 2))
 ```
 
 ### Error bars on the proxy itself
 
-The numbers above condition on the fitted mixture. The bootstrap ensemble
-prices the fit's own sampling variability, at zero new posterior
-evaluations, because the replicates re-weight the fit's cached importance
-draws. The probability that the slope is positive,
-`r format(signif(1 - p_negative, 2), scientific = FALSE)`, is below the default
-`tail_warn` level of `r formals(proxy_functional_ci)$tail_warn`, so the
-interval for the tail probability comes with a warning of class
-`proxymix_tail_functional`.
+The proxy was fitted to one random set of trial points. A different set
+would give a slightly different proxy. The bootstrap below refits the proxy
+80 times to reweighted copies of the same points and gives 90 per cent
+intervals for the posterior means and for the probability of a negative
+slope. For the probability, the package warns that the interval covers only
+the variation between refits.
 
 ```{r ensemble, warning = TRUE}
 ens <- gmm_fit_ensemble(fit, B = 80L, seed = 3L)
@@ -278,142 +375,413 @@ ci_tail <- proxy_functional_ci(
 ```
 
 ```{r ensemble-table, echo = FALSE}
+## Three decimals for the two means, five for the probability.
+ens_fmt <- function(v) {
+  vapply(seq_along(v), function(i1) {
+    formatC(v[i1], format = "f", digits = c(3L, 3L, 5L)[i1])
+  }, character(1L))
+}
 knitr::kable(
   data.frame(
-    functional = c("posterior mean, intercept", "posterior mean, slope",
-                   "P(slope < 0)"),
-    estimate = signif(c(ci_mean$estimate, ci_tail$estimate), 5),
-    conf_low = signif(c(ci_mean$conf.low, ci_tail$conf.low), 5),
-    conf_high = signif(c(ci_mean$conf.high, ci_tail$conf.high), 5)
+    quantity = c("posterior mean of the intercept",
+                 "posterior mean of the slope",
+                 "probability that the slope is negative"),
+    estimate = ens_fmt(c(ci_mean$estimate, ci_tail$estimate)),
+    conf_low = ens_fmt(c(ci_mean$conf.low, ci_tail$conf.low)),
+    conf_high = ens_fmt(c(ci_mean$conf.high, ci_tail$conf.high))
   ),
+  align = c("l", "r", "r", "r"),
   row.names = FALSE,
-  col.names = c("Functional", "Estimate", "Lower 5%", "Upper 95%"),
-  caption = paste0(
-    "Bootstrap intervals over ", ens$B, " ensemble replicates, ",
-    "obtained by re-weighting the fit's cached importance draws."
-  )
+  col.names = c("Quantity", "Estimate", "Lower 5%", "Upper 95%"),
+  caption = paste0("Bootstrap intervals over ", ens$B, " refits of the ",
+                   "proxy.")
 )
 ```
 
-## Read
+### Comparison with Stan, INLA, a Laplace approximation and BayesianTools
 
-The certificate is the first thing to read, and it clears the fit. The
-effective sample size is `r round(cert$ess)` out of 3000 importance draws,
-or `r round(100 * cert$ess_relative)` per cent, with the leanest single
-component still carrying `r round(cert$min_component_ess)` effective draws
-and no single weight above `r sprintf("%.5f", cert$max_weight)`. The fit is not
-flagged degenerate, and the held-out validation gap of
-`r signif(cert$validation_gap, 2)` says the fit does not depend on the
-particular importance realisation it was estimated from. The proposal was
-refreshed `r n_refresh` times over the run, which is what lifted the
-effective sample size to that level from a proposal that was only ever a
-rough guess. The certificate's divergence entry, `r round(cert$kld_final, 2)`,
-is negative because the target is unnormalised: for such a target the
-importance-sampled divergence is offset by the unknown $\log Z$, which the
-fit records rather than hides, and the entry is read as a relative quantity
-across fits of the same target rather than as an absolute divergence.
+```{r compare-facts, include = FALSE}
+sim_value <- function(p, method, what) {
+  res$sim_tab[[what]][res$sim_tab$p == p & res$sim_tab$method == method]
+}
+lead_z <- function(what) res$lead_tab$z[res$lead_tab$what == what]
+lead_first <- function(what) {
+  unique(res$lead_tab$first[res$lead_tab$what == what])
+}
+secs <- function(p, method) {
+  format(signif(sim_value(p, method, "secs"), 2L), scientific = FALSE)
+}
+p1 <- res$p_vec[1L]
+p2 <- res$p_vec[2L]
+mcse_cov <- sqrt(0.95 * 0.05 / (res$n_rep * res$p_vec))
+px_total <- sapply(res$p_vec, function(p) {
+  sim_value(p, "proxymix", "secs") +
+    res$secs_ensemble[[as.character(p)]]
+})
+nuts_secs <- sapply(res$p_vec, function(p) {
+  sim_value(p, "NUTS, 4000 draws", "secs")
+})
+lap_ratio <- sapply(res$p_vec, function(p) {
+  s1 <- res$sim_tab$p == p & res$sim_tab$method != "Laplace"
+  min(res$sim_tab$secs[s1]) / sim_value(p, "Laplace", "secs")
+})
+stopifnot(lead_first("endpoints") == "proxymix",
+          lead_first("err_log_z") == "proxymix",
+          lead_first("err_mean") == "INLA",
+          lead_first("err_p_pos") == "INLA")
+## The sentences below on which differences are clear hold only if:
+stopifnot(lead_z("err_p_pos")[2L] > 2, lead_z("err_p_pos")[1L] < 2,
+          all(abs(res$z_px_nuts_mean) < 2),
+          0.95 - res$coverage[[as.character(p1)]] > 2 * mcse_cov[1L])
+```
 
-The evidence comes out at `r round(ev$log_z, 3)`, with a Monte Carlo
-standard error of `r signif(ev$se_log_z, 2)`. The Laplace approximation,
-which shares none of the importance machinery, gives
-`r round(log_z_laplace, 3)`, a gap of `r round(evidence_gap, 3)` on the log
-scale. A first-order approximation and an importance estimate agreeing to
-within a tenth of a log unit is the check passing.
+The `mtcars` example is one dataset with a flat prior. In a simulation,
+proxymix was compared with four established methods on `r res$n_rep`
+simulated datasets of `r res$n` observations, for a logistic regression
+with `r p1` and with `r p2` coefficients, the intercept included. Each
+coefficient had a normal prior with mean 0 and standard deviation
+`r res$prior_sd`. Stan's No-U-Turn sampler (NUTS), an MCMC method that
+tunes its own step size (Carpenter et al., 2017), was run through `cmdstanr` for 4,000 draws, with
+`bridgesampling` (Gronau et al., 2020) for the normalising constant. The
+Laplace approximation came from `LearnBayes` (Albert, 2009). INLA (Rue et
+al., 2009) is a fast approximation designed for regression models of this
+kind. DEzs is an MCMC sampler in `BayesianTools` (Hartig et al., 2026) that
+needs no derivatives (ter Braak and Vrugt, 2008). The reference for each
+dataset was a NUTS run of 40,000 draws. Errors in the posterior mean and in
+the ends of the 95 per cent interval are in units of the posterior standard
+deviation. Smaller is better in every column.
 
-The closed-form reads answer the substantive question. The posterior
-probability that the slope is negative is
-`r round(100 * p_negative, 3)` per cent, and the central 90 per cent interval
-for the slope runs from `r round(interval[1L], 2)` to
-`r round(interval[2L], 2)` log-odds per 1000 lb: heavier cars are close to
-certain to be automatics, and the effect size is not small.
+```{r compare-table, echo = FALSE}
+cmp_tbl <- res$sim_tab
+cmp_tbl$method[cmp_tbl$method == "NUTS, 4000 draws"] <- "Stan NUTS"
+cmp_tbl$method[cmp_tbl$method == "DEzs"] <- "BayesianTools DEzs"
+cmp_tbl$method[cmp_tbl$method == "Laplace"] <- "Laplace (LearnBayes)"
+cmp_tbl$secs <- formatC(signif(cmp_tbl$secs, 2L), format = "fg",
+                        digits = 2L)
+old_na <- options(knitr.kable.NA = "--")
+knitr::kable(
+  cmp_tbl, digits = c(0L, 0L, 3L, 3L, 4L, 4L, 0L), row.names = FALSE,
+  align = c("r", "l", "r", "r", "r", "r", "r"),
+  col.names = c("$p$", "Method", "Mean", "Interval ends",
+                "$P(\\beta_j > 0)$", "$\\log Z$", "Seconds"),
+  caption = paste0(
+    "Mean error against a 40,000-draw NUTS reference over ", res$n_rep,
+    " simulated datasets for each number of coefficients $p$. Mean and ",
+    "interval ends: error in reference posterior standard deviations, ",
+    "averaged over the coefficients. $P(\\beta_j > 0)$: error in the ",
+    "probability that a coefficient is positive. $\\log Z$: error in the ",
+    "log normalising constant. Seconds: time per dataset on one core. The ",
+    "NUTS time includes bridge sampling. DEzs gives no normalising constant."
+  )
+)
+options(old_na)
+```
 
-The quadrature reference confirms that those reads are reads of the
-posterior and not merely of the fit. The two marginal curves differ by at
-most `r signif(curve_gap, 2)` in density, against a peak density of
-`r signif(max(marg_quad), 3)`, so the largest disagreement anywhere on the
-curve is about `r round(100 * curve_gap / max(marg_quad))` per cent of the
-peak, and the figure shows it sitting at the mode where a two-component
-mixture rounds off the exact posterior's slight asymmetry. The tails, which
-are what the interval and the tail probability depend on, track closely.
+proxymix placed the ends of the 95 per cent intervals closest to the
+reference, at `r fixed(sim_value(p1, "proxymix", "endpoints"), 3)` and
+`r fixed(sim_value(p2, "proxymix", "endpoints"), 3)` standard deviations
+against `r fixed(sim_value(p1, "NUTS, 4000 draws", "endpoints"), 3)` and
+`r fixed(sim_value(p2, "NUTS, 4000 draws", "endpoints"), 3)` for NUTS, the
+next closest. It was also closest on the log normalising constant. Each of
+these leads was more than
+`r floor(min(lead_z("endpoints"), lead_z("err_log_z")))` times the standard
+error of the difference, computed over the same datasets. INLA was closest on the posterior
+means, at `r fixed(sim_value(p1, "INLA", "err_mean"), 3)` and
+`r fixed(sim_value(p2, "INLA", "err_mean"), 3)`. This is about the average
+error that random sampling leaves in the reference means themselves,
+`r fixed(res$ref_mean_noise, 3)`. proxymix and NUTS had similar errors on the means,
+`r fixed(sim_value(p1, "proxymix", "err_mean"), 3)` and
+`r fixed(sim_value(p1, "NUTS, 4000 draws", "err_mean"), 3)` at `r p1`
+coefficients. INLA was also closest on
+the probability that a coefficient is positive, clearly so at `r p2`
+coefficients. At `r p1` coefficients, its lead over proxymix was less than
+twice its standard error. The Laplace approximation takes the peak of the
+posterior as its mean and had the largest errors on the means and the
+interval ends. The 95 per cent bootstrap intervals of proxymix for
+the posterior means contained the reference mean in
+`r fixed(res$coverage[[as.character(p1)]], 2)` of cases at `r p1`
+coefficients and in
+`r fixed(res$coverage[[as.character(p2)]], 2)` at `r p2`. The first is
+below the nominal 0.95 by more than twice the simulation standard error at the nominal level,
+about `r fixed(mcse_cov[1L], 2)`, counting the
+`r res$n_rep * p1` intervals as independent.
 
-The ensemble prices the remaining uncertainty in the fit itself. Over
-`r ens$B` replicates the posterior mean of the slope is pinned to a 90 per
-cent interval of width
-`r signif(ci_mean$conf.high[2L] - ci_mean$conf.low[2L], 2)`, and the tail
-probability to the interval
-`r sprintf("%.5f", ci_tail$conf.low[1L])` to
-`r sprintf("%.5f", ci_tail$conf.high[1L])`, both at no further evaluations of
-the posterior. The tail-probability interval covers refit variability only,
-not the error in the mixture's tails.
+The Laplace approximation was the fastest, at `r secs(p1, "Laplace")` s per
+dataset with `r p1` coefficients, against `r secs(p1, "proxymix")` s for
+proxymix, `r secs(p1, "DEzs")` s for DEzs, `r secs(p1, "NUTS, 4000 draws")` s
+for NUTS and `r secs(p1, "INLA")` s for INLA. The bootstrap intervals add
+`r fixed(min(res$secs_ensemble), 1)` to `r fixed(max(res$secs_ensemble), 1)` s
+to proxymix, which then
+`r if (all(px_total > nuts_secs)) "takes longer than NUTS" else "is about as fast as NUTS"`.
+Other jobs shared the computer during the run, so the times compare methods
+only within one number of coefficients.
 
-So the answer to the question is yes, on all four counts, and the four
-numbers arrive with a certificate saying how far they can be trusted.
+The code below runs every method on one simulated dataset with two
+coefficients. It is the simulation code for a single dataset, without the
+timing and scoring.
 
-## Limits
+```{r compare-code, eval = FALSE}
+library(proxymix)
+library(cmdstanr)
+library(bridgesampling)
+library(LearnBayes)
+library(INLA)
+library(BayesianTools)
 
-If the unnormalised posterior can be evaluated then a Markov chain can
-always be run against it and a sample-based mixture fitted to the draws. The
-direct fit earns its place when what is wanted *is* the compact closed-form
-object -- deterministic given the seed, no chain tuning, evidence and error
-bars included -- and not otherwise.
+# one simulated dataset: 200 observations, an intercept and one covariate
+n <- 200L
+p <- 2L
+prior_sd <- 10
+beta_pop <- c(0.5, 1.5, -1, 0.75, 0)   # the first p entries are used
+r <- 1L
+set.seed(r)
+X <- cbind(1, matrix(rnorm(n * (p - 1L)), n))
+y <- rbinom(n, 1L, plogis(X %*% beta_pop[seq_len(p)]))
+data <- list(n = n, p = p, X = X, y = y, prior_sd = prior_sd)
 
-The dimension is the binding constraint. The effective sample size of
-importance sampling falls sharply beyond roughly five to ten parameters, and
-every fit reports it, so the certificate rather than the method's advertising
-is what should decide. The posterior here has two parameters, which is the
-comfortable end of that range. For high-dimensional posteriors, sample first
-and use the classical expectation-maximisation regime on the draws.
+log_lik_one <- function(theta, data) {
+  eta <- data$X %*% theta
+  sum(data$y * eta - log1p(exp(eta)))
+}
+log_post_one <- function(theta, data) {
+  log_lik_one(theta, data) + sum(dnorm(theta, 0, data$prior_sd, log = TRUE))
+}
+log_post_rows <- function(theta, data) {
+  if (is.null(dim(theta))) theta <- matrix(theta, ncol = data$p)
+  apply(theta, 1L, log_post_one, data = data)
+}
+mle <- glm(y ~ X - 1, family = binomial())
 
-The quadrature check above is available only because the posterior is
-two-dimensional. It is not part of the workflow and does not scale: at four
-or more parameters the grid becomes the expensive object it was introduced
-to avoid, and the certificate and the held-out validation gap are what
-remain.
+# proxymix: fit, log normalising constant, bootstrap intervals
+tgt <- gmm_target(n_dim = p,
+                  log_density = function(theta) log_post_rows(theta, data),
+                  normalised = FALSE)
+q0 <- proposal_mvt(p, mean = coef(mle), sigma = 9 * vcov(mle), df = 5)
+fit <- fit_proxymix(tgt, N = 2L, regime = "kld", proposal = q0,
+                    is_size = 3000L, max_iter = 60L, seed = r, adapt = "pmc")
+ev <- gmm_evidence(fit, n = 4000L, seed = r)
+ens <- gmm_fit_ensemble(fit, B = 80L, seed = r)
+ci <- proxy_functional_ci(ens, gmm_mean, level = 0.95)
 
-The prior here is flat, and the evidence reported is therefore the marginal
-likelihood under that flat prior. A proper prior changes the target, the
-evidence and the interval, and nothing in this vignette speaks to how the
-conclusions move under a different one.
+# Stan NUTS: four chains of 1000 warm-up and 1000 kept draws, then bridge
+# sampling on the draws for the log normalising constant
+stan_file <- file.path(tempdir(), "logistic.stan")
+writeLines(c(
+  "data {",
+  "  int<lower=1> n;",
+  "  int<lower=1> p;",
+  "  matrix[n, p] X;",
+  "  array[n] int<lower=0, upper=1> y;",
+  "  real<lower=0> prior_sd;",
+  "}",
+  "parameters {",
+  "  vector[p] beta;",
+  "}",
+  "model {",
+  "  beta ~ normal(0, prior_sd);",
+  "  y ~ bernoulli_logit(X * beta);",
+  "}"
+), stan_file)
+model <- cmdstan_model(stan_file)
+fit_nuts <- model$sample(data, chains = 4L, parallel_chains = 1L,
+                         iter_warmup = 1000L, iter_sampling = 1000L,
+                         seed = r + 100000L, refresh = 0L,
+                         show_messages = FALSE, show_exceptions = FALSE)
+draws <- fit_nuts$draws("beta", format = "matrix")
+draws <- matrix(draws, ncol = data$p, dimnames = list(NULL, colnames(draws)))
+bounds <- setNames(rep(-Inf, data$p), colnames(draws))
+bridge <- bridge_sampler(draws, log_posterior = log_post_one, data = data,
+                         lb = bounds, ub = -bounds, silent = TRUE)
 
-The nearest CRAN neighbour, `AdMit`, adaptively fits a mixture of Student-t
-densities to an evaluable kernel for use as a proposal. The Gaussian family
-used here is what buys the closed-form operator calculus and the certificate
-that travel with the result; a Student-t mixture would fit heavier tails
-more naturally and give up that algebra.
+# Laplace approximation
+lap <- laplace(log_post_one, coef(mle), data)
 
-## What to read next
+# INLA
+df <- data.frame(y = y, X[, -1L, drop = FALSE])
+names(df) <- c("y", paste0("x", seq_len(p - 1L)))
+fi <- inla(reformulate(names(df)[-1L], "y"), family = "binomial",
+           Ntrials = 1, data = df,
+           control.fixed = list(prec = 1 / prior_sd^2,
+                                prec.intercept = 1 / prior_sd^2),
+           num.threads = "1:1")
 
-*Fitting a proxy to a density you cannot sample* is the shorter first pass
-over the same fitting verb, on a target whose shape is known in advance.
-*Choosing between the three fitting regimes* explains why an unnormalised
-posterior lands in regime (iii) and what the other two regimes need instead.
-*The closed-form operator calculus on a mixture* covers the operators that
-make the compressed posterior worth having: pushforward, observation update,
-marginalisation and conditioning. *Reading the entropy of a fitted mixture*
-adds the entropy and divergence diagnostics that summarise a fitted
-posterior's spread.
+# BayesianTools, differential-evolution sampler DEzs
+setup <- createBayesianSetup(
+  likelihood = function(theta) log_lik_one(theta, data),
+  prior = createPrior(
+    density = function(theta) sum(dnorm(theta, 0, prior_sd, log = TRUE)),
+    sampler = function(n = 1L) matrix(rnorm(n * p, 0, prior_sd), n)
+  )
+)
+set.seed(r)
+bt <- runMCMC(setup, sampler = "DEzs",
+              settings = list(iterations = 15000L, message = FALSE))
+draws_bt <- getSample(bt, start = 1000L)
+```
+
+The code needs `cmdstanr` with CmdStan, `bridgesampling`, `LearnBayes`,
+`INLA` and `BayesianTools`. `cmdstanr` and `INLA` are installed from their
+own repositories rather than from CRAN. It is not run when this vignette is
+built. The [extended version of this
+article](https://max578.github.io/proxymix/articles/extended/posterior_proxy.html)
+gives the full simulation and a five-parameter example on survey data.
+
+## Interpretation
+
+The certificate is consistent with a good fit. The rounds settled before
+the limit, and the weights did not collapse. The 3,000 weighted draws of the
+last round were worth `r round(cert$ess)` equally weighted draws,
+`r round(100 * cert$ess_relative)` per cent of the total. The broad
+distribution was replaced `r fit@diagnostics$n_refresh` times during the
+fit. The KL divergence on fresh draws is `r signif(kl_fresh, 2)`, with a
+simulation standard error of `r signif(kl_fresh_se, 1)`, most of it from the
+estimate of the log normalising constant.
+
+The proxy puts the log normalising constant at `r round(ev$log_z, 3)`,
+with a standard error of `r signif(ev$se_log_z, 1)`. The grid gives
+`r round(log_z_grid, 3)`, and the Laplace approximation
+`r round(log_z_laplace, 3)`. The proxy and the grid differ by
+`r signif(abs(ev$log_z - log_z_grid), 2)`. The Laplace approximation is
+further off. It assumes that the posterior is symmetric about its peak, but
+the posterior mean of the slope, `r round(ci_mean$estimate[2L], 2)`, lies
+well away from the peak at `r round(stats::coef(mle)[[2L]], 2)`. With a
+flat prior this constant is the integral of the likelihood. It is not a
+model evidence. A flat prior over all values does not integrate to one, so
+its height, and with it this constant, can be set at will.
+
+The posterior probability that the slope is negative is
+`r round(100 * p_negative, 2)` per cent. Heavier cars are therefore almost
+certainly less likely to have a manual transmission. The proxy's 90 per
+cent interval for the slope runs from `r round(interval[1L], 2)` to
+`r round(interval[2L], 2)` log-odds per 1000 lb. The grid gives
+`r round(interval_quad[1L], 2)` to `r round(interval_quad[2L], 2)`. The
+upper ends agree, and the proxy's lower end lies slightly further out. The
+largest gap between the two curves in the figure is
+`r round(100 * curve_gap / max(marg_quad))` per cent of the peak height.
+On the edges of the grid, the posterior density is less than
+$10^{-`r floor(-edge_drop / log(10))`}$ of its peak. Very little of the
+posterior lies outside the grid.
+
+The tail is where the proxy is weakest. The proxy gives the slope a
+probability of about 1 in `r one_in(p_positive)` of being positive. The grid
+gives about 1 in `r one_in(p_positive_quad)`. The bootstrap interval for the
+probability of a negative slope does not show this error, because it covers
+only the variation between refits. The package's warning is the only sign.
+
+## Limitations
+
+A posterior that can be evaluated can always be sampled by MCMC, and a
+mixture can then be fitted to the draws. The direct fit is the better route
+when you want the compact proxy itself: reproducible from its seed, with no
+chain to tune, and with the normalising constant and error bars included.
+
+The number of parameters limits the method. Weighted trial draws lose
+efficiency quickly beyond roughly five to ten parameters, and the effective
+sample size in the certificate shows when this happens. For larger
+posteriors, draw a sample by MCMC first and fit the mixture to the draws.
+
+The grid check works only because this posterior has two parameters. With
+four or more, the grid becomes too large, and the certificate and the KL
+divergence on fresh draws are the checks that remain.
+
+A mixture of normal distributions has light tails. Probabilities far in the
+tail, such as the probability of a positive slope above, can be wrong by
+orders of magnitude.
+
+The simulation also shows where proxymix lost. INLA was closer on the
+posterior means and on the probability that a coefficient is positive. The
+bootstrap intervals of proxymix covered the reference means less often than
+stated at `r p1` coefficients. The Laplace approximation was
+`r round(min(lap_ratio))` to `r round(max(lap_ratio))` times faster than the
+next fastest method. The simulation covers logistic
+regression with standard normal covariates, `r res$n` observations, `r p1`
+and `r p2` coefficients and one weak prior. It does not cover skewed or
+multimodal posteriors, perfectly separated data, or more than `r p2`
+parameters.
+
+The nearest CRAN package, `AdMit` (Ardia et al., 2009), fits a mixture of
+Student-t distributions to a posterior that can be evaluated, for use as a
+sampling distribution. A Student-t mixture fits heavy tails more naturally,
+but it lacks the exact formulas for marginal and conditional distributions
+that a Gaussian mixture has.
+
+## Further reading
+
+*Fitting a proxy to a density you cannot sample* introduces the same
+fitting method on a target whose shape is known in advance.
+
+*Choosing between the three fitting regimes* explains why a posterior known
+only up to a constant needs the third fitting method.
+
+*The closed-form operator calculus on a mixture* covers the exact
+operations on the fitted proxy, such as marginal and conditional
+distributions.
+
+*Reading the entropy of a fitted mixture* adds measures of the spread of a
+fitted posterior.
 
 ## References
 
-* Cappé, O., Douc, R., Guillin, A., Marin, J.-M. and Robert, C. P.
-  (2008). *Adaptive importance sampling in general mixture classes.*
-  Statistics and Computing 18, 447--459. <doi:10.1007/s11222-008-9059-x>.
-* Hoek, J. van der and Elliott, R. J. (2024). *Mixtures of multivariate
-  Gaussians.* Stochastic Analysis and Applications.
-  <doi:10.1080/07362994.2024.2372605>.
-* Owen, A. and Zhou, Y. (2000). *Safe and effective importance sampling.*
-  Journal of the American Statistical Association 95(449), 135--143.
-  <doi:10.1080/01621459.2000.10473909>.
-* Rubin, D. B. (1981). *The Bayesian bootstrap.* The Annals of Statistics
-  9(1), 130--134. <doi:10.1214/aos/1176345338>.
+Albert, J. (2009). *Bayesian Computation with R.* Second edition. Springer.
+<https://doi.org/10.1007/978-0-387-92298-0>.
+
+Ardia, D., Hoogerheide, L. F. and van Dijk, H. K. (2009). *Adaptive mixture
+of Student-t distributions as a flexible candidate distribution for
+efficient simulation: The R package AdMit.* Journal of Statistical Software
+29(3), 1--32. <https://doi.org/10.18637/jss.v029.i03>.
+
+Cappé, O., Douc, R., Guillin, A., Marin, J.-M. and Robert, C. P. (2008).
+*Adaptive importance sampling in general mixture classes.* Statistics and
+Computing 18, 447--459. <https://doi.org/10.1007/s11222-008-9059-x>.
+
+Carpenter, B., Gelman, A., Hoffman, M. D., Lee, D., Goodrich, B.,
+Betancourt, M., Brubaker, M., Guo, J., Li, P. and Riddell, A. (2017).
+*Stan: A probabilistic programming language.* Journal of Statistical
+Software 76(1), 1--32. <https://doi.org/10.18637/jss.v076.i01>.
+
+Gronau, Q. F., Singmann, H. and Wagenmakers, E.-J. (2020).
+*bridgesampling: An R package for estimating normalizing constants.*
+Journal of Statistical Software 92(10), 1--29.
+<https://doi.org/10.18637/jss.v092.i10>.
+
+Hartig, F., Minunno, F. and Paul, S. (2026). *BayesianTools:
+General-purpose MCMC and SMC samplers and tools for Bayesian statistics.* R
+package version 0.1.9. <https://doi.org/10.32614/CRAN.package.BayesianTools>.
+
+Hoek, J. van der and Elliott, R. J. (2024). *Mixtures of multivariate
+Gaussians.* Stochastic Analysis and Applications.
+<https://doi.org/10.1080/07362994.2024.2372605>.
+
+Rubin, D. B. (1981). *The Bayesian bootstrap.* The Annals of Statistics
+9(1), 130--134. <https://doi.org/10.1214/aos/1176345338>.
+
+Rue, H., Martino, S. and Chopin, N. (2009). *Approximate Bayesian inference
+for latent Gaussian models by using integrated nested Laplace
+approximations.* Journal of the Royal Statistical Society: Series B 71(2),
+319--392. <https://doi.org/10.1111/j.1467-9868.2008.00700.x>.
+
+ter Braak, C. J. F. and Vrugt, J. A. (2008). *Differential Evolution Markov
+Chain with snooker updater and fewer chains.* Statistics and Computing 18,
+435--446. <https://doi.org/10.1007/s11222-008-9104-9>.
+
+Tierney, L. and Kadane, J. B. (1986). *Accurate approximations for
+posterior moments and marginal densities.* Journal of the American
+Statistical Association 81(393), 82--86.
+<https://doi.org/10.1080/01621459.1986.10478240>.
 
 ## Reproduce
 
-The ambient seed is 20260705. Each stochastic step additionally carries its
-own seed, so none of them depends on the ambient random-number state: the
-fit uses `seed = 1L`, the evidence estimate `seed = 2L`, and the bootstrap
-ensemble `seed = 3L`. The quadrature reference is deterministic.
+The data are fixed, and every random step has its own seed: the fit uses
+`seed = 1L`, the normalising constant `seed = 2L` and the bootstrap
+`seed = 3L`. The grid integration is not random. The comparison is read from
+stored results of a simulation run on `r res$run_date` under proxymix
+`r res$proxymix_version`, cmdstanr `r res$versions[["cmdstanr"]]` with
+CmdStan `r res$versions[["CmdStan"]]`, bridgesampling
+`r res$versions[["bridgesampling"]]`, LearnBayes
+`r res$versions[["LearnBayes"]]`, INLA `r res$versions[["INLA"]]` and
+BayesianTools `r res$versions[["BayesianTools"]]`, which took about
+`r round(res$elapsed_secs / 60)` minutes.
 
-```{r session-info}
+```{r session-info, collapse = FALSE, class.output = "session-info"}
 sessionInfo()
 ```

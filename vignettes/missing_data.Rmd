@@ -8,7 +8,9 @@ vignette: >
 ---
 
 <!-- Render time: ~4 s under rmarkdown::render() with ggplot2 and mice
-     installed; macOS arm64 (Apple silicon), R 4.5.2, one core. -->
+     installed; macOS arm64 (Apple silicon), R 4.6.1, one core. The
+     comparison with mice and Amelia is read from results/missing_data.rds,
+     built by data-raw/vignette_results/missing_data.R. -->
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
@@ -30,55 +32,88 @@ has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
 has_mice <- requireNamespace("mice", quietly = TRUE)
 ```
 
-## Why
+```{r stored-results, include = FALSE}
+## The comparison table reads stored simulation results. They must come
+## from the same major.minor version of proxymix as this build.
+res <- readRDS("results/missing_data.rds")
+major_minor <- function(v) paste(unlist(package_version(v))[1:2],
+                                 collapse = ".")
+if (major_minor(res$proxymix_version) !=
+    major_minor(as.character(packageVersion("proxymix")))) {
+  stop("results/missing_data.rds was built under proxymix ",
+       res$proxymix_version, ", but this is proxymix ",
+       packageVersion("proxymix"), ". Rerun the simulation and ",
+       "data-raw/vignette_results/missing_data.R.", call. = FALSE)
+}
 
-An analyst has two measurements per unit. The scatter falls into two clear
-clusters with almost nothing between them, and a good half of the second
-measurement never came back from the field. The question is not whether an
-imputer will run. It is: *my data has two clusters and an empty gap between
-them, so if I let a standard imputer fill the holes, will it put values in
-the gap where I know there is no mass, and will that move the mean I am
-going to report?*
+## Small numbers are written as plain decimals rather than in the
+## scientific notation that knitr's inline hook would otherwise use.
+fixed <- function(v, digits) {
+  format(round(v, digits), nsmall = digits, scientific = FALSE)
+}
+```
 
-This vignette answers both halves on a synthetic two-cluster toy where the
-values that went missing are retained, so every imputation can be scored
-against the truth it was hiding.
+## The problem
 
-## What
+Datasets often have holes. A measurement was not taken, a questionnaire
+came back half empty, or a sample was lost. Most analyses need complete
+rows, so the holes have to be filled first. Filling them with plausible
+values is called imputation.
 
-Imputation here is conditioning. If the joint distribution of the data is a
-Gaussian mixture, the conditional distribution of a missing entry given the
-observed entries of its own row is itself a Gaussian mixture, available in
-closed form through the Schur-complement algebra of
-`gmm_conditionalise()`. Nothing is simulated to get it.
+Multiple imputation fills each hole several times with random values drawn
+from a model of the data (Rubin, 1987). The result is several completed
+datasets. The analysis runs on each of them, and the results are combined,
+or pooled, into one estimate. The interval around that estimate then
+includes the uncertainty about the missing values.
 
-`gmm_impute()` fits that mixture to a matrix containing holes and draws `m`
-completed datasets from the per-row conditionals. Its `N` argument is the
-number of mixture components, chosen by the Bayesian information criterion
-when left at its default. A mixture can be multimodal and heteroscedastic,
-which is the point: it represents shapes that a single-Gaussian model, or a
-linear-Gaussian conditional such as normal regression imputation, cannot,
-so the imputations stay faithful to data those models mis-specify.
+Imputed values come from a model, and a wrong model gives wrong values.
+Many imputation models assume that the data form one cloud shaped like a
+normal distribution. Real data often fall into groups instead, such as
+species, sites or types of patient, with few values in between. A model
+that ignores the groups imputes values in the gap between them. This biases
+estimates from the completed data.
 
-`gmm_complete()` extracts one completed dataset. `proxy_pool()` combines
-an estimand across the completions, and `proxy_fmi()` reports the fraction
-of missing information. For a column mean the pooling is closed form -- the
-exact large-sample limit of the between-imputation variance -- so no Monte
-Carlo noise enters at the pooling step. For any other estimand,
-`as_mids()` packages the completions as a `mice` object so the joint
-mixture imputations flow into `mice::pool()` unchanged: proxymix supplies
-the imputation model, `mice` the pooling.
+This vignette imputes data that form two groups and checks the imputed
+values against the true values that were deleted. It then compares proxymix
+with two established imputation packages, `mice` and `Amelia`.
 
-## Do
+## Package capabilities
 
-### A two-cluster toy with the truth retained
+- `gmm_impute()` fits a Gaussian mixture, a sum of a few normal
+  distributions, to a data matrix with holes. It returns `m` completed
+  datasets. The argument `N` sets the number of components. If `N` is left
+  out, the Bayesian information criterion (BIC) chooses it.
+- `gmm_complete()` extracts one completed dataset.
+- `proxy_pool()` pools the mean of a column across the completed datasets.
+- `proxy_fmi()` reports the fraction of missing information: the share of
+  the information about the mean that the holes removed.
+- `as_mids()` converts the completed datasets into the format of the `mice`
+  package. `mice::pool()` can then pool any other estimate, such as a
+  regression slope.
 
-Two groups, each a tight cloud, with a positive within-group association
-between `x1` and `x2`. This is a synthetic toy: the complete data is
-generated first and kept, then part of `x2` is deleted, so the held-out
-values are available to score against. The chance of an entry going missing
-depends on the observed `x1` and not on the hidden `x2` itself, which is the
-missing-at-random setting.
+Each missing value is drawn from its conditional distribution, which is the
+distribution of the missing entry given the observed entries in the same
+row. When the data are modelled by a Gaussian mixture, this conditional
+distribution is again a Gaussian mixture (van der Hoek and Elliott, 2024).
+It has an exact formula, so no simulation is needed. A mixture can have several
+peaks and a different spread in each group. A single normal distribution
+cannot.
+
+For a column mean, `proxy_pool()` computes the uncertainty due to the
+imputed values exactly from the fitted mixture, instead of estimating it
+from the spread of the completed datasets. That part of the standard error
+therefore has no added noise from the random draws of the imputed values.
+
+## Addressing the problem
+
+### Data with two groups and known missing values
+
+The data are simulated, so the deleted values are kept and every imputation
+can be checked against them. There are 600 rows in two groups of about
+equal size. Within each group, `x1` and `x2` rise together. About half of
+the `x2` values are then deleted. The chance of deletion rises with the
+observed `x1` and does not depend on the deleted `x2` itself. This setting
+is called missing at random.
 
 ```{r data}
 set.seed(20260620)
@@ -94,32 +129,35 @@ x_holes[missing, "x2"] <- NA
 frac_missing <- mean(missing)
 ```
 
-The marginal distribution of `x2` is bimodal, one cluster near $-2$ and one
-near $+2$, with little mass between them. Writing the empty middle as the
-interval $|x_2| < 1$, the values that were deleted put only a small share of
-their mass there.
+The values of `x2` cluster near $-2$ and near $+2$, with few values in
+between. The band $|x_2| < 1$ marks this empty middle. The function
+`in_gap()` returns the share of values that fall in the band.
 
 ```{r gap-truth}
 in_gap <- function(v) mean(abs(v) < 1)
 gap_truth <- in_gap(truth[missing, "x2"])
 ```
 
-### Impute with a mixture, and with a single Gaussian
+### Impute with a mixture and with a single normal distribution
+
+The first imputation uses a mixture of two normal distributions and makes
+20 completed datasets.
 
 ```{r impute}
 imp <- gmm_impute(x_holes, N = 2L, m = 20L, seed = 1L)
 imp
 ```
 
-A single completed dataset has no holes:
+A completed dataset has no holes left.
 
 ```{r complete}
 done <- gmm_complete(imp, 1L)
 anyNA(done)
 ```
 
-Forcing one component reproduces the multivariate-normal assumption, which
-is the contrast this vignette is built around.
+With `N = 1L`, the mixture has one component, so the imputation model is a
+single multivariate normal distribution. Many standard imputation methods
+make this assumption. It is the point of comparison in this section.
 
 ```{r single}
 imp1 <- gmm_impute(x_holes, N = 1L, m = 20L, seed = 1L)
@@ -128,39 +166,40 @@ done1 <- gmm_complete(imp1, 1L)
 
 ```{r gap-table, echo = FALSE}
 gap_tbl <- data.frame(
-  source = c("held-out truth", "mixture imputation (N = 2)",
-             "single-Gaussian imputation (N = 1)"),
+  source = c("deleted values (truth)", "mixture imputation (N = 2)",
+             "single-normal imputation (N = 1)"),
   gap_share = c(gap_truth, in_gap(done[missing, "x2"]),
                 in_gap(done1[missing, "x2"])),
   stringsAsFactors = FALSE
 )
 knitr::kable(
   gap_tbl, digits = 3L,
-  col.names = c("Source", "Share of values with |x2| < 1"),
+  col.names = c("Values", "Share with $\\lvert x_2 \\rvert < 1$"),
   caption = paste0(
-    "How much mass each imputer places in the empty middle between the ",
-    "two clusters, over the ", sum(missing), " deleted entries."
+    "Share of values in the empty middle, over the ", sum(missing),
+    " deleted entries. The imputation rows use the first completed ",
+    "dataset of each imputation."
   )
 )
 ```
 
-### The shape of the imputations
+### Where the imputed values fall
 
-```{r fig-modes, eval = has_ggplot2, echo = has_ggplot2, fig.cap = "Density of the deleted x2 values against the values each imputer supplied in their place. The mixture imputation reproduces both clusters; the single-Gaussian imputation collapses onto one central peak and fills the empty middle, where the truth has almost no mass.", fig.alt = "Three density curves over x2: the held-out truth and the mixture imputation are both bimodal and overlap closely, while the single-Gaussian imputation is unimodal and centred on the gap between the two modes."}
+```{r fig-modes, eval = has_ggplot2, echo = has_ggplot2, fig.height = 3.8, fig.cap = "Density of the deleted values of $x_2$ and of the values each imputation put in their place, from the first completed dataset of each. The shaded band is the empty middle, $|x_2| < 1$.", fig.alt = "Three density curves over x2: the deleted values, the mixture imputation and the single-normal imputation. All three have two peaks. The single-normal curve has lower peaks and more density in the shaded band between the two groups."}
 dens_df <- function(v, label) {
   d <- density(v)
   data.frame(x2 = d$x, density = d$y, source = label,
              stringsAsFactors = FALSE)
 }
 plot_df <- rbind(
-  dens_df(truth[missing, "x2"], "held-out truth"),
+  dens_df(truth[missing, "x2"], "deleted values (truth)"),
   dens_df(done[missing, "x2"], "mixture (N = 2)"),
-  dens_df(done1[missing, "x2"], "single Gaussian (N = 1)")
+  dens_df(done1[missing, "x2"], "single normal (N = 1)")
 )
 plot_df$source <- factor(
   plot_df$source,
-  levels = c("held-out truth", "mixture (N = 2)",
-             "single Gaussian (N = 1)")
+  levels = c("deleted values (truth)", "mixture (N = 2)",
+             "single normal (N = 1)")
 )
 ggplot2::ggplot(plot_df, ggplot2::aes(x2, density, colour = source)) +
   ggplot2::geom_line(linewidth = 0.9) +
@@ -168,14 +207,15 @@ ggplot2::ggplot(plot_df, ggplot2::aes(x2, density, colour = source)) +
                     fill = "grey60", alpha = 0.18) +
   ggplot2::scale_colour_manual(
     name = NULL,
-    values = c("held-out truth" = "#000000",
+    values = c("deleted values (truth)" = "#000000",
                "mixture (N = 2)" = "#009E73",
-               "single Gaussian (N = 1)" = "#D55E00")
+               "single normal (N = 1)" = "#D55E00")
   ) +
   ggplot2::labs(
     x = expression(x[2]), y = "density",
-    title = "What each imputer put where the data was deleted",
-    subtitle = "Shaded band marks the empty middle, |x2| < 1"
+    title = "Deleted values and the values imputed in their place",
+    subtitle = expression("Shaded band: the empty middle, " *
+                            group("|", x[2], "|") < 1)
   ) +
   ggplot2::theme_minimal(base_size = 11) +
   ggplot2::theme(legend.position = "top")
@@ -186,7 +226,10 @@ cat("ggplot2 is not installed on this build, so the imputation-density",
     "figure is skipped.\n")
 ```
 
-### Pooling a column mean
+### Pool the mean of x2
+
+`proxy_pool()` combines the 20 estimates of the mean of `x2` into one
+estimate with a standard error (SE) and a 95% confidence interval (CI).
 
 ```{r pool-mean}
 pooled <- proxy_pool(imp, "x2")
@@ -197,19 +240,11 @@ err_mix <- abs(pooled$estimate - mean_truth)
 err_one <- abs(pooled1$estimate - mean_truth)
 ```
 
-```{r fixed-notation, include = FALSE}
-## Small errors are written as plain decimals rather than in the
-## scientific notation knitr's inline hook would otherwise typeset.
-fixed <- function(v, digits) {
-  format(round(v, digits), nsmall = digits, scientific = FALSE)
-}
-```
-
 ```{r pool-table, echo = FALSE}
 pool_tbl <- data.frame(
-  model = c("complete-data truth", "available cases only",
+  model = c("complete data, before deletion", "rows not deleted",
             "mixture imputation (N = 2)",
-            "single-Gaussian imputation (N = 1)"),
+            "single-normal imputation (N = 1)"),
   estimate = c(mean(truth[, "x2"]), mean(x_holes[!missing, "x2"]),
                pooled$estimate, pooled1$estimate),
   std_error = c(NA_real_, NA_real_, pooled$std.error, pooled1$std.error),
@@ -218,135 +253,327 @@ pool_tbl <- data.frame(
   stringsAsFactors = FALSE
 )
 pool_tbl$abs_error <- abs(pool_tbl$estimate - mean(truth[, "x2"]))
-knitr::kable(
+old_opt <- options(knitr.kable.NA = "")
+pool_out <- knitr::kable(
   pool_tbl, digits = 4L,
-  col.names = c("Estimate of the mean of x2", "Estimate", "SE",
-                "CI lower", "CI upper", "Absolute error"),
-  caption = paste0(
-    "The mean of x2 recovered four ways, scored against the ",
-    "complete-data truth that the deletion hid."
+  col.names = c("Data used", "Mean of $x_2$", "SE",
+                "CI lower", "CI upper", "Distance from complete data"),
+  caption = paste(
+    "The mean of $x_2$ from the complete data, from the rows that were",
+    "not deleted, and pooled over each imputation."
   )
 )
+options(old_opt)
+pool_out
 ```
 
-### Any other estimand, through `mice`
+### Pool a regression slope with mice
+
+For estimates other than a column mean, `as_mids()` converts the completed
+datasets into a `mice` object. The regression of `x2` on `x1` is then
+fitted in each completed dataset, and `mice::pool()` combines the results
+by Rubin's rules. These rules average the estimates and add their spread
+across the completed datasets to the average variance.
 
 ```{r pool-mice, eval = has_mice, echo = has_mice}
 mice_fit <- mice::pool(with(as_mids(imp), lm(x2 ~ x1)))
 ```
 
 ```{r pool-mice-table, eval = has_mice, echo = FALSE}
+mice_tbl <- summary(mice_fit)
+mice_tbl$p.value <- ifelse(mice_tbl$p.value < 0.001, "< 0.001",
+                           format(round(mice_tbl$p.value, 3L), nsmall = 3L))
 knitr::kable(
-  summary(mice_fit), digits = 3L,
+  mice_tbl, digits = 3L, align = c("l", "r", "r", "r", "r", "r"),
   caption = paste0(
-    "The regression of x2 on x1, fitted in each of the ", imp@m,
-    " completions and pooled by mice::pool()."
+    "The regression of $x_2$ on $x_1$, fitted in each of the ", imp@m,
+    " completed datasets of the mixture imputation and pooled by ",
+    "`mice::pool()`."
   )
 )
 ```
 
 ```{r pool-mice-skip, eval = !has_mice, echo = FALSE, results = "asis"}
 cat("mice is not installed on this build, so the pooled regression is",
-    "skipped; the closed-form column-mean pooling above does not need it.\n")
+    "skipped. The pooled mean above does not need mice.\n")
 ```
 
-## Read
+### Comparison with mice and Amelia
 
-`r round(100 * frac_missing)` per cent of `x2` was deleted, which is
-`r sum(missing)` of the `r n` rows. Over those deleted entries the truth
-placed `r round(100 * gap_truth, 1)` per cent of its mass in the empty
-middle $|x_2| < 1$. The mixture imputer put
-`r round(100 * in_gap(done[missing, "x2"]), 1)` per cent there, close to the
-truth. Forcing a single Gaussian put
-`r round(100 * in_gap(done1[missing, "x2"]), 1)` per cent there, roughly
-`r round(in_gap(done1[missing, "x2"]) / gap_truth, 1)` times as much as the
-data ever had: the answer to the opening question is that a single-Gaussian
-imputer does fill the gap, and a mixture does not.
+```{r compare-facts, include = FALSE}
+sim_value <- function(design, estimand, method, what) {
+  s1 <- res$sim_tab$design == design & res$sim_tab$estimand == estimand &
+    res$sim_tab$method == method
+  res$sim_tab[[what]][s1]
+}
+cov_b <- function(method) fixed(sim_value("B", "slope", method, "coverage"), 3)
+cov_a <- function(method) fixed(sim_value("A", "slope", method, "coverage"), 3)
+```
 
-The figure shows why. A single Gaussian has one centre and one spread, so
-fitted to a bimodal column it places its centre between the two clusters and
-imputes values where there was never any true mass. The mixture keeps two
-components and reproduces both modes.
+So far the mixture has been compared only with a single normal
+distribution, on one dataset. In a simulation, proxymix was compared with
+two established imputation packages. `mice` (van Buuren and Groothuis-Oudshoorn, 2011) ran
+with its default method for numeric columns, predictive mean matching,
+which fills each hole with an observed value from a row whose prediction is
+similar. `Amelia` (Honaker, King and Blackwell, 2011) draws the missing
+values from a single multivariate normal distribution fitted to bootstrap
+resamples of the data. Each package imputed `r res$n_rep` datasets of
+`r res$n` rows from each of two designs: one normal cloud, and two groups
+with different correlations. For each simulated dataset, the slope of $x_2$ on
+$x_1$ was estimated in every completed dataset and pooled by Rubin's rules.
+The coverage is the share of simulated datasets whose 95% interval
+contained the true slope. It should be close to 0.95.
 
-That shape error reaches the number an analyst would report. The
-complete-data mean of `x2` is `r fixed(mean_truth, 3)`. Using only the rows
-that came back gives `r fixed(mean(x_holes[!missing, "x2"]), 3)`, which is
-out by `r fixed(abs(mean(x_holes[!missing, "x2"]) - mean_truth), 3)`,
-because missingness here is tied to `x1` and `x1` is tied to `x2`. The
-mixture imputation recovers the mean to within `r fixed(err_mix, 4)`; the
-single-Gaussian imputation is out by `r fixed(err_one, 4)`, about
-`r round(err_one / err_mix)` times further. Both imputed intervals cover the
-truth, so on this estimand the single Gaussian is inefficient rather than
-misleading; the damage it does is to the shape, which the figure makes
-visible and the mean does not.
+```{r compare-table, echo = FALSE}
+methods <- c("complete data", "proxymix", "mice", "Amelia")
+cmp_tbl <- data.frame(
+  method = c("complete data, before deletion", "proxymix", "mice",
+             "Amelia"),
+  cov_a = vapply(methods, function(s1) {
+    sim_value("A", "slope", s1, "coverage")
+  }, numeric(1L)),
+  cov_b = vapply(methods, function(s1) {
+    sim_value("B", "slope", s1, "coverage")
+  }, numeric(1L)),
+  rmse_b = vapply(methods, function(s1) {
+    sim_value("B", "slope", s1, "rmse")
+  }, numeric(1L)),
+  width_b = vapply(methods, function(s1) {
+    sim_value("B", "slope", s1, "width")
+  }, numeric(1L)),
+  stringsAsFactors = FALSE
+)
+knitr::kable(
+  cmp_tbl, digits = 3L, row.names = FALSE,
+  align = c("l", "r", "r", "r", "r"),
+  col.names = c("Data used", "Coverage, one cloud", "Coverage, two groups",
+                "Error, two groups", "Interval width, two groups"),
+  caption = paste0(
+    "Slope of $x_2$ on $x_1$ over ", res$n_rep, " simulated datasets per ",
+    "design. Coverage is the share of 95% intervals that contained the ",
+    "true slope. Error is the root mean squared error of the estimate. ",
+    "With ", res$n_rep, " datasets, a coverage near 0.95 has a simulation ",
+    "standard error of about ", fixed(sqrt(0.95 * 0.05 / res$n_rep), 2L),
+    "."
+  )
+)
+```
 
-The fraction of missing information is
-`r round(unname(fmi_mix), 3)`: although
-`r round(100 * frac_missing)` per cent of the column is absent, the
-observed `x1` carries enough about `x2` that only about
-`r round(100 * unname(fmi_mix))` per cent of the information about the mean
-is lost.
+With two groups, the proxymix intervals contained the true slope in
+`r cov_b("proxymix")` of datasets, against `r cov_b("mice")` for `mice` and
+`r cov_b("Amelia")` for `Amelia`. `Amelia` fits one normal distribution to
+both groups, and on average its slope estimates were
+`r fixed(sim_value("B", "slope", "Amelia", "bias"), 3)` above the true
+value of `r fixed(res$population["B", "slope"], 3)`. The
+`mice` estimates were about as accurate as those of proxymix, but the
+`mice` intervals were narrower and missed the true slope more often. With
+one normal cloud, proxymix and `Amelia` did equally well, with coverages of
+`r cov_a("proxymix")` and `r cov_a("Amelia")`, while `mice` reached only
+`r cov_a("mice")`.
 
-## Limits
+proxymix is the slowest of the three. Twenty completions of one two-group
+dataset took `r fixed(res$time_secs[["proxymix"]], 2)` seconds with
+proxymix, `r fixed(res$time_secs[["mice"]], 2)` with `mice` and
+`r fixed(res$time_secs[["Amelia"]], 2)` with `Amelia` (median of five runs
+on one computer).
 
-This vignette covers numeric data that is missing at random: the probability
-that an entry is missing may depend on the observed entries but not on the
-missing value itself. That assumption is what makes the conditional of the
-observed the right law to impute from, and it is not testable from the data
-in hand. Value-dependent missingness and censoring at a known bound break
-it, and both are supported through the `mechanism` argument rather than
-being outside the package.
+The code below imputes one dataset from the two-group design with all three
+packages and pools the slope with `mice::pool()` for each. It repeats the
+simulation code for a single dataset. It needs `mice` and `Amelia`, both
+on CRAN, and it is not run when this vignette is built.
 
-The comparison here is against a single Gaussian, which is the
-multivariate-normal imputation model. It is not a comparison against a
-well-specified alternative such as predictive mean matching or a
-classification-and-regression-tree imputer, either of which can also
-represent two clusters, so nothing here establishes that a mixture beats
-every competitor -- only that it beats the Gaussian assumption on data the
-Gaussian assumption mis-specifies. A second limit is scale: one column of
-one bivariate toy at `n` = `r n`, with the component count supplied rather
-than selected, so the result speaks to the shape of the imputation law and
-not to behaviour in wide data or with many incomplete columns at once.
+```{r compare-code, eval = FALSE}
+library(proxymix)
+library(mice)
+library(Amelia)
 
-The estimand shown in closed form is a column mean. Anything else is pooled
-by `mice`, whose rules are the Rubin large-sample rules and inherit their
-assumptions. What would change the answer most is the number of components:
-at `N` = 1 the imputer is the Gaussian model this vignette argues against,
-and a component count chosen well above the number of genuine clusters
-would fit noise into the conditional law.
+# one dataset of 500 rows with two groups
+set.seed(1L)
+n <- 500L
+grp <- runif(n) < 0.5
+rho <- ifelse(grp, -0.3, 0.6)
+z1 <- rnorm(n)
+full <- data.frame(
+  x1 = ifelse(grp, 1.5, -1.5) + z1,
+  x2 = ifelse(grp, 2, -1.5) + rho * z1 + sqrt(1 - rho^2) * rnorm(n)
+)
 
-## What to read next
+# delete x2 with a probability that rises with x1
+obs <- full
+obs$x2[runif(n) < plogis(0.4 + 0.6 * full$x1)] <- NA
 
-*Missing data that depends on the missing value* takes up the two
-mechanisms this vignette assumes away, censoring at a known bound and
-missingness whose probability depends on the hidden value itself, and shows
-how a sensitivity sweep brackets an answer that the data alone cannot
-identify.
+# 20 completed datasets from each package
+sets <- list(
+  proxymix = complete(as_mids(gmm_impute(obs, m = 20L, seed = 1L)), "all"),
+  mice = complete(mice(obs, m = 20L, seed = 1L, printFlag = FALSE), "all"),
+  Amelia = amelia(obs, m = 20L, p2s = 0L)$imputations
+)
 
-*The closed-form operator calculus on a mixture* is the algebra underneath
-`gmm_conditionalise()`, and shows what else the same conditioning step buys
-once a mixture is in hand.
+# the same regression in every completed dataset, pooled by mice::pool()
+lapply(sets, function(s) {
+  fits <- lapply(s, function(d) lm(x2 ~ x1, data = d))
+  summary(pool(fits), conf.int = TRUE)
+})
+```
 
-*One mixture, many methods* places imputation beside the other classical
-analyses that fall out of a single fitted mixture.
+The [extended version of this
+article](https://max578.github.io/proxymix/articles/extended/missing_data.html)
+gives the full simulation, its results for the mean as well as the slope,
+and an example on the Palmer penguins data.
+
+## Interpretation
+
+```{r gap-all, include = FALSE}
+## share in the empty middle, averaged over every completed dataset
+gap_over <- function(im) {
+  mean(vapply(seq_len(im@m), function(i1) {
+    in_gap(gmm_complete(im, i1)[missing, "x2"])
+  }, numeric(1L)))
+}
+gap_all <- c(mixture = gap_over(imp), single = gap_over(imp1))
+## line and spread along which each imputation model draws x2 given x1,
+## from the covariance matrix of each fitted component
+model_line <- function(fit) {
+  covs <- fit@covariances
+  list(slope = vapply(covs, function(v) v[2L, 1L] / v[1L, 1L], numeric(1L)),
+       sd = vapply(covs, function(v) sqrt(v[2L, 2L] - v[2L, 1L]^2 / v[1L, 1L]),
+                   numeric(1L)))
+}
+model_mix <- model_line(imp@point_fit)
+model_one <- model_line(imp1@point_fit)
+fit_within <- lm(x2 ~ x1 + factor(lab), data = as.data.frame(truth))
+slope_within <- coef(fit_within)[["x1"]]
+sd_within <- sd(resid(fit_within))
+## pooled estimate of the analyst's regression = mean over completions
+pooled_slope <- function(im) {
+  mean(vapply(seq_len(im@m), function(i1) {
+    coef(lm(x2 ~ x1, data = as.data.frame(gmm_complete(im, i1))))[["x1"]]
+  }, numeric(1L)))
+}
+fit_slope <- c(mixture = pooled_slope(imp), single = pooled_slope(imp1))
+slope_complete <- coef(lm(x2 ~ x1, data = as.data.frame(truth)))[["x1"]]
+```
+
+The table of shares in the empty middle uses the first completed dataset
+of each imputation. Averaged over all `r imp@m` completed datasets, the
+mixture put `r fixed(100 * gap_all[["mixture"]], 1)` per cent of its
+imputed values in the middle, and the single normal distribution put
+`r fixed(100 * gap_all[["single"]], 1)` per cent there. The single normal
+distribution put about `r round(gap_all[["single"]] / gap_truth, 1)` times
+as much in the middle as the data had.
+
+Both imputations in the figure have two peaks. Each imputed value is
+drawn given the observed `x1` of its row, and `x1` itself falls into two
+groups. The imputations differ in the line along which each imputation
+model draws `x2` from `x1`, and in the spread of the draws around that
+line. The single-normal model draws from one line for both groups, with a
+slope of `r fixed(model_one$slope, 2)` and a standard deviation around the
+line of `r fixed(model_one$sd, 2)`. The mixture model draws from one line
+per group, with slopes of `r fixed(model_mix$slope[1L], 2)` and
+`r fixed(model_mix$slope[2L], 2)` and standard deviations of
+`r fixed(model_mix$sd[1L], 2)` and `r fixed(model_mix$sd[2L], 2)`. In the
+complete data, the slope within each group is `r fixed(slope_within, 2)`
+and the standard deviation around the line is `r fixed(sd_within, 2)`. The
+single-normal imputations are therefore too wide, and their inner edges
+reach into the middle.
+
+These lines belong to the imputation models, not to the regression that
+the analyst fits afterwards. The regression of `x2` on `x1` in the table
+above ignores the groups. Its pooled slope is therefore about
+`r fixed(slope_complete, 2)` for both imputations, as it is in the complete
+data.
+
+The mean of `x2` in the complete data is `r fixed(mean_truth, 3)`. The mean
+of the rows that were not deleted is
+`r fixed(mean(x_holes[!missing, "x2"]), 3)`. The two differ because rows
+with a large `x1`, and therefore a large `x2`, were more likely to be
+deleted. The pooled means of the mixture and single-normal imputations
+differ from the complete-data mean by `r fixed(err_mix, 4)` and
+`r fixed(err_one, 4)`. Both differences are much smaller than the standard
+errors of about `r fixed(pooled$std.error, 2)`, so this dataset does not
+show which imputation gives the better mean. The single normal distribution
+distorts the shape of the imputed values. The figure shows this distortion.
+The pooled mean does not.
+
+The fraction of missing information for the mean is
+`r round(unname(fmi_mix), 3)`. Although `r round(100 * frac_missing)` per
+cent of `x2` is missing, the observed `x1` carries much of the information
+about `x2`. Only about `r round(100 * unname(fmi_mix))` per cent of the
+information about the mean is lost.
+
+## Limitations
+
+Everything above assumes numeric data that are missing at random. Under
+this assumption, the chance that an entry is missing may depend on the
+observed entries but not on the missing value itself. The assumption cannot
+be tested from the observed data. Missingness that depends on the missing
+value, and censoring at a known limit, break it. The `mechanism` argument of
+`gmm_impute()` handles censoring. It also handles missingness that depends
+on the missing value, once you assume how strongly the value changes its
+chance of being missing, as *Missing data that depends on the missing
+value* shows.
+
+The single-dataset example compares the mixture only with a single normal
+distribution, on `r n` rows in two variables, with the number of components
+set by hand. It does not show how the method behaves on wide data or with
+many incomplete columns.
+The simulation adds predictive mean matching (`mice`) and bootstrapped
+multivariate normal imputation (`Amelia`), with the number of components
+chosen by BIC. It does not include other methods that can also represent
+groups, such as imputation by classification and regression trees. It
+covers two designs, one pattern of missingness and one sample size. The
+imputers were not given the group of each row. With the group as a column,
+`mice` and `Amelia` could model the groups directly.
+
+Estimates other than a column mean are pooled by `mice`, which uses the
+large-sample rules of Rubin (1987) and inherits their assumptions. The
+setting with the largest effect on the result is the number of components.
+With `N = 1`, the imputation model is a
+single multivariate normal distribution. With far more components than
+there are real groups, the mixture fits noise into the conditional
+distribution.
+
+## Further reading
+
+*Missing data that depends on the missing value* covers censoring at a
+known limit and missingness whose chance depends on the missing value. It
+shows how to vary the assumed strength of the link between a value and its
+chance of being missing. The observed data inform that strength only
+through the assumed shape of the distribution.
+
+*The closed-form operator calculus on a mixture* explains the formulas
+behind `gmm_conditionalise()` and the other exact operations on a mixture.
+
+*One mixture, many methods* places imputation beside other classical
+analyses that use a single fitted mixture.
 
 ## References
 
-* Rubin, D. B. (1987). *Multiple Imputation for Nonresponse in Surveys.*
-  Wiley.
-* van Buuren, S. and Groothuis-Oudshoorn, K. (2011). *mice: Multivariate
-  imputation by chained equations in R.* Journal of Statistical Software
-  45(3), 1--67. <doi:10.18637/jss.v045.i03>.
-* Hoek, J. van der and Elliott, R. J. (2024). *Mixtures of multivariate
-  Gaussians.* Stochastic Analysis and Applications.
-  <doi:10.1080/07362994.2024.2372605>.
+Honaker, J., King, G. and Blackwell, M. (2011). *Amelia II: A program for
+missing data.* Journal of Statistical Software 45(7), 1--47.
+<https://doi.org/10.18637/jss.v045.i07>.
+
+Hoek, J. van der and Elliott, R. J. (2024). *Mixtures of multivariate
+Gaussians.* Stochastic Analysis and Applications.
+<https://doi.org/10.1080/07362994.2024.2372605>.
+
+Rubin, D. B. (1987). *Multiple Imputation for Nonresponse in Surveys.*
+Wiley.
+
+van Buuren, S. and Groothuis-Oudshoorn, K. (2011). *mice: Multivariate
+imputation by chained equations in R.* Journal of Statistical Software
+45(3), 1--67. <https://doi.org/10.18637/jss.v045.i03>.
 
 ## Reproduce
 
-The data-generating seed is `20260620`, set in the chunk that builds the
-toy; `gmm_impute()` is given `seed = 1L`, which makes the completions
-reproducible without disturbing the ambient random-number state.
+The data are generated with seed `20260620`, and `gmm_impute()` is given
+`seed = 1L`. The completed datasets are therefore reproducible, and the
+seed does not change the random-number state outside the call. The
+comparison with `mice` and `Amelia` is read from stored results of a
+simulation run under proxymix `r res$proxymix_version`, `mice`
+`r res$versions[["mice"]]` and `Amelia` `r res$versions[["Amelia"]]`, which
+took about `r round(res$elapsed_secs / 60)` minutes on one core.
 
-```{r session-info}
+```{r session-info, collapse = FALSE, class.output = "session-info"}
 sessionInfo()
 ```

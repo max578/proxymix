@@ -82,7 +82,7 @@ block statistics are computed at the supplied model, not at estimates that
 leave out each block. It does not assume Gaussian innovations, and
 its validity is asymptotic, as the series grows with `m` fixed, under
 stationarity and ergodicity; at a finite length its size can differ from
-nominal, and in a short series it can over-reject. The returned object also carries those
+nominal in either direction. The returned object also carries those
 in-sample block statistics, so the calibration can be inspected directly.
 
 ## Addressing the problem
@@ -468,7 +468,7 @@ departure from nominal of one or two percentage points is beyond the
 resolution of the size study above. It establishes the order of the size,
 not the exact size at a given series length.
 
-The two calibrations agree when the innovations are Gaussian. They part
+The assumptions of both calibrations hold when the innovations are Gaussian. They part
 company when the observation noise is heavy-tailed: the parametric $\chi^2$
 reference is then mis-specified, while the subsampling test judges the
 end-of-sample block only against the other blocks of the same series and
@@ -997,7 +997,7 @@ score the one-step forecast error of the last observation: the two
 calibrations of `gmm_eos_test()` and the forecast-interval checks of KFAS
 and dlm, which at one observation are the same statistic as the chi-square
 calibration, with parameters from each package's own fit. The powers of
-those three are within `r fixed(max(power_1) - min(power_1), 3)` of each
+the chi-square calibration, KFAS and dlm are within `r fixed(max(power_1) - min(power_1), 3)` of each
 other, at
 `r fixed(power_of("proxymix chi-square")[1L], 3)` for the chi-square
 calibration, `r fixed(power_of("KFAS forecast interval")[1L], 3)` for KFAS
@@ -1087,7 +1087,7 @@ series length, one shift size and a level shift confined to the tested
 window, not the smaller or gradual shifts, the longer windows, or the
 non-Gaussian innovations under which the two calibrations part company.
 
-## Where next
+## Further reading
 
 *The closed-form operator calculus on a mixture* builds the predict-and-update
 recursion this test runs internally, and covers `gmm_filter()` and the

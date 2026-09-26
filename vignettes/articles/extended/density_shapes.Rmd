@@ -66,10 +66,9 @@ sample the fit did not use, and `validation_mc_se` is its Monte Carlo
 standard error. The `kld_final` diagnostic is the same estimate on the draws
 the fit was tuned to, and it reads lower than the held-out value.
 `hellinger_mc()` estimates the squared Hellinger distance \(H^2(f, g)\),
-which lies in \([0, 1]\) when both densities are normalised. For a regime
-(iii) fit it reuses the fit's own importance draws, so its estimate is
-in-sample, reads low, and can fall slightly below zero when the distance is
-close to zero.
+which lies in \([0, 1]\) when both densities are normalised. It draws fresh
+points from the fit and returns the estimate with its Monte Carlo standard
+error.
 
 `gmm_fit_quality()` carries the refusal contract. When the importance
 sample collapses, the fit does not return a mixture that looks ordinary
@@ -147,7 +146,8 @@ cat("ggplot2 is not installed on this build, so the three-shape overlay",
 The held-out `validation_kld` is an importance-sampled estimate and carries
 Monte Carlo error, so a second, deterministic measurement is worth having. In two
 dimensions the divergence can be integrated directly on a grid, using
-nothing the fit produced.
+nothing the fit produced. The banana's two arms reach far upwards, so its
+grid runs from -12 to 12 in each direction.
 
 ```{r kl-grid}
 ## KL(f || g) by deterministic grid quadrature -- independent of the
@@ -163,7 +163,7 @@ kl_grid <- function(target, fit, lim, n_grid = 300L) {
   sum(dens_f[ok] * (log_f[ok] - log_g[ok])) * cell
 }
 kl_quad <- c(
-  banana = kl_grid(banana_target(), fit_b, 6),
+  banana = kl_grid(banana_target(), fit_b, 12, n_grid = 601L),
   donut = kl_grid(donut_target(), fit_d, 7),
   mixture = kl_grid(mixture_target(), fit_m, 8)
 )
@@ -176,7 +176,7 @@ grid_mass <- function(target, lim, n_grid = 300L) {
   gm <- as.matrix(expand.grid(x1 = gx, x2 = gx))
   sum(exp(target@log_density(gm))) * (gx[2L] - gx[1L])^2
 }
-mass_quad <- c(grid_mass(banana_target(), 6), grid_mass(donut_target(), 7),
+mass_quad <- c(grid_mass(banana_target(), 12, n_grid = 601L), grid_mass(donut_target(), 7),
                grid_mass(mixture_target(), 8))
 ```
 
@@ -186,13 +186,22 @@ mass_quad <- c(grid_mass(banana_target(), 6), grid_mass(donut_target(), 7),
 
 ```{r summary-table, echo = FALSE}
 fits <- list(fit_b, fit_d, fit_m)
-hell <- lapply(fits, hellinger_mc)
+hell <- lapply(fits, hellinger_mc, n_mc = 2000L, seed = 1L)
 kl_val <- vapply(fits, function(f) f@diagnostics$validation_kld, numeric(1L))
 kl_val_se <- vapply(fits, function(f) f@diagnostics$validation_mc_se,
                     numeric(1L))
 kl_in <- vapply(fits, function(f) f@diagnostics$kld_final, numeric(1L))
 n_iter <- vapply(fits, function(f) length(kld_trace(f)), integer(1L))
 h2 <- vapply(hell, function(h) h$h2, numeric(1L))
+h2_se <- vapply(hell, function(h) h$se, numeric(1L))
+## held-out difference between two targets, in standard errors of the difference
+kl_pair_z <- function(i, j) {
+  abs(kl_val[i] - kl_val[j]) / sqrt(kl_val_se[i]^2 + kl_val_se[j]^2)
+}
+kl_z_donut <- min(kl_pair_z(2L, 1L), kl_pair_z(2L, 3L))
+kl_z_other <- kl_pair_z(1L, 3L)
+## the text below states both
+stopifnot(kl_z_donut > 2, kl_z_other < 2)
 summary_tbl <- data.frame(
   Target = c("banana", "donut", "mixture"),
   N = vapply(fits, gmm_n_components, integer(1L)),
@@ -204,6 +213,7 @@ summary_tbl <- data.frame(
   `KL (quadrature)` = round(unname(kl_quad), 4L),
   # the padded header widens the column so the word fits inside the rule
   "\u00a0\u00a0Hellinger" = round(h2, 4L),
+  `H SE` = round(h2_se, 4L),
   check.names = FALSE,
   stringsAsFactors = FALSE
 )
@@ -214,10 +224,9 @@ knitr::kable(
     "quadrature columns estimate the same Kullback-Leibler divergence,",
     "the first on draws the fit did not use and the second by grid",
     "quadrature. SE is the Monte Carlo standard error of the held-out",
-    "value. Hellinger is the squared Hellinger distance, estimated on the",
-    "fit's own importance draws, which `hellinger_mc()` reuses for a regime",
-    "(iii) fit, so it is an in-sample value that reads low and can fall",
-    "slightly below zero. Mixture is the three-component mixture target."
+    "value. Hellinger is the squared Hellinger distance, estimated on fresh",
+    "draws from the fit, and H SE is its Monte Carlo standard error.",
+    "Mixture is the three-component mixture target."
   )
 )
 ```
@@ -225,9 +234,8 @@ knitr::kable(
 ### How the donut's residual changes with the component count
 
 A finite Gaussian mixture cannot reproduce an annulus exactly. Sweeping the
-component count separates the part of the residual divergence that more
-components remove from the part that they do not remove at this
-importance-sampling budget.
+component count shows how much of the residual divergence more components
+remove at a fixed budget of 3,500 importance draws and 60 rounds.
 
 ```{r donut-sweep}
 donut_n <- c(3L, 4L, 6L, 10L)
@@ -239,6 +247,38 @@ donut_kl <- vapply(donut_n, function(k) {
                     is_size = 3500L, max_iter = 60L, seed = 1L)
   kl_grid(donut_target(), f, 7)
 }, numeric(1L))
+```
+
+The 10-component fit in this sweep stops at the 60-round cap. Refitting the
+six- and ten-component proxies with 20,000 importance draws, all
+other settings unchanged, tests whether the budget or the mixture sets the
+residual.
+
+```{r donut-budget}
+donut_big <- lapply(c(6L, 10L), function(k) {
+  fit_proxymix(donut_target(), N = k, regime = "kld",
+               proposal = proposal_mvt(n_dim = 2L,
+                                       sigma = 9 * diag(2),
+                                       df = 5),
+               is_size = 20000L, max_iter = 60L, seed = 1L)
+})
+donut_kl_big <- vapply(donut_big, function(f) kl_grid(donut_target(), f, 7),
+                       numeric(1L))
+donut_iter_big <- vapply(donut_big, function(f) length(kld_trace(f)),
+                         integer(1L))
+fit_d10 <- fit_proxymix(donut_target(), N = 10L, regime = "kld",
+                        proposal = proposal_mvt(n_dim = 2L,
+                                                sigma = 9 * diag(2),
+                                                df = 5),
+                        is_size = 3500L, max_iter = 60L, seed = 1L)
+donut_iter_small <- length(kld_trace(fit_d10))
+data.frame(
+  Components = c(6L, 10L),
+  `KL, 3,500 draws` = round(donut_kl[3:4], 4L),
+  `KL, 20,000 draws` = round(donut_kl_big, 4L),
+  `Rounds, 20,000 draws` = donut_iter_big,
+  check.names = FALSE
+)
 ```
 
 ```{r donut-sweep-table, echo = FALSE}
@@ -254,7 +294,7 @@ knitr::kable(
     "From ", donut_n[3L], " to ", donut_n[4L],
     " components the divergence falls by only ",
     format(signif(donut_kl[3L] - donut_kl[4L], 2L)),
-    ", a floor for this range of component counts and this budget."
+    " at 3,500 importance draws."
   )
 )
 ```
@@ -383,24 +423,32 @@ writeLines(strwrap(conditionMessage(bad), width = 70L))
 
 The three plane-supported shapes divide into two groups, and the table says
 which. The banana proxy reaches a quadrature divergence of
-`r format(signif(kl_quad[["banana"]], 2L))` and the three-mixture
+`r format(signif(kl_quad[["banana"]], 3L))` and the three-mixture
 `r format(signif(kl_quad[["mixture"]], 2L))`, from effective sample sizes of
 `r round(fit_b@diagnostics$ess)` and `r round(fit_m@diagnostics$ess)` draws
 respectively. The donut sits materially higher at
 `r format(signif(kl_quad[["donut"]], 2L))`, roughly
 `r round(kl_quad[["donut"]] / kl_quad[["banana"]], 1L)` times the banana's.
 
-Within the sweep, more components stop closing the gap. Going
+At 3,500 draws, more components stop closing the gap. Going
 from `r donut_n[1L]` to `r donut_n[3L]` components cuts the donut's
 divergence from `r format(signif(donut_kl[1L], 3L))` to
 `r format(signif(donut_kl[3L], 3L))`, a fall of
 `r round(100 * (1 - donut_kl[3L] / donut_kl[1L]))` per cent. Going on to
 `r donut_n[4L]` components buys only
-`r format(signif(donut_kl[3L] - donut_kl[4L], 2L))` more. What remains is
-a mixture of finitely many ellipses standing in for a continuous ring. A
-finite Gaussian mixture can approximate any continuous density arbitrarily
-closely, so this is a floor for the component counts and the importance
-sample tried here, not a limit of mixtures in general.
+`r format(signif(donut_kl[3L] - donut_kl[4L], 2L))` more. That flat step
+comes from the fitting budget, not from the mixture. The
+`r donut_n[4L]`-component fit used all `r donut_iter_small` of its 60
+rounds. With 20,000 importance draws, the same
+`r donut_n[4L]` components reach a divergence of
+`r format(round(donut_kl_big[2L], 4L), nsmall = 4L)` against
+`r format(round(donut_kl[4L], 4L), nsmall = 4L)`, and the fit stops after
+`r donut_iter_big[2L]` rounds. Six components reach
+`r format(round(donut_kl_big[1L], 4L), nsmall = 4L)` with the larger
+sample. A ring needs more components than the other shapes. Placing more
+components well needs more importance draws. A finite Gaussian mixture can
+approximate any continuous density arbitrarily closely, and with the larger
+sample the donut fit comes closer to the ring.
 
 Each quadrature grid holds
 `r format(floor(min(mass_quad) * 1e4) / 1e4, nsmall = 4L)` or more of its
@@ -410,12 +458,14 @@ Carlo error. The held-out column returns
 `r format(signif(kl_val_se[2L], 2L))`, against a quadrature value of
 `r format(signif(kl_quad[["donut"]], 2L))`. Across the three shapes the
 held-out and quadrature values differ by at most
-`r format(round(max(abs(kl_val - kl_quad) / kl_val_se), 1L), nsmall = 1L)`
-standard errors. The standard errors are of the same order as the
-divergences, so on these fits the sampled estimate alone does not separate
-a good proxy from a limited one. The Hellinger column is taken on the
-fit's own draws and reads low, so it is not used to compare the fits. The
-deterministic measurement is what makes the donut's floor visible.
+`r format(ceiling(10 * max(abs(kl_val - kl_quad) / kl_val_se)) / 10, nsmall = 1L)`
+standard errors. The standard errors are
+`r round(100 * min(kl_val_se / kl_val))` to
+`r round(100 * max(kl_val_se / kl_val))` per cent of the divergences. The
+held-out estimate separates the donut from the other two targets by at
+least `r format(round(kl_z_donut, 1L), nsmall = 1L)` standard errors of the
+difference, but the banana and the mixture differ by only
+`r format(round(kl_z_other, 1L), nsmall = 1L)`.
 
 The compactly supported target is the fourth kind of awkwardness and the
 one that never fully resolves. The declared support routed the fit onto a
@@ -442,17 +492,18 @@ lets the caller decide; `"abort"` is what turns it into a contract.
 
 The two divergence estimates in the table are measurements, not exact
 quantities, and neither is a certificate on its own. The held-out estimate
-is a Monte Carlo quantity whose standard error on these fits is of the same
-order as the divergence. The in-sample `kld_final` is computed on the draws
+is a Monte Carlo quantity whose standard error on these fits is
+`r round(100 * min(kl_val_se / kl_val))` to
+`r round(100 * max(kl_val_se / kl_val))` per cent of the divergence. The in-sample `kld_final` is computed on the draws
 the fit was tuned to and reads lower than the held-out value. Here it reads
 `r format(round(kl_in[1L], 4L), nsmall = 4L)` for the banana,
 `r format(round(kl_in[2L], 4L), nsmall = 4L)` for the donut and
 `r format(round(kl_in[3L], 4L), nsmall = 4L)` for the three-mixture, below
 zero for `r sum(kl_in < 0)` of the `r length(kl_in)` shapes, and a negative
 estimate of a non-negative divergence means only that the estimator's error
-exceeds the quantity being estimated. The squared Hellinger estimates, taken
-on the same draws, behave the same way. The grid quadrature
-avoids both problems and introduces a different one: it is reliable in two
+exceeds the quantity being estimated. The squared Hellinger estimates are
+drawn afresh from each fit and carry their own Monte Carlo error. The grid
+quadrature avoids both problems and introduces a different one: it is reliable in two
 or three dimensions and becomes intractable well before the dimension at
 which importance sampling itself gives out.
 
@@ -535,6 +586,19 @@ the mode found by BFGS from a random start, with the covariance from the
 numerical Hessian. Integrated nested Laplace approximation is not
 applicable, since none of the four targets is the posterior of a
 latent-Gaussian model, and it is left out.
+
+mclust and BayesianTools install from CRAN. cmdstanr is not on CRAN and
+installs from the Stan R-universe repository, stan-dev.r-universe.dev. It
+also needs a CmdStan installation, which `cmdstanr::install_cmdstan()`
+provides:
+
+```{r install-competitors, eval = FALSE}
+install.packages(c("mclust", "BayesianTools"))
+install.packages("cmdstanr",
+                 repos = c("https://stan-dev.r-universe.dev",
+                           getOption("repos")))
+cmdstanr::install_cmdstan()
+```
 
 Two scores are taken against references that no method produced. The first
 is $\mathrm{KL}(f \Vert g) = \int f \log (f / g)$, with $f$ the target
@@ -699,11 +763,12 @@ one_replicate <- function(name, r) {
 
   # proxymix: component count by select_N, the budget split across candidates
   ct <- counted_target(shape)
+  # each candidate: is_size fitting draws plus a quarter as many for validation
   is_size <- as.integer(budget / (8 * 1.25))
   t0 <- proc.time()[[3L]]
   sel <- suppressMessages(select_N(
     ct$target, candidates = 1:8, regime = "kld", proposal = shape$proposal,
-    is_size = is_size, max_iter = if (name == "epanechnikov") 300L else 60L,
+    is_size = is_size, validation_size = is_size %/% 4L, max_iter = if (name == "epanechnikov") 300L else 60L,
     seed = r
   ))
   secs_px <- proc.time()[[3L]] - t0
@@ -1037,7 +1102,7 @@ hand-set proposals for the mixture fit, and says nothing about higher
 dimensions, other budgets or targets that must be sampled rather than
 evaluated.
 
-## Where next
+## Further reading
 
 *Fitting a proxy to a density you cannot sample* is the shorter introduction
 to the regime this vignette stress-tests, and reads the fit certificate in
@@ -1083,8 +1148,8 @@ captured.
 
 ## Reproduce
 
-Every fit above is seeded with `seed = 1L`, the Hellinger estimates reuse
-each fit's importance draws, and the grid quadrature is deterministic, so
+Every fit and Hellinger estimate above is seeded with `seed = 1L`, and the
+grid quadrature is deterministic, so
 the sections before the numerical illustration are reproducible from the
 package alone.
 

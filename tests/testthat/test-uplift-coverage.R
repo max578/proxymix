@@ -158,7 +158,10 @@ test_that("out-of-support units fall back and are flagged, not errored", {
 
 test_that("the identification report prints the latent-confounder branch", {
   m_do <- .toy_uplift(assume = "latent_confounder")
-  rep <- proxy_identification_report(m_do, data.frame(x = stats::rnorm(80)))
+  expect_warning(
+    rep <- proxy_identification_report(m_do, data.frame(x = stats::rnorm(80))),
+    class = "proxymix_constant_treatment"
+  )
   expect_output(print(rep), "only confounder")
 })
 

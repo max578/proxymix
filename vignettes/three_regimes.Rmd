@@ -7,8 +7,10 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-<!-- Render time: ~2 s under rmarkdown::render() with ggplot2 installed;
-     macOS arm64 (Apple silicon), R 4.5.2, one core. -->
+<!-- Render time: ~4 s under rmarkdown::render() with ggplot2 installed;
+     macOS arm64 (Apple silicon), R 4.6.1, one core. The comparison with
+     mclust, mixtools and flexmix is read from results/three_regimes.rds,
+     built by data-raw/vignette_results/three_regimes.R. -->
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
@@ -29,65 +31,97 @@ library(proxymix)
 has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
 ```
 
-## Why
+```{r stored-results, include = FALSE}
+## The comparison table reads stored simulation results. They must come
+## from the same major.minor version of proxymix as this build.
+res <- readRDS("results/three_regimes.rds")
+major_minor <- function(v) paste(unlist(package_version(v))[1:2],
+                                 collapse = ".")
+if (major_minor(res$proxymix_version) !=
+    major_minor(as.character(packageVersion("proxymix")))) {
+  stop("results/three_regimes.rds was built under proxymix ",
+       res$proxymix_version, ", but this is proxymix ",
+       packageVersion("proxymix"), ". Rerun the simulation and ",
+       "data-raw/vignette_results/three_regimes.R.", call. = FALSE)
+}
 
-A modeller with a target in hand and three regimes on offer asks the
-practical question: *which of the three does my problem actually need, and
-what do I give up if I pick the wrong one?* The routing rule is easy to
-state and easy to over-trust, because two of the regimes will happily run
-on the same target and return visibly similar mixtures while answering
-subtly different questions.
+## Small numbers are written as plain decimals rather than in the
+## scientific notation that knitr's inline hook would otherwise use.
+fixed <- function(v, digits) {
+  format(round(v, digits), nsmall = digits, scientific = FALSE)
+}
+## A very small number as a power of ten in LaTeX, to two significant digits.
+power_ten <- function(v) {
+  if (v == 0) return("$0$")
+  e <- floor(log10(abs(v)))
+  m <- signif(v / 10^e, 2L)
+  if (m == 1) sprintf("$10^{%d}$", e) else sprintf("$%s \\times 10^{%d}$", format(m), e)
+}
+```
 
-## What
+## The problem
 
-The three regimes are those of van der Hoek and Elliott (2024), and they
-differ in what they need to know about the target rather than in what they
-return. All three return a `gmm_fit`.
+proxymix fits a mixture of a few normal distributions, called a Gaussian
+mixture, as a stand-in, or proxy, for a distribution you want to work with.
+The distribution being approximated is called the target. The package has
+three ways of fitting the proxy, described by van der Hoek and Elliott
+(2024). They differ in what they need from the target: a sample drawn from
+it, or a formula for its density.
 
-`fit_moment_match()` is regime (i). At `N == 1` the KL-optimal Gaussian
-proxy is the one that shares the target's mean and covariance, so the fit
-is closed form and needs no iteration at all. It reads moments, which in
-practice means it reads the samples the target carries.
+Often only one kind of input is available, and the choice is made for you.
+Sometimes you have both, and two of the methods will run on the same target
+and return similar-looking mixtures. This vignette runs all three methods on
+targets that have both a formula and a sample, and shows what each one uses
+and what it costs. It then checks the sample-based method against three
+established mixture packages.
 
-`fit_em_samples()` is regime (ii): textbook expectation-maximisation on
-independent draws, maximising the likelihood of the samples under an
-`N`-component mixture. It needs samples and nothing else.
+## Package capabilities
 
-`fit_kld_em()` is regime (iii): importance-sampled KLD-EM, which minimises
-$\mathrm{KL}(f \Vert g_\theta)$ using only point-wise evaluations of the
-target's log-density, re-weighted by self-normalised importance weights
-against a `proposal_mvt()` proposal. It needs no samples.
+- `fit_moment_match()` fits a single normal distribution with the same mean
+  and covariance as the target's sample. This is method (i).
+- `fit_em_samples()` fits a mixture of several normal distributions to a
+  sample. This is method (ii).
+- `fit_kld_em()` fits a mixture to the density formula alone, without a
+  sample. This is method (iii).
+- `fit_proxymix()` runs any of the three. Its `regime` argument takes the
+  values `"moment"`, `"sample"` and `"kld"`, or `"auto"` to choose from what
+  the target carries.
+- `bic_aic()` and `select_N()` choose the number of components. None of the
+  three fitting methods chooses it for you.
+- `mixture_target()` and `banana_target()` are ready-made targets in two
+  variables. Each can carry a sample as well as its formula.
 
-`fit_proxymix()` dispatches across all three, and `bic_aic()` and
-`select_N()` choose the component count, which none of the three does for
-you.
+## Addressing the problem
 
-## Do
+### A target with both a formula and a sample
 
-The bundled three-component mixture target is the right test bench: its
-log-density is known exactly, and because the target is itself a Gaussian
-mixture its true samples are available too. That is the one setting in
-which all three regimes can be run on the same object and compared.
+The ready-made mixture target is itself a mixture of three normal
+distributions. Its density formula is known exactly, and exact samples are
+easy to draw. All three methods can therefore be run on the same target.
 
 ```{r target}
 tgt <- mixture_target(with_samples = TRUE, n = 1500L, seed = 1L)
 tgt
 ```
 
-### Regime (i): closed-form moment matching
+### Method (i): one normal distribution with the sample's mean and spread
 
-At `N == 1` the KL-optimal Gaussian proxy has the same mean and covariance
-as the target. There is nothing to iterate.
+With one component (`N = 1`), the closest normal distribution to the target
+has the same mean and covariance as the target. "Closest" here is measured
+by the Kullback-Leibler (KL) divergence, which is zero when two
+distributions match and grows as they differ. Method (i) computes the mean
+and covariance of the sample in one step, with no iteration.
 
 ```{r moment}
 m_fit <- fit_proxymix(tgt, N = 1L, regime = "moment")
 m_fit
 ```
 
-The recovered moments are the empirical moments of the samples the target
-carries, not an approximation to them. The only discrepancy is the
-diagonal ridge `ridge_eps` that keeps the covariance positive-definite,
-and setting it to zero removes even that.
+The fitted mean and covariance equal those of the sample. The only
+difference is a small constant, set by `ridge_eps`, that is added to the
+diagonal of the covariance matrix, which stops the fit failing when the
+matrix is close to singular. With
+`ridge_eps = 0` the difference disappears.
 
 ```{r moment-recover}
 m_fit_bare <- fit_proxymix(tgt, N = 1L, regime = "moment", ridge_eps = 0)
@@ -100,41 +134,40 @@ moment_gap <- c(
 signif(moment_gap, 3L)
 ```
 
-A single Gaussian is a poor description of a three-mode mixture, but it is
-the KL-optimal single Gaussian, and it makes a deterministic seed for the
-two iterative regimes at `N > 1`.
+One normal distribution cannot describe a target with three peaks. It is,
+however, the closest single normal distribution to the target.
 
-### Regime (ii): classical EM on samples
+### Method (ii): several normal distributions fitted to the sample
 
-When the target carries samples, the textbook algorithm applies:
-
-* **E-step** -- \(\gamma_{nk} = \pi_k \mathcal{N}(x_n \mid \mu_k, \Sigma_k) /
-  \sum_j \pi_j \mathcal{N}(x_n \mid \mu_j, \Sigma_j)\).
-* **M-step** -- re-weight \(\pi_k, \mu_k, \Sigma_k\) by the
-  responsibilities, with a diagonal ridge `epsilon_cov` keeping
-  \(\Sigma_k\) positive-definite.
-* **Convergence** -- relative change in the empirical log-likelihood below
-  `tol`.
+Method (ii) is the expectation-maximisation (EM) algorithm, the standard
+way to fit a mixture to a sample. Each round has two steps. The first step
+works out, for every point, the probability that it came from each
+component. The second step refits each component's weight, mean and
+covariance to the points, counting each point in proportion to those
+probabilities. The same `ridge_eps` stops each covariance from becoming
+singular. The
+rounds stop when the log-likelihood of the sample, a measure of how well the
+mixture fits it, changes by less than the tolerance `tol`. `n_starts = 4L`
+runs the algorithm from four starting points and keeps the best fit.
 
 ```{r em}
 s_fit <- fit_proxymix(tgt, N = 3L, regime = "sample",
-                      max_iter = 200L, n_starts = 4L)
+                      max_iter = 200L, n_starts = 4L, seed = 1L)
 s_fit
 ```
 
-### Regime (iii): importance-sampled KLD-EM
+### Method (iii): several normal distributions fitted to the formula
 
-Regime (iii) is the reason the package exists: it fits a proxy when the
-target's `log_density` is evaluable but no samples are available, which is
-the situation for Bayesian posteriors, intractable likelihoods, expensive
-simulators, and downscaling targets in spatial statistics. The algorithm
-draws `is_size` points from the proposal $q$, forms self-normalised weights
-\(W_n \propto f(x_n) / q(x_n)\), and runs EM iterations in which the M-step
-minimises \(\mathrm{KL}(f \Vert g_\theta)\) by re-weighting the
-responsibilities with $W$.
-
-The proposal is the only free knob beyond the usual mixture configuration,
-and a Student-t with five degrees of freedom is a robust default.
+Method (iii) needs only the density formula. It is the method to use when
+no sample exists, as with a Bayesian posterior that comes as a formula with
+no direct way to draw from it. It
+draws trial points once from a broad distribution that is easy to sample,
+called the proposal. Each trial point is weighted by how much more likely it is
+under the target than under the proposal. The mixture is then refitted to
+the weighted points in rounds, which lower the KL divergence from the target. The
+proposal here is a Student-t distribution, a relative of the normal with
+heavier tails. Its degrees of freedom, `df = 5`, set how heavy the tails
+are: the fewer, the heavier.
 
 ```{r kld}
 k_fit <- fit_proxymix(tgt, N = 3L, regime = "kld",
@@ -173,7 +206,7 @@ overlay_df$regime <- factor(overlay_df$regime,
                             levels = unique(overlay_df$regime))
 ```
 
-```{r overlay, eval = has_ggplot2, echo = has_ggplot2, fig.height = 3.4, fig.cap = "The three-mixture target (filled contours, identical in all three panels) with each regime's fitted proxy overlaid as dashed contours. Regime (i) is one Gaussian spread across all three modes; regimes (ii) and (iii) both place one component per mode and are visually indistinguishable, despite reading entirely different information about the target.", fig.alt = "Three side-by-side contour panels of the same three-mode target, overlaid with the single-Gaussian moment fit, the sample-EM fit and the KLD-EM fit."}
+```{r overlay, eval = has_ggplot2, echo = has_ggplot2, fig.height = 3.4, fig.cap = "The three-peak target (filled contours, the same in all three panels) with each method's proxy overlaid as dashed contours. Method (i) spreads one normal distribution across all three peaks. Methods (ii) and (iii) each place one component on each peak and look alike, although (ii) used only the sample and (iii) only the formula.", fig.alt = "Three side-by-side contour panels of the same three-peak target, overlaid with the single-normal moment fit, the sample-EM fit and the KLD-EM fit."}
 ggplot2::ggplot(overlay_df, ggplot2::aes(x1, x2)) +
   ggplot2::geom_contour_filled(ggplot2::aes(z = target), bins = 10L,
                                alpha = 0.85) +
@@ -191,7 +224,11 @@ cat("ggplot2 is not installed on this build, so the three-panel overlay",
     "figure is skipped.\n")
 ```
 
-### What each iterative regime is driving down
+### What each method improves in each round
+
+Methods (ii) and (iii) aim at different quantities. Method (ii) raises the
+log-likelihood of the sample. Method (iii) lowers an estimate of the KL
+divergence from the target, computed on the weighted trial points.
 
 ```{r traces}
 trace_df <- rbind(
@@ -204,18 +241,19 @@ trace_df <- rbind(
   data.frame(
     iteration = seq_along(kld_trace(k_fit)),
     value = kld_trace(k_fit),
-    panel = "(iii) KLD-EM: estimated KL (down)",
+    panel = "(iii) KLD-EM: KL on the fitting draws (down)",
     stringsAsFactors = FALSE
   )
 )
 ```
 
-```{r traces-plot, eval = has_ggplot2, echo = has_ggplot2, fig.height = 3.2, fig.cap = "The two iterative regimes optimise different objectives and take different numbers of steps to do it. Sample EM climbs the empirical log-likelihood; KLD-EM drives down the importance-sampled Kullback-Leibler divergence.", fig.alt = "Two panels of iteration traces: a monotone increasing log-likelihood curve for sample EM and a decreasing Kullback-Leibler curve for KLD-EM."}
+```{r traces-plot, eval = has_ggplot2, echo = has_ggplot2, fig.height = 3.2, fig.cap = "The value each method improves, round by round. Method (ii) raises the log-likelihood of the sample. Method (iii) lowers an estimate of the KL divergence, scored on the same trial points the fit was tuned to. That makes the estimate read low, and it can fall below zero, although a true KL divergence cannot.", fig.alt = "Two panels of iteration traces: an increasing log-likelihood curve for sample EM and a decreasing Kullback-Leibler curve for KLD-EM."}
 ggplot2::ggplot(trace_df, ggplot2::aes(iteration, value)) +
   ggplot2::geom_line(colour = "#0072B2", linewidth = 0.8) +
   ggplot2::geom_point(colour = "#0072B2", size = 1.1) +
   ggplot2::facet_wrap(~ panel, scales = "free") +
-  ggplot2::labs(x = "iteration", y = "objective") +
+  ggplot2::scale_x_continuous(breaks = function(lim) unique(floor(pretty(lim)))) +
+  ggplot2::labs(x = "round", y = "value") +
   ggplot2::theme_minimal(base_size = 11)
 ```
 
@@ -224,14 +262,16 @@ cat("ggplot2 is not installed on this build, so the two-panel iteration",
     "trace figure is skipped.\n")
 ```
 
-### Regimes (i) and (iii) at N = 1, against an exact oracle
+### One normal distribution fitted two ways, against the exact answer
 
-At `N = 1` both regime (i) and regime (iii) target the KL-optimal single
-Gaussian, so they should agree. They are compared here on the banana
-target, where regime (iii) would be the only option if the samples were
-withheld, and both are compared against a third quantity neither of them
-produced: the exact mean and covariance of the banana density, obtained by
-deterministic quadrature on a fine grid.
+With one component, methods (i) and (iii) aim at the same answer: the mean
+and covariance of the target. Method (i) reads them from the sample. Method
+(iii) reads only the formula. The banana target makes it possible to check
+both against the exact answer. It is built from two independent standard
+normal variables $z_1$ and $z_2$ as $x_1 = z_1$ and
+$x_2 = z_2 + (z_1^2 - 1)/2$. Its mean is therefore $(0, 0)$. The variance of
+$x_1$ is 1, the variance of $x_2$ is $1 + 2/4 = 3/2$, and the trace of the
+covariance, the sum of the two variances, is exactly $5/2$.
 
 ```{r n1-fits}
 banana <- banana_target(with_samples = TRUE, n = 2000L, seed = 1L)
@@ -241,166 +281,379 @@ k_b <- fit_proxymix(banana, N = 1L, regime = "kld",
                                             sigma = 4 * diag(2),
                                             df = 5),
                     is_size = 3000L, max_iter = 50L, seed = 1L)
-```
-
-```{r n1-oracle}
-## Exact moments of the banana density by grid quadrature -- an oracle
-## neither regime used, and independent of both the attached samples and
-## the importance sampler.
-quad_x <- seq(-8, 8, length.out = 400L)
-quad_g <- as.matrix(expand.grid(x1 = quad_x, x2 = quad_x))
-quad_cell <- (quad_x[2L] - quad_x[1L])^2
-quad_f <- exp(banana@log_density(quad_g))
-quad_mass <- sum(quad_f) * quad_cell
-quad_mean <- c(sum(quad_f * quad_g[, 1L]),
-               sum(quad_f * quad_g[, 2L])) * quad_cell / quad_mass
-quad_trace <- sum(quad_f * ((quad_g[, 1L] - quad_mean[1L])^2 +
-                              (quad_g[, 2L] - quad_mean[2L])^2)) *
-  quad_cell / quad_mass
-```
-
-```{r n1-compare}
 tr_of <- function(f) sum(diag(f@covariances[[1L]]))
-n1 <- list(
-  mean_gap = max(abs(m_b@means[[1L]] - k_b@means[[1L]])),
-  trace_gap = tr_of(m_b) - tr_of(k_b),
-  moment_error = abs(tr_of(m_b) - quad_trace),
-  kld_error = abs(tr_of(k_b) - quad_trace),
-  sample_error = abs(sum(diag(cov(banana@samples))) - quad_trace)
-)
-n1$closer <- n1$moment_error / n1$kld_error
-signif(unlist(n1), 3L)
+sample_trace <- sum(diag(cov(banana@samples)))
+exact_trace <- 1 + (1 + 2 * 0.5^2)
 ```
 
 ```{r n1-table, echo = FALSE}
+n1_traces <- c(tr_of(m_b), tr_of(k_b), sample_trace, exact_trace)
 n1_tbl <- data.frame(
-  Source = c("regime (i), moment match", "regime (iii), KLD-EM",
-             "attached samples", "exact density (quadrature)"),
-  Reads = c("the attached samples", "the log-density",
-            "the attached samples", "the log-density"),
-  `Trace of covariance` = round(
-    c(tr_of(m_b), tr_of(k_b), sum(diag(cov(banana@samples))), quad_trace),
-    3L
-  ),
-  `Error against oracle` = round(
-    c(tr_of(m_b), tr_of(k_b), sum(diag(cov(banana@samples))), quad_trace) -
-      quad_trace,
-    3L
-  ),
+  Source = c("method (i), moment match", "method (iii), KLD-EM",
+             "the attached sample", "exact value"),
+  Uses = c("the sample", "the formula", "the sample",
+           "the construction of the target"),
+  `Trace of covariance` = round(n1_traces, 3L),
+  `Error` = round(n1_traces - exact_trace, 3L),
   check.names = FALSE,
   stringsAsFactors = FALSE
 )
 knitr::kable(
   n1_tbl,
   caption = paste(
-    "The single-Gaussian proxy at `N = 1`, fitted two ways and scored",
-    "against the exact moments of the banana density. The final row is",
-    "the oracle, so its error is zero by construction."
+    "The single normal proxy for the banana target, fitted two ways. The",
+    "error is the trace of the covariance minus its exact value, 5/2, so a",
+    "negative error means the spread is understated."
   )
 )
 ```
 
-## Read
+The sample and the trial points are each one random draw. Repeating both
+with fresh seeds shows how far each trace moves by chance.
 
-The moment fit is exact rather than approximate. It reproduces the
-empirical mean of the target's samples with a gap of
-`r format(signif(moment_gap[["mean"]], 2L))`, and the empirical covariance
-with a gap of `r format(signif(moment_gap[["covariance"]], 2L))` -- which is
-not a fitting error but the diagonal ridge itself, since removing the ridge
-closes that gap to
-`r format(signif(moment_gap[["covariance_no_ridge"]], 2L))` as well. Regime
-(i) does not approximate the moments; it copies them.
+```{r n1-spread}
+sample_traces <- vapply(seq_len(500L), function(s) {
+  sum(diag(cov(banana_target(with_samples = TRUE, n = 2000L,
+                             seed = s)@samples)))
+}, numeric(1L))
+kld_traces <- vapply(seq_len(100L), function(s) {
+  tr_of(fit_proxymix(banana, N = 1L, regime = "kld",
+                     proposal = proposal_mvt(n_dim = 2L,
+                                             sigma = 4 * diag(2),
+                                             df = 5),
+                     is_size = 3000L, max_iter = 50L, seed = s))
+}, numeric(1L))
+spread <- data.frame(
+  seeds = c(length(sample_traces), length(kld_traces)),
+  mean = c(mean(sample_traces), mean(kld_traces)),
+  sd = c(sd(sample_traces), sd(kld_traces)),
+  row.names = c("trace of a 2000-point sample", "method (iii) trace")
+)
+round(spread, 3L)
+```
 
-The two iterative regimes land in the same place by different routes.
-Sample EM took `r length(s_fit@diagnostics$loglik_trace)` iterations to
-converge and KLD-EM took `r length(kld_trace(k_fit))`, and the fitted
-weights agree to
-`r format(signif(max(abs(sort(s_fit@weights) - sort(k_fit@weights))), 2L))`.
-The overlay shows why they look alike here: both put one component on each
-mode, which is the correct answer for a target that is itself a
-three-component Gaussian mixture. The KLD-EM fit retained an effective
-sample size of `r round(k_fit@diagnostics$ess, 0L)` out of
-`r k_fit@diagnostics$is_size` importance draws, so it reached that answer
-without leaning on a few high-weight points.
+```{r n1-grid, include = FALSE}
+# a grid sum of the same trace, for the Limitations section
+quad_x <- seq(-8, 8, length.out = 400L)
+quad_g <- as.matrix(expand.grid(x1 = quad_x, x2 = quad_x))
+quad_cell <- (quad_x[2L] - quad_x[1L])^2
+quad_f <- exp(banana@log_density(quad_g))
+quad_mass <- sum(quad_f) * quad_cell
+quad_trace <- sum(quad_f * (quad_g[, 1L]^2 + quad_g[, 2L]^2)) *
+  quad_cell / quad_mass
+```
 
-The `N = 1` comparison is where the cost of the choice becomes visible, and
-it does not favour the regime that looks safer. The two fits differ in
-mean by `r format(signif(n1$mean_gap, 2L))` and in trace-covariance by
-`r format(signif(n1$trace_gap, 2L))`, which is larger than
-importance-sampling noise alone would explain. The oracle column says why.
-Regime (i) matches the moments of the `r nrow(banana@samples)` samples the
-target happens to carry, and those samples overstate the exact
-trace-covariance by `r format(signif(n1$sample_error, 2L))`. Regime (iii)
-never sees those samples; it reads the density, and its trace-covariance is
-out by only `r format(signif(n1$kld_error, 2L))`, about
-`r round(n1$closer, 1L)` times closer to the truth.
+### Comparison with mclust, mixtools and flexmix
 
-So the answer to the opening question is that regime (iii) is not merely
-the fallback when samples are missing. When the log-density is available,
-it is fitting to the density itself, while regimes (i) and (ii) are fitting
-to whatever finite sample was drawn from it. With plentiful samples the
-distinction is immaterial; with a modest sample it is the difference
-between the two answers above. What you give up by choosing regime (iii)
-when samples are plentiful is speed and simplicity: it needs a proposal, it
-costs `r k_fit@diagnostics$n_target_evals` target evaluations here, and it
-carries an importance-sampling diagnostic that has to be read.
+```{r compare-facts, include = FALSE}
+sim_value <- function(n, method, what) {
+  s1 <- res$sim_tab$n == n & res$sim_tab$method == method
+  res$sim_tab[[what]][s1]
+}
+misfits <- function(n, method) {
+  s1 <- res$misfit_tab$n == n & res$misfit_tab$method == method
+  res$misfit_tab$misfit[s1]
+}
+n_small <- res$n_sizes[1L]
+n_large <- res$n_sizes[2L]
+ii <- "proxymix, regime (ii)"
+ll <- res$faithful_loglik
+```
 
-## Limits
+The established packages `mclust`, `mixtools` and `flexmix` fit mixtures
+to samples, as method (ii) does. They do not fit a mixture to a formula
+alone, so they can check method (ii) but not method (iii). Two checks were
+run, and every package was given the number of components. The first uses the
+`r nrow(datasets::faithful)` eruptions of the Old Faithful geyser in R's
+`faithful` data (Azzalini and Bowman, 1990): the length of each eruption and
+the waiting time to the next. Each package fitted a two-component mixture to
+a random half of the eruptions. Each fit was then scored by its held-out
+log-likelihood, the average log density it gives to the other half. Higher
+is better. The second check is a simulation of `r res$n_rep` datasets of
+`r n_small` points and `r res$n_rep` datasets of
+`r format(n_large, big.mark = ",")` points, drawn from the three-component
+mixture used above. Each fit was scored by
+its KL divergence from the true mixture, computed on a fine grid. A fit
+whose divergence exceeded 0.1 was counted as a misfit. `mclust` (Scrucca et al., 2016) chose among
+its covariance shapes by the Bayesian information criterion (BIC), a score
+that balances fit against the number of parameters. `flexmix` (Leisch,
+2004; Grün and Leisch, 2008) kept the best of five random starts, the
+number proxymix uses by default for method (ii) as well. One
+`mixtools` (Benaglia et al., 2009) fit to `r format(n_large, big.mark = ",")`
+points took `r round(res$mixtools_secs)` s, so `mixtools` was left out of
+the simulation.
 
-This vignette does not choose the number of components. Every fit above
-was told `N` by hand, and the three-mixture target was picked precisely
-because the right answer is known to be three. On a real target the
-component count is the first thing that has to be settled, and `bic_aic()`
-and `select_N()` are what settle it; a count set too low shows up as a
-residual divergence that more importance draws will not reduce.
+```{r compare-table, echo = FALSE}
+pkgs <- c(ii, "mclust", "mixtools", "flexmix")
+sim_col <- function(n, what, digits) {
+  vapply(pkgs, function(s1) {
+    if (s1 == "mixtools") return("not run")
+    if (what == "misfit") return(as.character(misfits(n, s1)))
+    fixed(sim_value(n, s1, what), digits)
+  }, character(1L))
+}
+cmp_tbl <- data.frame(
+  method = c("proxymix, method (ii)", "mclust", "mixtools", "flexmix"),
+  loglik = fixed(ll[c("proxymix", "mclust", "mixtools", "flexmix")], 3),
+  kl_small = sim_col(n_small, "kl", 4),
+  kl_large = sim_col(n_large, "kl", 4),
+  mis_small = sim_col(n_small, "misfit", 0),
+  mis_large = sim_col(n_large, "misfit", 0),
+  stringsAsFactors = FALSE
+)
+knitr::kable(
+  cmp_tbl, row.names = FALSE,
+  align = c("l", "r", "r", "r", "r", "r"),
+  col.names = c("Package", "Old Faithful: held-out log-likelihood",
+                paste0("Mean KL, ", n_small, " points"),
+                paste0("Mean KL, ", format(n_large, big.mark = ","),
+                       " points"),
+                paste0("Misfits, ", n_small, " points"),
+                paste0("Misfits, ", format(n_large, big.mark = ","),
+                       " points")),
+  caption = paste0(
+    "Two-component fits to half of the Old Faithful eruptions, scored on ",
+    "the other half (higher is better), and three-component fits to ",
+    res$n_rep, " simulated datasets at each sample size, scored by the KL ",
+    "divergence from the true mixture (lower is better). A misfit is a fit ",
+    "with a divergence above 0.1, counted out of ", res$n_rep, "."
+  )
+)
+```
 
-The comparison between regimes (ii) and (iii) is flattering to both here
-for a reason worth stating. The target is itself a Gaussian mixture with
-the same number of components as the proxies, so the model is correctly
-specified and there is no approximation error for either regime to trade
-against the other. On a target outside the Gaussian-mixture family the two
-regimes minimise genuinely different objectives, and the fits separate.
+On this one split of Old Faithful, the four fits are within
+`r fixed(ceiling(1000 * (max(ll) - min(ll))) / 1000, 3)` of each other in held-out log-likelihood. In the simulation, proxymix had
+the lowest mean KL divergence of the three packages at both sample sizes. Its paired difference
+from `mclust` over the same datasets was
+`r fixed(res$paired_kl["kl_small", "diff"], 4)` at `r n_small` points and
+`r fixed(res$paired_kl["kl_large", "diff"], 4)` at
+`r format(n_large, big.mark = ",")` points, with standard errors of
+`r fixed(res$paired_kl["kl_small", "se"], 4)` and
+`r fixed(res$paired_kl["kl_large", "se"], 4)`. At `r n_small` points,
+however, `mclust` had fewer misfits than proxymix, `r misfits(n_small,
+"mclust")` against `r misfits(n_small, ii)`. At
+`r format(n_large, big.mark = ",")` points neither had any. `flexmix`
+produced misfits in `r round(100 * sim_value(n_small, "flexmix", "misfit"))` per cent
+of the `r n_small`-point datasets and
+`r round(100 * sim_value(n_large, "flexmix", "misfit"))` per cent of the
+`r format(n_large, big.mark = ",")`-point ones.
 
-The `N = 1` oracle applies to two dimensions and to a target whose density
-integrates to one on the grid used. Grid quadrature of this kind is a
-reliable independent check in two or three dimensions and stops being one
-well before the dimension at which importance sampling itself becomes the
-binding constraint.
+At `r n_small` points, proxymix took
+`r fixed(sim_value(n_small, ii, "secs"), 3)` s per fit on average,
+`r fixed(sim_value(n_small, ii, "secs") / sim_value(n_small, "mclust", "secs"), 1)`
+times as long as `mclust` (`r fixed(sim_value(n_small, "mclust", "secs"), 3)`
+s), and `flexmix` took `r fixed(sim_value(n_small, "flexmix", "secs"), 2)` s.
+At `r format(n_large, big.mark = ",")` points, proxymix took
+`r fixed(sim_value(n_large, ii, "secs"), 2)` s, `mclust`
+`r fixed(sim_value(n_large, "mclust", "secs"), 2)` s and `flexmix`
+`r fixed(sim_value(n_large, "flexmix", "secs"), 2)` s.
 
-## What to read next
+The code below runs the Old Faithful check with all four packages. It
+converts each package's fit to a proxymix mixture, so that `dgmm()` scores
+every fit in the same way. It needs `mclust`, `mixtools` and `flexmix`, all
+on CRAN, and it is not run when this vignette is built.
 
-*Fitting a proxy to a density you cannot sample* is the shorter route into
-regime (iii) alone, and reads the fit certificate that this vignette only
-glances at.
+```{r compare-code, eval = FALSE}
+library(proxymix)
+library(mclust)
+library(mixtools)
+library(flexmix)
 
-*How well a mixture proxies four awkward shapes* takes regime (iii) to
-targets outside the Gaussian-mixture family, where the correctly-specified
-comfort of this vignette's test bench no longer holds.
+# split the Old Faithful eruptions into a training half and a held-out half
+faithful_mat <- as.matrix(datasets::faithful)
+set.seed(20260925)
+i_train <- sort(sample.int(nrow(faithful_mat), nrow(faithful_mat) / 2L))
+train <- faithful_mat[i_train, ]
+test <- faithful_mat[-i_train, ]
+train_df <- data.frame(eruptions = train[, 1L], waiting = train[, 2L])
 
-*Reading the entropy of a fitted mixture* covers the component-count
-question this vignette defers, including the annealed path that discovers a
-count rather than being told one.
+# convert each package's fit to a proxymix mixture, so dgmm() scores all four
+as_gmm_mclust <- function(fit) {
+  gmm(
+    weights = fit$parameters$pro,
+    means = lapply(seq_len(fit$G), function(k) fit$parameters$mean[, k]),
+    covariances = lapply(seq_len(fit$G), function(k) {
+      fit$parameters$variance$sigma[, , k]
+    })
+  )
+}
+as_gmm_mixtools <- function(fit) {
+  gmm(weights = fit$lambda, means = fit$mu, covariances = fit$sigma)
+}
+as_gmm_flexmix <- function(fit) {
+  comps <- lapply(fit@components, function(cc) cc[[1L]]@parameters)
+  gmm(
+    weights = prior(fit),
+    means = lapply(comps, function(p) unname(p$center)),
+    covariances = lapply(comps, function(p) unname(p$cov))
+  )
+}
 
-*One mixture, many methods* shows what a single fitted mixture replaces
-once the regime question is settled.
+# two-component fits to the training half
+set.seed(1L)
+fits <- list(
+  proxymix = fit_proxymix(gmm_target_from_samples(train), N = 2L,
+                          regime = "sample"),
+  mclust = as_gmm_mclust(Mclust(train, G = 2L, verbose = FALSE)),
+  mixtools = as_gmm_mixtools(mvnormalmixEM(train, k = 2L, verb = FALSE)),
+  flexmix = as_gmm_flexmix(stepFlexmix(
+    cbind(eruptions, waiting) ~ 1, data = train_df, k = 2L, nrep = 5L,
+    model = FLXMCmvnorm(diagonal = FALSE), verbose = FALSE
+  ))
+)
 
-*Mapping the optima of an objective* points regime (iii) at a function that
-is not a density at all: an objective read as a Gibbs measure, so that the
-fitted mixture returns every basin of a multimodal landscape at once rather
-than the one a local optimiser happened to reach.
+# mean log-likelihood of the held-out eruptions under each fit
+vapply(fits, function(g) mean(dgmm(test, g, log = TRUE)), numeric(1L))
+```
+
+The [extended version of this
+article](https://max578.github.io/proxymix/articles/extended/three_regimes.html)
+gives the full simulation code and a measure of how well each package's
+grouping of the points matches the true components. It also compares
+method (iii) on the Old Faithful data with drawing a sample by Markov chain
+Monte Carlo, a standard way to sample from a formula, and fitting a mixture
+to that sample.
+
+## Interpretation
+
+Method (i) copies the moments of the sample rather than estimating them by
+iteration. `r if (moment_gap[["mean"]] == 0) "Its fitted mean equals the sample mean exactly." else paste0("Its fitted mean differs from the sample mean by ", power_ten(moment_gap[["mean"]]), ".")`
+Its fitted covariance differs from the sample covariance by
+`r power_ten(moment_gap[["covariance"]])`, which is the constant that
+`ridge_eps` adds to the diagonal. Without that constant, the fitted
+covariance
+`r if (moment_gap[["covariance_no_ridge"]] == 0) "equals the sample covariance exactly" else paste0("differs from the sample covariance by ", power_ten(moment_gap[["covariance_no_ridge"]]))`.
+
+Methods (ii) and (iii) reach nearly the same mixture by different routes. Method
+(ii) took `r length(s_fit@diagnostics$loglik_trace)` rounds and method (iii)
+took `r length(kld_trace(k_fit))`. Their component weights agree to within
+`r fixed(ceiling(1000 * max(abs(sort(s_fit@weights) - sort(k_fit@weights)))) / 1000, 3)`. Both put
+one component on each peak, which is correct for a target that is itself a
+mixture of three normal distributions. The
+`r format(k_fit@diagnostics$is_size, big.mark = ",")` weighted trial points
+of method (iii) were worth `r round(k_fit@diagnostics$ess)` equally
+weighted points, `r round(100 * k_fit@diagnostics$ess / k_fit@diagnostics$is_size)`
+per cent of the total. On `r format(k_fit@diagnostics$validation_size, big.mark = ",")`
+fresh trial points, the KL divergence of the method (iii) proxy from the
+target is `r fixed(k_fit@diagnostics$validation_kld, 3)`, with a
+simulation standard error of
+`r fixed(k_fit@diagnostics$validation_mc_se, 3)`.
+
+On the banana target, the attached sample
+`r if (sample_trace > exact_trace) "overstates" else "understates"` the
+exact trace of `r exact_trace` by
+`r fixed(abs(sample_trace - exact_trace), 3)`, and method (i) copies that
+error. Method (iii) never sees the sample. Its trace is
+`r fixed(abs(tr_of(k_b) - exact_trace), 3)`
+`r if (tr_of(k_b) < exact_trace) "below" else "above"` the exact value. In
+this one run, method (iii) is therefore closer. The repeated draws show that
+this is partly chance. The trace of a 2,000-point sample has a standard
+deviation of `r fixed(sd(sample_traces), 3)`, so this sample's error is
+`r fixed(abs(sample_trace - exact_trace) / sd(sample_traces), 1)` standard
+deviations. The method (iii) trace has a standard deviation of
+`r fixed(sd(kld_traces), 3)` over `r length(kld_traces)` seeds, which is
+similar. Its average is `r fixed(abs(mean(kld_traces) - exact_trace), 3)`
+`r if (mean(kld_traces) < exact_trace) "below" else "above"` the exact
+value, which is
+`r if (abs(mean(kld_traces) - exact_trace) > 2 * sd(kld_traces) / sqrt(length(kld_traces))) "more" else "less"`
+than two standard errors of that average.
+
+Methods (i) and (ii) fit whatever sample was drawn, while method (iii) fits
+the formula itself. With a large sample the difference is negligible. In the
+simulation above, method (iii) was also given the true formula and 3,000
+trial points. It does not use the sample. Its mean KL divergence was
+`r fixed(sim_value(n_small, "proxymix, regime (iii)", "kl"), 4)` and
+`r fixed(sim_value(n_large, "proxymix, regime (iii)", "kl"), 4)` in the two
+halves of the simulation, which differ only by chance. Method (ii) reached `r fixed(sim_value(n_small, ii, "kl"), 4)` and
+`r fixed(sim_value(n_large, ii, "kl"), 4)`. When samples are plentiful,
+method (iii) costs more: it needs a proposal, it evaluated the formula
+`r format(k_fit@diagnostics$n_target_evals, big.mark = ",")` times for the
+three-peak fit, and its weights have to be checked before the fit is used.
+
+## Limitations
+
+The number of components was set by hand in every fit, and the three-peak
+target was chosen because the right number is known. On a real target,
+`bic_aic()` and `select_N()` choose it. Too few components show up as a KL
+divergence that more trial points do not reduce.
+
+The three-peak target is itself a mixture of three normal distributions, so
+methods (ii) and (iii) can both match it exactly. On a target of a
+different shape, the two methods aim at different quantities, and their
+fits differ.
+
+The exact trace of the banana target is known only because the target is
+built from normal variables. A sum over a grid of `r length(quad_x)` by
+`r length(quad_x)` points on $[-8, 8]^2$ misses `r power_ten(1 - quad_mass)`
+of the probability and gives `r fixed(quad_trace, 3)`, which is
+`r fixed(exact_trace - quad_trace, 3)` below the exact value. The missing
+probability lies far out in the tail of $x_2$, where it adds much to the
+variance. A grid sum is a useful check only in two or three variables, and
+only after you have checked how much probability the grid misses.
+
+The comparison with other packages covers one real dataset and one
+simulated mixture in two variables, with the number of components given.
+It does not cover a target of a different shape, a chosen number of
+components or more variables.
+
+## Further reading
+
+*Fitting a proxy to a density you cannot sample* introduces method (iii)
+and the fit certificate that checks it.
+
+*How well a mixture proxies four awkward shapes* applies method (iii) to
+targets that are not Gaussian mixtures.
+
+*Reading the entropy of a fitted mixture* covers choosing the number of
+components, including a method that finds the number rather than being
+given it.
+
+*One mixture, many methods* shows what else a single fitted mixture can do.
+
+*Mapping the optima of an objective* applies method (iii) to a function
+that is to be optimised, and returns a mixture with one component on each
+of its optima.
 
 ## References
+
+Azzalini, A. and Bowman, A. W. (1990). *A look at some data on the Old
+Faithful geyser.* Journal of the Royal Statistical Society, Series C
+(Applied Statistics) 39(3), 357--365. <https://doi.org/10.2307/2347385>.
+
+Benaglia, T., Chauveau, D., Hunter, D. R. and Young, D. S. (2009).
+*mixtools: An R package for analyzing finite mixture models.* Journal of
+Statistical Software 32(6), 1--29. <https://doi.org/10.18637/jss.v032.i06>.
+
+Grün, B. and Leisch, F. (2008). *FlexMix version 2: Finite mixtures with
+concomitant variables and varying and constant parameters.* Journal of
+Statistical Software 28(4), 1--35. <https://doi.org/10.18637/jss.v028.i04>.
 
 Hoek, J. van der and Elliott, R. J. (2024). *Mixtures of multivariate
 Gaussians.* Stochastic Analysis and Applications.
 <https://doi.org/10.1080/07362994.2024.2372605>.
 
+Leisch, F. (2004). *FlexMix: A general framework for finite mixture models
+and latent class regression in R.* Journal of Statistical Software 11(8),
+1--18. <https://doi.org/10.18637/jss.v011.i08>.
+
+Scrucca, L., Fop, M., Murphy, T. B. and Raftery, A. E. (2016). *mclust 5:
+Clustering, classification and density estimation using Gaussian finite
+mixture models.* The R Journal 8(1), 289--317.
+<https://doi.org/10.32614/RJ-2016-021>.
+
 ## Reproduce
 
-The target carries `seed = 1L`, both regime-(iii) fits are seeded with
-`seed = 1L`, and the quadrature oracle is deterministic, so every number
-above is reproducible from the package alone.
+The target's sample is drawn with `seed = 1L`, and each fit that uses
+random numbers is given `seed = 1L`. The repeated banana draws use seeds 1 to
+`r length(sample_traces)` for the samples and 1 to `r length(kld_traces)`
+for the trial points. The comparison is read from stored results. The
+simulation ran under proxymix `r res$proxymix_version`, `mclust`
+`r res$versions[["mclust"]]` and `flexmix` `r res$versions[["flexmix"]]`,
+and took about `r round(res$elapsed_secs / 60)` minutes on one core. The
+Old Faithful fits ran under `mixtools`
+`r res$faithful_versions[["mixtools"]]` and the same versions of the other
+packages.
 
-```{r session-info}
+```{r session-info, collapse = FALSE, class.output = "session-info"}
 sessionInfo()
 ```

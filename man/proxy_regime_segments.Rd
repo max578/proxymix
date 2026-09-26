@@ -22,12 +22,18 @@ prevalence (\code{weight}), its within-segment treatment effect (the within-clas
 treatment slope), its residual standard deviation, and its covariate centre.
 This is the interpretable by-product the closed-form reading gives for free.
 }
+\details{
+When each regime holds a single treatment arm, as often happens with a
+binary treatment, every within-segment effect is zero and a warning of
+class \code{proxymix_constant_treatment} is raised.
+}
 \examples{
 set.seed(1)
 n <- 600L
+u <- stats::rbinom(n, 1L, 0.5) # unobserved group
 x <- stats::rnorm(n)
-t <- stats::rbinom(n, 1L, 0.5)
-y <- 1 + (0.5 + x) * t + stats::rnorm(n, sd = 0.5)
+t <- stats::rbinom(n, 1L, 0.3 + 0.4 * u)
+y <- 1 + 5 * u + 0.5 * t + x + stats::rnorm(n, sd = 0.5)
 dat <- data.frame(y = y, t = t, x = x)
 m <- fit_uplift(dat, "y", "t", "x", N = 2L, regime = "sample",
                 max_iter = 80L, seed = 1L)

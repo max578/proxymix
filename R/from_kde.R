@@ -120,9 +120,9 @@ make_kde_log_density <- function(samples, h, chunk = 256L) {
 #' @param min_ess Minimum effective sample size below which a warning is
 #'   issued. Forwarded to [fit_kld_em()].
 #' @param seed Optional integer seed for the fitting IS draw.
-#' @param validation_size Held-out IS sample size. The default `NULL` uses
-#'   `ceiling(is_size / 4)`, so the fit carries a held-out `validation_kld`;
-#'   `0L` disables it. Forwarded to [fit_kld_em()].
+#' @param validation_size Held-out IS sample size. The default `NULL` adds
+#'   draws until `validation_kld` is precise, as described in
+#'   [fit_kld_em()]; `0L` disables it. Forwarded to [fit_kld_em()].
 #' @param validation_proposal Optional [is_proposal] for the held-out
 #'   sample. Forwarded to [fit_kld_em()].
 #' @param validation_seed Optional integer seed for the held-out IS draw.

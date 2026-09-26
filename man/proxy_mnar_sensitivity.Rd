@@ -65,7 +65,7 @@ x1 <- rnorm(300)
 y <- x1 + rnorm(300)
 y[runif(300) < plogis(-0.4 + 0.8 * y)] <- NA      # MNAR on y
 dat <- data.frame(x1 = x1, y = y)
-proxy_mnar_sensitivity(dat, "y", beta_grid = c(0, 0.4, 0.8, 1.2), m = 10L, seed = 1L)
+proxy_mnar_sensitivity(dat, "y", beta_grid = c(0, 0.5, 1), m = 5L, seed = 1L)
 }
 \seealso{
 \code{\link[=gmm_impute]{gmm_impute()}}, \code{\link[=mnar]{mnar()}}.

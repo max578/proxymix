@@ -7,8 +7,10 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-<!-- Render time: ~3 s under rmarkdown::render() with ggplot2 installed;
-     macOS arm64 (Apple silicon), R 4.5.2, one core. -->
+<!-- Render time: ~5 s under rmarkdown::render() with ggplot2 installed;
+     macOS arm64 (Apple silicon), R 4.6.1, one core. The comparison with
+     ks, np, KernSmooth, mclust and mixtools is read from
+     results/from_kde.rds, built by data-raw/vignette_results/from_kde.R. -->
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
@@ -29,58 +31,88 @@ library(proxymix)
 has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
 ```
 
-## Why
+```{r stored-results, include = FALSE}
+## The comparison table reads stored simulation results. They must come
+## from the same major.minor version of proxymix as this build.
+res <- readRDS("results/from_kde.rds")
+major_minor <- function(v) paste(unlist(package_version(v))[1:2],
+                                 collapse = ".")
+if (major_minor(res$proxymix_version) !=
+    major_minor(as.character(packageVersion("proxymix")))) {
+  stop("results/from_kde.rds was built under proxymix ",
+       res$proxymix_version, ", but this is proxymix ",
+       packageVersion("proxymix"), ". Rerun the simulation and ",
+       "data-raw/vignette_results/from_kde.R.", call. = FALSE)
+}
 
-An analyst has a kernel density estimate of a two-dimensional quantity and a
-pipeline that needs to keep conditioning on one coordinate and integrating
-out the other. Every such query against the kernel estimate is a numerical
-sweep over `n` kernels, and there is no algebra to compose. The question is:
-*I have a kernel density estimate and I need marginals and conditionals in
-closed form -- what does compressing it into a K-component mixture cost me?*
+## Small numbers are written as plain decimals rather than in the
+## scientific notation that knitr's inline hook would otherwise use.
+fixed <- function(v, digits) {
+  format(round(v, digits), nsmall = digits, scientific = FALSE)
+}
+```
 
-## What
+## The problem
 
-A kernel density estimate gives a smooth, non-parametric density from a
-sample of `n` points, at three operational costs. Integrating out a
-coordinate has no closed form and requires a numerical sweep over the kernel
-mixture. Conditioning has no analogue of the Schur complement, so one has to
-resample or build a conditional estimate per query. And there is no native
-aggregation algebra: pushforwards through linear operators, observation
-channel updates and block sums all collapse to Monte Carlo.
+A kernel density estimate turns a sample into a smooth density without
+assuming a shape for it. It places a small normal bell curve, called a
+kernel, on every data point and averages them. The width of the kernels is
+called the bandwidth. A narrow bandwidth keeps every bump in the sample, and
+a wide one smooths them away.
 
-`from_kde()` compresses the kernel estimate into an `N`-component Gaussian
-mixture proxy, with `N` typically much smaller than `n`, by treating the
-estimate as a normalised, evaluable target and running regime (iii) KLD-EM
-against it. Its `bandwidth` argument takes a rule of thumb by name
-(`"silverman"`, `"scott"`) or a numeric value. By default the fit uses
-`is_size = 10000 + 2500 * N` importance draws and holds out a further
-`ceiling(is_size / 4)` independent draws, set by `validation_size`, on which
-it reports the held-out divergence `validation_kld`. The proxy
-then supports the full closed-form operator set exposed by the rest of the
-package -- `dgmm()`, `rgmm()`, `gmm_marginalise()`,
-`gmm_conditionalise()`, and the affine-Gaussian calculus of
-`gmm_affine()` and `gmm_observe()`.
+The estimate from 300 data points is therefore a mixture of 300 normal
+distributions. Both its density at a point and the distribution of one variable when
+another is held at a fixed value involve all 300 of them. The work grows
+with the size of the sample. This matters when an analysis repeats such
+steps many times.
 
-`ess_summary()` reports the importance-sampling diagnostics of the
-compression: the effective sample size, the largest self-normalised weight,
-and the held-out divergence `validation_kld`, which is the figure to quote
-for the accuracy of the fit. `hellinger_mc()` gives a Monte
-Carlo squared Hellinger distance between the proxy and its target, which is
-meaningful here because a kernel estimate is normalised by construction.
+proxymix replaces the estimate with a mixture of a few normal distributions,
+for example two or five, chosen to be as close to the estimate as possible.
+This smaller mixture is called the proxy. The same steps on the proxy
+involve only its few components.
 
-This is not new science. It is a practical bridge between a non-parametric
-density estimate and a parametric closed-form mixture representation. The
-bias inherited from the kernel estimate is reproduced in the proxy, and the
-bandwidth controls the bias-variance trade-off.
+This vignette compresses the estimate of a sample from two groups, measures
+what the compression loses, and compares the result with five other R
+packages.
 
-## Do
+## Package capabilities
 
-### Recovering a known mixture
+- `from_kde()` builds the kernel density estimate from a data matrix and
+  compresses it into an `N`-component Gaussian mixture, a sum of `N` normal
+  distributions. Its `bandwidth` argument takes a rule of thumb by name
+  (`"silverman"` or `"scott"`, after Silverman, 1986, and Scott, 1992) or
+  numbers, a single number for all variables or one number per variable.
+- `from_kde()` fits the proxy with the package's method for a density that
+  can be evaluated but not sampled (van der Hoek and Elliott, 2024),
+  described in *Fitting a proxy to a density you cannot sample*. It draws `is_size` trial points from a
+  simple wide distribution and weights each by how likely it is under the
+  estimate, `10000 + 2500 * N` points by default. It also draws fresh points that are
+  not used in the fit. By default it adds them in batches of `is_size` until
+  the KL estimate is precise, up to `10 * is_size` points.
+- `ess_summary()` reports the quality of the weighted draws and the
+  Kullback-Leibler (KL) divergence between the proxy and the estimate,
+  measured on the fresh draws (`validation_kld`). The KL divergence is zero
+  when two densities match and grows as they differ.
+- `hellinger_mc()` estimates a second distance between the proxy and the
+  estimate, the squared Hellinger distance, from fresh random draws. It lies
+  between 0, for identical densities, and 1.
+- `dgmm()`, `rgmm()`, `gmm_marginalise()` and `gmm_conditionalise()` give
+  density values, random draws, the distribution of one variable on its
+  own, and the distribution of one variable when another is held fixed.
+  `gmm_affine()` gives the distribution of a linear transformation of the
+  variables, and `gmm_observe()` updates the proxy after a measurement with
+  normal noise.
 
-Sample from a known bimodal mixture and ask `from_kde()` to recover it. The
-data here are synthetic: two unit-covariance Gaussians at $(-2, 0)$ and
-$(2, 0)$, with the same number of draws from each. The call sets `is_size` and
-`validation_size` explicitly to keep the vignette fast.
+## Addressing the problem
+
+### A sample from two groups
+
+The data are simulated, so the true density is known. Half of the 300
+points come from a normal distribution centred at $(-2, 0)$ and half from
+one centred at $(2, 0)$, both with unit variances and no correlation. The
+call fits a proxy with two components and uses Silverman's rule for the
+bandwidth. It sets `is_size` and `validation_size` below their defaults to
+keep the vignette fast.
 
 ```{r recover-bimodal}
 set.seed(20260601)
@@ -102,8 +134,10 @@ fit <- from_kde(
 fit
 ```
 
-The proxy components sit near the true means. Ordering the fitted components
-by their first coordinate makes the comparison with the truth direct.
+### The recovered groups
+
+Sorting the two fitted components by their first coordinate puts them in
+the same order as the true groups.
 
 ```{r recovered-means}
 mu_hat <- vapply(fit@means, function(mu) mu, numeric(2L))
@@ -127,37 +161,40 @@ knitr::kable(
   col.names = c("Component", "Fitted $x_1$", "Fitted $x_2$", "True $x_1$",
                 "True $x_2$", "Weight"),
   caption = paste0(
-    "The two recovered component means beside the means of the mixture the ",
-    nrow(x), " samples were drawn from."
+    "The means and weights of the two fitted components beside the means ",
+    "of the two groups the ", nrow(x), " points were drawn from."
   )
 )
 ```
 
-### Quality of the importance-sampled fit
+### Check the fit
 
-A healthy regime (iii) fit has an effective sample size close to `is_size`
-and a largest weight of a few parts in a thousand. The held-out
-`validation_kld` is the divergence estimated on an independent importance
-draw. The in-sample `kld_final` is computed on the draws the fit was tuned
-to, so it reads low; the two are printed side by side here.
+The effective sample size is the number of equally weighted draws that the
+weighted draws are worth. It should be close to the number of draws, and no
+single draw should carry much of the weight. The KL divergence is reported
+on the fresh draws, with its Monte Carlo standard error, the random error
+due to the finite number of draws. The KL divergence on the draws used for
+fitting reads too low, because the fit was tuned to those draws.
 
 ```{r fit-quality}
 es <- ess_summary(fit)
-c(is_size = es$is_size, ess = round(es$ess, 1),
-  ess_relative = round(es$ess_relative, 3),
-  max_weight = signif(es$max_weight, 3),
-  validation_size = es$validation_size)
-c(validation_kld = signif(es$validation_kld, 3),
-  validation_se = signif(fit@diagnostics$validation_mc_se, 3),
-  kld_final = signif(fit@diagnostics$kld_final, 3))
+print(data.frame(is_size = es$is_size, ess = round(es$ess, 1),
+                 ess_relative = round(es$ess_relative, 3),
+                 max_weight = signif(es$max_weight, 3)),
+      row.names = FALSE)
+print(data.frame(validation_size = es$validation_size,
+                 validation_kld = signif(es$validation_kld, 3),
+                 validation_se = signif(fit@diagnostics$validation_mc_se, 3)),
+      row.names = FALSE)
 ```
 
-### What the compression costs
+### What the compression loses
 
-The proxy and the kernel estimate are both normalised densities on the same
-space, so the distance between them can be integrated directly on a grid.
-The total variation distance is the natural currency: it is the largest
-difference in probability the two densities can assign to any event.
+The proxy and the kernel estimate are both densities on the same plane, so
+the gap between them can be added up on a fine grid. The total variation
+distance is half the total absolute gap. It is the largest difference
+between the probabilities that the two densities give to any region. The
+squared Hellinger distance comes from 10,000 fresh draws from the proxy.
 
 ```{r compression-cost}
 g1 <- seq(-6, 6, length.out = 160L)
@@ -170,76 +207,15 @@ grid$kde <- exp(fit@target@log_density(gm))
 grid$proxy <- dgmm(gm, fit)
 
 total_variation <- 0.5 * sum(abs(grid$kde - grid$proxy)) * cell
-hell <- hellinger_mc(fit, n_mc = 3000L, seed = 1L)
+hell <- hellinger_mc(fit, n_mc = 10000L, seed = 1L)
 c(total_variation = signif(total_variation, 3),
   hellinger_sq = signif(hell$h2, 3), hellinger_se = signif(hell$se, 3))
 ```
 
-### Bandwidth sensitivity
+The figure shows where the two densities differ. Both are drawn on the log
+scale with the same contour levels.
 
-Smaller bandwidths track the data more tightly, at lower bias and higher
-variance; larger bandwidths smooth the proxy. The proxy inherits this
-trade-off from the estimate it compresses.
-
-```{r bandwidth-sweep}
-bandwidth_grid <- c(0.2, 0.5, 1.0)
-fits <- lapply(bandwidth_grid, function(h) {
-  from_kde(x, N = 2L, bandwidth = h,
-           is_size = 1500L, max_iter = 40L, seed = 1L)
-})
-sweep_is <- fits[[1L]]@diagnostics$is_size
-sweep_vs <- fits[[1L]]@diagnostics$validation_size
-sweep_val <- vapply(fits, function(f) f@diagnostics$validation_kld,
-                    numeric(1L))
-sweep_se <- vapply(fits, function(f) f@diagnostics$validation_mc_se,
-                   numeric(1L))
-```
-
-```{r bandwidth-table, echo = FALSE}
-knitr::kable(
-  data.frame(
-    bandwidth = bandwidth_grid,
-    ess = round(vapply(fits, function(f) f@diagnostics$ess, numeric(1L)), 1),
-    max_weight = signif(
-      vapply(fits, function(f) f@diagnostics$max_weight, numeric(1L)), 3
-    ),
-    trace_sigma = round(
-      vapply(fits, function(f) sum(diag(f@covariances[[1L]])), numeric(1L)), 3
-    ),
-    val_kl = round(sweep_val, 4),
-    val_se = round(sweep_se, 4)
-  ),
-  row.names = FALSE,
-  col.names = c("Bandwidth", "Effective sample size", "Largest weight",
-                "Trace of $\\Sigma_1$", "Held-out KL", "Held-out KL SE"),
-  caption = paste0(
-    "Bandwidth sweep at ", sweep_is, " importance draws, with ", sweep_vs,
-    " held-out draws: a wider kernel gives a smoother target, an easier ",
-    "importance problem, and a broader first component."
-  )
-)
-```
-
-### Composing the compressed proxy
-
-Once compressed, the proxy is an ordinary mixture, so conditioning and
-sampling are exact algebra rather than a sweep over `r nrow(x)` kernels.
-
-```{r compose}
-slice <- gmm_conditionalise(fit, given = c(NA, 0))
-draws <- rgmm(200L, slice)
-c(components = gmm_n_components(slice), dimension = gmm_dim(slice),
-  draws = nrow(draws))
-```
-
-### Visualising the compression
-
-The contour comparison shows where the compression spends its error, which
-the summary distances cannot: the two contour sets are read on shared levels,
-so any place they part company is a place the proxy has smoothed the
-estimate.
-
-```{r visualise, eval = has_ggplot2, echo = has_ggplot2, fig.height = 4.5, fig.cap = "The mixture-proxy log-density contours (orange, dashed) track the kernel estimate's contours (blue, solid) closely across the sampled region, parting company only at the two modes where the two-component proxy smooths the kernel estimate's sampling bumps.", fig.alt = "Contour plot comparing the kernel-density log-density and the Gaussian-mixture proxy log-density on a planar grid, with sample points overlaid; the two contour sets nearly coincide."}
+```{r visualise, eval = has_ggplot2, echo = has_ggplot2, fig.height = 4.5, fig.cap = "Contours of the log-density of the kernel estimate (blue, solid) and of the two-component proxy (orange, dashed), on shared levels, over the 300 data points (grey). Around the two group centres the contours nearly coincide. On the outer, low-density levels the kernel estimate bends around single outlying points, and the proxy stays smooth.", fig.alt = "Contour plot of the kernel-density log-density and the Gaussian-mixture proxy log-density on a planar grid, with sample points overlaid. The inner contours around the two group centres nearly coincide; the outer contours of the kernel estimate are wavy and those of the proxy are smooth ellipses."}
 plot_grid <- expand.grid(
   x1 = seq(-5, 5, length.out = 80L),
   x2 = seq(-4, 4, length.out = 60L)
@@ -277,7 +253,7 @@ ggplot2::ggplot() +
   ) +
   ggplot2::coord_equal(expand = FALSE) +
   ggplot2::labs(
-    title = "Kernel estimate and Gaussian-mixture proxy",
+    title = "Kernel estimate and two-component proxy",
     subtitle = "log-density contours on shared levels",
     x = expression(x[1]), y = expression(x[2])
   ) +
@@ -292,121 +268,447 @@ cat("ggplot2 is not installed on this build, so the contour-comparison",
     "figure is skipped.\n")
 ```
 
-## Read
+### Use the proxy
 
-The `r gmm_n_components(fit)`-component proxy recovers the mixture the
-`r nrow(x)` samples came from: the fitted means differ from the true means by at most
-`r signif(mean_error, 2)`, and the two components carry weights of
-`r paste(sprintf("%.3f", sort(fit@weights)), collapse = " and ")` against a
-true half and half.
+`gmm_conditionalise(given = c(NA, 0))` gives the distribution of $x_1$ when
+$x_2$ equals 0, with `NA` marking the variable left free. The result is a
+mixture with the proxy's two components, and `rgmm()` draws from it in
+one call.
 
-The compression itself was a well-conditioned importance problem. The
-effective sample size was `r round(es$ess)` out of `r es$is_size` draws, or
-`r round(100 * es$ess_relative)` per cent, and the largest single weight was
-`r signif(es$max_weight, 2)`, so no handful of draws carried the fit. On
-`r es$validation_size` independent draws the held-out divergence
-`validation_kld` was `r signif(es$validation_kld, 2)`, with a Monte Carlo
-standard error of `r signif(fit@diagnostics$validation_mc_se, 2)`. The
-in-sample `kld_final` was `r signif(fit@diagnostics$kld_final, 2)`, lower
-because the fit minimises that same estimate, so the held-out value is the
-one to quote.
+```{r compose}
+slice <- gmm_conditionalise(fit, given = c(NA, 0))
+draws <- rgmm(200L, slice)
+c(components = gmm_n_components(slice), dimension = gmm_dim(slice),
+  draws = nrow(draws))
+```
 
-The cost of the compression is the direct answer to the question. Going from
-a `r nrow(x)`-kernel estimate to a `r gmm_n_components(fit)`-component mixture moves
-total variation by `r signif(total_variation, 2)`: the two densities agree on
-the probability of any event to within about
-`r round(100 * total_variation, 1)` percentage points. The Monte Carlo
-estimate of the squared Hellinger
-distance is `r signif(hell$h2, 2)`, with a standard error of
-`r signif(hell$se, 2)`, so about `r round(hell$h2 / hell$se, 1)` standard
-errors above zero. The figure shows where the remaining error sits: at the
-two modes, where a two-component proxy cannot follow the bumps that
-`r nrow(x)` finite samples put into the kernel estimate. What is bought
-with that is exact conditioning, marginalisation and sampling -- the slice
-taken above is a `r gmm_dim(slice)`-dimensional,
-`r gmm_n_components(slice)`-component mixture obtained by algebra, not by a
-sweep over kernels.
+### The effect of the bandwidth
 
-The bandwidth sweep shows the trade-off passing straight through the
-compression. A wider kernel gives a smoother target and an easier importance
-problem, and the effective sample size rises from
-`r round(fits[[1L]]@diagnostics$ess)` at bandwidth
+The proxy has the same smoothing as the estimate it compresses. The
+code below compresses the same sample with three bandwidths, at 1,500
+weighted draws. By default the fresh draws are added in batches until the
+standard error of the KL divergence is at most a tenth of the estimate, or
+at most 0.001 when the estimate is below 0.01, up to ten times `is_size`
+draws.
+
+```{r bandwidth-sweep}
+bandwidth_grid <- c(0.2, 0.5, 1.0)
+fits <- lapply(bandwidth_grid, function(h) {
+  from_kde(x, N = 2L, bandwidth = h,
+           is_size = 1500L, max_iter = 40L, seed = 1L)
+})
+sweep_is <- fits[[1L]]@diagnostics$is_size
+sweep_vs <- vapply(fits, function(f) f@diagnostics$validation_size,
+                   numeric(1L))
+sweep_val <- vapply(fits, function(f) f@diagnostics$validation_kld,
+                    numeric(1L))
+sweep_se <- vapply(fits, function(f) f@diagnostics$validation_mc_se,
+                   numeric(1L))
+```
+
+```{r bandwidth-check, include = FALSE}
+## spread of the left-hand component: the stored order of components can
+## differ between fits
+trace_left <- function(f) {
+  j <- which.min(vapply(f@means, function(mu) mu[1L], numeric(1L)))
+  sum(diag(f@covariances[[j]]))
+}
+## the prose below states that the KL divergence falls as the bandwidth
+## widens and that at the widest it is more than two standard errors above zero
+if (is.unsorted(rev(sweep_val)) || sweep_val[3L] <= 2 * sweep_se[3L]) {
+  stop("The text on the bandwidth sweep no longer matches the fits.",
+       call. = FALSE)
+}
+```
+
+```{r bandwidth-table, echo = FALSE}
+knitr::kable(
+  data.frame(
+    bandwidth = bandwidth_grid,
+    ess = round(vapply(fits, function(f) f@diagnostics$ess, numeric(1L)), 1),
+    max_weight = signif(
+      vapply(fits, function(f) f@diagnostics$max_weight, numeric(1L)), 3
+    ),
+    trace_sigma = round(vapply(fits, trace_left, numeric(1L)), 3),
+    fresh = sweep_vs,
+    val_kl = vapply(sweep_val, function(v) {
+      formatC(signif(v, 2), digits = 2, format = "fg", flag = "#")
+    }, character(1L)),
+    val_se = vapply(sweep_se, function(v) {
+      format(signif(v, 2), scientific = FALSE)
+    }, character(1L))
+  ),
+  row.names = FALSE, align = "r",
+  col.names = c("Bandwidth", "Effective sample size", "Largest weight",
+                "Spread of left component", "Fresh draws", "KL, fresh draws",
+                "Standard error"),
+  caption = paste0(
+    "The same sample compressed with three bandwidths, at ", sweep_is,
+    " weighted draws. The spread of ",
+    "the left-hand component is the sum of its two variances."
+  )
+)
+```
+
+### Comparison with ks, np, KernSmooth, mclust and mixtools
+
+```{r compare-facts, include = FALSE}
+sim_value <- function(method, what) {
+  res$sim_tab[[what]][res$sim_tab$method == method]
+}
+paired_value <- function(method, what) {
+  res$paired[[what]][res$paired$method == method]
+}
+ise_k <- function(K) {
+  fixed(1000 * sim_value(paste0("proxymix, K = ", K), "ise"), 2)
+}
+query_ratio_ks <- res$query_ms[["ks, kde"]] /
+  res$query_ms[["proxymix, K = 3"]]
+query_ratio_bk <- res$query_ms[["proxymix, K = 3"]] /
+  res$query_ms[["KernSmooth, bkde2D"]]
+## the prose below reads these orderings from the stored results
+kernel_ise <- 1000 * c(sim_value("ks, kde", "ise"),
+                       sim_value("np, npudens", "ise"),
+                       sim_value("KernSmooth, bkde2D", "ise"))
+proxy_ise <- 1000 * vapply(c(3L, 5L, 8L), function(K) {
+  sim_value(paste0("proxymix, K = ", K), "ise")
+}, numeric(1L))
+mixture_ise <- 1000 * c(sim_value("mclust, G by BIC", "ise"),
+                        sim_value("mixtools, k = 3", "ise"))
+kernel_secs <- c(sim_value("ks, kde", "secs"),
+                 sim_value("np, npudens", "secs"),
+                 sim_value("KernSmooth, bkde2D", "secs"))
+if (!(max(proxy_ise[1:2]) < min(kernel_ise) &&
+      max(mixture_ise) < min(proxy_ise) &&
+      sim_value("proxymix, K = 3", "secs") > max(kernel_secs) &&
+      query_ratio_ks > 1 && query_ratio_bk > 1)) {
+  stop("The text on the comparison no longer matches ",
+       "results/from_kde.rds.", call. = FALSE)
+}
+```
+
+In a simulation, `from_kde()` was compared with three kernel estimators and
+two packages that fit a Gaussian mixture directly to the data. ks (Duong,
+2007) computed the kernel estimate with a bandwidth set from the data by a
+formula, its plug-in rule. `from_kde()` compressed that same estimate at 3, 5 and 8
+components. KernSmooth (Wand and Jones, 1995) computed the same estimate on
+a grid by binning the data, and np (Hayfield and Racine, 2008) chose its own bandwidths by
+cross-validation. mclust (Scrucca et al., 2016) chose its number of
+components by the Bayesian information criterion (BIC), a score that trades
+fit against the number of parameters. mixtools (Benaglia et al., 2009) was
+given the true number, three. Each method estimated the density of
+`r res$n_rep` datasets of `r res$n` points, drawn from a known mixture of
+three normal distributions in two dimensions. The measure is the integrated
+squared error: the squared gap between the estimated and the true density,
+added up over the plane. Smaller is better, and zero is a perfect estimate.
+
+```{r compare-table, echo = FALSE}
+method_order <- c("ks, kde", "KernSmooth, bkde2D", "np, npudens",
+                  "proxymix, K = 3", "proxymix, K = 5", "proxymix, K = 8",
+                  "mclust, G by BIC", "mixtools, k = 3")
+method_label <- c("ks", "KernSmooth", "np", "proxymix, 3 components",
+                  "proxymix, 5 components", "proxymix, 8 components",
+                  "mclust, components by BIC", "mixtools, 3 components")
+cmp_tbl <- data.frame(
+  method = method_label,
+  ise = 1000 * vapply(method_order, sim_value, numeric(1L), what = "ise"),
+  ise_se = 1000 * vapply(method_order, sim_value, numeric(1L),
+                         what = "ise_se"),
+  diff = c(NA, vapply(method_order[-1L], paired_value, numeric(1L),
+                      what = "mean")),
+  diff_se = c(NA, vapply(method_order[-1L], paired_value, numeric(1L),
+                         what = "se")),
+  secs = vapply(method_order, sim_value, numeric(1L), what = "secs"),
+  stringsAsFactors = FALSE
+)
+cmp_tbl$ise <- sprintf("%.3f (%.3f)", cmp_tbl$ise, cmp_tbl$ise_se)
+cmp_tbl$diff <- ifelse(is.na(cmp_tbl$diff), "",
+                       sprintf("%.4f (%.4f)", cmp_tbl$diff, cmp_tbl$diff_se))
+cmp_tbl$secs <- sprintf("%.3f", cmp_tbl$secs)
+knitr::kable(
+  cmp_tbl[, c("method", "ise", "diff", "secs")],
+  row.names = FALSE, align = c("l", "r", "r", "r"),
+  col.names = c("Method", "Error", "Difference from ks",
+                "Seconds per fit"),
+  caption = paste0(
+    "Integrated squared error against the true density, in thousandths, ",
+    "averaged over ", res$n_rep, " simulated datasets of ", res$n,
+    " points, with its standard error in brackets. The difference from ks ",
+    "is taken dataset by dataset. A negative value means a smaller error ",
+    "than ks. Seconds per fit is the mean time to fit one dataset."
+  )
+)
+```
+
+At 3 and 5 components, the proxy had a smaller error than all three kernel
+estimators: `r ise_k(3)` and `r ise_k(5)` thousandths, against
+`r fixed(min(kernel_ise), 2)` to `r fixed(max(kernel_ise), 2)`. A proxy
+with few components cannot follow the random bumps in the kernel estimate.
+Here that smoothing moved it closer to the truth. At 8 components the
+proxy was level with ks (difference
+`r fixed(paired_value("proxymix, K = 8", "mean"), 3)`, standard error
+`r fixed(paired_value("proxymix, K = 8", "se"), 3)`) and slightly behind
+np. mclust and mixtools, which fit a mixture to the data directly, had the
+smallest errors of all, `r fixed(mixture_ise[1L], 2)` and
+`r fixed(mixture_ise[2L], 2)` thousandths. Unlike mclust, mixtools did
+not have to choose the number of components. The true density in this
+design is itself a mixture of three normal distributions, which favours
+every method that fits a mixture.
+
+```{r fit-time-check, include = FALSE}
+## the sentence below orders the fit times
+px3 <- sim_value("proxymix, K = 3", "secs")
+stopifnot(px3 > sim_value("mclust, G by BIC", "secs"),
+          px3 > sim_value("ks, kde", "secs"),
+          sim_value("proxymix, K = 8", "secs") < sim_value("mixtools, k = 3", "secs"))
+```
+
+proxymix took `r fixed(sim_value("proxymix, K = 3", "secs"), 2)` to
+`r fixed(sim_value("proxymix, K = 8", "secs"), 2)` seconds per fit, slower
+than ks (`r fixed(sim_value("ks, kde", "secs"), 2)`), np
+(`r fixed(sim_value("np, npudens", "secs"), 2)`), KernSmooth
+(`r fixed(sim_value("KernSmooth, bkde2D", "secs"), 3)`) and mclust
+(`r fixed(sim_value("mclust, G by BIC", "secs"), 2)`), and faster than
+mixtools (`r fixed(sim_value("mixtools, k = 3", "secs"), 1)`).
+Query times were measured on the Old Faithful data (Azzalini and Bowman,
+1990) and the Palmer penguins data (Gorman et al., 2014; Horst et al.,
+2022), as the median of five timings on one computer, averaged over the two
+datasets. A query here is the conditional mean and the 90% conditional
+quantile of one variable given the other. On the three-component proxy a
+query took `r fixed(res$query_ms[["proxymix, K = 3"]], 2)` milliseconds
+(ms). That is about `r round(query_ratio_ks)` times faster than the
+`r fixed(res$query_ms[["ks, kde"]], 1)` ms for the ks estimate evaluated on
+a grid of 401 points, and about `r round(query_ratio_bk)` times slower than
+the `r fixed(res$query_ms[["KernSmooth, bkde2D"]], 3)` ms for the
+KernSmooth grid. Queries on the mixtures from mclust and from mixtools, here
+with two components, took `r fixed(res$query_ms[["mclust, G by BIC"]], 2)`
+and `r fixed(res$query_ms[["mixtools, k = 2"]], 2)` ms, and queries on np
+took `r fixed(res$query_ms[["np, npcdens"]], 2)` ms.
+
+The code below fits one simulated dataset with all six packages and
+computes the integrated squared error of each. It repeats the simulation
+code for a single dataset. It needs ks, np, mclust and mixtools from CRAN
+(KernSmooth ships with R), and it is not run when this vignette is built.
+
+```{r compare-code, eval = FALSE}
+library(proxymix)
+library(mclust)
+library(mixtools)
+library(np)
+options(np.messages = FALSE)
+
+# one dataset of 500 points from a mixture of three normal distributions
+truth <- list(
+  weights = c(0.35, 0.35, 0.30),
+  means = list(c(-2, 0), c(2, 1), c(0, 4)),
+  covs = list(diag(2), matrix(c(1, 0.5, 0.5, 1), 2L), 0.6 * diag(2))
+)
+set.seed(1L)
+n <- 500L
+k <- sample.int(3L, n, replace = TRUE, prob = truth$weights)
+x <- matrix(NA_real_, n, 2L)
+for (j in seq_len(3L)) {
+  s <- k == j
+  x[s, ] <- mvnfast::rmvn(sum(s), truth$means[[j]], truth$covs[[j]])
+}
+
+# integrated squared error against the true density, on a grid
+g1 <- seq(-6, 6, length.out = 121L)
+g2 <- seq(-4, 8, length.out = 121L)
+grid <- as.matrix(expand.grid(x1 = g1, x2 = g2))
+cell <- (g1[2L] - g1[1L]) * (g2[2L] - g2[1L])
+f_true <- Reduce(`+`, lapply(seq_len(3L), function(j) {
+  truth$weights[j] * mvnfast::dmvn(grid, truth$means[[j]], truth$covs[[j]])
+}))
+ise <- function(f_hat) sum((f_hat - f_true)^2) * cell
+as_gmm <- function(w, mu, sigma) {
+  gmm(weights = w, means = mu, covariances = sigma)
+}
+
+# ks with its diagonal plug-in bandwidth, and proxymix compressing the same estimate
+h <- sqrt(diag(ks::Hpi.diag(x)))
+kd <- ks::kde(x, H = diag(h^2), eval.points = grid)
+f <- from_kde(x, N = 3L, bandwidth = h, is_size = 20000L, seed = 1L)
+
+mc <- Mclust(x, verbose = FALSE)
+g_mc <- as_gmm(
+  mc$parameters$pro,
+  lapply(seq_len(mc$G), function(j) mc$parameters$mean[, j]),
+  lapply(seq_len(mc$G), function(j) mc$parameters$variance$sigma[, , j])
+)
+mt <- mvnormalmixEM(x, k = 3L)
+nd <- npudens(npudensbw(x))
+f_np <- predict(nd, newdata = data.frame(grid))
+bk <- KernSmooth::bkde2D(x, bandwidth = h, gridsize = c(121L, 121L),
+                         range.x = list(range(g1), range(g2)))
+
+1000 * c(ks = ise(kd$estimate),
+         proxymix = ise(dgmm(grid, f)),
+         mclust = ise(dgmm(grid, g_mc)),
+         mixtools = ise(dgmm(grid, as_gmm(mt$lambda, mt$mu, mt$sigma))),
+         np = ise(f_np),
+         KernSmooth = ise(as.vector(bk$fhat)))
+```
+
+The [extended version of this
+article](https://max578.github.io/proxymix/articles/extended/from_kde.html)
+gives the full simulation and the conditional queries on the Old Faithful
+and Palmer penguins data.
+
+## Interpretation
+
+The proxy recovers the two groups the `r nrow(x)` points came from. Its means differ from the true means by at
+most `r signif(mean_error, 2)`, and its weights are
+`r paste(sprintf("%.3f", sort(fit@weights)), collapse = " and ")`, against
+0.5 for each group.
+
+The diagnostics of the weighted draws show no problem. The effective sample size was
+`r round(es$ess)` out of `r es$is_size`, or
+`r round(100 * es$ess_relative)` per cent, and the heaviest single draw held
+`r signif(es$max_weight, 2)` of the total weight. On `r es$validation_size`
+fresh draws the KL divergence between the proxy and the kernel estimate was
+`r signif(es$validation_kld, 2)`, with a standard error of
+`r signif(fit@diagnostics$validation_mc_se, 2)`.
+
+The total variation distance between the kernel estimate and the proxy is
+`r fixed(total_variation, 3)`. The two densities therefore give any region
+probabilities that differ by at most about
+`r fixed(100 * total_variation, 1)` percentage points. The squared
+Hellinger distance is `r fixed(hell$h2, 4)`, with a standard error of
+`r fixed(hell$se, 4)`, about `r round(hell$h2 / hell$se)` standard errors
+above zero. The figure shows where the difference lies: in the outer,
+low-density region, where the kernel estimate follows single points.
+The gain is in size: the conditional distribution computed above has
+`r gmm_n_components(slice)` components. The same conditional of the kernel
+estimate also has an exact formula, but it has `r nrow(x)` components.
+
+The bandwidth affects the proxy as it affects the estimate. A wider bandwidth gives
+a smoother estimate that is easier to fit. The effective sample size rises
+from `r round(fits[[1L]]@diagnostics$ess)` at bandwidth
 `r sprintf("%.1f", bandwidth_grid[1L])` to
 `r round(fits[[3L]]@diagnostics$ess)` at bandwidth
-`r sprintf("%.1f", bandwidth_grid[3L])`, out of `r sweep_is` draws. The first
-component's covariance trace widens over the same sweep, from
-`r round(sum(diag(fits[[1L]]@covariances[[1L]])), 2)` to
-`r round(sum(diag(fits[[3L]]@covariances[[1L]])), 2)`, which is the proxy
-inheriting the estimate's smoothing rather than resisting it. The held-out
-divergence falls from `r signif(sweep_val[1L], 2)` at bandwidth
-`r sprintf("%.1f", bandwidth_grid[1L])` to
-`r signif(sweep_val[2L], 2)` at bandwidth
-`r sprintf("%.1f", bandwidth_grid[2L])`: at the narrowest bandwidth the
-kernel estimate keeps the sample's bumps, which two components cannot
-follow. At bandwidth `r sprintf("%.1f", bandwidth_grid[3L])` it is within
-one standard error of zero.
+`r sprintf("%.1f", bandwidth_grid[3L])`, out of `r sweep_is` draws. The
+spread of the left-hand component grows from
+`r round(trace_left(fits[[1L]]), 2)` to
+`r round(trace_left(fits[[3L]]), 2)`, because the proxy
+copies the extra smoothing. The KL divergence on fresh draws falls from
+`r signif(sweep_val[1L], 2)` at bandwidth
+`r sprintf("%.1f", bandwidth_grid[1L])` to `r signif(sweep_val[2L], 2)` at
+bandwidth `r sprintf("%.1f", bandwidth_grid[2L])`. At the narrowest
+bandwidth the estimate keeps the bumps of the sample, which two components
+cannot follow. At bandwidth `r sprintf("%.1f", bandwidth_grid[3L])` the
+KL divergence on fresh draws is
+`r format(signif(sweep_val[3L], 2), scientific = FALSE)`, with a standard
+error of `r format(signif(sweep_se[3L], 1), scientific = FALSE)`. It is
+small but above zero: two components do not reproduce even the smoothest
+of the three estimates exactly.
 
-## Limits
+## Limitations
 
-`from_kde()` is well tested for five dimensions or fewer. It warns between
-six and ten and refuses above ten. Regime (iii) is driven by importance
-sampling, whose effective sample size falls sharply in high dimensions, and
-this vignette exercises the two-dimensional case only. For richer ambient
-spaces, compose a low-dimensional proxy with the affine-Gaussian operator
-calculus rather than fitting in the ambient space.
+`from_kde()` is tested for up to five variables. It warns between six and
+ten and refuses more than ten. Weighted trial draws lose efficiency quickly
+as the number of variables grows. This vignette uses two. For more
+variables, fit a proxy in a few variables and extend it with `gmm_affine()`
+and the other exact operations instead.
 
-Only scalar and diagonal bandwidths are supported. A full-matrix bandwidth
-effectively encodes a covariance estimate and blurs the distinction between
-the kernel estimate and the mixture; where that is what is wanted, fit the
-mixture directly with `fit_proxymix(regime = "sample")`.
+The bandwidth must be one number or one number per variable. A full
+bandwidth matrix, with correlations, is not supported. Such a matrix acts
+like a covariance estimate. If that is what you want, fit the mixture to
+the data directly with `fit_proxymix(regime = "sample")`.
 
-A kernel estimate is normalised by construction, so the returned `gmm_target`
-declares `normalised = TRUE` and `log_normalizer = 0`. That is what makes
-`hellinger_mc()` meaningful here and lets the divergence diagnostics report
-absolute values rather than shifted ones. A target that is not normalised
-does not support the same reading.
+A kernel estimate always integrates to one, and `from_kde()` marks it as
+normalised. Because of this, the KL divergence and the Hellinger distance
+above measure the gap itself. For a density that is not normalised, both
+are off by an unknown amount.
 
-The constructor does not choose the bandwidth. Use the conventional rules of
-thumb, passed by name, or a cross-validation procedure outside the package,
-and pass the chosen bandwidth in. The sweep above shows the consequences of
-the choice; it does not make the choice.
+`from_kde()` does not choose the bandwidth. Choose it with a rule of thumb,
+by name, or by cross-validation outside the package, and pass it in. The
+proxy keeps the errors of the estimate it compresses, including those due to
+the bandwidth.
 
-Finally, the compression earns its place only in some pipelines. Where the
-goal is simply to find a Gaussian-mixture density given samples, the
-classical expectation-maximisation regime is more direct, fits in linear
-time, and does not pay the regime (iii) importance-sampling tax. Reach for
-`from_kde()` when the kernel estimate's smoothing is itself a step in the
-pipeline, or when its bias-variance trade-off is part of what is being
-validated downstream.
+When the aim is only a Gaussian mixture for a sample, fitting the mixture
+to the data directly is simpler and does not need weighted trial draws. In
+the comparison above, mclust and mixtools also reached a smaller error.
+`from_kde()` is useful when the kernel estimate itself is a step in the
+analysis, and later steps need its conditionals or marginals many times.
 
-## What to read next
+The comparison covers one well-separated mixture in two dimensions, one
+sample size and one bandwidth rule. Heavier tails, overlapping groups, more
+variables and bandwidths chosen by cross-validation were not tested. The
+query times come from two real datasets on one computer and change from run
+to run.
 
-*Choosing between the three fitting regimes* sets out why compressing an
-evaluable-but-unsampleable target is regime (iii) work, and what the
-classical expectation-maximisation regime would do with the same samples
-instead. *The closed-form operator calculus on a mixture* is the payoff of
-the compression: the marginalisation, conditioning, pushforward and update
-operators that the kernel estimate could not offer. *One mixture, many
-methods* places the kernel estimate and the compressed proxy on a single
-axis running from one global component to one component per datum.
+## Further reading
+
+*Choosing between the three fitting regimes* explains the method
+`from_kde()` uses and what fitting a mixture directly to the same data would
+do instead.
+
+*The closed-form operator calculus on a mixture* covers the exact
+operations, such as conditioning and linear transformation, that the proxy
+makes available.
+
+*One mixture, many methods* places the kernel estimate and the compressed
+proxy on one scale, from a single component to one component per data
+point.
 
 ## References
 
-* Hoek, J. van der and Elliott, R. J. (2024). *Mixtures of multivariate
-  Gaussians.* Stochastic Analysis and Applications.
-  <doi:10.1080/07362994.2024.2372605>.
-* Silverman, B. W. (1986). *Density Estimation for Statistics and Data
-  Analysis.* CRC Press.
-* Scott, D. W. (1992). *Multivariate Density Estimation: Theory,
-  Practice, and Visualization.* Wiley.
+Azzalini, A. and Bowman, A. W. (1990). *A look at some data on the Old
+Faithful geyser.* Applied Statistics 39(3), 357--365.
+<https://doi.org/10.2307/2347385>.
+
+Benaglia, T., Chauveau, D., Hunter, D. R. and Young, D. S. (2009).
+*mixtools: An R package for analyzing finite mixture models.* Journal of
+Statistical Software 32(6), 1--29.
+<https://doi.org/10.18637/jss.v032.i06>.
+
+Duong, T. (2007). *ks: Kernel density estimation and kernel discriminant
+analysis for multivariate data in R.* Journal of Statistical Software
+21(7), 1--16. <https://doi.org/10.18637/jss.v021.i07>.
+
+Gorman, K. B., Williams, T. D. and Fraser, W. R. (2014). *Ecological
+sexual dimorphism and environmental variability within a community of
+Antarctic penguins (genus Pygoscelis).* PLoS ONE 9(3), e90081.
+<https://doi.org/10.1371/journal.pone.0090081>.
+
+Hayfield, T. and Racine, J. S. (2008). *Nonparametric econometrics: The np
+package.* Journal of Statistical Software 27(5), 1--32.
+<https://doi.org/10.18637/jss.v027.i05>.
+
+Hoek, J. van der and Elliott, R. J. (2024). *Mixtures of multivariate
+Gaussians.* Stochastic Analysis and Applications.
+<https://doi.org/10.1080/07362994.2024.2372605>.
+
+Horst, A. M., Presmanes Hill, A. and Gorman, K. B. (2022). *Palmer
+Archipelago penguins data in the palmerpenguins R package: An alternative
+to Anderson's irises.* The R Journal 14(1), 244--254.
+<https://doi.org/10.32614/RJ-2022-020>.
+
+Scott, D. W. (1992). *Multivariate Density Estimation: Theory, Practice,
+and Visualization.* Wiley.
+
+Scrucca, L., Fop, M., Murphy, T. B. and Raftery, A. E. (2016). *mclust 5:
+Clustering, classification and density estimation using Gaussian finite
+mixture models.* The R Journal 8(1), 289--317.
+<https://doi.org/10.32614/RJ-2016-021>.
+
+Silverman, B. W. (1986). *Density Estimation for Statistics and Data
+Analysis.* Chapman and Hall.
+
+Wand, M. P. and Jones, M. C. (1995). *Kernel Smoothing.* Chapman and Hall.
 
 ## Reproduce
 
-The ambient seed is 20260601, and every `from_kde()` call additionally
-passes `seed = 1L`, so the importance draws are reproducible independently of
-the ambient random-number state. The Monte Carlo Hellinger distance is drawn
-under its own `seed = 1L`.
+The data are generated with seed `20260601`, and every `from_kde()` call
+passes `seed = 1L`, so the weighted draws are reproducible. `hellinger_mc()`
+uses its own `seed = 1L`. The comparison is read from stored results of a
+simulation run under proxymix `r res$proxymix_version`, ks
+`r res$versions[["ks"]]`, np `r res$versions[["np"]]`, KernSmooth
+`r res$versions[["KernSmooth"]]`, mclust `r res$versions[["mclust"]]` and
+mixtools `r res$versions[["mixtools"]]`, which took about
+`r round(res$elapsed_secs / 60)` minutes on one core.
 
-```{r session-info}
+```{r session-info, collapse = FALSE, class.output = "session-info"}
 sessionInfo()
 ```

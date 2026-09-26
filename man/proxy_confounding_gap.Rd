@@ -25,12 +25,19 @@ ignorability the two coincide and \eqn{\Delta \equiv 0}; a non-zero gap is a
 fitted regime confounded treatment and outcome beyond \code{X} -- not a
 correction the data licenses.
 }
+\details{
+When each regime holds a single treatment arm, as often happens with a
+binary treatment, the within-regime effect is zero, the gap equals the whole
+estimated effect, and a warning of class \code{proxymix_constant_treatment} is
+raised.
+}
 \examples{
 set.seed(1)
 n <- 600L
+u <- stats::rbinom(n, 1L, 0.5) # unobserved group
 x <- stats::rnorm(n)
-t <- stats::rbinom(n, 1L, 0.5)
-y <- 0.5 * t + x + stats::rnorm(n, sd = 0.5)
+t <- stats::rbinom(n, 1L, 0.3 + 0.4 * u)
+y <- 1 + 5 * u + 0.5 * t + x + stats::rnorm(n, sd = 0.5)
 dat <- data.frame(y = y, t = t, x = x)
 m <- fit_uplift(dat, "y", "t", "x", N = 2L, regime = "sample",
                 max_iter = 80L, seed = 1L)

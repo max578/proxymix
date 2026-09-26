@@ -346,7 +346,7 @@ The competitors install from CRAN once and load as usual:
 
 ```{r install-competitors, eval = FALSE}
 install.packages(c("GenSA", "DEoptim", "cmaes", "nloptr", "optimx",
-                   "mclust"))
+                   "mclust", "MASS"))
 ```
 
 ```{r load-competitors, eval = run_illustration, message = FALSE}
@@ -1046,7 +1046,7 @@ of up to `r fixed(mcse_rate, 2)`.
 In this run the map reported more Himmelblau basins per run than the three
 single-point optimisers, which report one point by construction, and fewer
 than the two multi-start methods, which used at most
-`r round(100 * multistart_share)` per cent of its evaluations. At the shared budget GenSA and DEoptim reached a median
+`r ceiling(100 * multistart_share)` per cent of its evaluations. At the shared budget GenSA and DEoptim reached a median
 best value below
 `r sci_above(max(sim$sim_tab$best_value[sim$sim_tab$method %in% c("GenSA", "DEoptim")]))`
 on both functions and cmaes on Himmelblau's function only, while the map's
@@ -1061,7 +1061,7 @@ membership, and default settings for the competitors, and it does not cover
 higher dimensions, noisy objectives or budgets between 5000 and 26 000
 evaluations.
 
-## Where next
+## Further reading
 
 *Choosing between the three fitting regimes* explains why an objective that
 can be evaluated but not sampled lands in regime (iii), and what the other

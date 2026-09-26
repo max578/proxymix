@@ -244,6 +244,7 @@ em_samples_one_run <- function(samples, init, target,
       max_weight = NA_real_,
       support_fraction = NA_real_,
       kld_final = NA_real_,
+      kld_approx = NA_real_,
       validation_gap = NA_real_
     ))
   )

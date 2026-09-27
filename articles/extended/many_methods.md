@@ -395,9 +395,9 @@ fits one joint mixture over (outcome, treatment, covariates), and every
 decision verb reads that single fit in closed form. Nothing re-fits per
 query.
 
-The design below is synthetic, chosen so that the truth is available as
-an oracle: the treatment effect is the known linear function
-$`\tau(x) = 0.5 + x`$, so the estimate can be scored against it.
+The design below is synthetic, chosen so that the true effect is known:
+the treatment effect is the linear function $`\tau(x) = 0.5 + x`$, so
+the estimate can be scored against it.
 
 ``` r
 

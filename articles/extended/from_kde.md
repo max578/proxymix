@@ -524,14 +524,14 @@ scores <- aggregate(
 
 | Method              | Mean (F) | 90% (F) | Mean (P) | 90% (P) | ms per query |
 |:--------------------|---------:|--------:|---------:|--------:|-------------:|
-| proxymix, K = 3     |     0.36 |    0.62 |     0.65 |    0.93 |         0.32 |
-| proxymix, K = 5     |     0.29 |    0.47 |     0.71 |    0.73 |         0.40 |
-| proxymix, K = 8     |     0.19 |    0.40 |     0.83 |    0.78 |         0.45 |
-| mclust, G by BIC    |     0.42 |    0.84 |     1.04 |    1.03 |         0.30 |
-| mixtools, k = 2     |     0.41 |    0.82 |     1.63 |    1.35 |         0.28 |
-| np, npcdens         |     0.32 |    0.37 |     0.43 |    0.54 |         1.22 |
-| KernSmooth, bkde2D  |     0.04 |    0.08 |     0.07 |    0.06 |         0.02 |
-| ks, kde (reference) |     0.00 |    0.00 |     0.00 |    0.00 |        10.50 |
+| proxymix, K = 3     |     0.36 |    0.62 |     0.65 |    0.93 |         0.65 |
+| proxymix, K = 5     |     0.29 |    0.47 |     0.71 |    0.73 |         0.90 |
+| proxymix, K = 8     |     0.19 |    0.40 |     0.83 |    0.78 |         1.30 |
+| mclust, G by BIC    |     0.42 |    0.84 |     1.04 |    1.03 |         1.00 |
+| mixtools, k = 2     |     0.41 |    0.82 |     1.63 |    1.35 |         0.95 |
+| np, npcdens         |     0.32 |    0.37 |     0.43 |    0.54 |         3.18 |
+| KernSmooth, bkde2D  |     0.04 |    0.08 |     0.07 |    0.06 |         0.05 |
+| ks, kde (reference) |     0.00 |    0.00 |     0.00 |    0.00 |        27.60 |
 
 Mean absolute error of the conditional mean (Mean) and of the 90%
 conditional quantile (90%) of $`y`$ given $`x`$ over 20 values of $`x`$,
@@ -620,8 +620,8 @@ all 272 or 342 kernels at 401 grid points. The same conditional also has
 a closed form, a mixture of 272 or 342 components, so its cost grows
 with $`n`$ either way; a conditional of the proxy is a Schur complement
 over $`K`$ components and a one-dimensional quantile. Averaged over the
-two datasets, a query on the three-component proxy took 0.32 ms against
-10.50 ms on the reference, about 33 times faster on this build. np’s
+two datasets, a query on the three-component proxy took 0.65 ms against
+27.60 ms on the reference, about 42 times faster on this build. np’s
 query is cheaper than the reference, since its bandwidth search is done
 at fit time, and dearer than the mixtures. The binned KernSmooth grid is
 the cheapest of all, since a conditional is one interpolation between
@@ -793,7 +793,7 @@ its Monte Carlo standard error, and the mean time of one fit. {.table}
 
 In this run proxymix came out ahead of the three kernel estimators on
 integrated squared error at $`K`$ = 3 and 5 and level with ks at $`K`$ =
-8, and a conditional query on the three-component proxy was about 33
+8, and a conditional query on the three-component proxy was about 42
 times faster, averaged over the two datasets, than one on the ks
 estimate it compresses, evaluated on a grid of 401 values. mclust and
 mixtools, fitted directly to the data, had lower integrated squared

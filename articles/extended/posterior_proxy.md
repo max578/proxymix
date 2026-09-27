@@ -738,10 +738,10 @@ summ_bt <- summarise_draws(getSample(bt_aff, start = 1000L))
 | Method | Mean | SD | Endpoints | $`P(\beta_j > 0)`$ | $`\log Z`$ | Seconds | Settings |
 |:---|---:|---:|---:|---:|---:|---:|---:|
 | NUTS, 4000 draws | 0.017 | 0.009 | 0.044 | 0.0005 | 0.0003 | 26.94 | 3 |
-| proxymix | 0.020 | 0.007 | 0.030 | 0.0002 | 0.0009 | 1.81 | 5 |
+| proxymix | 0.020 | 0.007 | 0.030 | 0.0002 | 0.0009 | 2.52 | 5 |
 | Laplace | 0.032 | 0.004 | 0.038 | 0.0007 | 0.0035 | 0.01 | 1 |
-| INLA | 0.008 | 0.004 | 0.015 | 0.0004 | 0.0035 | 1.49 | 0 |
-| DEzs | 0.247 | 1.228 | 2.296 | 0.0378 | – | 0.88 | 2 |
+| INLA | 0.008 | 0.004 | 0.015 | 0.0004 | 0.0035 | 2.47 | 0 |
+| DEzs | 0.247 | 1.228 | 2.296 | 0.0378 | – | 1.28 | 2 |
 
 Error of each method against the 40 000-draw NUTS reference on the
 Affairs probit posterior: mean, SD and interval endpoints in units of
@@ -782,9 +782,9 @@ the first 1000 per chain discarded, returns standard deviations 1.228
 reference standard deviations off on this posterior, whose covariates
 are on their raw scales. proxymix’s 95 per cent ensemble intervals on
 the posterior means contain the reference mean for three of the five
-coefficients, at a further 0.4 s. On wall time the order, fastest first,
-is the Laplace approximation (0.01 s), DEzs (0.88 s), INLA (1.49 s),
-proxymix (1.81 s) and the 4000-draw NUTS run (26.94 s).
+coefficients, at a further 0.6 s. On wall time the order, fastest first,
+is the Laplace approximation (0.01 s), DEzs (1.28 s), INLA (2.47 s),
+proxymix (2.52 s) and the 4000-draw NUTS run (26.94 s).
 
 ### A simulation benchmark
 

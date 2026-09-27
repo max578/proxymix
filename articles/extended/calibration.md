@@ -473,13 +473,13 @@ geyser_res <- do.call(rbind, geyser_res)
 
 | Method           | Evaluations | Reported | Excess over mclust | Basins | Seconds |
 |:-----------------|------------:|---------:|-------------------:|:-------|--------:|
-| proxymix         |        4176 |        6 |              34.06 | M1, M2 |    0.18 |
-| proxymix, 26 000 |       20582 |        9 |               1.01 | M1, M2 |    1.11 |
-| GenSA            |        5000 |        1 |              -0.01 | M2     |    0.05 |
-| DEoptim          |        5000 |        1 |               1.02 | M1     |    0.04 |
-| cmaes            |        5000 |        1 |              -0.01 | M1     |    0.08 |
-| nloptr           |        5636 |       20 |              -0.01 | M1, M2 |    0.05 |
-| optimx           |        7161 |       20 |              -0.01 | M1, M2 |    0.06 |
+| proxymix         |        4176 |        6 |              34.06 | M1, M2 |    0.29 |
+| proxymix, 26 000 |       20582 |        9 |               1.01 | M1, M2 |    2.04 |
+| GenSA            |        5000 |        1 |              -0.01 | M2     |    0.07 |
+| DEoptim          |        5000 |        1 |               1.02 | M1     |    0.09 |
+| cmaes            |        5000 |        1 |              -0.01 | M1     |    0.16 |
+| nloptr           |        5636 |       20 |              -0.01 | M1, M2 |    0.11 |
+| optimx           |        7161 |       20 |              -0.01 | M1, M2 |    0.14 |
 
 Each method on the Old Faithful likelihood at a budget of 5000 objective
 evaluations: the negative log-likelihood of its best reported solution

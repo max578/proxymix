@@ -34,3 +34,5 @@ Authors:
 
 - Max Moldovan <max.moldovan@gmail.com>
   ([ORCID](https://orcid.org/0000-0001-9680-8474))
+
+- John van der Hoek <john.vanderhoek@adelaide.edu.au>

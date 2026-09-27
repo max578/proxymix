@@ -262,7 +262,7 @@ log-likelihood; KLD-EM drives down the importance-sampled
 Kullback-Leibler divergence, estimated on the draws the fit is tuned to,
 which can fall below zero.
 
-### Regimes (i) and (iii) at N = 1, against an exact oracle
+### Regimes (i) and (iii) at N = 1, against the exact answer
 
 At `N = 1` both regime (i) and regime (iii) target the KL-optimal single
 Gaussian, so they should agree. They are compared here on the banana
@@ -315,7 +315,7 @@ data.frame(value = signif(unlist(n1), 3L))
 #> closer        3.4100
 ```
 
-| Source | Reads | Trace of covariance | Error against oracle |
+| Source | Reads | Trace of covariance | Error against exact value |
 |:---|:---|---:|---:|
 | regime (i), moment match | the attached samples | 2.678 | 0.178 |
 | regime (iii), KLD-EM | the log-density | 2.448 | -0.052 |
@@ -325,7 +325,7 @@ data.frame(value = signif(unlist(n1), 3L))
 The single-Gaussian proxy at `N = 1`, fitted two ways and scored against
 the exact moments of the banana density. The error is the trace minus
 the exact trace, so a negative error is an understatement. The final row
-is the oracle, so its error is zero by construction. {.table}
+is the exact value, so its error is zero by construction. {.table}
 
 The attached samples and the importance draws are one realisation each.
 Repeating both over fresh draws shows how far each trace moves by
@@ -426,15 +426,15 @@ against the other. On a target outside the Gaussian-mixture family the
 two regimes minimise genuinely different objectives, and the fits
 separate.
 
-The `N = 1` oracle is closed form only because the banana is a warped
-Gaussian. A grid quadrature of the same moments on $`[-8, 8]^2`$, with
-400 points a side, leaves out $`6.4 \times 10^{-5}`$ of the mass and
-puts the trace at 2.494, 0.006 below the exact value, because the mass
-it leaves out lies far out in the $`x_2`$ tail, where it weighs heavily
-on the variance. Grid quadrature is an independent check in two or three
-dimensions once its captured mass has been checked, and it stops being
-one well before the dimension at which importance sampling itself
-becomes the binding constraint.
+The exact `N = 1` answer is closed form only because the banana is a
+warped Gaussian. A grid quadrature of the same moments on $`[-8, 8]^2`$,
+with 400 points a side, leaves out $`6.4 \times 10^{-5}`$ of the mass
+and puts the trace at 2.494, 0.006 below the exact value, because the
+mass it leaves out lies far out in the $`x_2`$ tail, where it weighs
+heavily on the variance. Grid quadrature is an independent check in two
+or three dimensions once its captured mass has been checked, and it
+stops being one well before the dimension at which importance sampling
+itself becomes the binding constraint.
 
 Regime (ii) is compared above only with the package’s own regimes. The
 numerical illustration that follows puts it beside three established
@@ -651,11 +651,11 @@ two_stage_par <- two_stage$parameters[c("pro", "mean", "variance")]
 | Method | Reads | Held-out mean log-likelihood |    Seconds |
 |:---|:---|---:|---:|
 | proxymix, regime (i), N = 1 | the training half | -4.697 | 0.00 |
-| proxymix, regime (ii) | the training half | -4.311 | 0.00 |
+| proxymix, regime (ii) | the training half | -4.311 | 0.01 |
 | mclust | the training half | -4.318 | 0.01 |
-| mixtools | the training half | -4.312 | 0.17 |
-| flexmix | the training half | -4.308 | 0.07 |
-| proxymix, regime (iii), on the KDE | the KDE as a density | -4.277 | 0.05 |
+| mixtools | the training half | -4.312 | 0.19 |
+| flexmix | the training half | -4.308 | 0.09 |
+| proxymix, regime (iii), on the KDE | the KDE as a density | -4.277 | 0.07 |
 | NUTS draws from the KDE, then mclust | the KDE as a density | -4.281 | 151 |
 | kernel density estimate (ks) | the training half | -4.280 | – |
 
@@ -713,12 +713,12 @@ the upper levels.
 The four regime-(ii) fits are within 0.011 of one another on the
 held-out half: proxymix gives -4.311, mclust -4.318 with its VVE
 covariance structure, mixtools -4.312 and flexmix -4.308. The fits took
-0.00, 0.01, 0.17 and 0.07 s in that order. The single Gaussian of regime
+0.01, 0.01, 0.19 and 0.09 s in that order. The single Gaussian of regime
 (i) scores -4.697, the cost of one component for two clusters.
 
 Regime (iii) never saw the training points directly. From the kernel
 density estimate alone it reaches -4.277, beside the estimate’s own
--4.280, in 0.05 s with an effective sample size of 1725 of 4,000
+-4.280, in 0.07 s with an effective sample size of 1725 of 4,000
 importance draws. Its larger component carries weight 0.617, against
 0.610 for the regime-(ii) fit to the same half. The sampling route
 reaches -4.281 from 100,000 draws in 151 s for the whole reference
@@ -997,8 +997,8 @@ once rather than the one a local optimiser happened to reach.
 ## Reproduce
 
 The target carries `seed = 1L`, the regime-(ii) fit and both
-regime-(iii) fits on the bench are seeded with `seed = 1L`, the moment
-oracle is closed form, and the replicate traces use seeds 1 to 500 for
+regime-(iii) fits on the bench are seeded with `seed = 1L`, the exact
+moments are closed form, and the replicate traces use seeds 1 to 500 for
 the samples and 1 to 100 for the importance draws, so every number in
 the first five sections is reproducible from the package alone.
 

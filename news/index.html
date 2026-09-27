@@ -85,7 +85,8 @@
 </ul></div>
 <div class="section level4">
 <h4 id="documentation-0-16-0">Documentation<a class="anchor" aria-label="anchor" href="#documentation-0-16-0"></a></h4>
-<ul><li><p><code>kld_final</code> is described as an in-sample estimate that reads low, with <code>validation_kld</code> as the figure to quote.</p></li>
+<ul><li><p>John van der Hoek is added as an author.</p></li>
+<li><p><code>kld_final</code> is described as an in-sample estimate that reads low, with <code>validation_kld</code> as the figure to quote.</p></li>
 <li><p>The <code><a href="../reference/from_kde.html">from_kde()</a></code> help states that a Gaussian-kernel KDE is already a mixture that can be marginalised, conditioned and sampled exactly, and that compression reduces its cost from n components to N.</p></li>
 <li><p>The <code><a href="../reference/gmm_eos_test.html">gmm_eos_test()</a></code> help states that the Andrews subsampling calibration is asymptotic, assumes stationary ergodic innovations, and can over-reject in short series. It also states how <code>method = "andrews"</code> differs from Andrews’ (2003) P-test: its p-value counts the tested block, and the block statistics are computed at the supplied model rather than re-estimated.</p></li>
 <li><p>The <code><a href="../reference/mechanism.html">mnar()</a></code> and <code><a href="../reference/proxy_mnar_sensitivity.html">proxy_mnar_sensitivity()</a></code> help no longer says the data cannot identify the missing-not-at-random slope. Under the mixture selection model the observed data inform the slope through the assumed shape of the outcome distribution, which the new <code>loglik</code> column shows.</p></li>
@@ -93,7 +94,7 @@
 <li><p>The package website carries an extended version of each of the twelve vignettes. Each adds a numerical comparison with other R packages on the same task. The comparisons are read from stored simulation results, and the code that produced them is in <code>data-raw/articles/</code> in the source repository.</p></li>
 <li>
 <p>All twelve vignettes were brought to a common quality bar: each now opens with the question it answers, carries a Why / What / Do / Read / Limits / What to read next / Reproduce shape, states every number in prose from a chunk or inline code rather than by hand, draws its figures with <code>ggplot2</code> on a colourblind-safe palette with captions and alt text, tabulates through <code><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">knitr::kable()</a></code>, refers to its companions by title, and closes with its seed and <code><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo()</a></code>. <em>One mixture, many methods</em> gains a section on the decision family (<code><a href="../reference/fit_uplift.html">fit_uplift()</a></code>, <code><a href="../reference/proxy_cate.html">proxy_cate()</a></code>, <code><a href="../reference/proxy_decide.html">proxy_decide()</a></code>, <code><a href="../reference/proxy_identification_report.html">proxy_identification_report()</a></code>), which no vignette previously covered and which shows the <code>proxymix_treatment_scale_error</code> refusal of an unobserved treatment contrast; <em>How well a mixture proxies four awkward shapes</em> shows the <code>proxymix_degenerate_fit</code> refusal of a collapsed importance sample. Claims that had never been computed are now computed, and three that did not survive the computation were corrected: the regime (i) and regime</p>
-<ol start="3" style="list-style-type: lower-roman"><li>fits at <code>N = 1</code> do not agree to within Monte Carlo error, the donut’s residual divergence needed a grid-quadrature oracle to be stated at all, and the fraction of <code>x2</code> deleted in the imputation example was near a half rather than the two fifths claimed.</li>
+<ol start="3" style="list-style-type: lower-roman"><li>fits at <code>N = 1</code> do not agree to within Monte Carlo error, the donut’s residual divergence needed a grid-quadrature reference to be stated at all, and the fraction of <code>x2</code> deleted in the imputation example was near a half rather than the two fifths claimed.</li>
 </ol></li>
 <li><p>Every figure chunk across the vignette set now carries a <code>fig.cap</code> stating what the figure shows, and the four uncaptioned or under-interpreted plots (<code>calibration</code>, <code>from_kde</code>, <code>missing_data</code>, <code>operator_calculus</code>) gained a trailing prose sentence reading the result off the plot.</p></li>
 <li><p><code>entropy.Rmd</code>’s order-2 Renyi entropy formula is now typeset as LaTeX (<code>\(H_2(\mathcal{N}(\mu, \Sigma)) = \dots\)</code>) rather than as inline code.</p></li>
@@ -213,7 +214,7 @@ Validated against analytic conjugate Gaussians and a ten-dimensional warped targ
 <div class="section level4">
 <h4 id="tests-0-12-0">Tests<a class="anchor" aria-label="anchor" href="#tests-0-12-0"></a></h4>
 <ul><li>The shipped conformance case set now executes during test runs (off CRAN) through its built-in driver, so the two-sided contract sweep gates checks rather than living only in an external harness; the two remaining stubs gained negative cases.</li>
-<li>New independent oracles: closed-form Gaussian KL and quadrature for <code><a href="../reference/gmm_kld.html">gmm_kld()</a></code> at <code>K = 1</code> (the package’s namesake divergence previously had only positivity checks), closed-form Gaussian Hellinger for <code><a href="../reference/hellinger_mc.html">hellinger_mc()</a></code>, quadrature for the logit-link gated moments (the shipped default link previously had no moment-level oracle), and a probit-link end-to-end MNAR recovery.</li>
+<li>New independent reference checks: closed-form Gaussian KL and quadrature for <code><a href="../reference/gmm_kld.html">gmm_kld()</a></code> at <code>K = 1</code> (the package’s namesake divergence previously had only positivity checks), closed-form Gaussian Hellinger for <code><a href="../reference/hellinger_mc.html">hellinger_mc()</a></code>, quadrature for the logit-link gated moments (the shipped default link previously had no moment-level check), and a probit-link end-to-end MNAR recovery.</li>
 <li>New metamorphic invariants: Renyi-2 affine equivariance (<code>H(AX + b) = H(X) + log|det A|</code>), marginal-vs-joint quadrature consistency, <code>gmm_observe</code> with a near-noiseless selection row against <code>gmm_conditionalise</code>, post-operator mass preservation, and an <code>rgmm</code>/<code>dgmm</code> Kolmogorov-Smirnov cross-check.</li>
 <li>The uplift Monte Carlo studies are skipped on CRAN and grade monotonicity with slack plus a rank correlation, instead of strict positivity of every adjacent difference from a local-optimum EM.</li>
 </ul></div>
@@ -520,7 +521,7 @@ Validated against analytic conjugate Gaussians and a ten-dimensional warped targ
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Max Moldovan.</p>
+  <p>Developed by Max Moldovan, John van der Hoek.</p>
 </div>
 
 <div class="pkgdown-footer-right">

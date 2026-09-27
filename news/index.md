@@ -146,6 +146,8 @@
 
 #### Documentation
 
+- John van der Hoek is added as an author.
+
 - `kld_final` is described as an in-sample estimate that reads low, with
   `validation_kld` as the figure to quote.
 
@@ -208,9 +210,10 @@
   regime
 
   3.  fits at `N = 1` do not agree to within Monte Carlo error, the
-      donut’s residual divergence needed a grid-quadrature oracle to be
-      stated at all, and the fraction of `x2` deleted in the imputation
-      example was near a half rather than the two fifths claimed.
+      donut’s residual divergence needed a grid-quadrature reference to
+      be stated at all, and the fraction of `x2` deleted in the
+      imputation example was near a half rather than the two fifths
+      claimed.
 
 - Every figure chunk across the vignette set now carries a `fig.cap`
   stating what the figure shows, and the four uncaptioned or
@@ -549,13 +552,14 @@
   CRAN) through its built-in driver, so the two-sided contract sweep
   gates checks rather than living only in an external harness; the two
   remaining stubs gained negative cases.
-- New independent oracles: closed-form Gaussian KL and quadrature for
+- New independent reference checks: closed-form Gaussian KL and
+  quadrature for
   [`gmm_kld()`](https://max578.github.io/proxymix/reference/gmm_kld.md)
   at `K = 1` (the package’s namesake divergence previously had only
   positivity checks), closed-form Gaussian Hellinger for
   [`hellinger_mc()`](https://max578.github.io/proxymix/reference/hellinger_mc.md),
   quadrature for the logit-link gated moments (the shipped default link
-  previously had no moment-level oracle), and a probit-link end-to-end
+  previously had no moment-level check), and a probit-link end-to-end
   MNAR recovery.
 - New metamorphic invariants: Renyi-2 affine equivariance
   (`H(AX + b) = H(X) + log|det A|`), marginal-vs-joint quadrature

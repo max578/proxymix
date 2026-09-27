@@ -319,7 +319,7 @@ which can fall below zero.
 </div>
 </div>
 <div class="section level3">
-<h3 id="regimes-i-and-iii-at-n-1-against-an-exact-oracle">Regimes (i) and (iii) at N = 1, against an exact oracle<a class="anchor" aria-label="anchor" href="#regimes-i-and-iii-at-n-1-against-an-exact-oracle"></a>
+<h3 id="regimes-i-and-iii-at-n-1-against-the-exact-answer">Regimes (i) and (iii) at N = 1, against the exact answer<a class="anchor" aria-label="anchor" href="#regimes-i-and-iii-at-n-1-against-the-exact-answer"></a>
 </h3>
 <p>At <code>N = 1</code> both regime (i) and regime (iii) target the
 KL-optimal single Gaussian, so they should agree. They are compared here
@@ -376,19 +376,19 @@ the trace of its covariance is
 <caption>The single-Gaussian proxy at <code>N = 1</code>, fitted two
 ways and scored against the exact moments of the banana density. The
 error is the trace minus the exact trace, so a negative error is an
-understatement. The final row is the oracle, so its error is zero by
-construction.</caption>
+understatement. The final row is the exact value, so its error is zero
+by construction.</caption>
 <colgroup>
+<col width="27%">
 <col width="28%">
-<col width="29%">
-<col width="20%">
-<col width="21%">
+<col width="19%">
+<col width="25%">
 </colgroup>
 <thead><tr class="header">
 <th align="left">Source</th>
 <th align="left">Reads</th>
 <th align="right">Trace of covariance</th>
-<th align="right">Error against oracle</th>
+<th align="right">Error against exact value</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
@@ -515,8 +515,8 @@ correctly specified and there is no approximation error for either
 regime to trade against the other. On a target outside the
 Gaussian-mixture family the two regimes minimise genuinely different
 objectives, and the fits separate.</p>
-<p>The <code>N = 1</code> oracle is closed form only because the banana
-is a warped Gaussian. A grid quadrature of the same moments on
+<p>The exact <code>N = 1</code> answer is closed form only because the
+banana is a warped Gaussian. A grid quadrature of the same moments on
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">[</mo><mi>−</mi><mn>8</mn><mo>,</mo><mn>8</mn><msup><mo stretchy="false" form="postfix">]</mo><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">[-8, 8]^2</annotation></semantics></math>,
 with 400 points a side, leaves out
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>6.4</mn><mo>×</mo><msup><mn>10</mn><mrow><mi>−</mi><mn>5</mn></mrow></msup></mrow><annotation encoding="application/x-tex">6.4 \times 10^{-5}</annotation></semantics></math>
@@ -741,7 +741,7 @@ reference, and is not timed.</caption>
 <td align="left">proxymix, regime (ii)</td>
 <td align="left">the training half</td>
 <td align="right">-4.311</td>
-<td align="right">0.00</td>
+<td align="right">0.01</td>
 </tr>
 <tr class="odd">
 <td align="left">mclust</td>
@@ -753,19 +753,19 @@ reference, and is not timed.</caption>
 <td align="left">mixtools</td>
 <td align="left">the training half</td>
 <td align="right">-4.312</td>
-<td align="right">0.17</td>
+<td align="right">0.19</td>
 </tr>
 <tr class="odd">
 <td align="left">flexmix</td>
 <td align="left">the training half</td>
 <td align="right">-4.308</td>
-<td align="right">0.07</td>
+<td align="right">0.09</td>
 </tr>
 <tr class="even">
 <td align="left">proxymix, regime (iii), on the KDE</td>
 <td align="left">the KDE as a density</td>
 <td align="right">-4.277</td>
-<td align="right">0.05</td>
+<td align="right">0.07</td>
 </tr>
 <tr class="odd">
 <td align="left">NUTS draws from the KDE, then mclust</td>
@@ -823,11 +823,11 @@ the upper levels.
 <p>The four regime-(ii) fits are within 0.011 of one another on the
 held-out half: proxymix gives -4.311, mclust -4.318 with its VVE
 covariance structure, mixtools -4.312 and flexmix -4.308. The fits took
-0.00, 0.01, 0.17 and 0.07 s in that order. The single Gaussian of regime
+0.01, 0.01, 0.19 and 0.09 s in that order. The single Gaussian of regime
 (i) scores -4.697, the cost of one component for two clusters.</p>
 <p>Regime (iii) never saw the training points directly. From the kernel
 density estimate alone it reaches -4.277, beside the estimate’s own
--4.280, in 0.05 s with an effective sample size of 1725 of 4,000
+-4.280, in 0.07 s with an effective sample size of 1725 of 4,000
 importance draws. Its larger component carries weight 0.617, against
 0.610 for the regime-(ii) fit to the same half. The sampling route
 reaches -4.281 from 100,000 draws in 151 s for the whole reference
@@ -1185,7 +1185,7 @@ multivariate Gaussians.</em> Stochastic Analysis and Applications.<br><a href="h
 </h2>
 <p>The target carries <code>seed = 1L</code>, the regime-(ii) fit and
 both regime-(iii) fits on the bench are seeded with
-<code>seed = 1L</code>, the moment oracle is closed form, and the
+<code>seed = 1L</code>, the exact moments are closed form, and the
 replicate traces use seeds 1 to 500 for the samples and 1 to 100 for the
 importance draws, so every number in the first five sections is
 reproducible from the package alone.</p>
@@ -1266,7 +1266,7 @@ The mixtools version used above is 2.0.0.1.</p>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Max Moldovan.</p>
+  <p>Developed by Max Moldovan, John van der Hoek.</p>
 </div>
 
 <div class="pkgdown-footer-right">

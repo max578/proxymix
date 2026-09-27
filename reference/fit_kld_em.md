@@ -78,7 +78,7 @@ fit_kld_em(
   importance-weighted EM objective `Q(theta) = sum_n W_n log g(x_n)`.
   `Q` is invariant to the target's normalising constant, so the stopping
   rule behaves identically for normalised and unnormalised targets (the
-  importance-sampled KLD estimate carries an additive `-log Z(f)` offset
+  importance-sampled KLD estimate carries an additive `log Z(f)` offset
   and is therefore never used for stopping).
 
 - ridge_eps:
@@ -189,8 +189,10 @@ A [gmm_fit](https://max578.github.io/proxymix/reference/gmm_fit.md) with
 `kld_trace`, `kld_final` (in-sample), `kld_is_shifted`,
 `kld_final_absolute` (when computable), `ess`, `ess_relative`
 (`ess / is_size`), `max_weight`, `support_fraction`, `mc_se_kld`,
-`validation_kld` (held-out), `validation_ess`, and
-`validation_max_weight`.
+`validation_kld` (held-out), `validation_ess`, `validation_max_weight`,
+and `heldout_kld`, the held-out estimate of the KL divergence that
+[`gmm_fit_quality()`](https://max578.github.io/proxymix/reference/gmm_fit_quality.md)
+describes.
 
 ## Details
 
@@ -227,12 +229,13 @@ small `is_size`. When `validation_size > 0` the function also draws an
 `validation_kld` is the estimate to quote as the fit's accuracy.
 
 When the target's `normalised` property is `FALSE` or `NA`, the
-importance-sampled `kld_final` and `kld_trace` measure \\\widehat{KL}(f
-\Vert g) - \log Z(f)\\ rather than the absolute divergence. The fit's
-diagnostics list records this via `kld_is_shifted = TRUE` and a
-`kld_shift_explanation` string. When the target also supplies a finite
-`log_normalizer`, a corrected absolute estimate is reported as
-`kld_final_absolute`.
+importance-sampled `kld_final`, `kld_trace` and `validation_kld`
+estimate \\KL(f \Vert g) + \log Z(f)\\, where \\Z(f)\\ is the integral
+of `exp(log_density)`. The fit's diagnostics list records this via
+`kld_is_shifted = TRUE` and a `kld_shift_explanation` string. When the
+target also supplies a finite `log_normalizer`, the fit subtracts it and
+reports the KL divergence as `kld_final_absolute` and
+`validation_kld_absolute`.
 
 ## References
 

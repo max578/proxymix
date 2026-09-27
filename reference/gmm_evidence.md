@@ -3,10 +3,11 @@
 Importance-sampling estimate of \\Z = \int f(x)\\ dx\\ for the fit's
 target \\f\\, using the fitted mixture \\\hat g\\ as the proposal:
 \$\$\widehat{Z} = \frac{1}{n} \sum\_{i=1}^n \frac{f(x_i)}{\hat g(x_i)},
-\qquad x_i \sim \hat g,\$\$ computed in the log domain. For a Bayesian
-posterior handed over as `likelihood x prior`, \\\log Z\\ is the log
-marginal likelihood, so a fitted proxy doubles as a model-comparison
-device.
+\qquad x_i \sim \hat g,\$\$ computed in the log domain. A draw at which
+the target density is zero contributes a zero term and stays in the
+average. For a Bayesian posterior handed over as `likelihood x prior`,
+\\\log Z\\ is the log marginal likelihood, so a fitted proxy doubles as
+a model-comparison device.
 
 ## Usage
 

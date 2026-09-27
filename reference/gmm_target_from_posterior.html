@@ -102,9 +102,9 @@ for the <code>function</code> method (or attached as
 
 
 <dt id="arg-log-normalizer">log_normalizer<a class="anchor" aria-label="anchor" href="#arg-log-normalizer"></a></dt>
-<dd><p>Numeric scalar <code>log Z</code> of the posterior, if known.
-<code>NA_real_</code> (the default) otherwise; downstream diagnostics will label
-any KLD estimate as shifted.</p></dd>
+<dd><p>Numeric scalar <code>log Z</code>, the log of the integral of
+<code><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp()</a></code> of the log-posterior, if known. With <code>NA_real_</code> (the default),
+downstream diagnostics label any KLD estimate as shifted.</p></dd>
 
 
 <dt id="arg-name">name<a class="anchor" aria-label="anchor" href="#arg-name"></a></dt>

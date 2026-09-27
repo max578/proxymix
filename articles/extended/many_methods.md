@@ -1369,68 +1369,73 @@ used throughout this page and applies it to holes in the data.
 
 - Athey, S. and Imbens, G. (2016). *Recursive partitioning for
   heterogeneous causal effects.* Proceedings of the National Academy of
-  Sciences 113(27), 7353–7360. <doi:10.1073/pnas.1510489113>.
+  Sciences 113(27), 7353–7360.
+  <https://doi.org/10.1073/pnas.1510489113>.
 - Athey, S., Tibshirani, J. and Wager, S. (2019). *Generalized random
   forests.* The Annals of Statistics 47(2), 1148–1178.
-  <doi:10.1214/18-AOS1709>.
+  <https://doi.org/10.1214/18-AOS1709>.
 - Bach, P., Kurz, M. S., Chernozhukov, V., Spindler, M. and Klaassen, S.
   (2024). *DoubleML: An object-oriented implementation of double machine
   learning in R.* Journal of Statistical Software 108(3), 1–56.
-  <doi:10.18637/jss.v108.i03>.
+  <https://doi.org/10.18637/jss.v108.i03>.
 - Crump, R. K., Hotz, V. J., Imbens, G. W. and Mitnik, O. A. (2009).
   *Dealing with limited overlap in estimation of average treatment
-  effects.* Biometrika 96(1), 187–199. <doi:10.1093/biomet/asn055>.
+  effects.* Biometrika 96(1), 187–199.
+  <https://doi.org/10.1093/biomet/asn055>.
 - Dehejia, R. H. and Wahba, S. (1999). *Causal effects in
   nonexperimental studies: reevaluating the evaluation of training
   programs.* Journal of the American Statistical Association 94(448),
-  1053–1062. <doi:10.1080/01621459.1999.10473858>.
+  1053–1062. <https://doi.org/10.1080/01621459.1999.10473858>.
 - de Veaux, R. D. (1989). *Mixtures of linear regressions.*
   Computational Statistics & Data Analysis 8(3), 227–245.
-  <doi:10.1016/0167-9473(89)90043-1>.
+  <https://doi.org/10.1016/0167-9473(89)90043-1>.
 - Fraley, C. and Raftery, A. E. (2002). *Model-based clustering,
   discriminant analysis, and density estimation.* Journal of the
   American Statistical Association 97(458), 611–631.
-  <doi:10.1198/016214502760047131>.
+  <https://doi.org/10.1198/016214502760047131>.
 - Friedman, J., Hastie, T. and Tibshirani, R. (2010). *Regularization
   paths for generalized linear models via coordinate descent.* Journal
-  of Statistical Software 33(1), 1–22. <doi:10.18637/jss.v033.i01>.
+  of Statistical Software 33(1), 1–22.
+  <https://doi.org/10.18637/jss.v033.i01>.
 - Gorman, K. B., Williams, T. D. and Fraser, W. R. (2014). *Ecological
   sexual dimorphism and environmental variability within a community of
   Antarctic penguins (genus Pygoscelis).* PLoS ONE 9(3), e90081.
-  <doi:10.1371/journal.pone.0090081>.
+  <https://doi.org/10.1371/journal.pone.0090081>.
 - Gruber, S. and van der Laan, M. J. (2012). *tmle: An R package for
   targeted maximum likelihood estimation.* Journal of Statistical
-  Software 51(13), 1–35. <doi:10.18637/jss.v051.i13>.
+  Software 51(13), 1–35. <https://doi.org/10.18637/jss.v051.i13>.
 - Hayfield, T. and Racine, J. S. (2008). *Nonparametric econometrics:
   The np package.* Journal of Statistical Software 27(5), 1–32.
-  <doi:10.18637/jss.v027.i05>.
+  <https://doi.org/10.18637/jss.v027.i05>.
 - Ho, D. E., Imai, K., King, G. and Stuart, E. A. (2011). *MatchIt:
   Nonparametric preprocessing for parametric causal inference.* Journal
-  of Statistical Software 42(8), 1–28. <doi:10.18637/jss.v042.i08>.
+  of Statistical Software 42(8), 1–28.
+  <https://doi.org/10.18637/jss.v042.i08>.
 - Hoerl, A. E. and Kennard, R. W. (1970). *Ridge regression: biased
   estimation for nonorthogonal problems.* Technometrics 12(1), 55–67.
-  <doi:10.1080/00401706.1970.10488634>.
+  <https://doi.org/10.1080/00401706.1970.10488634>.
 - Horst, A. M., Presmanes Hill, A. and Gorman, K. B. (2022). *Palmer
   Archipelago penguins data in the palmerpenguins R package – an
   alternative to Anderson’s irises.* The R Journal 14(1), 244–254.
-  <doi:10.32614/RJ-2022-020>.
+  <https://doi.org/10.32614/RJ-2022-020>.
 - Jolliffe, I. T. (2002). *Principal Component Analysis*, 2nd
-  ed. Springer. <doi:10.1007/b98835>.
+  ed. Springer. <https://doi.org/10.1007/b98835>.
 - Künzel, S. R., Sekhon, J. S., Bickel, P. J. and Yu, B. (2019).
   *Metalearners for estimating heterogeneous treatment effects using
   machine learning.* Proceedings of the National Academy of Sciences
-  116(10), 4156–4165. <doi:10.1073/pnas.1804597116>.
+  116(10), 4156–4165. <https://doi.org/10.1073/pnas.1804597116>.
 - Nadaraya, E. A. (1964). *On estimating regression.* Theory of
-  Probability and Its Applications 9(1), 141–142. <doi:10.1137/1109020>.
+  Probability and Its Applications 9(1), 141–142.
+  <https://doi.org/10.1137/1109020>.
 - Polley, E., LeDell, E., Kennedy, C. and van der Laan, M. (2026).
   *SuperLearner: Super Learner Prediction.* R package version 2.0-41.
-  <doi:10.32614/CRAN.package.SuperLearner>.
+  <https://doi.org/10.32614/CRAN.package.SuperLearner>.
 - Tipping, M. E. and Bishop, C. M. (1999). *Probabilistic principal
   component analysis.* Journal of the Royal Statistical Society B 61(3),
-  611–622. <doi:10.1111/1467-9868.00196>.
+  611–622. <https://doi.org/10.1111/1467-9868.00196>.
 - van der Hoek, J. and Elliott, R. J. (2024). *Mixtures of multivariate
   Gaussians.* Stochastic Analysis and Applications.
-  <doi:10.1080/07362994.2024.2372605>.
+  <https://doi.org/10.1080/07362994.2024.2372605>.
 - Venables, W. N. and Ripley, B. D. (2002). *Modern Applied Statistics
   with S*, 4th ed. Springer.
 - Watson, G. S. (1964). *Smooth regression analysis.* Sankhyā A 26(4),
@@ -1438,11 +1443,11 @@ used throughout this page and applies it to holes in the data.
 - Wood, S. N. (2011). *Fast stable restricted maximum likelihood and
   marginal likelihood estimation of semiparametric generalized linear
   models.* Journal of the Royal Statistical Society B 73(1), 3–36.
-  <doi:10.1111/j.1467-9868.2010.00749.x>.
+  <https://doi.org/10.1111/j.1467-9868.2010.00749.x>.
 - Zeileis, A., Köll, S. and Graham, N. (2020). *Various versatile
   variances: An object-oriented implementation of clustered covariances
   in R.* Journal of Statistical Software 95(1), 1–36.
-  <doi:10.18637/jss.v095.i01>.
+  <https://doi.org/10.18637/jss.v095.i01>.
 
 ## Reproduce
 

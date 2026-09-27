@@ -146,27 +146,28 @@ fit
 Weighted draws have a weakness familiar from survey work. If a handful
 of respondents carry very large weights, the survey estimate rests on
 those few people and becomes unstable. The same happens here if a few
-trial points carry most of the weight. The certificate checks for this
-and for other signs of a poor fit.
+trial points carry most of the weight.
+[`gmm_fit_quality()`](https://max578.github.io/proxymix/reference/gmm_fit_quality.md)
+checks for this and for other signs of a poor fit.
 
 ``` r
 
 quality <- gmm_fit_quality(fit)
 ```
 
-| Check                                           | Value   |
-|:------------------------------------------------|:--------|
-| fitting method                                  | kld     |
-| rounds settled before the limit                 | TRUE    |
-| weights collapsed onto a few draws              | FALSE   |
-| effective sample size                           | 820.6   |
-| effective sample size as a share of all draws   | 0.410   |
-| smallest effective sample size of any component | 347.7   |
-| largest share of the weight held by one draw    | 0.00206 |
-| KL divergence on the fitting draws              | 0.00275 |
-| approximate KL divergence from the weights      | 0.0163  |
-| KL divergence on fresh draws                    | 0.0126  |
-| fresh draws minus fitting draws                 | 0.00983 |
+| Check | Value |
+|:---|:---|
+| fitting method | kld |
+| rounds settled before the limit | TRUE |
+| weights collapsed onto a few draws | FALSE |
+| effective sample size | 820.6 |
+| effective sample size as a share of all draws | 0.410 |
+| smallest effective sample size of any component | 347.7 |
+| largest share of the weight held by one draw | 0.00206 |
+| KL divergence on the fitting draws | 0.00275 |
+| half the variance of the log density ratio (a local KL approximation) | 0.0163 |
+| KL divergence on fresh draws | 0.0126 |
+| fresh draws minus fitting draws | 0.00983 |
 
 The fit certificate returned by
 [`gmm_fit_quality()`](https://max578.github.io/proxymix/reference/gmm_fit_quality.md).
@@ -175,9 +176,11 @@ The fit certificate returned by
 The effective sample size is the number of equally weighted draws that
 the weighted sample is worth. The fit was tuned to the draws it was
 fitted on, so the KL computed on them is too low. The KL on a fresh set
-of draws is the one to report. The approximate KL divergence comes from
-the spread of the weights on the fitting draws. It is a rough check, and
-the package flags a fit when it exceeds 0.3.
+of draws is the one to report. The package flags a fit when this KL
+exceeds 0.3, when the fit did not converge, or when it is degenerate.
+Half the variance of the log density ratio on the fitting draws
+approximates the KL when the proxy is already close to the target. It is
+only a rough check.
 
 ### Compare the proxy with the target
 
@@ -213,8 +216,8 @@ of the three-component Gaussian-mixture proxy following the same
 curve.](quickstart_files/figure-html/overlay-1.png)
 
 The banana target (filled contours) with the three-component proxy
-overlaid as dashed contours. The three components line up along the
-curve instead of one bell curve sitting across it. The KL divergence on
+overlaid as dashed contours. The dashed contours follow the curve of the
+banana, which a single bell curve could not do. The KL divergence on
 fresh draws is 0.013.
 
 ### Use the proxy
@@ -297,13 +300,14 @@ behind on this measure, at 0.3749, because one bell curve cannot follow
 the curve of the banana. On the tail probability, however, the Laplace
 approximation was the most accurate, with an error of 0.00001. On its
 own, $`x_1`$ has a standard normal distribution, and on this target the
-Laplace approximation reproduces it exactly. proxymix came second on the
-tail, with an error of 0.0035 against 0.0046 to 0.0055 for the two
-samplers and the mixture fitted to the NUTS draws. The held-out KL of
-0.0126 reported for the three-component fit above is itself estimated
+Laplace approximation reproduces it almost exactly. proxymix came second
+on the tail, with an error of 0.0035 against 0.0046 to 0.0055 for the
+two samplers and the mixture fitted to the NUTS draws. The held-out KL
+of 0.0126 reported for the three-component fit above is itself estimated
 from random draws, with a standard error of about 0.0014. On the grid
-used for the table, that fit has a KL divergence of 0.0154. This is 2.4
-standard deviations above the proxymix mean in the table.
+used for the table, that fit has a KL divergence of 0.0154. That value
+lies 2.4 standard deviations above the proxymix mean in the table, using
+the standard deviation across runs shown there in brackets.
 
 The Laplace approximation was also the fastest, at under 0.01 seconds
 per run. DEzs took 0.53 seconds per run and was slightly faster than
@@ -412,21 +416,22 @@ effective sample of at least 348 draws.
 
 The KL divergence on fresh draws is 0.013, with a standard error of
 0.0014. For a sense of scale, this value means that the probabilities
-the proxy and the target give to any region differ by at most about 8
-percentage points (Pinsker’s inequality). The exact KL divergence on the
-grid, 0.0154, is 2.0 standard errors above this estimate. The KL on the
-fitting draws is lower because the fit was tuned to those draws. The
-difference between the two, 0.01, is about 3 times the standard error of
-the KL on the fitting draws.
+the proxy and the target give to any region differ by at most
+$`\sqrt{\mathrm{KL}/2}`$, about 8 percentage points (Pinsker’s
+inequality). The KL divergence computed on the grid, 0.0154, lies above
+the fresh-draw estimate by 2.0 times the standard error of that
+estimate. The KL on the fitting draws is lower because the fit was tuned
+to those draws. The difference between the two, 0.0098, is about 3 times
+the standard error of the KL on the fitting draws, which is 0.0036.
 
 ## Limitations
 
 The number of components is set to three by hand here.
 [`select_N()`](https://max578.github.io/proxymix/reference/select_N.md)
-and
+chooses it automatically, and
 [`bic_aic()`](https://max578.github.io/proxymix/reference/bic_aic.md)
-choose it automatically, and too few components show up as a KL
-divergence that more trial draws do not reduce.
+reports the BIC and AIC for comparing counts. Too few components show up
+as a KL divergence that more trial draws do not reduce.
 
 The choice of broad distribution matters. The Student-t used here is
 wide enough to cover the banana. If the broad distribution misses part

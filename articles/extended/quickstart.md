@@ -546,19 +546,20 @@ evidence and error bars on the fit itself.
 
 - Benaglia, T., Chauveau, D., Hunter, D. R. and Young, D. S. (2009).
   *mixtools: An R package for analyzing finite mixture models.* Journal
-  of Statistical Software 32(6), 1–29. <doi:10.18637/jss.v032.i06>.
+  of Statistical Software 32(6), 1–29.
+  <https://doi.org/10.18637/jss.v032.i06>.
 - Carpenter, B., Gelman, A., Hoffman, M. D., Lee, D., Goodrich, B.,
   Betancourt, M., Brubaker, M., Guo, J., Li, P. and Riddell, A. (2017).
   *Stan: A probabilistic programming language.* Journal of Statistical
-  Software 76(1), 1–32. <doi:10.18637/jss.v076.i01>.
+  Software 76(1), 1–32. <https://doi.org/10.18637/jss.v076.i01>.
 - Grün, B. and Leisch, F. (2008). *FlexMix version 2: Finite mixtures
   with concomitant variables and varying and constant parameters.*
   Journal of Statistical Software 28(4), 1–35.
-  <doi:10.18637/jss.v028.i04>.
+  <https://doi.org/10.18637/jss.v028.i04>.
 - Hartig, F., Minunno, F. and Paul, S. (2026). *BayesianTools:
   General-purpose MCMC and SMC samplers and tools for Bayesian
   statistics.* R package version 0.1.9.
-  <doi:10.32614/CRAN.package.BayesianTools>.
+  <https://doi.org/10.32614/CRAN.package.BayesianTools>.
 - Hoffman, M. D. and Gelman, A. (2014). *The No-U-Turn sampler:
   Adaptively setting path lengths in Hamiltonian Monte Carlo.* Journal
   of Machine Learning Research 15(47), 1593–1623.
@@ -566,17 +567,17 @@ evidence and error bars on the fit itself.
 - Scrucca, L., Fop, M., Murphy, T. B. and Raftery, A. E. (2016). *mclust
   5: Clustering, classification and density estimation using Gaussian
   finite mixture models.* The R Journal 8(1), 289–317.
-  <doi:10.32614/RJ-2016-021>.
+  <https://doi.org/10.32614/RJ-2016-021>.
 - ter Braak, C. J. F. and Vrugt, J. A. (2008). *Differential evolution
   Markov chain with snooker updater and fewer chains.* Statistics and
-  Computing 18(4), 435–446. <doi:10.1007/s11222-008-9104-9>.
+  Computing 18(4), 435–446. <https://doi.org/10.1007/s11222-008-9104-9>.
 - Tierney, L. and Kadane, J. B. (1986). *Accurate approximations for
   posterior moments and marginal densities.* Journal of the American
   Statistical Association 81(393), 82–86.
-  <doi:10.1080/01621459.1986.10478240>.
+  <https://doi.org/10.1080/01621459.1986.10478240>.
 - van der Hoek, J. and Elliott, R. J. (2024). *Mixtures of multivariate
   Gaussians.* Stochastic Analysis and Applications.
-  <doi:10.1080/07362994.2024.2372605>.
+  <https://doi.org/10.1080/07362994.2024.2372605>.
 
 ## Reproduce
 

@@ -12,18 +12,17 @@ has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
 
 ## The problem
 
-An analyst has a fitted mixture on the screen and three questions that
-the parameter list does not answer on its own: *how spread out is this
-mixture, how far is it from the other fit I ran yesterday, and how many
-components does my data actually support?* All three are entropy
-questions, and on a Gaussian mixture most of them have closed-form
-answers. This vignette walks the entropy surface of a fitted mixture:
-what is exact, what is estimated, and what each quantity is safe to
-conclude.
+A fitted mixture is a list of weights, means and covariance matrices.
+The list alone does not answer three common questions: how spread out
+the mixture is, how far it is from another fit, and how many components
+the data support. All three are questions about entropy, and for a
+Gaussian mixture most of them have closed-form answers. This vignette
+shows which entropy quantities are exact, which are estimated, and what
+conclusions each one supports.
 
 ## Package capabilities
 
-Eight functions carry the vignette.
+The vignette uses eight functions.
 [`gmm_entropy()`](https://max578.github.io/proxymix/reference/gmm_entropy.md)
 returns the order-2 Rényi entropy of a mixture in closed form by
 default, and a Monte Carlo Shannon estimate with its standard error and
@@ -44,9 +43,9 @@ returns the predictive uncertainty of the target coordinates given the
 conditioned ones, row by row, as a Rényi-2 entropy.
 
 [`gmm_anneal_path()`](https://max578.github.io/proxymix/reference/gmm_anneal_path.md)
-cools a deterministic-annealing schedule (Rose, 1998) and records where
-the components bifurcate, which gives both a warm start for a fit and a
-component count.
+cools a fit along a deterministic-annealing schedule (Rose, 1998) and
+records where the components split apart. The result gives both a
+starting point for a fit and a component count.
 [`bic_aic()`](https://max578.github.io/proxymix/reference/bic_aic.md)
 reports the integrated completed likelihood beside the usual criteria,
 and
@@ -54,8 +53,9 @@ and
 reads the second-order conditional-independence structure of a fitted
 mixture.
 [`maxent_target()`](https://max578.github.io/proxymix/reference/maxent_target.md)
-runs the argument the other way, from a set of constraints to the
-least-committal density consistent with them (Jaynes, 1957).
+works in the opposite direction. It starts from a set of constraints and
+builds the density with the largest entropy that meets them (Jaynes,
+1957).
 
 ## Addressing the problem
 
@@ -64,7 +64,7 @@ least-committal density consistent with them (Jaynes, 1957).
 set.seed(20260618)
 ```
 
-### The closed-form spine
+### Why some quantities have closed forms
 
 The integral of a product of two Gaussian densities is itself a Gaussian
 density evaluation: writing $`\mathcal{N}(x; m, S)`$ for a Gaussian
@@ -165,12 +165,13 @@ Two divergences between the same pair of mixtures. {.table}
 
 ### Mutual information and predictive entropy
 
-Two further reads come from the same closed-form spine. Mutual
-information is non-negative and zero exactly when the blocks are
-independent; conditional entropy is the order-2 Rényi entropy of the
-conditional mixture
+Mutual information and conditional entropy also have closed forms. The
+mutual information is non-negative and is zero exactly when the blocks
+are independent. The conditional entropy is the order-2 Rényi entropy of
+the conditional mixture that
 [`gmm_conditionalise()`](https://max578.github.io/proxymix/reference/gmm_conditionalise.md)
-returns, evaluated row by row, with `NA` marking the target coordinate.
+returns. It is evaluated row by row, with `NA` marking the target
+coordinate.
 
 ``` r
 
@@ -203,19 +204,19 @@ of the first given the second. {.table}
 
 ### Cooling the fit: annealing and phase transitions
 
-The same statistical-mechanics framing – the fitting objective is a
-variational free energy $`F = \langle E \rangle - T H`$ – gives an
-annealed fit. Softening the E-step responsibilities by a temperature
-$`T`$, so that
+The objective of the EM algorithm can be written as a free energy
+$`F = \langle E \rangle - T H`$, a quantity borrowed from statistical
+mechanics. Varying the temperature $`T`$ in it gives an annealed fit.
+The E-step responsibilities are softened by $`T`$, so that
 $`\gamma_{ik} \propto \pi_k\, \mathcal{N}(x_i;\ \mu_k, \Sigma_k)^{1/T}`$,
-and cooling $`T`$ from a high value toward one, turns the fit into a
-homotopy: at high $`T`$ the objective has a single smooth basin, and as
-$`T`$ falls the components bifurcate at critical temperatures. Setting
-`anneal = TRUE` on
+and $`T`$ is cooled from a high value towards one. At high $`T`$ the
+objective has a single minimum, with every component at the mean of the
+data. As $`T`$ falls, the components split apart at critical
+temperatures. Setting `anneal = TRUE` on
 [`fit_em_samples()`](https://max578.github.io/proxymix/reference/fit_em_samples.md)
 or
 [`fit_kld_em()`](https://max578.github.io/proxymix/reference/fit_kld_em.md)
-uses this annealed path as a warm start for the unchanged cold EM loop.
+starts the usual EM fit from the result of this cooling.
 
 ``` r
 
@@ -332,14 +333,16 @@ dotted rule the closed-form analytic one.
 
 ### Maximum-entropy targets
 
-Entropy also points the other way – from a set of constraints to the
-least-committal density consistent with them.
+Entropy can also be used to build a target. Among all densities that
+meet a set of constraints,
 [`maxent_target()`](https://max578.github.io/proxymix/reference/maxent_target.md)
-builds that maximum-entropy density: the Gaussian under first- and
+builds the one with the largest entropy: the Gaussian under first- and
 second-moment constraints on the full space, the uniform under a support
 constraint alone, and a truncated Gaussian under second moments on a
-box. The bounded cases declare their support, so regime (iii) fits them
-under an automatically selected support-matched proposal.
+box. The bounded cases record their support. Regime (iii) of van der
+Hoek and Elliott (2024) fits a target from a density that can only be
+evaluated (`regime = "kld"`). For these targets it draws its trial
+points from a distribution chosen automatically to cover that support.
 
 ``` r
 
@@ -376,7 +379,7 @@ x_two <- rbind(
   matrix(rnorm(200L, -4), ncol = 2L),
   matrix(rnorm(200L, 4), ncol = 2L)
 )
-fit_two <- fit_em_samples(gmm_target_from_samples(x_two), N = 2L)
+fit_two <- fit_em_samples(gmm_target_from_samples(x_two), N = 2L, seed = 1L)
 crit <- bic_aic(fit_two)
 icl_gap <- crit$icl - crit$bic
 ```
@@ -430,8 +433,7 @@ edges_chain <- sum(adj_chain) / 2L
 Recovered adjacency of a chain precision matrix: an edge between
 neighbouring coordinates and nowhere else. {.table}
 
-The distinctive use is regime (iii) of van der Hoek and Elliott (2024).
-Composed with
+The main use of the graph is with regime (iii). Composed with
 [`fit_kld_em()`](https://max578.github.io/proxymix/reference/fit_kld_em.md),
 the diagnostic can recover the dependency structure of a target you can
 only *evaluate* – an unnormalised energy density – where no sample
@@ -513,36 +515,33 @@ the chain with edges $`x_1 - x_2`$ and $`x_2 - x_3`$. {.table}
 ## Interpretation
 
 The closed-form Rényi-2 entropy of the single Gaussian and its analytic
-formula agree to machine precision, which confirms that the closed form
-is the formula it claims to be. The two-component mixture carries a
+formula agree to machine precision. The two-component mixture carries a
 higher entropy, 3.206 nats against 2.484 for the single Gaussian,
 because its mass is spread across two separated modes rather than one.
 
 The Shannon estimate is 3.478 nats with a standard error of 0.0134, and
 the analytic bound sits 0.053 nats above it, a gap of 4 standard errors.
-The estimate sitting clear below the bound is the coherence check the
-bound is there to provide.
+The estimate lies below the bound, as it must.
 
 The two divergences answer different questions about the same pair. The
-Cauchy-Schwarz divergence is 0.3881 nats and is exact; against itself
-the mixture scores 0, which is the zero the definition requires. The
-Monte Carlo Kullback-Leibler estimate is 0.57 nats with a standard error
-of 0.0218, and the deterministic approximation of Hershey and Olsen
-(2007) returned beside it is 0.500, 0.07 nats below the estimate. The
-Cauchy-Schwarz and Kullback-Leibler divergences are not on a common
-scale and should not be compared to each other, only across pairs of
-fits under one definition.
+Cauchy-Schwarz divergence is 0.3881 nats and is exact. Against itself
+the mixture scores 0, as the definition requires. The Monte Carlo
+Kullback-Leibler estimate is 0.57 nats with a standard error of 0.0218,
+and the deterministic approximation of Hershey and Olsen (2007) returned
+beside it is 0.500, 0.07 nats below the estimate. The Cauchy-Schwarz and
+Kullback-Leibler divergences are not on a common scale and should not be
+compared to each other, only across pairs of fits under one definition.
 
 The Cauchy-Schwarz mutual information reads 0.103 nats between two
-coordinates correlated at 0.7, and 0 between two independent ones, which
-is the zero the definition requires. The Rényi-2 conditional entropy is
-0.9288 nats at every point of the grid, identical across the three
-conditioning values because a single-component joint has a conditional
-whose spread does not depend on what is conditioned on; a
-multi-component joint would vary across the grid.
+coordinates correlated at 0.7, and 0 between two independent ones, as
+the definition requires. The Rényi-2 conditional entropy is 0.9288 nats
+at every point of the grid, identical across the three conditioning
+values because a single-component joint has a conditional whose spread
+does not depend on what is conditioned on. For a multi-component joint
+the value can vary across the grid.
 
 Cooling discovered 3 components, which is the number of clusters the
-data was built from. The first bifurcation was recorded at temperature
+data were built from. The first bifurcation was recorded at temperature
 47.6 against the closed-form $`T_c = \lambda_{\max}(\Sigma^{-1} C) =`$
 51.6, a ratio of 0.92. The two rules in the figure sit close together
 but not on top of each other: the empirical value is the first
@@ -584,20 +583,23 @@ returns 3 edges, $`x_1 - x_2`$, $`x_1 - x_3`$, $`x_2 - x_3`$, not the
 two-edge chain of the target. The partial correlation of $`x_1`$ and
 $`x_3`$ is 0.069 in the fitted mixture, against 0.0009 in the target,
 and the threshold is 0.05. The fit’s quality certificate is not flagged.
-The fit converged and is not degenerate. Its approximate KL divergence,
-half the weighted variance of the log ratio of target to proxy over the
-fitting draws, is 0.198 nats. The package flags a fit that did not
-converge, is degenerate, or has an approximate KL divergence above 0.3.
-The fit’s effective sample size is about 273 of 6000 draws. The graph
-read off this fit rests on that importance sample.
+The fit converged and is not degenerate. Its KL divergence, estimated on
+a validation sample of fresh draws that the fit did not use, is 0.224
+nats. The package flags a fit that did not converge, is degenerate, or
+has a held-out KL divergence above 0.3. Half the weighted variance of
+the log ratio of target to proxy over the fitting draws is 0.198 nats.
+It approximates the KL divergence only near a good fit. The package uses
+it for the flag only when a fit has no validation sample. The fit’s
+effective sample size is about 273 of 6000 draws. The graph read off
+this fit rests on that importance sample.
 
 Taken together, the opening question has three answers. Spread is the
 Rényi-2 entropy, exact and cheap. Distance between two fits is the
 Cauchy-Schwarz divergence, also exact, with the Kullback-Leibler
-estimate available when a downstream consumer requires that definition.
-The number of components is read from the annealing staircase, which
-recovered the 3 clusters the data were built from. The ICL was computed
-on a separate two-cluster dataset, not on these data.
+estimate available when an analysis requires that definition. The number
+of components is read from the annealing staircase, which recovered the
+3 clusters the data were built from. The ICL was computed on a separate
+two-cluster dataset, not on these data.
 
 ## Limitations
 
@@ -608,42 +610,43 @@ discrepancy between two fits. The Shannon entropy and the
 Kullback-Leibler divergence are the more familiar quantities but are
 Monte Carlo estimates, so they carry the standard error the tables
 report and should be read against it rather than to the last digit
-printed. Reach for them when a downstream consumer requires those
-specific definitions, not by default.
+printed. Use them when an analysis requires those specific definitions,
+not by default.
 
 The independence graph is a graphical-model diagnostic, not a
 causal-discovery method. It returns the partial-correlation graph of the
 mixture’s overall covariance, without edge directions. Being second
 order, it sees only dependence that enters the covariance. A pair of
-coordinates coupled purely through a higher moment, or through a
-mixture-gate that leaves the overall covariance untouched, will appear
-as an absent edge. Fisher’s $`z`$ test assumes that the data rows are
-Gaussian. A one-component fit to non-Gaussian data carries that
-assumption too, since the variance of $`\operatorname{atanh}(r)`$
-depends on the fourth moments of the data. The simulation below compares
-the rate at which the test recovers a known graph with the rate its
-level predicts. The level of the test, or the threshold where no sample
-size is known, is a choice, and a graph read at one level is not the
-graph read at another.
+coordinates coupled purely through a higher moment, or through the
+choice of mixture component in a way that leaves the overall covariance
+unchanged, will appear as an absent edge. Fisher’s $`z`$ test assumes
+that the data rows are Gaussian. A one-component fit to non-Gaussian
+data carries that assumption too, since the variance of
+$`\operatorname{atanh}(r)`$ depends on the fourth moments of the data.
+The simulation below compares the rate at which the test recovers a
+known graph with the rate its level predicts. The level of the test, or
+the threshold where no sample size is known, is a choice, and a graph
+read at one level is not the graph read at another.
 
 The annealing path discovers a component count on data whose clusters
 are well separated, which is the case where every method agrees. The
 staircase becomes hard to read when clusters overlap, the widest-plateau
 rule can then select a count no criterion would endorse, and the
 analytic critical temperature governs only the *first* bifurcation, not
-the later ones. The ICL is a criterion, not a test: it ranks candidate
-counts and offers no significance statement about the winner.
+the later ones. The ICL is a criterion, not a test: it ranks the counts
+that were fitted and offers no significance statement about the winner.
 
 Everything in this vignette is read off a mixture that has already been
 fitted. Nothing here checks that the mixture is a good proxy for the
-target it was fitted to; that is the job of the importance-sampling
-diagnostics and the fit-quality certificate, and a confident entropy
-computed on a degenerate fit is confidently wrong. The checks above
-compare each quantity with its own analytic value on mixtures built by
-hand. The numerical illustration that follows scores the same
-quantities, read from mixtures fitted to data, against quadrature on the
-true density, and places them beside nearest-neighbour estimators,
-mclust’s criteria and three graph estimators.
+target it was fitted to. That is the job of the importance-sampling
+diagnostics and
+[`gmm_fit_quality()`](https://max578.github.io/proxymix/reference/gmm_fit_quality.md).
+An entropy computed on a degenerate fit can be precise and still wrong.
+The checks above compare each quantity with its own analytic value on
+mixtures built by hand. The numerical illustration that follows scores
+the same quantities, read from mixtures fitted to data, against
+quadrature on the true density, and places them beside nearest-neighbour
+estimators, mclust’s criteria and three graph estimators.
 
 ## Numerical illustration
 
@@ -1273,10 +1276,10 @@ high in two dimensions and 0.019 low in four, with errors of 0.035 and
 and 0.014 nats of its quadrature value on average, or 8 and 9 per cent
 of that value. Neither Shannon estimator reproduces the gap seen on the
 penguins, where the mixture read well below the nearest-neighbour
-estimate on every pair; neither design here has both the four
-coordinates and the three clusters of the colony: the 2-d design has
-three components in two coordinates, and the 4-d design two components
-in four.
+estimate on every pair. Neither design here has both the four
+coordinates and the three clusters of the colony. The 2-d design has
+three components in two coordinates, and the 4-d design has two
+components in four.
 
 On the number of components, proxymix’s BIC chose the true count in 0.97
 of the 2-d datasets and 1.00 of the 4-d datasets, and mclust’s BIC in
@@ -1304,11 +1307,12 @@ leaves the partial correlation not significant at 1 per cent. The chain
 leaves 10 pairs without an edge. Were their tests independent, all 10
 would be left out at level 0.05 with probability $`0.95^{10}`$, or 0.60,
 and proxymix’s test recovered the chain in 0.63 of datasets. Most of its
-gap to the PC algorithm is therefore the test level, and the test held
-its level in this design. A level of $`0.05 / \binom{p}{2}`$ for $`p`$
-coordinates, passed as `alpha`, bounds the chance of any false edge at
-0.05 instead. The graphical lasso and huge choose a penalty by an
-information criterion.
+gap to the PC algorithm is therefore the test level, and the share of
+datasets with no false edge in this design was close to what that level
+predicts. A level of $`0.05 / \binom{p}{2}`$ for $`p`$ coordinates,
+passed as `alpha`, bounds the chance of any false edge at 0.05 instead.
+The graphical lasso and huge choose a penalty by an information
+criterion.
 
 In this run, in the 2-d design, the mixture’s mean absolute error for
 the Shannon entropy was smaller than the nearest-neighbour estimator’s
@@ -1318,26 +1322,20 @@ nats, 5.6 paired standard errors. In the 4-d design its error for the
 Shannon entropy was smaller than the nearest-neighbour estimator’s by
 0.009 nats, 4.0 paired standard errors, and for the Shannon mutual
 information it was within 1.3 paired standard errors of the
-nearest-neighbour estimator’s, which does not resolve a difference. The
-mixture’s BIC chose the true component count in 0.97 and 1.00 of the 2-d
-and 4-d datasets, against 1.00 and 1.00 for mclust’s BIC. The PC
-algorithm recovered the chain in 0.94 of datasets and the mixture’s test
-in 0.63, and in the 2-d design, where the components overlapped most,
-mclust’s ICL chose the true count in 0.32 of datasets and proxymix’s in
-0.02. Two mixtures, one sample size, one graph and one test level do not
-cover mixtures with many components, higher dimensions, other neighbour
-counts for the nearest-neighbour estimators, or the choice of level, and
-no method here was run on a target that could only be evaluated.
+nearest-neighbour estimator’s, which does not resolve a difference. Two
+mixtures, one sample size, one graph and one test level do not cover
+mixtures with many components, higher dimensions, other neighbour counts
+for the nearest-neighbour estimators, or the choice of level. In the
+simulation, no method was run on a target that could only be evaluated.
 
 ## Further reading
 
-*How well a mixture proxies four awkward shapes* runs regime (iii)
-across targets of different geometry and reports the fit-quality
-diagnostics these entropy reads assume are healthy. *Choosing between
-the three fitting regimes* explains the annealed fit’s starting point,
-the difference between fitting from samples and fitting from a density
-you can only evaluate. *The closed-form operator calculus on a mixture*
-covers the conditioning operation that
+*How well a mixture proxies four awkward shapes* runs regime (iii) on
+targets of different shapes and reports the fit-quality diagnostics to
+check before reading any entropy value. *Choosing between the three
+fitting regimes* explains the difference between fitting from samples
+and fitting from a density you can only evaluate. *The closed-form
+operator calculus on a mixture* covers the conditioning operation that
 [`gmm_conditional_entropy()`](https://max578.github.io/proxymix/reference/gmm_conditional_entropy.md)
 calls row by row, and the rest of the exact algebra on a fitted mixture.
 *Fitting a proxy to a density you cannot sample* introduces the regime
@@ -1348,64 +1346,68 @@ calls row by row, and the rest of the exact algebra on a fitted mixture.
 - Biernacki, C., Celeux, G. and Govaert, G. (2000). *Assessing a mixture
   model for clustering with the integrated completed likelihood.* IEEE
   Transactions on Pattern Analysis and Machine Intelligence 22(7),
-  719–725. <doi:10.1109/34.865189>.
+  719–725. <https://doi.org/10.1109/34.865189>.
 - Friedman, J., Hastie, T. and Tibshirani, R. (2008). *Sparse inverse
   covariance estimation with the graphical lasso.* Biostatistics 9(3),
-  432–441. <doi:10.1093/biostatistics/kxm045>.
+  432–441. <https://doi.org/10.1093/biostatistics/kxm045>.
 - Genz, A. C. and Malik, A. A. (1980). *Remarks on algorithm 006: An
   adaptive algorithm for numerical integration over an N-dimensional
   rectangular region.* Journal of Computational and Applied Mathematics
-  6(4), 295–302. <doi:10.1016/0771-050X(80)90039-X>.
+  6(4), 295–302. <https://doi.org/10.1016/0771-050X(80)90039-X>.
 - Gorman, K. B., Williams, T. D. and Fraser, W. R. (2014). *Ecological
   sexual dimorphism and environmental variability within a community of
   Antarctic penguins (genus Pygoscelis).* PLoS ONE 9(3), e90081.
-  <doi:10.1371/journal.pone.0090081>.
+  <https://doi.org/10.1371/journal.pone.0090081>.
 - Hershey, J. R. and Olsen, P. A. (2007). *Approximating the Kullback
   Leibler divergence between Gaussian mixture models.* 2007 IEEE
   International Conference on Acoustics, Speech and Signal Processing
-  (ICASSP ’07), IV-317–IV-320. <doi:10.1109/ICASSP.2007.366913>.
+  (ICASSP ’07), IV-317–IV-320.
+  <https://doi.org/10.1109/ICASSP.2007.366913>.
 - Horst, A. M., Presmanes Hill, A. and Gorman, K. B. (2022). *Palmer
   Archipelago penguins data in the palmerpenguins R package – an
   alternative to Anderson’s irises.* The R Journal 14(1), 244–254.
-  <doi:10.32614/RJ-2022-020>.
+  <https://doi.org/10.32614/RJ-2022-020>.
 - Jaynes, E. T. (1957). *Information theory and statistical mechanics.*
-  Physical Review 106(4), 620–630. <doi:10.1103/PhysRev.106.620>.
+  Physical Review 106(4), 620–630.
+  <https://doi.org/10.1103/PhysRev.106.620>.
 - Kalisch, M., Mächler, M., Colombo, D., Maathuis, M. H. and
   Bühlmann, P. (2012). *Causal inference using graphical models with the
   R package pcalg.* Journal of Statistical Software 47(11), 1–26.
-  <doi:10.18637/jss.v047.i11>.
+  <https://doi.org/10.18637/jss.v047.i11>.
 - Kozachenko, L. F. and Leonenko, N. N. (1987). *Sample estimate of the
   entropy of a random vector.* Problems of Information Transmission
   23(2), 95–101.
 - Kraskov, A., Stögbauer, H. and Grassberger, P. (2004). *Estimating
   mutual information.* Physical Review E 69(6), 066138.
-  <doi:10.1103/PhysRevE.69.066138>.
+  <https://doi.org/10.1103/PhysRevE.69.066138>.
 - Meinshausen, N. and Bühlmann, P. (2006). *High-dimensional graphs and
   variable selection with the lasso.* The Annals of Statistics 34(3),
-  1436–1462. <doi:10.1214/009053606000000281>.
+  1436–1462. <https://doi.org/10.1214/009053606000000281>.
 - Rose, K. (1998). *Deterministic annealing for clustering, compression,
   classification, regression, and related optimization problems.*
-  Proceedings of the IEEE 86(11), 2210–2239. <doi:10.1109/5.726788>.
+  Proceedings of the IEEE 86(11), 2210–2239.
+  <https://doi.org/10.1109/5.726788>.
 - Scrucca, L., Fop, M., Murphy, T. B. and Raftery, A. E. (2016). *mclust
   5: Clustering, classification and density estimation using Gaussian
   finite mixture models.* The R Journal 8(1), 289–317.
-  <doi:10.32614/RJ-2016-021>.
+  <https://doi.org/10.32614/RJ-2016-021>.
 - Tsamardinos, I., Brown, L. E. and Aliferis, C. F. (2006). *The max-min
   hill-climbing Bayesian network structure learning algorithm.* Machine
-  Learning 65(1), 31–78. <doi:10.1007/s10994-006-6889-7>.
+  Learning 65(1), 31–78. <https://doi.org/10.1007/s10994-006-6889-7>.
 - van der Hoek, J. and Elliott, R. J. (2024). *Mixtures of multivariate
   Gaussians.* Stochastic Analysis and Applications.
-  <doi:10.1080/07362994.2024.2372605>.
+  <https://doi.org/10.1080/07362994.2024.2372605>.
 - Zhao, T., Liu, H., Roeder, K., Lafferty, J. and Wasserman, L. (2012).
   *The huge package for high-dimensional undirected graph estimation in
   R.* Journal of Machine Learning Research 13, 1059–1062.
 
 ## Reproduce
 
-The vignette sets `set.seed(20260618)` once, and every verb with a
-`seed` argument gets one.
+The vignette sets `set.seed(20260618)` once. Every function call that
+draws its own random numbers and has a `seed` argument is given one.
 [`gmm_divergence()`](https://max578.github.io/proxymix/reference/gmm_divergence.md)
-has none, so its estimate and later draws depend on chunk order.
+has no `seed` argument, so its estimate and later draws depend on chunk
+order.
 
 The illustration gives
 [`select_N()`](https://max578.github.io/proxymix/reference/select_N.md)

@@ -3,15 +3,19 @@
 target \(f\), using the fitted mixture \(\hat g\) as the proposal:
 $$\widehat{Z} = \frac{1}{n} \sum_{i=1}^n
   \frac{f(x_i)}{\hat g(x_i)}, \qquad x_i \sim \hat g,$$
-computed in the log domain. For a Bayesian posterior handed over as
-likelihood x prior, \(\log Z\) is the log marginal likelihood, so a
-fitted proxy doubles as a model-comparison device."><meta property="og:description" content="Importance-sampling estimate of \(Z = \int f(x)\, dx\) for the fit's
+computed in the log domain. A draw at which the target density is zero
+contributes a zero term and stays in the average. For a Bayesian
+posterior handed over as likelihood x prior, \(\log Z\) is the log
+marginal likelihood, so a fitted proxy doubles as a model-comparison
+device."><meta property="og:description" content="Importance-sampling estimate of \(Z = \int f(x)\, dx\) for the fit's
 target \(f\), using the fitted mixture \(\hat g\) as the proposal:
 $$\widehat{Z} = \frac{1}{n} \sum_{i=1}^n
   \frac{f(x_i)}{\hat g(x_i)}, \qquad x_i \sim \hat g,$$
-computed in the log domain. For a Bayesian posterior handed over as
-likelihood x prior, \(\log Z\) is the log marginal likelihood, so a
-fitted proxy doubles as a model-comparison device."></head><body>
+computed in the log domain. A draw at which the target density is zero
+contributes a zero term and stays in the average. For a Bayesian
+posterior handed over as likelihood x prior, \(\log Z\) is the log
+marginal likelihood, so a fitted proxy doubles as a model-comparison
+device."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -67,9 +71,11 @@ fitted proxy doubles as a model-comparison device."></head><body>
 target \(f\), using the fitted mixture \(\hat g\) as the proposal:
 $$\widehat{Z} = \frac{1}{n} \sum_{i=1}^n
   \frac{f(x_i)}{\hat g(x_i)}, \qquad x_i \sim \hat g,$$
-computed in the log domain. For a Bayesian posterior handed over as
-<code>likelihood x prior</code>, \(\log Z\) is the log marginal likelihood, so a
-fitted proxy doubles as a model-comparison device.</p>
+computed in the log domain. A draw at which the target density is zero
+contributes a zero term and stays in the average. For a Bayesian
+posterior handed over as <code>likelihood x prior</code>, \(\log Z\) is the log
+marginal likelihood, so a fitted proxy doubles as a model-comparison
+device.</p>
     </div>
 
     <div class="section level2">

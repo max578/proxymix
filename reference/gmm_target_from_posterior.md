@@ -48,9 +48,10 @@ gmm_target_from_posterior(
 
 - log_normalizer:
 
-  Numeric scalar `log Z` of the posterior, if known. `NA_real_` (the
-  default) otherwise; downstream diagnostics will label any KLD estimate
-  as shifted.
+  Numeric scalar `log Z`, the log of the integral of
+  [`exp()`](https://rdrr.io/r/base/Log.html) of the log-posterior, if
+  known. With `NA_real_` (the default), downstream diagnostics label any
+  KLD estimate as shifted.
 
 - name:
 

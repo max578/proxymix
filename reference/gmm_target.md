@@ -56,10 +56,11 @@ gmm_target(
 
 - log_normalizer:
 
-  Numeric scalar `log Z(f)` of the supplied `log_density`, if known.
-  Default `NA_real_`. When `normalised = FALSE` and `log_normalizer` is
-  finite, downstream diagnostics can correct shifted KLD estimates by
-  `+ log_normalizer`.
+  Numeric scalar `log Z(f)`, the log of the integral of
+  `exp(log_density)`, if known. Default `NA_real_`. When
+  `normalised = FALSE` and `log_normalizer` is finite,
+  [`fit_kld_em()`](https://max578.github.io/proxymix/reference/fit_kld_em.md)
+  subtracts it from the shifted KLD estimates.
 
 - name:
 
@@ -88,12 +89,12 @@ to construct.
 Importance-sampled KLD-EM (regime `"kld"`) only requires `log_density`
 to be specified up to an unknown additive constant — the self-normalised
 weights are invariant to scaling. The package's *diagnostics*
-downstream, however, do depend on normalisation: an importance-sampled
-KLD estimate against an unnormalised log-density measures
-\\\widehat{KL}(f \Vert g) - \log Z(f)\\ rather than \\\widehat{KL}(f
-\Vert g)\\, and a squared-Hellinger Monte Carlo estimate is only
-meaningful when both densities integrate to one. Declare the target's
-normalisation explicitly via `normalised` (and, where possible, supply
+downstream, however, do depend on normalisation. An importance-sampled
+KLD estimate against an unnormalised log-density equals \\KL(f \Vert
+g) + \log Z(f)\\, where \\Z(f)\\ is the integral of `exp(log_density)`.
+A squared-Hellinger Monte Carlo estimate is only meaningful when both
+densities integrate to one. Declare the target's normalisation
+explicitly via `normalised` (and, where possible, supply
 `log_normalizer`) so that the package can label shifted KLDs as shifted
 and refuse misleading Hellinger reports.
 

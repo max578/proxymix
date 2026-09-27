@@ -33,7 +33,7 @@ others must be estimated by simulation.
 - [`gmm_divergence()`](https://max578.github.io/proxymix/reference/gmm_divergence.md)
   returns the exact Cauchy-Schwarz divergence between two mixtures. With
   `type = "kl"` it returns a simulation estimate of the Kullback-Leibler
-  divergence from
+  divergence computed by
   [`gmm_kld()`](https://max578.github.io/proxymix/reference/gmm_kld.md).
 - [`gmm_mutual_information()`](https://max578.github.io/proxymix/reference/gmm_mutual_information.md)
   measures the dependence between two groups of variables.
@@ -153,8 +153,9 @@ Two divergences between the same pair of mixtures. {.table}
 
 The Cauchy-Schwarz mutual information compares the joint distribution
 with the distribution the variables would have if they were independent.
-The conditional entropy of $`x_1`$ given $`x_2`$ is the Rényi-2 entropy
-of $`x_1`$ when $`x_2`$ is held at a value.
+Here the conditional entropy of $`x_1`$ at a value of $`x_2`$ is the
+Rényi-2 entropy of $`x_1`$ when $`x_2`$ is held at that value. It is
+computed at each value separately, not averaged over $`x_2`$.
 [`gmm_conditional_entropy()`](https://max578.github.io/proxymix/reference/gmm_conditional_entropy.md)
 takes one row per value, with `NA` marking the free variable.
 
@@ -198,8 +199,12 @@ component sits at the mean of the data. As $`T`$ falls towards one, the
 components split apart at critical temperatures. The quantity minimised
 is the free energy $`F = \langle E \rangle - T H`$, where
 $`\langle E \rangle`$ is the average of
-$`-\log \phi(x_i;\ \mu_k, \Sigma_k)`$ over the shares and $`H`$ is the
-entropy of the shares. With `anneal = TRUE`,
+$`-\log \phi(x_i;\ \mu_k, \Sigma_k)`$ over the shares. $`H`$ is the
+entropy of the shares relative to the component weights,
+$`H = -n^{-1} \sum_{i,k} \gamma_{ik} \log(\gamma_{ik} / \pi_k)`$, where
+$`\gamma_{ik}`$ is the share of point $`i`$ given to component $`k`$. It
+is zero when every point is shared in proportion to the weights. With
+`anneal = TRUE`,
 [`fit_em_samples()`](https://max578.github.io/proxymix/reference/fit_em_samples.md)
 and
 [`fit_kld_em()`](https://max578.github.io/proxymix/reference/fit_kld_em.md)
@@ -307,8 +312,8 @@ builds it. For a given mean and covariance matrix it is the normal
 distribution, for a given range alone the uniform, and for a mean and
 covariance matrix on a bounded box a truncated normal. A bounded target
 records its range. When such a target is fitted from its formula alone
-(`regime = "kld"`, van der Hoek and Elliott, 2024), the random points
-that the fit weights are then drawn over that range.
+(`regime = "kld"`, van der Hoek and Elliott, 2024), the trial points
+that the fit weights are drawn from within that range.
 
 ``` r
 
@@ -347,7 +352,7 @@ x_two <- rbind(
   matrix(rnorm(200L, -4), ncol = 2L),
   matrix(rnorm(200L, 4), ncol = 2L)
 )
-fit_two <- fit_em_samples(gmm_target_from_samples(x_two), N = 2L)
+fit_two <- fit_em_samples(gmm_target_from_samples(x_two), N = 2L, seed = 1L)
 crit <- bic_aic(fit_two)
 ```
 
@@ -465,32 +470,35 @@ The difference is the proxymix error minus the FNN error, paired by
 dataset. A negative value favours proxymix. {.table}
 
 proxymix had the smaller error for the entropy in both designs and for
-the mutual information with two variables, each by at least 3.9 standard
-errors. With four variables, the difference in mutual information is 1.3
-standard errors, too small to separate the two methods.
+the mutual information with two variables. The difference was 8.2
+standard errors for the entropy with two variables, 4.0 for the entropy
+with four variables, and 5.6 for the mutual information with two
+variables. With four variables, the difference in mutual information is
+1.3 standard errors, too small to separate the two methods.
 
 Where the same simulation chose the number of components or recovered a
 graph, other packages did better. With three overlapping components, the
 BIC of the mclust package (Scrucca et al., 2016) chose the true count in
-1.00 of datasets and proxymix’s BIC in 0.97. Both ICLs mostly chose two
-components, and found the true count in 0.32 of datasets for mclust and
-0.02 for proxymix. With two components in four variables, mclust’s ICL
-found the true count in 1.00 of datasets and proxymix’s in 0.83. On a
-six-variable chain with two components, the PC algorithm of the pcalg
-package (Kalisch et al., 2012), which removes edges by repeated tests of
-partial correlations, was run at level 0.01 and recovered the graph
-exactly in 0.935 of datasets.
+100 per cent of datasets and proxymix’s BIC in 97 per cent. Both ICLs
+mostly chose two components, and found the true count in 32 per cent of
+datasets for mclust and 2 per cent for proxymix. With two components in
+four variables, mclust’s ICL found the true count in 100 per cent of
+datasets and proxymix’s in 83 per cent. On a six-variable chain with two
+components, the PC algorithm of the pcalg package (Kalisch et al.,
+2012), which removes edges by repeated tests of partial correlations,
+was run at level 0.01 and recovered the graph exactly in 93.5 per cent
+of datasets.
 [`gmm_independence_graph()`](https://max578.github.io/proxymix/reference/gmm_independence_graph.md),
-at level 0.05 per pair, did so in 0.63. The chain leaves 10 pairs
+at level 0.05 per pair, did so in 63 per cent. The chain leaves 10 pairs
 without an edge. Were their tests independent, all 10 would be left out
-at level 0.05 with probability 0.60, close to proxymix’s share, so most
-of the gap comes from the looser level.
+at level 0.05 with probability 0.60, close to proxymix’s 63 per cent, so
+most of the gap comes from the looser level.
 
 proxymix was slower than FNN and pcalg. On one dataset of 500 rows, the
-FNN estimates took 0.004 seconds and the proxymix fit with its estimates
-0.055 seconds. The PC algorithm took 0.005 seconds and proxymix 0.340.
-proxymix’s five fits for the component count took 0.323 seconds and
-mclust’s ICL 0.592 (median of five runs on one computer).
+FNN estimates took 0.002 seconds and the proxymix fit with its estimates
+0.029 seconds. The PC algorithm took 0.002 seconds and proxymix 0.165.
+proxymix’s five fits for the component count took 0.171 seconds and
+mclust’s ICL 0.318 (median of five runs on one computer).
 
 The code below runs the three competitors and the proxymix estimates on
 one dataset from each design.
@@ -562,9 +570,9 @@ install.packages("pcalg")
 
 The [extended version of this
 article](https://max578.github.io/proxymix/articles/extended/entropy.html)
-gives the full simulation, adds the graphical lasso and the huge package
-to the graph comparison, and applies each method to the Palmer penguins
-data.
+gives the full code and results of this comparison, adds the graphical
+lasso and the huge package to the graph comparison, and applies each
+method to the Palmer penguins data.
 
 ## Interpretation
 
@@ -578,13 +586,14 @@ The Cauchy-Schwarz divergence of $`g`$ from itself is 0, as the
 definition requires. The Kullback-Leibler estimate of 0.570 nats has a
 standard error of 0.022, and the Hershey-Olsen approximation is 0.500.
 The Cauchy-Schwarz and Kullback-Leibler divergences are on different
-scales. Compare fits with one of them, never one with the other.
+scales. To compare several fits, use the same divergence for all of
+them.
 
 The mutual information is zero for independent variables, as it should
 be. The conditional entropy is 0.9288 nats at all three values of
 $`x_2`$. For a single normal distribution the spread of $`x_1`$ given
 $`x_2`$ does not depend on $`x_2`$, but for a mixture of several
-components it would.
+components it can.
 
 Cooling found 3 components, the number of clusters in the data. The
 first split was recorded at temperature 47.6, against the exact 51.6. A
@@ -600,7 +609,7 @@ mean, and the uniform family on the unit square, with density 1.000.
 For two well-separated clusters the ICL equals the BIC to the precision
 shown, because $`E_N`$ is only $`1.4 \times 10^{-13}`$. With overlapping
 components the ICL favours fewer of them. In the comparison, proxymix’s
-ICL chose two components in 0.98 of the datasets drawn with three
+ICL chose two components in 98 per cent of the datasets drawn with three
 overlapping components.
 
 The graph of the four-variable chain has 3 edges and is the chain. The
@@ -608,22 +617,22 @@ graph of the density fitted from its formula has 3 edges and is not the
 chain of the target. The fitted mixture puts the partial correlation of
 $`x_1`$ and $`x_3`$ at 0.069, above the threshold of 0.05. The target’s
 own partial correlation, computed by summation over a fine grid, is
-0.0009. The fit’s certificate from
-[`gmm_fit_quality()`](https://max578.github.io/proxymix/reference/gmm_fit_quality.md)
-reports that the fit converged, is not degenerate, and has an
-approximate KL divergence of 0.198 nats. The package flags a fit that
-did not converge, is degenerate, or has an approximate KL divergence
-above 0.3. This fit is not flagged.
+0.0009. According to
+[`gmm_fit_quality()`](https://max578.github.io/proxymix/reference/gmm_fit_quality.md),
+the fit converged, is not degenerate, and has a KL divergence of 0.224
+nats, measured on fresh draws that the fit did not use. The package
+flags a fit that did not converge, is degenerate, or has a KL divergence
+above 0.3 on fresh draws. This fit is not flagged.
 
 Refitted with seeds 1 to 10 and 6000 trial points each, the mixture
 recovered the chain in 9 of 10 fits, and with 12000 trial points in 10
-of 10. With more trial points, recovery was more reliable here. The flag
-was raised on 2 of the fits with 6000 points and 1 of those with 12000.
-Each flagged fit reached its round limit without converging. None was
-degenerate or had an approximate KL divergence above 0.3. Every flagged
-fit recovered the chain. The one fit that missed the chain was not
-flagged. The flag checks the fit, not the graph read from it. To check a
-graph, refit with more trial points and see whether it stays the same.
+of 10. The flag was raised on 2 of the fits with 6000 points and 1 of
+those with 12000. Each flagged fit reached its round limit without
+converging. None was degenerate or had a KL divergence above 0.3 on
+fresh draws. Every flagged fit recovered the chain. The one fit that
+missed the chain was not flagged. The flag describes the fit, not the
+graph read from it. To check a graph, refit with more trial points and
+see whether it stays the same.
 
 ## Limitations
 
@@ -644,26 +653,28 @@ graph. Testing each pair at 0.05 lets false edges add up. The
 six-variable chain has 10 pairs without an edge, and 10 independent
 tests at 0.05 would give at least one false edge with probability 0.40.
 `alpha = 0.05 / choose(p, 2)` for $`p`$ variables keeps that probability
-below 0.05. The PC algorithm recovered the simulated chain more often.
+below 0.05.
 
 Cooling found the right count on well-separated clusters, where other
 methods also succeed. On overlapping clusters the staircase is hard to
-read, and the rule of the most steps can pick a count no criterion
-supports. The exact critical temperature applies only to the first
-split. The ICL ranks the counts that were fitted but gives no test of
-the winner. It undercounts overlapping components, and mclust’s ICL did
-better than proxymix’s in the comparison.
+read, and the count held over the most cooling steps can be one that no
+criterion supports. The exact critical temperature applies only to the
+first split. The ICL ranks the counts that were fitted but gives no test
+of the winner. It undercounts overlapping components, and mclust’s ICL
+did better than proxymix’s in the comparison.
 
-Every number here is read from a mixture already fitted, and none of
-these numbers checks that the mixture is a good proxy for its target.
-Check that with
+Every number here is read from a mixture already fitted. None of these
+numbers shows whether the mixture is a good proxy for its target. Check
+that with
 [`gmm_fit_quality()`](https://max578.github.io/proxymix/reference/gmm_fit_quality.md)
 first. An entropy computed on a poor fit can be precise and still wrong.
 
 ## Further reading
 
-The quality checks that these measures rely on are shown for several
-target shapes in *How well a mixture proxies four awkward shapes*.
+*How well a mixture proxies four awkward shapes* applies the fit-quality
+checks of
+[`gmm_fit_quality()`](https://max578.github.io/proxymix/reference/gmm_fit_quality.md)
+to several target shapes.
 
 *Choosing between the three fitting regimes* explains the difference
 between fitting from data and fitting from a formula alone.
@@ -721,12 +732,13 @@ finite mixture models.* The R Journal 8(1), 289–317.
 
 ## Reproduce
 
-The vignette sets `set.seed(20260618)` once. Each function that draws
-its own simulation sample gets a `seed` argument, except
-`gmm_divergence(type = "kl")`, which uses the stream that
+The vignette sets `set.seed(20260618)` once, and the simulated data are
+drawn from that stream. Every call that draws its own random numbers and
+has a `seed` argument is given one. `gmm_divergence(type = "kl")` has no
+`seed` argument and uses the stream that
 [`set.seed()`](https://rdrr.io/r/base/Random.html) started. The
-comparison reads stored results of the simulation in the extended
-article, run under proxymix 0.16.0 on 26 September 2026.
+comparison and the refits over 10 seeds read stored results, run under
+proxymix 0.16.0 on 26 September 2026.
 
 ``` r
 

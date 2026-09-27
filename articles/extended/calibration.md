@@ -473,13 +473,13 @@ geyser_res <- do.call(rbind, geyser_res)
 
 | Method           | Evaluations | Reported | Excess over mclust | Basins | Seconds |
 |:-----------------|------------:|---------:|-------------------:|:-------|--------:|
-| proxymix         |        4176 |        6 |              34.06 | M1, M2 |    0.21 |
-| proxymix, 26 000 |       20582 |        9 |               1.01 | M1, M2 |    1.35 |
-| GenSA            |        5000 |        1 |              -0.01 | M2     |    0.06 |
+| proxymix         |        4176 |        6 |              34.06 | M1, M2 |    0.18 |
+| proxymix, 26 000 |       20582 |        9 |               1.01 | M1, M2 |    1.11 |
+| GenSA            |        5000 |        1 |              -0.01 | M2     |    0.05 |
 | DEoptim          |        5000 |        1 |               1.02 | M1     |    0.04 |
-| cmaes            |        5000 |        1 |              -0.01 | M1     |    0.10 |
+| cmaes            |        5000 |        1 |              -0.01 | M1     |    0.08 |
 | nloptr           |        5636 |       20 |              -0.01 | M1, M2 |    0.05 |
-| optimx           |        7161 |       20 |              -0.01 | M1, M2 |    0.07 |
+| optimx           |        7161 |       20 |              -0.01 | M1, M2 |    0.06 |
 
 Each method on the Old Faithful likelihood at a budget of 5000 objective
 evaluations: the negative log-likelihood of its best reported solution
@@ -835,38 +835,39 @@ since the map is an ordinary mixture.
 
 - Azzalini, A. and Bowman, A. W. (1990). *A look at some data on the Old
   Faithful geyser.* Applied Statistics 39(3), 357–365.
-  <doi:10.2307/2347385>.
+  <https://doi.org/10.2307/2347385>.
 - Carreira-Perpiñán, M. Á. (2000). *Mode-finding for mixtures of
   Gaussian distributions.* IEEE Transactions on Pattern Analysis and
-  Machine Intelligence 22(11), 1318–1323. <doi:10.1109/34.888716>.
+  Machine Intelligence 22(11), 1318–1323.
+  <https://doi.org/10.1109/34.888716>.
 - Hansen, N. and Ostermeier, A. (2001). *Completely derandomized
   self-adaptation in evolution strategies.* Evolutionary Computation
-  9(2), 159–195. <doi:10.1162/106365601750190398>.
+  9(2), 159–195. <https://doi.org/10.1162/106365601750190398>.
 - Himmelblau, D. M. (1972). *Applied Nonlinear Programming.*
   McGraw-Hill.
 - Liu, D. C. and Nocedal, J. (1989). *On the limited memory BFGS method
   for large scale optimization.* Mathematical Programming 45, 503–528.
-  <doi:10.1007/BF01589116>.
+  <https://doi.org/10.1007/BF01589116>.
 - Mullen, K. M., Ardia, D., Gil, D. L., Windover, D. and Cline, J.
   (2011). *DEoptim: An R package for global optimization by differential
   evolution.* Journal of Statistical Software 40(6), 1–26.
-  <doi:10.18637/jss.v040.i06>.
+  <https://doi.org/10.18637/jss.v040.i06>.
 - Nash, J. C. and Varadhan, R. (2011). *Unifying optimization algorithms
   to aid software system users: optimx for R.* Journal of Statistical
-  Software 43(9), 1–14. <doi:10.18637/jss.v043.i09>.
+  Software 43(9), 1–14. <https://doi.org/10.18637/jss.v043.i09>.
 - Rastrigin, L. A. (1974). *Systems of Extremal Control.* Nauka.
 - Scrucca, L., Fop, M., Murphy, T. B. and Raftery, A. E. (2016). *mclust
   5: Clustering, classification and density estimation using Gaussian
   finite mixture models.* The R Journal 8(1), 289–317.
-  <doi:10.32614/RJ-2016-021>.
+  <https://doi.org/10.32614/RJ-2016-021>.
 - van der Hoek, J. and Elliott, R. J. (2024). *Mixtures of multivariate
   Gaussians.* Stochastic Analysis and Applications.
-  <doi:10.1080/07362994.2024.2372605>.
+  <https://doi.org/10.1080/07362994.2024.2372605>.
 - Venables, W. N. and Ripley, B. D. (2002). *Modern Applied Statistics
   with S.* Fourth edition. Springer.
 - Xiang, Y., Gubian, S., Suomela, B. and Hoeng, J. (2013). *Generalized
   simulated annealing for global optimization: the GenSA package.* The R
-  Journal 5(1), 13–28. <doi:10.32614/RJ-2013-002>.
+  Journal 5(1), 13–28. <https://doi.org/10.32614/RJ-2013-002>.
 
 ## Reproduce
 

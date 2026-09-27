@@ -524,14 +524,14 @@ scores <- aggregate(
 
 | Method              | Mean (F) | 90% (F) | Mean (P) | 90% (P) | ms per query |
 |:--------------------|---------:|--------:|---------:|--------:|-------------:|
-| proxymix, K = 3     |     0.36 |    0.62 |     0.65 |    0.93 |         0.62 |
-| proxymix, K = 5     |     0.29 |    0.47 |     0.71 |    0.73 |         0.68 |
-| proxymix, K = 8     |     0.19 |    0.40 |     0.83 |    0.78 |         1.00 |
-| mclust, G by BIC    |     0.42 |    0.84 |     1.04 |    1.03 |         0.55 |
-| mixtools, k = 2     |     0.41 |    0.82 |     1.63 |    1.35 |         0.52 |
-| np, npcdens         |     0.32 |    0.37 |     0.43 |    0.54 |         2.10 |
-| KernSmooth, bkde2D  |     0.04 |    0.08 |     0.07 |    0.06 |         0.05 |
-| ks, kde (reference) |     0.00 |    0.00 |     0.00 |    0.00 |        17.53 |
+| proxymix, K = 3     |     0.36 |    0.62 |     0.65 |    0.93 |         0.32 |
+| proxymix, K = 5     |     0.29 |    0.47 |     0.71 |    0.73 |         0.40 |
+| proxymix, K = 8     |     0.19 |    0.40 |     0.83 |    0.78 |         0.45 |
+| mclust, G by BIC    |     0.42 |    0.84 |     1.04 |    1.03 |         0.30 |
+| mixtools, k = 2     |     0.41 |    0.82 |     1.63 |    1.35 |         0.28 |
+| np, npcdens         |     0.32 |    0.37 |     0.43 |    0.54 |         1.22 |
+| KernSmooth, bkde2D  |     0.04 |    0.08 |     0.07 |    0.06 |         0.02 |
+| ks, kde (reference) |     0.00 |    0.00 |     0.00 |    0.00 |        10.50 |
 
 Mean absolute error of the conditional mean (Mean) and of the 90%
 conditional quantile (90%) of $`y`$ given $`x`$ over 20 values of $`x`$,
@@ -620,8 +620,8 @@ all 272 or 342 kernels at 401 grid points. The same conditional also has
 a closed form, a mixture of 272 or 342 components, so its cost grows
 with $`n`$ either way; a conditional of the proxy is a Schur complement
 over $`K`$ components and a one-dimensional quantile. Averaged over the
-two datasets, a query on the three-component proxy took 0.62 ms against
-17.53 ms on the reference, about 28 times faster on this build. np’s
+two datasets, a query on the three-component proxy took 0.32 ms against
+10.50 ms on the reference, about 33 times faster on this build. np’s
 query is cheaper than the reference, since its bandwidth search is done
 at fit time, and dearer than the mixtures. The binned KernSmooth grid is
 the cheapest of all, since a conditional is one interpolation between
@@ -793,7 +793,7 @@ its Monte Carlo standard error, and the mean time of one fit. {.table}
 
 In this run proxymix came out ahead of the three kernel estimators on
 integrated squared error at $`K`$ = 3 and 5 and level with ks at $`K`$ =
-8, and a conditional query on the three-component proxy was about 28
+8, and a conditional query on the three-component proxy was about 33
 times faster, averaged over the two datasets, than one on the ks
 estimate it compresses, evaluated on a grid of 401 values. mclust and
 mixtools, fitted directly to the data, had lower integrated squared
@@ -819,35 +819,37 @@ one global component to one component per datum.
 
 - Azzalini, A. and Bowman, A. W. (1990). *A look at some data on the Old
   Faithful geyser.* Applied Statistics 39(3), 357–365.
-  <doi:10.2307/2347385>.
+  <https://doi.org/10.2307/2347385>.
 - Benaglia, T., Chauveau, D., Hunter, D. R. and Young, D. S. (2009).
   *mixtools: An R package for analyzing finite mixture models.* Journal
-  of Statistical Software 32(6), 1–29. <doi:10.18637/jss.v032.i06>.
+  of Statistical Software 32(6), 1–29.
+  <https://doi.org/10.18637/jss.v032.i06>.
 - Duong, T. (2007). *ks: Kernel density estimation and kernel
   discriminant analysis for multivariate data in R.* Journal of
-  Statistical Software 21(7), 1–16. <doi:10.18637/jss.v021.i07>.
+  Statistical Software 21(7), 1–16.
+  <https://doi.org/10.18637/jss.v021.i07>.
 - Gorman, K. B., Williams, T. D. and Fraser, W. R. (2014). *Ecological
   sexual dimorphism and environmental variability within a community of
   Antarctic penguins (genus Pygoscelis).* PLoS ONE 9(3), e90081.
-  <doi:10.1371/journal.pone.0090081>.
+  <https://doi.org/10.1371/journal.pone.0090081>.
 - Hayfield, T. and Racine, J. S. (2008). *Nonparametric econometrics:
   The np package.* Journal of Statistical Software 27(5), 1–32.
-  <doi:10.18637/jss.v027.i05>.
+  <https://doi.org/10.18637/jss.v027.i05>.
 - Horst, A. M., Presmanes Hill, A. and Gorman, K. B. (2022). *Palmer
   Archipelago penguins data in the palmerpenguins R package – an
   alternative to Anderson’s irises.* The R Journal 14(1), 244–254.
-  <doi:10.32614/RJ-2022-020>.
+  <https://doi.org/10.32614/RJ-2022-020>.
 - Scott, D. W. (1992). *Multivariate Density Estimation: Theory,
   Practice, and Visualization.* Wiley.
 - Scrucca, L., Fop, M., Murphy, T. B. and Raftery, A. E. (2016). *mclust
   5: Clustering, classification and density estimation using Gaussian
   finite mixture models.* The R Journal 8(1), 289–317.
-  <doi:10.32614/RJ-2016-021>.
+  <https://doi.org/10.32614/RJ-2016-021>.
 - Silverman, B. W. (1986). *Density Estimation for Statistics and Data
   Analysis.* Chapman and Hall.
 - van der Hoek, J. and Elliott, R. J. (2024). *Mixtures of multivariate
   Gaussians.* Stochastic Analysis and Applications.
-  <doi:10.1080/07362994.2024.2372605>.
+  <https://doi.org/10.1080/07362994.2024.2372605>.
 - Wand, M. P. and Jones, M. C. (1995). *Kernel Smoothing.* Chapman and
   Hall.
 

@@ -111,8 +111,8 @@ Shannon entropy, with its standard error and an exact upper bound.</li>
 <li>
 <code><a href="../reference/gmm_divergence.html">gmm_divergence()</a></code> returns the exact Cauchy-Schwarz
 divergence between two mixtures. With <code>type = "kl"</code> it
-returns a simulation estimate of the Kullback-Leibler divergence from
-<code><a href="../reference/gmm_kld.html">gmm_kld()</a></code>.</li>
+returns a simulation estimate of the Kullback-Leibler divergence
+computed by <code><a href="../reference/gmm_kld.html">gmm_kld()</a></code>.</li>
 <li>
 <code><a href="../reference/gmm_mutual_information.html">gmm_mutual_information()</a></code> measures the dependence
 between two groups of variables. <code><a href="../reference/gmm_conditional_entropy.html">gmm_conditional_entropy()</a></code>
@@ -281,16 +281,19 @@ simulation.</p>
 </h3>
 <p>The Cauchy-Schwarz mutual information compares the joint distribution
 with the distribution the variables would have if they were independent.
-The conditional entropy of
+Here the conditional entropy of
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>1</mn></msub><annotation encoding="application/x-tex">x_1</annotation></semantics></math>
-given
+at a value of
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>2</mn></msub><annotation encoding="application/x-tex">x_2</annotation></semantics></math>
 is the Rényi-2 entropy of
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>1</mn></msub><annotation encoding="application/x-tex">x_1</annotation></semantics></math>
 when
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>2</mn></msub><annotation encoding="application/x-tex">x_2</annotation></semantics></math>
-is held at a value. <code><a href="../reference/gmm_conditional_entropy.html">gmm_conditional_entropy()</a></code> takes one row
-per value, with <code>NA</code> marking the free variable.</p>
+is held at that value. It is computed at each value separately, not
+averaged over
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>2</mn></msub><annotation encoding="application/x-tex">x_2</annotation></semantics></math>.
+<code><a href="../reference/gmm_conditional_entropy.html">gmm_conditional_entropy()</a></code> takes one row per value, with
+<code>NA</code> marking the free variable.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sigma_joint</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0.7</span>, <span class="fl">0.7</span>, <span class="fl">1</span><span class="op">)</span>, <span class="fl">2L</span>, <span class="fl">2L</span><span class="op">)</span></span>
 <span><span class="va">joint</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gmm.html">gmm</a></span><span class="op">(</span></span>
@@ -374,12 +377,21 @@ where
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">⟨</mo><mi>E</mi><mo stretchy="false" form="postfix">⟩</mo></mrow><annotation encoding="application/x-tex">\langle E \rangle</annotation></semantics></math>
 is the average of
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>−</mi><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><mi>ϕ</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>x</mi><mi>i</mi></msub><mo>;</mo><mspace width="0.222em"></mspace><msub><mi>μ</mi><mi>k</mi></msub><mo>,</mo><msub><mi mathvariant="normal">Σ</mi><mi>k</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">-\log \phi(x_i;\ \mu_k, \Sigma_k)</annotation></semantics></math>
-over the shares and
+over the shares.
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>H</mi><annotation encoding="application/x-tex">H</annotation></semantics></math>
-is the entropy of the shares. With <code>anneal = TRUE</code>,
-<code><a href="../reference/fit_em_samples.html">fit_em_samples()</a></code> and <code><a href="../reference/fit_kld_em.html">fit_kld_em()</a></code> cool first
-and start the usual fit from the result. The data below are three
-far-apart clusters of 100 points each.</p>
+is the entropy of the shares relative to the component weights,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>H</mi><mo>=</mo><mi>−</mi><msup><mi>n</mi><mrow><mi>−</mi><mn>1</mn></mrow></msup><msub><mo>∑</mo><mrow><mi>i</mi><mo>,</mo><mi>k</mi></mrow></msub><msub><mi>γ</mi><mrow><mi>i</mi><mi>k</mi></mrow></msub><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><mo stretchy="false" form="prefix">(</mo><msub><mi>γ</mi><mrow><mi>i</mi><mi>k</mi></mrow></msub><mi>/</mi><msub><mi>π</mi><mi>k</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">H = -n^{-1} \sum_{i,k} \gamma_{ik} \log(\gamma_{ik} / \pi_k)</annotation></semantics></math>,
+where
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mrow><mi>i</mi><mi>k</mi></mrow></msub><annotation encoding="application/x-tex">\gamma_{ik}</annotation></semantics></math>
+is the share of point
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>i</mi><annotation encoding="application/x-tex">i</annotation></semantics></math>
+given to component
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>.
+It is zero when every point is shared in proportion to the weights. With
+<code>anneal = TRUE</code>, <code><a href="../reference/fit_em_samples.html">fit_em_samples()</a></code> and
+<code><a href="../reference/fit_kld_em.html">fit_kld_em()</a></code> cool first and start the usual fit from the
+result. The data below are three far-apart clusters of 100 points
+each.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">x_three</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">200L</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fl">2L</span><span class="op">)</span> <span class="op">+</span></span>
@@ -496,8 +508,8 @@ matrix it is the normal distribution, for a given range alone the
 uniform, and for a mean and covariance matrix on a bounded box a
 truncated normal. A bounded target records its range. When such a target
 is fitted from its formula alone (<code>regime = "kld"</code>, van der
-Hoek and Elliott, 2024), the random points that the fit weights are then
-drawn over that range.</p>
+Hoek and Elliott, 2024), the trial points that the fit weights are drawn
+from within that range.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">me_gauss</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/maxent_target.html">maxent_target</a></span><span class="op">(</span>moments <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span>, cov <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">me_unif</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/maxent_target.html">maxent_target</a></span><span class="op">(</span>support <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>lower <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span>, upper <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
@@ -552,7 +564,7 @@ the BIC, and favours well-separated components.</p>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">200L</span>, <span class="op">-</span><span class="fl">4</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fl">2L</span><span class="op">)</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">200L</span>, <span class="fl">4</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fl">2L</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="va">fit_two</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_em_samples.html">fit_em_samples</a></span><span class="op">(</span><span class="fu"><a href="../reference/gmm_target_from_samples.html">gmm_target_from_samples</a></span><span class="op">(</span><span class="va">x_two</span><span class="op">)</span>, N <span class="op">=</span> <span class="fl">2L</span><span class="op">)</span></span>
+<span><span class="va">fit_two</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_em_samples.html">fit_em_samples</a></span><span class="op">(</span><span class="fu"><a href="../reference/gmm_target_from_samples.html">gmm_target_from_samples</a></span><span class="op">(</span><span class="va">x_two</span><span class="op">)</span>, N <span class="op">=</span> <span class="fl">2L</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
 <span><span class="va">crit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bic_aic.html">bic_aic</a></span><span class="op">(</span><span class="va">fit_two</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <caption>Information criteria for a two-component fit to two
@@ -792,31 +804,32 @@ by dataset. A negative value favours proxymix.</caption>
 </tbody>
 </table>
 <p>proxymix had the smaller error for the entropy in both designs and
-for the mutual information with two variables, each by at least 3.9
-standard errors. With four variables, the difference in mutual
-information is 1.3 standard errors, too small to separate the two
-methods.</p>
+for the mutual information with two variables. The difference was 8.2
+standard errors for the entropy with two variables, 4.0 for the entropy
+with four variables, and 5.6 for the mutual information with two
+variables. With four variables, the difference in mutual information is
+1.3 standard errors, too small to separate the two methods.</p>
 <p>Where the same simulation chose the number of components or recovered
 a graph, other packages did better. With three overlapping components,
 the BIC of the mclust package (Scrucca et al., 2016) chose the true
-count in 1.00 of datasets and proxymix’s BIC in 0.97. Both ICLs mostly
-chose two components, and found the true count in 0.32 of datasets for
-mclust and 0.02 for proxymix. With two components in four variables,
-mclust’s ICL found the true count in 1.00 of datasets and proxymix’s in
-0.83. On a six-variable chain with two components, the PC algorithm of
-the pcalg package (Kalisch et al., 2012), which removes edges by
-repeated tests of partial correlations, was run at level 0.01 and
-recovered the graph exactly in 0.935 of datasets.
-<code><a href="../reference/gmm_independence_graph.html">gmm_independence_graph()</a></code>, at level 0.05 per pair, did so in
-0.63. The chain leaves 10 pairs without an edge. Were their tests
-independent, all 10 would be left out at level 0.05 with probability
-0.60, close to proxymix’s share, so most of the gap comes from the
-looser level.</p>
+count in 100 per cent of datasets and proxymix’s BIC in 97 per cent.
+Both ICLs mostly chose two components, and found the true count in 32
+per cent of datasets for mclust and 2 per cent for proxymix. With two
+components in four variables, mclust’s ICL found the true count in 100
+per cent of datasets and proxymix’s in 83 per cent. On a six-variable
+chain with two components, the PC algorithm of the pcalg package
+(Kalisch et al., 2012), which removes edges by repeated tests of partial
+correlations, was run at level 0.01 and recovered the graph exactly in
+93.5 per cent of datasets. <code><a href="../reference/gmm_independence_graph.html">gmm_independence_graph()</a></code>, at
+level 0.05 per pair, did so in 63 per cent. The chain leaves 10 pairs
+without an edge. Were their tests independent, all 10 would be left out
+at level 0.05 with probability 0.60, close to proxymix’s 63 per cent, so
+most of the gap comes from the looser level.</p>
 <p>proxymix was slower than FNN and pcalg. On one dataset of 500 rows,
-the FNN estimates took 0.004 seconds and the proxymix fit with its
-estimates 0.055 seconds. The PC algorithm took 0.005 seconds and
-proxymix 0.340. proxymix’s five fits for the component count took 0.323
-seconds and mclust’s ICL 0.592 (median of five runs on one
+the FNN estimates took 0.002 seconds and the proxymix fit with its
+estimates 0.029 seconds. The PC algorithm took 0.002 seconds and
+proxymix 0.165. proxymix’s five fits for the component count took 0.171
+seconds and mclust’s ICL 0.318 (median of five runs on one
 computer).</p>
 <p>The code below runs the three competitors and the proxymix estimates
 on one dataset from each design.</p>
@@ -879,9 +892,9 @@ RBGL from Bioconductor. It is not run when this vignette is built.</p>
 <span><span class="fu">BiocManager</span><span class="fu">::</span><span class="fu"><a href="https://bioconductor.github.io/BiocManager/reference/install.html" class="external-link">install</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"graph"</span>, <span class="st">"RBGL"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"pcalg"</span><span class="op">)</span></span></code></pre></div>
 <p>The <a href="https://max578.github.io/proxymix/articles/extended/entropy.html">extended
-version of this article</a> gives the full simulation, adds the
-graphical lasso and the huge package to the graph comparison, and
-applies each method to the Palmer penguins data.</p>
+version of this article</a> gives the full code and results of this
+comparison, adds the graphical lasso and the huge package to the graph
+comparison, and applies each method to the Palmer penguins data.</p>
 </div>
 </div>
 <div class="section level2">
@@ -897,8 +910,8 @@ bound lies 4.0 standard errors above the estimate.</p>
 from itself is 0, as the definition requires. The Kullback-Leibler
 estimate of 0.570 nats has a standard error of 0.022, and the
 Hershey-Olsen approximation is 0.500. The Cauchy-Schwarz and
-Kullback-Leibler divergences are on different scales. Compare fits with
-one of them, never one with the other.</p>
+Kullback-Leibler divergences are on different scales. To compare several
+fits, use the same divergence for all of them.</p>
 <p>The mutual information is zero for independent variables, as it
 should be. The conditional entropy is 0.9288 nats at all three values of
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>2</mn></msub><annotation encoding="application/x-tex">x_2</annotation></semantics></math>.
@@ -908,7 +921,7 @@ given
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>2</mn></msub><annotation encoding="application/x-tex">x_2</annotation></semantics></math>
 does not depend on
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>2</mn></msub><annotation encoding="application/x-tex">x_2</annotation></semantics></math>,
-but for a mixture of several components it would.</p>
+but for a mixture of several components it can.</p>
 <p>Cooling found 3 components, the number of clusters in the data. The
 first split was recorded at temperature 47.6, against the exact 51.6. A
 split is recorded only on the grid of 60 steps and once two centres are
@@ -926,8 +939,8 @@ precision shown, because
 is only
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1.4</mn><mo>×</mo><msup><mn>10</mn><mrow><mi>−</mi><mn>13</mn></mrow></msup></mrow><annotation encoding="application/x-tex">1.4 \times 10^{-13}</annotation></semantics></math>.
 With overlapping components the ICL favours fewer of them. In the
-comparison, proxymix’s ICL chose two components in 0.98 of the datasets
-drawn with three overlapping components.</p>
+comparison, proxymix’s ICL chose two components in 98 per cent of the
+datasets drawn with three overlapping components.</p>
 <p>The graph of the four-variable chain has 3 edges and is the chain.
 The graph of the density fitted from its formula has 3 edges and is not
 the chain of the target. The fitted mixture puts the partial correlation
@@ -936,22 +949,21 @@ of
 and
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>3</mn></msub><annotation encoding="application/x-tex">x_3</annotation></semantics></math>
 at 0.069, above the threshold of 0.05. The target’s own partial
-correlation, computed by summation over a fine grid, is 0.0009. The
-fit’s certificate from <code><a href="../reference/gmm_fit_quality.html">gmm_fit_quality()</a></code> reports that the
-fit converged, is not degenerate, and has an approximate KL divergence
-of 0.198 nats. The package flags a fit that did not converge, is
-degenerate, or has an approximate KL divergence above 0.3. This fit is
-not flagged.</p>
+correlation, computed by summation over a fine grid, is 0.0009.
+According to <code><a href="../reference/gmm_fit_quality.html">gmm_fit_quality()</a></code>, the fit converged, is not
+degenerate, and has a KL divergence of 0.224 nats, measured on fresh
+draws that the fit did not use. The package flags a fit that did not
+converge, is degenerate, or has a KL divergence above 0.3 on fresh
+draws. This fit is not flagged.</p>
 <p>Refitted with seeds 1 to 10 and 6000 trial points each, the mixture
 recovered the chain in 9 of 10 fits, and with 12000 trial points in 10
-of 10. With more trial points, recovery was more reliable here. The flag
-was raised on 2 of the fits with 6000 points and 1 of those with 12000.
-Each flagged fit reached its round limit without converging. None was
-degenerate or had an approximate KL divergence above 0.3. Every flagged
-fit recovered the chain. The one fit that missed the chain was not
-flagged. The flag checks the fit, not the graph read from it. To check a
-graph, refit with more trial points and see whether it stays the
-same.</p>
+of 10. The flag was raised on 2 of the fits with 6000 points and 1 of
+those with 12000. Each flagged fit reached its round limit without
+converging. None was degenerate or had a KL divergence above 0.3 on
+fresh draws. Every flagged fit recovered the chain. The one fit that
+missed the chain was not flagged. The flag describes the fit, not the
+graph read from it. To check a graph, refit with more trial points and
+see whether it stays the same.</p>
 </div>
 <div class="section level2">
 <h2 id="limitations">Limitations<a class="anchor" aria-label="anchor" href="#limitations"></a>
@@ -978,26 +990,25 @@ pairs without an edge, and 10 independent tests at 0.05 would give at
 least one false edge with probability 0.40.
 <code>alpha = 0.05 / choose(p, 2)</code> for
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>p</mi><annotation encoding="application/x-tex">p</annotation></semantics></math>
-variables keeps that probability below 0.05. The PC algorithm recovered
-the simulated chain more often.</p>
+variables keeps that probability below 0.05.</p>
 <p>Cooling found the right count on well-separated clusters, where other
 methods also succeed. On overlapping clusters the staircase is hard to
-read, and the rule of the most steps can pick a count no criterion
-supports. The exact critical temperature applies only to the first
-split. The ICL ranks the counts that were fitted but gives no test of
-the winner. It undercounts overlapping components, and mclust’s ICL did
-better than proxymix’s in the comparison.</p>
-<p>Every number here is read from a mixture already fitted, and none of
-these numbers checks that the mixture is a good proxy for its target.
+read, and the count held over the most cooling steps can be one that no
+criterion supports. The exact critical temperature applies only to the
+first split. The ICL ranks the counts that were fitted but gives no test
+of the winner. It undercounts overlapping components, and mclust’s ICL
+did better than proxymix’s in the comparison.</p>
+<p>Every number here is read from a mixture already fitted. None of
+these numbers shows whether the mixture is a good proxy for its target.
 Check that with <code><a href="../reference/gmm_fit_quality.html">gmm_fit_quality()</a></code> first. An entropy
 computed on a poor fit can be precise and still wrong.</p>
 </div>
 <div class="section level2">
 <h2 id="further-reading">Further reading<a class="anchor" aria-label="anchor" href="#further-reading"></a>
 </h2>
-<p>The quality checks that these measures rely on are shown for several
-target shapes in <em>How well a mixture proxies four awkward
-shapes</em>.</p>
+<p><em>How well a mixture proxies four awkward shapes</em> applies the
+fit-quality checks of <code><a href="../reference/gmm_fit_quality.html">gmm_fit_quality()</a></code> to several target
+shapes.</p>
 <p><em>Choosing between the three fitting regimes</em> explains the
 difference between fitting from data and fitting from a formula
 alone.</p>
@@ -1040,12 +1051,13 @@ Gaussian finite mixture models.</em> The R Journal 8(1), 289–317. <a href="htt
 <div class="section level2">
 <h2 id="reproduce">Reproduce<a class="anchor" aria-label="anchor" href="#reproduce"></a>
 </h2>
-<p>The vignette sets <code>set.seed(20260618)</code> once. Each function
-that draws its own simulation sample gets a <code>seed</code> argument,
-except <code>gmm_divergence(type = "kl")</code>, which uses the stream
-that <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> started. The comparison reads stored
-results of the simulation in the extended article, run under proxymix
-0.16.0 on 26 September 2026.</p>
+<p>The vignette sets <code>set.seed(20260618)</code> once, and the
+simulated data are drawn from that stream. Every call that draws its own
+random numbers and has a <code>seed</code> argument is given one.
+<code>gmm_divergence(type = "kl")</code> has no <code>seed</code>
+argument and uses the stream that <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> started. The
+comparison and the refits over 10 seeds read stored results, run under
+proxymix 0.16.0 on 26 September 2026.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <pre class="session-info"><code><span><span class="co">#&gt; R version 4.6.1 (2026-06-24)</span></span>

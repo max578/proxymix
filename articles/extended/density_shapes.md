@@ -885,25 +885,25 @@ been captured.
 - Carpenter, B., Gelman, A., Hoffman, M. D., Lee, D., Goodrich, B.,
   Betancourt, M., Brubaker, M., Guo, J., Li, P. and Riddell, A. (2017).
   *Stan: A probabilistic programming language.* Journal of Statistical
-  Software 76(1), 1–32. <doi:10.18637/jss.v076.i01>.
+  Software 76(1), 1–32. <https://doi.org/10.18637/jss.v076.i01>.
 - Hartig, F., Minunno, F. and Paul, S. (2026). *BayesianTools:
   General-purpose MCMC and SMC samplers and tools for Bayesian
   statistics.* R package version 0.1.9.
-  <doi:10.32614/CRAN.package.BayesianTools>.
+  <https://doi.org/10.32614/CRAN.package.BayesianTools>.
 - Scrucca, L., Fop, M., Murphy, T. B. and Raftery, A. E. (2016). *mclust
   5: Clustering, classification and density estimation using Gaussian
   finite mixture models.* The R Journal 8(1), 289–317.
-  <doi:10.32614/RJ-2016-021>.
+  <https://doi.org/10.32614/RJ-2016-021>.
 - ter Braak, C. J. F. and Vrugt, J. A. (2008). *Differential evolution
   Markov chain with snooker updater and fewer chains.* Statistics and
-  Computing 18(4), 435–446. <doi:10.1007/s11222-008-9104-9>.
+  Computing 18(4), 435–446. <https://doi.org/10.1007/s11222-008-9104-9>.
 - Tierney, L. and Kadane, J. B. (1986). *Accurate approximations for
   posterior moments and marginal densities.* Journal of the American
   Statistical Association 81(393), 82–86.
-  <doi:10.1080/01621459.1986.10478240>.
+  <https://doi.org/10.1080/01621459.1986.10478240>.
 - van der Hoek, J. and Elliott, R. J. (2024). *Mixtures of multivariate
   Gaussians.* Stochastic Analysis and Applications.
-  <doi:10.1080/07362994.2024.2372605>.
+  <https://doi.org/10.1080/07362994.2024.2372605>.
 
 ## Reproduce
 

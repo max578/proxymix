@@ -107,30 +107,38 @@ chain of operations that produced it.</p>
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A list with elements <code>regime</code>, <code>converged</code>, <code>degenerate</code>,
 <code>ess</code>, <code>ess_relative</code>, <code>min_component_ess</code>, <code>max_weight</code>,
-<code>support_fraction</code>, <code>kld_final</code>, <code>kld_approx</code>, and <code>validation_gap</code>
-(fields not applicable to the regime are <code>NA</code>), or <code>NULL</code> for a mixture
-that was never fitted (e.g. built directly with <code><a href="gmm.html">gmm()</a></code>). A certificate
-produced by an operator over several operands has <code>regime = "composite"</code>,
-the conservative worst-case value of each numeric field across the
+<code>support_fraction</code>, <code>kld_final</code>, <code>kld_approx</code>, <code>validation_gap</code>, and
+<code>heldout_kld</code> (fields not applicable to the regime are <code>NA</code>), or <code>NULL</code>
+for a mixture that was never fitted (e.g. built directly with <code><a href="gmm.html">gmm()</a></code>).
+A certificate produced by an operator over several operands has
+<code>regime = "composite"</code>, the conservative worst-case value of each numeric field across the
 operands, and an additional <code>quality_sources</code> element holding the
 operands' own certificates. <code>kld_final</code> is estimated on the importance
 draws the fit was tuned to, so it reads low; <code>validation_gap</code> is the
 held-out <code>validation_kld</code> (see <code><a href="ess_summary.html">ess_summary()</a></code>) minus <code>kld_final</code>, and is
-<code>NA</code> when the fit was made with <code>validation_size = 0</code>. <code>kld_approx</code> is
-half the importance-weighted variance of <code>log f - log g</code> over the fitting
-draws. To second order it equals the KL divergence from the target to
-the proxy, in nats. It does not depend on the target's normalising
-constant, so it is available when <code>kld_final</code> is shifted. It is <code>NA</code>
-outside regime <code>"kld"</code>.</p>
+<code>NA</code> when the fit was made with <code>validation_size = 0</code>. <code>heldout_kld</code> is
+the KL divergence from the target to the proxy estimated on the
+validation draws. For a target with an unknown normalising constant it
+is <code>validation_kld</code> minus a log normalising constant estimated from the
+same draws. <code>kld_approx</code> is half the importance-weighted variance of
+<code>log f - log g</code> over the fitting draws. It approximates the KL
+divergence only when the proxy is close to the target, and it does not
+depend on the target's normalising constant. Both are <code>NA</code> outside
+regime <code>"kld"</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Downstream verbs read the same certificate and raise a one-shot
 advisory (class <code>proxymix_low_quality</code>) when the source fit is flagged. A
 fit is flagged when it did not converge, when it is degenerate (fewer
-effective importance draws than <code>min_ess</code>), or when <code>kld_approx</code> exceeds
-0.3. Relative ESS is not used: with a fixed proposal it describes the
-proposal, not the fit, and stays the same however good the fit is.</p>
+effective importance draws than <code>min_ess</code>), or when its held-out KL
+divergence <code>heldout_kld</code> exceeds 0.3 nats. A fit made with
+<code>validation_size = 0</code> has no held-out estimate, and is flagged when
+<code>kld_approx</code> exceeds 0.3. That fallback misses a proxy wider than the
+target, because such a proxy can keep <code>kld_approx</code> below 0.3 while its KL
+divergence is large. Relative ESS is not used: with a fixed proposal it
+describes the proposal, not the fit, and stays the same however good the
+fit is.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -188,6 +196,9 @@ proposal, not the fit, and stays the same however good the fit is.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $validation_gap</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] -0.008892188</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $heldout_kld</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.1351208</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span><span class="co">## The certificate survives the operator calculus.</span></span></span>
 <span class="r-in"><span><span class="fu">gmm_fit_quality</span><span class="op">(</span><span class="fu"><a href="gmm_marginalise.html">gmm_marginalise</a></span><span class="op">(</span><span class="va">fit</span>, keep <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $regime</span>
@@ -222,6 +233,9 @@ proposal, not the fit, and stays the same however good the fit is.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $validation_gap</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] -0.008892188</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $heldout_kld</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.1351208</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 </code></pre></div>
     </div>

@@ -653,9 +653,9 @@ two_stage_par <- two_stage$parameters[c("pro", "mean", "variance")]
 | proxymix, regime (i), N = 1 | the training half | -4.697 | 0.00 |
 | proxymix, regime (ii) | the training half | -4.311 | 0.00 |
 | mclust | the training half | -4.318 | 0.01 |
-| mixtools | the training half | -4.312 | 0.22 |
-| flexmix | the training half | -4.308 | 0.09 |
-| proxymix, regime (iii), on the KDE | the KDE as a density | -4.277 | 0.07 |
+| mixtools | the training half | -4.312 | 0.17 |
+| flexmix | the training half | -4.308 | 0.07 |
+| proxymix, regime (iii), on the KDE | the KDE as a density | -4.277 | 0.05 |
 | NUTS draws from the KDE, then mclust | the KDE as a density | -4.281 | 151 |
 | kernel density estimate (ks) | the training half | -4.280 | – |
 
@@ -713,12 +713,12 @@ the upper levels.
 The four regime-(ii) fits are within 0.011 of one another on the
 held-out half: proxymix gives -4.311, mclust -4.318 with its VVE
 covariance structure, mixtools -4.312 and flexmix -4.308. The fits took
-0.00, 0.01, 0.22 and 0.09 s in that order. The single Gaussian of regime
+0.00, 0.01, 0.17 and 0.07 s in that order. The single Gaussian of regime
 (i) scores -4.697, the cost of one component for two clusters.
 
 Regime (iii) never saw the training points directly. From the kernel
 density estimate alone it reaches -4.277, beside the estimate’s own
--4.280, in 0.07 s with an effective sample size of 1725 of 4,000
+-4.280, in 0.05 s with an effective sample size of 1725 of 4,000
 importance draws. Its larger component carries weight 0.617, against
 0.610 for the regime-(ii) fit to the same half. The sampling route
 reaches -4.281 from 100,000 draws in 151 s for the whole reference
@@ -961,38 +961,38 @@ once rather than the one a local optimiser happened to reach.
 - Azzalini, A. and Bowman, A. W. (1990). *A look at some data on the Old
   Faithful geyser.* Journal of the Royal Statistical Society, Series C
   (Applied Statistics) 39(3), 357–365.\
-  <doi:10.2307/2347385>.
+  <https://doi.org/10.2307/2347385>.
 - Benaglia, T., Chauveau, D., Hunter, D. R. and Young, D. S. (2009).
   *mixtools: An R package for analyzing finite mixture models.* Journal
   of Statistical Software 32(6), 1–29.\
-  <doi:10.18637/jss.v032.i06>.
+  <https://doi.org/10.18637/jss.v032.i06>.
 - Carpenter, B., Gelman, A., Hoffman, M. D., Lee, D., Goodrich, B.,
   Betancourt, M., Brubaker, M., Guo, J., Li, P. and Riddell, A. (2017).
   *Stan: A probabilistic programming language.* Journal of Statistical
   Software 76(1), 1–32.\
-  <doi:10.18637/jss.v076.i01>.
+  <https://doi.org/10.18637/jss.v076.i01>.
 - Duong, T. (2007). *ks: Kernel density estimation and kernel
   discriminant analysis for multivariate data in R.* Journal of
   Statistical Software 21(7), 1–16.\
-  <doi:10.18637/jss.v021.i07>.
+  <https://doi.org/10.18637/jss.v021.i07>.
 - Grün, B. and Leisch, F. (2008). *FlexMix version 2: Finite mixtures
   with concomitant variables and varying and constant parameters.*
   Journal of Statistical Software 28(4), 1–35.\
-  <doi:10.18637/jss.v028.i04>.
+  <https://doi.org/10.18637/jss.v028.i04>.
 - Hubert, L. and Arabie, P. (1985). *Comparing partitions.* Journal of
   Classification 2(1), 193–218.\
-  <doi:10.1007/BF01908075>.
+  <https://doi.org/10.1007/BF01908075>.
 - Leisch, F. (2004). *FlexMix: A general framework for finite mixture
   models and latent class regression in R.* Journal of Statistical
   Software 11(8), 1–18.\
-  <doi:10.18637/jss.v011.i08>.
+  <https://doi.org/10.18637/jss.v011.i08>.
 - Scrucca, L., Fop, M., Murphy, T. B. and Raftery, A. E. (2016). *mclust
   5: Clustering, classification and density estimation using Gaussian
   finite mixture models.* The R Journal 8(1), 289–317.\
-  <doi:10.32614/RJ-2016-021>.
+  <https://doi.org/10.32614/RJ-2016-021>.
 - van der Hoek, J. and Elliott, R. J. (2024). *Mixtures of multivariate
   Gaussians.* Stochastic Analysis and Applications.\
-  <doi:10.1080/07362994.2024.2372605>.
+  <https://doi.org/10.1080/07362994.2024.2372605>.
 
 ## Reproduce
 

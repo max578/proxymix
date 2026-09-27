@@ -738,10 +738,10 @@ summ_bt <- summarise_draws(getSample(bt_aff, start = 1000L))
 | Method | Mean | SD | Endpoints | $`P(\beta_j > 0)`$ | $`\log Z`$ | Seconds | Settings |
 |:---|---:|---:|---:|---:|---:|---:|---:|
 | NUTS, 4000 draws | 0.017 | 0.009 | 0.044 | 0.0005 | 0.0003 | 26.94 | 3 |
-| proxymix | 0.020 | 0.007 | 0.030 | 0.0002 | 0.0009 | 2.04 | 5 |
+| proxymix | 0.020 | 0.007 | 0.030 | 0.0002 | 0.0009 | 1.81 | 5 |
 | Laplace | 0.032 | 0.004 | 0.038 | 0.0007 | 0.0035 | 0.01 | 1 |
-| INLA | 0.008 | 0.004 | 0.015 | 0.0004 | 0.0035 | 2.12 | 0 |
-| DEzs | 0.247 | 1.228 | 2.296 | 0.0378 | – | 1.07 | 2 |
+| INLA | 0.008 | 0.004 | 0.015 | 0.0004 | 0.0035 | 1.49 | 0 |
+| DEzs | 0.247 | 1.228 | 2.296 | 0.0378 | – | 0.88 | 2 |
 
 Error of each method against the 40 000-draw NUTS reference on the
 Affairs probit posterior: mean, SD and interval endpoints in units of
@@ -782,9 +782,9 @@ the first 1000 per chain discarded, returns standard deviations 1.228
 reference standard deviations off on this posterior, whose covariates
 are on their raw scales. proxymix’s 95 per cent ensemble intervals on
 the posterior means contain the reference mean for three of the five
-coefficients, at a further 0.5 s. On wall time the order, fastest first,
-is the Laplace approximation (0.01 s), DEzs (1.07 s), proxymix (2.04 s),
-INLA (2.12 s) and the 4000-draw NUTS run (26.94 s).
+coefficients, at a further 0.4 s. On wall time the order, fastest first,
+is the Laplace approximation (0.01 s), DEzs (0.88 s), INLA (1.49 s),
+proxymix (1.81 s) and the 4000-draw NUTS run (26.94 s).
 
 ### A simulation benchmark
 
@@ -1113,52 +1113,55 @@ divergence diagnostics that summarise a fitted posterior’s spread.
 ## References
 
 - Albert, J. (2009). *Bayesian Computation with R.* Second edition.
-  Springer. <doi:10.1007/978-0-387-92298-0>.
+  Springer. <https://doi.org/10.1007/978-0-387-92298-0>.
 - Ardia, D., Hoogerheide, L. F. and van Dijk, H. K. (2009). *Adaptive
   mixture of Student-t distributions as a flexible candidate
   distribution for efficient simulation: The R package AdMit.* Journal
-  of Statistical Software 29(3), 1–32. <doi:10.18637/jss.v029.i03>.
+  of Statistical Software 29(3), 1–32.
+  <https://doi.org/10.18637/jss.v029.i03>.
 - Cappé, O., Douc, R., Guillin, A., Marin, J.-M. and Robert, C. P.
   (2008). *Adaptive importance sampling in general mixture classes.*
-  Statistics and Computing 18, 447–459. <doi:10.1007/s11222-008-9059-x>.
+  Statistics and Computing 18, 447–459.
+  <https://doi.org/10.1007/s11222-008-9059-x>.
 - Carpenter, B., Gelman, A., Hoffman, M. D., Lee, D., Goodrich, B.,
   Betancourt, M., Brubaker, M., Guo, J., Li, P. and Riddell, A. (2017).
   *Stan: A probabilistic programming language.* Journal of Statistical
-  Software 76(1), 1–32. <doi:10.18637/jss.v076.i01>.
+  Software 76(1), 1–32. <https://doi.org/10.18637/jss.v076.i01>.
 - Fair, R. C. (1978). *A theory of extramarital affairs.* Journal of
-  Political Economy 86(1), 45–61. <doi:10.1086/260629>.
+  Political Economy 86(1), 45–61. <https://doi.org/10.1086/260629>.
 - Gabry, J., Češnovar, R., Johnson, A. and Bronder, S. (2025).
   *cmdstanr: R interface to CmdStan.* R package version 0.9.0.
   <https://mc-stan.org/cmdstanr/>.
 - Gronau, Q. F., Singmann, H. and Wagenmakers, E.-J. (2020).
   *bridgesampling: An R package for estimating normalizing constants.*
   Journal of Statistical Software 92(10), 1–29.
-  <doi:10.18637/jss.v092.i10>.
+  <https://doi.org/10.18637/jss.v092.i10>.
 - Hartig, F., Minunno, F. and Paul, S. (2026). *BayesianTools:
   General-purpose MCMC and SMC samplers and tools for Bayesian
   statistics.* R package version 0.1.9.
-  <doi:10.32614/CRAN.package.BayesianTools>.
+  <https://doi.org/10.32614/CRAN.package.BayesianTools>.
 - Kleiber, C. and Zeileis, A. (2008). *Applied Econometrics with R.*
-  Springer. <doi:10.1007/978-0-387-77318-6>.
+  Springer. <https://doi.org/10.1007/978-0-387-77318-6>.
 - Owen, A. and Zhou, Y. (2000). *Safe and effective importance
   sampling.* Journal of the American Statistical Association 95(449),
-  135–143. <doi:10.1080/01621459.2000.10473909>.
+  135–143. <https://doi.org/10.1080/01621459.2000.10473909>.
 - Rubin, D. B. (1981). *The Bayesian bootstrap.* The Annals of
-  Statistics 9(1), 130–134. <doi:10.1214/aos/1176345338>.
+  Statistics 9(1), 130–134. <https://doi.org/10.1214/aos/1176345338>.
 - Rue, H., Martino, S. and Chopin, N. (2009). *Approximate Bayesian
   inference for latent Gaussian models by using integrated nested
   Laplace approximations.* Journal of the Royal Statistical Society:
-  Series B 71(2), 319–392. <doi:10.1111/j.1467-9868.2008.00700.x>.
+  Series B 71(2), 319–392.
+  <https://doi.org/10.1111/j.1467-9868.2008.00700.x>.
 - ter Braak, C. J. F. and Vrugt, J. A. (2008). *Differential Evolution
   Markov Chain with snooker updater and fewer chains.* Statistics and
-  Computing 18, 435–446. <doi:10.1007/s11222-008-9104-9>.
+  Computing 18, 435–446. <https://doi.org/10.1007/s11222-008-9104-9>.
 - Tierney, L. and Kadane, J. B. (1986). *Accurate approximations for
   posterior moments and marginal densities.* Journal of the American
   Statistical Association 81(393), 82–86.
-  <doi:10.1080/01621459.1986.10478240>.
+  <https://doi.org/10.1080/01621459.1986.10478240>.
 - van der Hoek, J. and Elliott, R. J. (2024). *Mixtures of multivariate
   Gaussians.* Stochastic Analysis and Applications.
-  <doi:10.1080/07362994.2024.2372605>.
+  <https://doi.org/10.1080/07362994.2024.2372605>.
 
 ## Reproduce
 

@@ -130,7 +130,7 @@ importance-weighted EM objective <code>Q(theta) = sum_n W_n log g(x_n)</code>.
 <code>Q</code> is invariant to the target's normalising constant, so the
 stopping rule behaves identically for normalised and unnormalised
 targets (the importance-sampled KLD estimate carries an additive
-<code>-log Z(f)</code> offset and is therefore never used for stopping).</p></dd>
+<code>log Z(f)</code> offset and is therefore never used for stopping).</p></dd>
 
 
 <dt id="arg-ridge-eps">ridge_eps<a class="anchor" aria-label="anchor" href="#arg-ridge-eps"></a></dt>
@@ -239,8 +239,9 @@ mixture is post-processed by <code><a href="gmm_canonicalise.html">gmm_canonical
 contains, among others, <code>kld_trace</code>, <code>kld_final</code> (in-sample),
 <code>kld_is_shifted</code>, <code>kld_final_absolute</code> (when computable), <code>ess</code>,
 <code>ess_relative</code> (<code>ess / is_size</code>), <code>max_weight</code>, <code>support_fraction</code>,
-<code>mc_se_kld</code>, <code>validation_kld</code> (held-out), <code>validation_ess</code>, and
-<code>validation_max_weight</code>.</p>
+<code>mc_se_kld</code>, <code>validation_kld</code> (held-out), <code>validation_ess</code>,
+<code>validation_max_weight</code>, and <code>heldout_kld</code>, the held-out estimate of the
+KL divergence that <code><a href="gmm_fit_quality.html">gmm_fit_quality()</a></code> describes.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -275,12 +276,13 @@ small <code>is_size</code>. When <code>validation_size &gt; 0</code> the functio
 (<code>validation_kld</code>), effective sample size, and largest weight share;
 <code>validation_kld</code> is the estimate to quote as the fit's accuracy.</p>
 <p>When the target's <code>normalised</code> property is <code>FALSE</code> or <code>NA</code>, the
-importance-sampled <code>kld_final</code> and <code>kld_trace</code> measure
-\(\widehat{KL}(f \Vert g) - \log Z(f)\) rather than the absolute
-divergence. The fit's diagnostics list records this via
+importance-sampled <code>kld_final</code>, <code>kld_trace</code> and <code>validation_kld</code> estimate
+\(KL(f \Vert g) + \log Z(f)\), where \(Z(f)\) is the integral of
+<code>exp(log_density)</code>. The fit's diagnostics list records this via
 <code>kld_is_shifted = TRUE</code> and a <code>kld_shift_explanation</code> string. When the
-target also supplies a finite <code>log_normalizer</code>, a corrected absolute
-estimate is reported as <code>kld_final_absolute</code>.</p>
+target also supplies a finite <code>log_normalizer</code>, the fit subtracts it and
+reports the KL divergence as <code>kld_final_absolute</code> and
+<code>validation_kld_absolute</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>

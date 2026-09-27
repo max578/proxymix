@@ -1234,42 +1234,44 @@ for regression, kernel smoothing and principal components.
 
 - Alspach, D. L. and Sorenson, H. W. (1972). *Nonlinear Bayesian
   estimation using Gaussian sum approximations.* IEEE Transactions on
-  Automatic Control 17(4), 439–448. <doi:10.1109/TAC.1972.1100034>.
+  Automatic Control 17(4), 439–448.
+  <https://doi.org/10.1109/TAC.1972.1100034>.
 - Cobb, G. W. (1978). *The problem of the Nile: Conditional solution to
   a changepoint problem.* Biometrika 65(2), 243–251.
-  <doi:10.1093/biomet/65.2.243>.
+  <https://doi.org/10.1093/biomet/65.2.243>.
 - de Valpine, P., Turek, D., Paciorek, C. J., Anderson-Bergman, C.,
   Temple Lang, D. and Bodik, R. (2017). *Programming with models:
   Writing statistical algorithms for general model structures with
   NIMBLE.* Journal of Computational and Graphical Statistics 26(2),
-  403–413. <doi:10.1080/10618600.2016.1172487>.
+  403–413. <https://doi.org/10.1080/10618600.2016.1172487>.
 - Durbin, J. and Koopman, S. J. (2012). *Time Series Analysis by State
   Space Methods*, 2nd edition. Oxford University Press.
-  <doi:10.1093/acprof:oso/9780199641178.001.0001>.
+  <https://doi.org/10.1093/acprof:oso/9780199641178.001.0001>.
 - Gordon, N. J., Salmond, D. J. and Smith, A. F. M. (1993). *Novel
   approach to nonlinear/non-Gaussian Bayesian state estimation.* IEE
   Proceedings F, Radar and Signal Processing 140(2), 107–113.
-  <doi:10.1049/ip-f-2.1993.0015>.
+  <https://doi.org/10.1049/ip-f-2.1993.0015>.
 - Helske, J. (2017). *KFAS: Exponential family state space models in R.*
   Journal of Statistical Software 78(10), 1–39.
-  <doi:10.18637/jss.v078.i10>.
+  <https://doi.org/10.18637/jss.v078.i10>.
 - Kalman, R. E. (1960). *A new approach to linear filtering and
   prediction problems.* Journal of Basic Engineering 82(1), 35–45.
-  <doi:10.1115/1.3662552>.
+  <https://doi.org/10.1115/1.3662552>.
 - Michaud, N., de Valpine, P., Turek, D., Paciorek, C. J. and Nguyen, D.
   (2021). *Sequential Monte Carlo methods in the nimble and nimbleSMC R
   packages.* Journal of Statistical Software 100(3), 1–39.
-  <doi:10.18637/jss.v100.i03>.
+  <https://doi.org/10.18637/jss.v100.i03>.
 - Murphy, K. P. (2012). *Machine Learning: A Probabilistic Perspective.*
   MIT Press. Ch. 4 (Gaussian models).
 - Petris, G. (2010). *An R package for dynamic linear models.* Journal
-  of Statistical Software 36(12), 1–16. <doi:10.18637/jss.v036.i12>.
+  of Statistical Software 36(12), 1–16.
+  <https://doi.org/10.18637/jss.v036.i12>.
 - Runnalls, A. R. (2007). *Kullback–Leibler approach to Gaussian mixture
   reduction.* IEEE Transactions on Aerospace and Electronic Systems
-  43(3), 989–999. <doi:10.1109/TAES.2007.4383588>.
+  43(3), 989–999. <https://doi.org/10.1109/TAES.2007.4383588>.
 - van der Hoek, J. and Elliott, R. J. (2024). *Mixtures of multivariate
   Gaussians.* Stochastic Analysis and Applications.
-  <doi:10.1080/07362994.2024.2372605>.
+  <https://doi.org/10.1080/07362994.2024.2372605>.
 
 ## Reproduce
 

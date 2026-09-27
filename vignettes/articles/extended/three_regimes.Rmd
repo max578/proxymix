@@ -252,7 +252,7 @@ k_fit_kl_quad <- sum(exp(kq_log_f) *
 kq_mass <- sum(exp(kq_log_f)) * quad_step^2
 ```
 
-### Regimes (i) and (iii) at N = 1, against an exact oracle
+### Regimes (i) and (iii) at N = 1, against the exact answer
 
 At `N = 1` both regime (i) and regime (iii) target the KL-optimal single
 Gaussian, so they should agree. They are compared here on the banana
@@ -274,7 +274,7 @@ k_b <- fit_proxymix(banana, N = 1L, regime = "kld",
                     is_size = 3000L, max_iter = 50L, seed = 1L)
 ```
 
-```{r n1-oracle}
+```{r n1-exact}
 # the warp of banana_target(): x2 = z2 + b * (z1^2 - 1)
 b <- 0.5
 exact_mean <- c(0, 0)
@@ -315,7 +315,7 @@ n1_tbl <- data.frame(
     c(tr_of(m_b), tr_of(k_b), sum(diag(cov(banana@samples))), exact_trace),
     3L
   ),
-  `Error against oracle` = round(
+  `Error against exact value` = round(
     c(tr_of(m_b), tr_of(k_b), sum(diag(cov(banana@samples))), exact_trace) -
       exact_trace,
     3L
@@ -329,7 +329,7 @@ knitr::kable(
     "The single-Gaussian proxy at `N = 1`, fitted two ways and scored",
     "against the exact moments of the banana density. The error is the",
     "trace minus the exact trace, so a negative error is an understatement.",
-    "The final row is the oracle, so its error is zero by construction."
+    "The final row is the exact value, so its error is zero by construction."
   )
 )
 ```
@@ -444,7 +444,7 @@ specified and there is no approximation error for either regime to trade
 against the other. On a target outside the Gaussian-mixture family the two
 regimes minimise genuinely different objectives, and the fits separate.
 
-The `N = 1` oracle is closed form only because the banana is a warped
+The exact `N = 1` answer is closed form only because the banana is a warped
 Gaussian. A grid quadrature of the same moments on $[-8, 8]^2$, with
 `r length(quad_x)` points a side, leaves out `r power_ten(1 - quad_mass)`
 of the mass and puts the trace at `r fixed(quad_trace, 3)`,
@@ -1152,7 +1152,7 @@ than the one a local optimiser happened to reach.
 ## Reproduce
 
 The target carries `seed = 1L`, the regime-(ii) fit and both regime-(iii)
-fits on the bench are seeded with `seed = 1L`, the moment oracle is closed
+fits on the bench are seeded with `seed = 1L`, the exact moments are closed
 form, and the replicate traces use seeds 1 to `r length(sample_traces)` for
 the samples and 1 to `r length(kld_traces)` for the importance draws, so
 every number in the first five sections is reproducible from the package

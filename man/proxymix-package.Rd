@@ -23,6 +23,7 @@ Useful links:
 Authors:
 \itemize{
   \item Max Moldovan \email{max.moldovan@gmail.com} (\href{https://orcid.org/0000-0001-9680-8474}{ORCID})
+  \item John van der Hoek \email{john.vanderhoek@adelaide.edu.au}
 }
 
 }

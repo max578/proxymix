@@ -7,6 +7,10 @@ authors:
     family-names: Moldovan
     email: max.moldovan@gmail.com
     orcid: "https://orcid.org/0000-0001-9680-8474"
+  - given-names: John
+    family-names: Hoek
+    name-particle: van der
+    email: john.vanderhoek@adelaide.edu.au
 abstract: >-
   An R package fitting multivariate Gaussian-mixture proxies that are
   Kullback-Leibler optimal to user-supplied target densities. Three regimes
@@ -20,7 +24,7 @@ references:
     title: "Mixtures of multivariate Gaussians"
     authors:
       - family-names: Hoek
-        given-names: Johannes
+        given-names: John
         name-particle: van der
       - family-names: Elliott
         given-names: Robert J.

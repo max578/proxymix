@@ -6,12 +6,17 @@ the first submission of the package to CRAN.
 ## Test environments
 
 * local: macOS 26.6 (Apple silicon), R 4.6.1
+* win-builder: Windows, R 4.6.1 (release)
+* win-builder: Windows, R-devel (2026-09-25 r90590)
 
 ## R CMD check results
 
 0 errors | 0 warnings | 1 note
 
 * This is a new submission.
+* The note also lists Hoek, Kullback, Leibler and KLD as possibly
+  misspelled. Hoek, Kullback and Leibler are surnames, and KLD is the
+  usual abbreviation for Kullback-Leibler divergence.
 
 ## Comments
 

@@ -106,6 +106,12 @@ test_that("pgmm matches quadrature of dgmm and qgmm inverts it", {
   expect_error(qgmm(1.2, g), "inside")
 })
 
+test_that("pgmm keeps relative accuracy in the far upper tail", {
+  g <- gmm(weights = 1, means = list(0), covariances = list(matrix(1)))
+  expect_equal(pgmm(8, g, lower.tail = FALSE),
+               stats::pnorm(8, lower.tail = FALSE), tolerance = 1e-6)
+})
+
 test_that("gmm_evidence recovers a known normalising constant", {
   offsets <- c(0, 3)
   for (off in offsets) {
@@ -145,6 +151,31 @@ test_that("gmm_evidence recovers log Z for a genuinely multimodal target", {
                     proposal = is_mvt(2L, sigma = 9 * diag(2), df = 5))
   ev <- gmm_evidence(fit, n = 6000L, seed = 4L)
   expect_lt(abs(ev$log_z - const), 5 * ev$se_log_z + 0.02)
+})
+
+test_that("gmm_evidence counts proxy draws outside a compact support as zeros", {
+  unif <- maxent_target(support = list(lower = -1, upper = 1))
+  ## About a third of N(0, 1) draws fall outside [-1, 1].
+  wide <- gmm_fit(weights = 1, means = list(0), covariances = list(matrix(1)),
+                  target = unif, regime = "kld")
+  ev <- gmm_evidence(wide, n = 20000L, seed = 1L)
+  expect_equal(ev$n, 20000L)
+  expect_lt(abs(ev$log_z), 4 * ev$se_log_z)
+
+  fit <- suppressMessages(
+    fit_kld_em(unif, N = 3L, is_size = 3000L, max_iter = 40L, seed = 1L,
+               validation_size = 0L)
+  )
+  ev3 <- gmm_evidence(fit, n = 20000L, seed = 2L)
+  expect_equal(ev3$n, 20000L)
+  expect_lt(abs(ev3$log_z), 4 * ev3$se_log_z)
+})
+
+test_that("gmm_evidence refuses a log weight of +Inf or NaN", {
+  tgt <- gmm_target(n_dim = 1L, log_density = function(x) rep(NaN, NROW(x)))
+  g <- gmm_fit(weights = 1, means = list(0), covariances = list(matrix(1)),
+               target = tgt, regime = "kld")
+  expect_error(gmm_evidence(g, n = 100L, seed = 1L), "NaN")
 })
 
 test_that("gmm_evidence flags a proposal with too-light tails", {
@@ -234,6 +265,29 @@ test_that("binary/n-ary operators combine operand certificates conservatively", 
     expect_equal(q$ess_relative, 0.02, info = nm)  # worst (min) relative ESS
     expect_length(q$quality_sources, 2L)
   }
+})
+
+test_that("a composite certificate carries the worst held-out KL and flags any misfit operand", {
+  cert <- function(nm, heldout, approx) {
+    q <- gmm_fit_quality(.mk_cert_gmm(nm, degenerate = FALSE, converged = TRUE,
+                                      ess_rel = 0.5))
+    q$heldout_kld <- heldout
+    q$kld_approx <- approx
+    gmm(weights = 1, means = list(0), covariances = list(matrix(1)), name = nm,
+        metadata = list(quality = q, provenance = nm))
+  }
+  close <- cert("close", heldout = 0.01, approx = 0.01)
+  far <- cert("far", heldout = 1.2, approx = 0.2)
+  q <- gmm_fit_quality(gmm_product(close, far))
+  expect_equal(q$heldout_kld, 1.2)
+  expect_match(.kld_misfit(q), "held-out KL")
+
+  ## An operand without a validation sample falls back to kld_approx.
+  unvalidated <- cert("unvalidated", heldout = NA_real_, approx = 0.5)
+  q2 <- gmm_fit_quality(gmm_mix(list(close, unvalidated)))
+  expect_equal(q2$heldout_kld, 0.01)
+  expect_match(.kld_misfit(q2), "kld_approx")
+  expect_null(.kld_misfit(gmm_fit_quality(gmm_mix(list(close, close)))))
 })
 
 test_that("mixing / multiplying plain (uncertified) mixtures makes no false certificate", {

@@ -32,9 +32,9 @@ gmm_target_from_posterior(model, ...)
 for the \code{function} method (or attached as
 \code{attr(model, "parameter_names")}). The length determines \code{n_dim}.}
 
-\item{log_normalizer}{Numeric scalar \verb{log Z} of the posterior, if known.
-\code{NA_real_} (the default) otherwise; downstream diagnostics will label
-any KLD estimate as shifted.}
+\item{log_normalizer}{Numeric scalar \verb{log Z}, the log of the integral of
+\code{exp()} of the log-posterior, if known. With \code{NA_real_} (the default),
+downstream diagnostics label any KLD estimate as shifted.}
 
 \item{name}{Optional human-readable target name. Defaults to
 \code{"posterior"}.}

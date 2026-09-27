@@ -2,7 +2,7 @@
 # Summary of the stored entropy benchmark for the short entropy vignette
 #
 # Author      : Max Moldovan
-# Version date: 26 Sep 2026
+# Version date: 27 Sep 2026
 # Usage       : Rscript data-raw/vignette_results/entropy.R
 #               (run from the package root)
 #
@@ -241,6 +241,7 @@ field_tab$pcor13 <- NA_real_
 field_tab$converged <- NA
 field_tab$degenerate <- NA
 field_tab$kld_approx <- NA_real_
+field_tab$heldout_kld <- NA_real_
 field_tab$flagged <- NA
 for (i1 in seq_len(nrow(field_tab))) {
 
@@ -254,13 +255,18 @@ for (i1 in seq_len(nrow(field_tab))) {
   field_tab$converged[i1] <- isTRUE(q_local$converged)
   field_tab$degenerate[i1] <- isTRUE(q_local$degenerate)
   field_tab$kld_approx[i1] <- q_local$kld_approx
-  ## the package's flag: not converged, degenerate, or approximate KL above 0.3
+  field_tab$heldout_kld[i1] <- q_local$heldout_kld
+  ## the package's flag: not converged, degenerate, or KL above 0.3, where the KL
+  ## is the held-out KL when finite and kld_approx only without a validation sample
+  kld_check <- if (is.finite(q_local$heldout_kld)) q_local$heldout_kld else q_local$kld_approx
   field_tab$flagged[i1] <- isTRUE(q_local$degenerate) || isFALSE(q_local$converged) ||
-    q_local$kld_approx > 0.3
+    isTRUE(kld_check > 0.3)
 
 } # end of for (i1 in seq_len(nrow(field_tab)))
 print(field_tab)
 print(aggregate(cbind(chain, flagged) ~ is_size, data = field_tab, FUN = sum))
+print(paste0("proxymix used for the field fits: ", packageVersion("proxymix"),
+             " from ", find.package("proxymix")))
 
 
 time_section <- proc.time() - ptm_local

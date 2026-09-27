@@ -1101,27 +1101,27 @@ the package.
 
 * Andrews, D. W. K. (1993). *Tests for parameter instability and
   structural change with unknown change point.* Econometrica 61(4),
-  821--856. <doi:10.2307/2951764>.
+  821--856. <https://doi.org/10.2307/2951764>.
 * Andrews, D. W. K. (2003). *End-of-sample instability tests.* Econometrica
-  71(6), 1661--1694. <doi:10.1111/1468-0262.00466>.
+  71(6), 1661--1694. <https://doi.org/10.1111/1468-0262.00466>.
 * Chow, G. C. (1960). *Tests of equality between sets of coefficients in
   two linear regressions.* Econometrica 28(3), 591--605.
-  <doi:10.2307/1910133>.
+  <https://doi.org/10.2307/1910133>.
 * Cobb, G. W. (1978). *The problem of the Nile: conditional solution to a
   changepoint problem.* Biometrika 65(2), 243--251.
-  <doi:10.1093/biomet/65.2.243>.
+  <https://doi.org/10.1093/biomet/65.2.243>.
 * Helske, J. (2017). *KFAS: Exponential family state space models in R.*
   Journal of Statistical Software 78(10), 1--39.
-  <doi:10.18637/jss.v078.i10>.
+  <https://doi.org/10.18637/jss.v078.i10>.
 * Killick, R. and Eckley, I. A. (2014). *changepoint: An R package for
   changepoint analysis.* Journal of Statistical Software 58(3), 1--19.
-  <doi:10.18637/jss.v058.i03>.
+  <https://doi.org/10.18637/jss.v058.i03>.
 * Petris, G. (2010). *An R package for dynamic linear models.* Journal of
-  Statistical Software 36(12), 1--16. <doi:10.18637/jss.v036.i12>.
+  Statistical Software 36(12), 1--16. <https://doi.org/10.18637/jss.v036.i12>.
 * Zeileis, A., Leisch, F., Hornik, K. and Kleiber, C. (2002). *strucchange:
   An R package for testing for structural change in linear regression
   models.* Journal of Statistical Software 7(2), 1--38.
-  <doi:10.18637/jss.v007.i02>.
+  <https://doi.org/10.18637/jss.v007.i02>.
 
 ## Reproduce
 

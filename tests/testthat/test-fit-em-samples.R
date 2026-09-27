@@ -40,3 +40,9 @@ test_that("regime (ii) refuses targets without samples", {
   b <- banana_target() # log_density only
   expect_error(fit_em_samples(b, N = 2L), "samples")
 })
+
+test_that("a sample target with no rows is refused before initialisation", {
+  tgt <- gmm_target_from_samples(matrix(numeric(0), ncol = 2))
+  expect_error(fit_proxymix(tgt, N = 1L, regime = "sample"), "samples")
+  expect_error(fit_proxymix(tgt, N = 1L, regime = "moment"), "samples")
+})

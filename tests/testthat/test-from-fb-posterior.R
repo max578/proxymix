@@ -16,12 +16,12 @@ test_that("spec is built from a vectorised bare callable", {
   spec <- fb_log_posterior_spec(
     log_post,
     parameter_names = c("mu", "log_sigma"),
-    log_normalizer = -log(2 * pi)
+    log_normalizer = log(2 * pi)
   )
   expect_s3_class(spec, "fb_log_posterior_spec")
   expect_equal(spec$n_dim, 2L)
   expect_equal(spec$parameter_names, c("mu", "log_sigma"))
-  expect_equal(spec$log_normalizer, -log(2 * pi))
+  expect_equal(spec$log_normalizer, log(2 * pi))
   ## Attribute preserved on the stored callable.
   expect_equal(attr(spec$log_density, "parameter_names"),
                c("mu", "log_sigma"))
@@ -121,6 +121,9 @@ test_that("the unnormalised gaussian mock records its offset as log Z", {
                             unnormalised = TRUE)
   expect_false(spec$log_normalizer == 0)
   expect_true(is.finite(spec$log_normalizer))
+  ## The mode of a 2-D standard normal has density 1 / (2 * pi) times Z.
+  mode_logdens <- spec$log_density(matrix(0, nrow = 1L, ncol = 2L))
+  expect_equal(spec$log_normalizer, mode_logdens + log(2 * pi))
 })
 
 test_that("the banana mock is a 2-D conforming spec", {

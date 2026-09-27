@@ -19,10 +19,10 @@ test_that("function method passes log_normalizer when known", {
   log_post <- function(theta) -0.5 * rowSums(theta^2)
   tgt <- gmm_target_from_posterior(
     log_post, parameter_names = c("a", "b"),
-    log_normalizer = -log(2 * pi)
+    log_normalizer = log(2 * pi)
   )
   expect_false(isTRUE(tgt@normalised))
-  expect_equal(tgt@log_normalizer, -log(2 * pi))
+  expect_equal(tgt@log_normalizer, log(2 * pi))
 })
 
 test_that("vectorisation contract is enforced by probe", {
@@ -68,7 +68,7 @@ test_that("compiled posterior round-trips through fit_proxymix(regime = 'kld')",
   log_post <- function(theta) -0.5 * rowSums(theta^2)
   tgt <- gmm_target_from_posterior(
     log_post, parameter_names = c("a", "b"),
-    log_normalizer = -log(2 * pi)
+    log_normalizer = log(2 * pi)
   )
   fit <- fit_proxymix(
     tgt, N = 1L, regime = "kld",

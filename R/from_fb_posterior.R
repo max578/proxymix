@@ -66,8 +66,8 @@
 #' @param parameter_names Character vector of parameter names. Required for the
 #'   bare-callable form unless attached as
 #'   `attr(producer, "parameter_names")`.
-#' @param log_normalizer Numeric scalar `log Z`, or `NA_real_` (the default)
-#'   when unknown.
+#' @param log_normalizer Numeric scalar `log Z`, the log of the integral of
+#'   `exp()` of the log-posterior, or `NA_real_` (the default) when unknown.
 #' @param support_lower,support_upper Optional length-`n_dim` numeric support
 #'   bounds (`NA` for an unbounded coordinate). Default `NULL` (all unbounded).
 #' @param draws Optional `n` by `n_dim` numeric matrix of posterior draws used
@@ -90,7 +90,7 @@
 #' spec <- fb_log_posterior_spec(
 #'   log_post,
 #'   parameter_names = c("mu", "log_sigma"),
-#'   log_normalizer = -log(2 * pi)
+#'   log_normalizer = log(2 * pi)
 #' )
 #' spec
 fb_log_posterior_spec <- function(producer,
@@ -244,11 +244,7 @@ mock_fb_posterior <- function(shape = c("gaussian", "banana"),
     if (length(sd) != 1L || !is.numeric(sd) || !is.finite(sd) || sd <= 0) {
       cli::cli_abort("`sd` must be a positive finite scalar.")
     }
-    ## A fixed additive offset makes the evaluated density integrate to
-    ## exp(offset), i.e. log Z(evaluated) = offset. The contract's
-    ## `log_normalizer` is the correction *added* to the log-density to
-    ## normalise it, so it is -offset (see `fit_kld_em()`'s shifted-KLD
-    ## correction). For the normalised case both are zero.
+    ## The additive offset makes the density integrate to exp(offset).
     offset <- if (isTRUE(unnormalised)) 17.3 else 0
     log_norm_const <- -n_dim * (0.5 * log(2 * pi) + log(sd))
     log_density <- function(theta) {
@@ -259,7 +255,7 @@ mock_fb_posterior <- function(shape = c("gaussian", "banana"),
     return(fb_log_posterior_spec(
       log_density,
       parameter_names = paste0("theta", seq_len(n_dim)),
-      log_normalizer = -offset,
+      log_normalizer = offset,
       name = sprintf("mock_fb_gaussian[sd=%g]", sd)
     ))
   }
@@ -275,7 +271,7 @@ mock_fb_posterior <- function(shape = c("gaussian", "banana"),
   fb_log_posterior_spec(
     log_density,
     parameter_names = c("z1", "z2"),
-    log_normalizer = -offset,
+    log_normalizer = offset,
     name = "mock_fb_banana"
   )
 }
@@ -319,8 +315,9 @@ mock_fb_posterior <- function(shape = c("gaussian", "banana"),
 #' @param parameter_names Character vector of parameter names, forwarded to
 #'   [fb_log_posterior_spec()] for the bare-callable form. Ignored when
 #'   `producer` is already a spec.
-#' @param log_normalizer Numeric scalar `log Z`, forwarded to
-#'   [fb_log_posterior_spec()]. Default `NA_real_`.
+#' @param log_normalizer Numeric scalar `log Z`, the log of the integral of
+#'   `exp()` of the log-posterior, forwarded to [fb_log_posterior_spec()].
+#'   Default `NA_real_`.
 #' @param proposal Optional [is_proposal] for the importance-sampling draws.
 #'   The default is a multivariate-t (`df = 5`) centred and scaled from the
 #'   spec's `draws` when supplied, from its `support_*` bounds otherwise, and

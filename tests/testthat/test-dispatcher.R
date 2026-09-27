@@ -29,12 +29,12 @@ test_that("explicit regime overrides auto", {
   expect_equal(fit@regime, "kld")
 })
 
-test_that("auto errors when target has neither samples nor log_density", {
+test_that("auto refuses a moment fit to an empty sample matrix", {
   expect_error(
     fit_proxymix(suppressWarnings(
       gmm_target(n_dim = 2L, samples = matrix(0, 0, 2),
                  log_density = function(x) 0)
     ), N = 1L, regime = "auto"),
-    NA
+    "no rows"
   )
 })

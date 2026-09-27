@@ -4,7 +4,7 @@
 .certificate_fields <- c("regime", "converged", "degenerate", "ess",
                          "ess_relative", "min_component_ess", "max_weight",
                          "support_fraction", "kld_final", "kld_approx",
-                         "validation_gap")
+                         "validation_gap", "heldout_kld")
 
 test_that("all three regimes stamp a certificate with the shared schema", {
   x <- withr::with_seed(11, matrix(stats::rnorm(240), ncol = 2))
@@ -28,6 +28,7 @@ test_that("all three regimes stamp a certificate with the shared schema", {
   qk <- gmm_fit_quality(fits$kld)
   expect_true(is.finite(qk$ess))
   expect_true(is.finite(qk$validation_gap))
+  expect_true(is.finite(qk$heldout_kld))
   expect_true(is.finite(qk$min_component_ess))
 })
 

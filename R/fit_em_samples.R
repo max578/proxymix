@@ -65,6 +65,9 @@ fit_em_samples <- function(target, N = 2L,
   samples <- target@samples
   n <- nrow(samples)
   p <- ncol(samples)
+  if (n < 1L) {
+    cli::cli_abort("`target@samples` has no rows; regime {.val sample} needs at least one sample.")
+  }
 
   if (isTRUE(anneal)) {
     warm <- .anneal_em_warmstart(samples, rw = rep(1 / n, n), N = N,
@@ -245,7 +248,8 @@ em_samples_one_run <- function(samples, init, target,
       support_fraction = NA_real_,
       kld_final = NA_real_,
       kld_approx = NA_real_,
-      validation_gap = NA_real_
+      validation_gap = NA_real_,
+      heldout_kld = NA_real_
     ))
   )
 }

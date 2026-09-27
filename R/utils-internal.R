@@ -131,6 +131,7 @@ symmetrise <- function(S) 0.5 * (S + t(S))
       kld_final         = NA_real_,
       kld_approx        = worst("kld_approx", max),
       validation_gap    = worst("validation_gap", max, abs),
+      heldout_kld       = worst("heldout_kld", max),
       quality_sources   = lapply(gs, function(g) {
         list(name = g@name, quality = g@metadata$quality)
       })
@@ -155,20 +156,51 @@ symmetrise <- function(S) 0.5 * (S + t(S))
 ## proposal against the target, not the fit, and does not fall as the fit
 ## improves. Too few effective draws is caught by `degenerate` (ESS below
 ## `min_ess`).
-.kld_approx_limit <- 0.3
+.kld_limit <- 0.3
+
+## The KL check of one certificate: the held-out KL when the fit drew a
+## validation sample, otherwise `kld_approx`. A composite certificate trips
+## when any operand's certificate trips.
+.kld_misfit <- function(q) {
+  if (!is.null(q$quality_sources)) {
+    for (src in q$quality_sources) {
+      if (!is.null(src$quality)) {
+        hit <- .kld_misfit(src$quality)
+        if (!is.null(hit)) return(hit)
+      }
+    }
+    return(NULL)
+  }
+  heldout <- q$heldout_kld %||% NA_real_
+  if (is.finite(heldout)) {
+    if (heldout > .kld_limit) {
+      return(sprintf("held-out KL %s > %s", format(signif(heldout, 2L)), .kld_limit))
+    }
+    return(NULL)
+  }
+  approx <- q$kld_approx %||% NA_real_
+  if (is.finite(approx) && approx > .kld_limit) {
+    return(sprintf("kld_approx %s > %s, no validation sample",
+                   format(signif(approx, 2L)), .kld_limit))
+  }
+  NULL
+}
 
 .check_quality <- function(g, verb) {
   q <- g@metadata$quality
   if (is.null(q)) return(invisible(NULL))
-  kl <- q$kld_approx %||% NA_real_
-  misfit <- is.finite(kl) && kl > .kld_approx_limit
-  bad <- isTRUE(q$degenerate) || isFALSE(q$converged) || misfit
+  misfit <- .kld_misfit(q)
+  bad <- isTRUE(q$degenerate) || isFALSE(q$converged) || !is.null(misfit)
   if (bad) {
+    reasons <- c(
+      if (isFALSE(q$converged)) "not converged",
+      if (isTRUE(q$degenerate)) "degenerate",
+      misfit
+    )
     rlang::inform(
       c(sprintf(
-        "`%s` received a fit whose quality certificate is flagged (converged = %s, degenerate = %s, approximate KL = %s).",
-        verb, format(q$converged), format(isTRUE(q$degenerate)),
-        format(signif(kl, 2L))),
+        "`%s` received a fit whose quality certificate is flagged (%s).",
+        verb, paste(reasons, collapse = "; ")),
         "i" = "Downstream quantities condition on this proxy; consider refitting before relying on them."),
       class = "proxymix_low_quality",
       .frequency = "once",

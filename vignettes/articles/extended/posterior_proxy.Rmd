@@ -1412,51 +1412,51 @@ posterior's spread.
 ## References
 
 * Albert, J. (2009). *Bayesian Computation with R.* Second edition.
-  Springer. <doi:10.1007/978-0-387-92298-0>.
+  Springer. <https://doi.org/10.1007/978-0-387-92298-0>.
 * Ardia, D., Hoogerheide, L. F. and van Dijk, H. K. (2009). *Adaptive
   mixture of Student-t distributions as a flexible candidate distribution
   for efficient simulation: The R package AdMit.* Journal of Statistical
-  Software 29(3), 1--32. <doi:10.18637/jss.v029.i03>.
+  Software 29(3), 1--32. <https://doi.org/10.18637/jss.v029.i03>.
 * Cappé, O., Douc, R., Guillin, A., Marin, J.-M. and Robert, C. P.
   (2008). *Adaptive importance sampling in general mixture classes.*
-  Statistics and Computing 18, 447--459. <doi:10.1007/s11222-008-9059-x>.
+  Statistics and Computing 18, 447--459. <https://doi.org/10.1007/s11222-008-9059-x>.
 * Carpenter, B., Gelman, A., Hoffman, M. D., Lee, D., Goodrich, B.,
   Betancourt, M., Brubaker, M., Guo, J., Li, P. and Riddell, A. (2017).
   *Stan: A probabilistic programming language.* Journal of Statistical
-  Software 76(1), 1--32. <doi:10.18637/jss.v076.i01>.
+  Software 76(1), 1--32. <https://doi.org/10.18637/jss.v076.i01>.
 * Fair, R. C. (1978). *A theory of extramarital affairs.* Journal of
-  Political Economy 86(1), 45--61. <doi:10.1086/260629>.
+  Political Economy 86(1), 45--61. <https://doi.org/10.1086/260629>.
 * Gabry, J., Češnovar, R., Johnson, A. and Bronder, S. (2025). *cmdstanr:
   R interface to CmdStan.* R package version 0.9.0.
   <https://mc-stan.org/cmdstanr/>.
 * Gronau, Q. F., Singmann, H. and Wagenmakers, E.-J. (2020).
   *bridgesampling: An R package for estimating normalizing constants.*
   Journal of Statistical Software 92(10), 1--29.
-  <doi:10.18637/jss.v092.i10>.
+  <https://doi.org/10.18637/jss.v092.i10>.
 * Hartig, F., Minunno, F. and Paul, S. (2026). *BayesianTools:
   General-purpose MCMC and SMC samplers and tools for Bayesian statistics.*
-  R package version 0.1.9. <doi:10.32614/CRAN.package.BayesianTools>.
+  R package version 0.1.9. <https://doi.org/10.32614/CRAN.package.BayesianTools>.
 * Kleiber, C. and Zeileis, A. (2008). *Applied Econometrics with R.*
-  Springer. <doi:10.1007/978-0-387-77318-6>.
+  Springer. <https://doi.org/10.1007/978-0-387-77318-6>.
 * Owen, A. and Zhou, Y. (2000). *Safe and effective importance sampling.*
   Journal of the American Statistical Association 95(449), 135--143.
-  <doi:10.1080/01621459.2000.10473909>.
+  <https://doi.org/10.1080/01621459.2000.10473909>.
 * Rubin, D. B. (1981). *The Bayesian bootstrap.* The Annals of Statistics
-  9(1), 130--134. <doi:10.1214/aos/1176345338>.
+  9(1), 130--134. <https://doi.org/10.1214/aos/1176345338>.
 * Rue, H., Martino, S. and Chopin, N. (2009). *Approximate Bayesian
   inference for latent Gaussian models by using integrated nested Laplace
   approximations.* Journal of the Royal Statistical Society: Series B
-  71(2), 319--392. <doi:10.1111/j.1467-9868.2008.00700.x>.
+  71(2), 319--392. <https://doi.org/10.1111/j.1467-9868.2008.00700.x>.
 * ter Braak, C. J. F. and Vrugt, J. A. (2008). *Differential Evolution
   Markov Chain with snooker updater and fewer chains.* Statistics and
-  Computing 18, 435--446. <doi:10.1007/s11222-008-9104-9>.
+  Computing 18, 435--446. <https://doi.org/10.1007/s11222-008-9104-9>.
 * Tierney, L. and Kadane, J. B. (1986). *Accurate approximations for
   posterior moments and marginal densities.* Journal of the American
   Statistical Association 81(393), 82--86.
-  <doi:10.1080/01621459.1986.10478240>.
+  <https://doi.org/10.1080/01621459.1986.10478240>.
 * van der Hoek, J. and Elliott, R. J. (2024). *Mixtures of multivariate
   Gaussians.* Stochastic Analysis and Applications.
-  <doi:10.1080/07362994.2024.2372605>.
+  <https://doi.org/10.1080/07362994.2024.2372605>.
 
 ## Reproduce
 

@@ -81,30 +81,18 @@ gmm <- S7::new_class(
       if (!is.matrix(S) || nrow(S) != p || ncol(S) != p) {
         return(sprintf("component %d: `covariances[[k]]` must be a %dx%d matrix", k, p, p))
       }
-      ## a Gaussian component needs a symmetric positive-(semi-)definite
-      ## covariance. When the entries are finite, reject a clearly indefinite
-      ## matrix (e.g. a negative variance) via the smallest eigenvalue of the
-      ## symmetric part, against a scale-relative tolerance so a numerically
-      ## near-singular fit still passes. A non-finite covariance is left to the
-      ## downstream evaluators (a fit to a degenerate target may carry one).
-      if (all(is.finite(S))) {
-        ## Cholesky-first fast path: mixtures are constructed inside hot
-        ## loops (every filter step builds one), and a successful chol()
-        ## proves positive-definiteness at a fraction of an eigen
-        ## decomposition. Only a chol() failure pays for the eigenvalues,
-        ## where the scale-relative tolerance decides near-singular
-        ## (allowed) versus indefinite (rejected).
-        Ssym <- (S + t(S)) / 2
-        chol_ok <- !is.null(tryCatch(chol(Ssym), error = function(e) NULL))
-        if (!chol_ok) {
-          ev <- eigen(Ssym, symmetric = TRUE, only.values = TRUE)$values
-          tol <- 1e-8 * max(1, max(abs(S)))
-          if (min(ev) < -tol) {
-            return(sprintf(paste0(
-              "component %d: `covariances[[k]]` must be symmetric positive-definite ",
-              "(smallest eigenvalue %.3g)"), k, min(ev)))
-          }
-        }
+      if (!all(is.finite(S))) {
+        return(sprintf("component %d: `covariances[[k]]` must have finite entries", k))
+      }
+      ## Sampling and density evaluation factorise each covariance by
+      ## chol(), so a matrix that chol() rejects is rejected here.
+      Ssym <- (S + t(S)) / 2
+      chol_ok <- !is.null(tryCatch(chol(Ssym), error = function(e) NULL))
+      if (!chol_ok) {
+        ev <- eigen(Ssym, symmetric = TRUE, only.values = TRUE)$values
+        return(sprintf(paste0(
+          "component %d: `covariances[[k]]` must be symmetric positive-definite ",
+          "(smallest eigenvalue %.3g)"), k, min(ev)))
       }
     }
     NULL
@@ -233,11 +221,11 @@ gmm_fit <- S7::new_class(
 #' Importance-sampled KLD-EM (regime `"kld"`) only requires `log_density`
 #' to be specified up to an unknown additive constant — the self-normalised
 #' weights are invariant to scaling. The package's *diagnostics* downstream,
-#' however, do depend on normalisation: an importance-sampled KLD estimate
-#' against an unnormalised log-density measures
-#' \eqn{\widehat{KL}(f \Vert g) - \log Z(f)} rather than
-#' \eqn{\widehat{KL}(f \Vert g)}, and a squared-Hellinger Monte Carlo
-#' estimate is only meaningful when both densities integrate to one.
+#' however, do depend on normalisation. An importance-sampled KLD estimate
+#' against an unnormalised log-density equals
+#' \eqn{KL(f \Vert g) + \log Z(f)}, where \eqn{Z(f)} is the integral of
+#' `exp(log_density)`. A squared-Hellinger Monte Carlo estimate is only
+#' meaningful when both densities integrate to one.
 #' Declare the target's normalisation explicitly via `normalised` (and,
 #' where possible, supply `log_normalizer`) so that the package can label
 #' shifted KLDs as shifted and refuse misleading Hellinger reports.
@@ -253,10 +241,10 @@ gmm_fit <- S7::new_class(
 #'   integrates to one. `TRUE`, `FALSE`, or `NA` (unknown). Defaults to
 #'   `NA`. Downstream diagnostics treat `NA` and `FALSE` identically and
 #'   label any KLD estimate as shifted.
-#' @param log_normalizer Numeric scalar `log Z(f)` of the supplied
-#'   `log_density`, if known. Default `NA_real_`. When `normalised = FALSE`
-#'   and `log_normalizer` is finite, downstream diagnostics can correct
-#'   shifted KLD estimates by `+ log_normalizer`.
+#' @param log_normalizer Numeric scalar `log Z(f)`, the log of the integral
+#'   of `exp(log_density)`, if known. Default `NA_real_`. When
+#'   `normalised = FALSE` and `log_normalizer` is finite, [fit_kld_em()]
+#'   subtracts it from the shifted KLD estimates.
 #' @param support Optional declaration of the target's support. `NULL` (the
 #'   default) means the full \eqn{\mathbb{R}^p}. Otherwise a list
 #'   `list(lower = , upper = )` of per-coordinate bounds, each of length 1

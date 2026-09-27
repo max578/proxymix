@@ -172,7 +172,7 @@ fit
 Weighted draws have a weakness familiar from survey work. If a handful of
 respondents carry very large weights, the survey estimate rests on those few
 people and becomes unstable. The same happens here if a few trial points
-carry most of the weight. The certificate checks for this and for other
+carry most of the weight. `gmm_fit_quality()` checks for this and for other
 signs of a poor fit.
 
 ```{r certificate}
@@ -188,7 +188,7 @@ cert_tbl <- data.frame(
             "smallest effective sample size of any component",
             "largest share of the weight held by one draw",
             "KL divergence on the fitting draws",
-            "approximate KL divergence from the weights",
+            "half the variance of the log density ratio (a local KL approximation)",
             "KL divergence on fresh draws",
             "fresh draws minus fitting draws"),
   Value = c(
@@ -201,7 +201,7 @@ cert_tbl <- data.frame(
     format(signif(quality$max_weight, 3L)),
     format(signif(quality$kld_final, 3L)),
     format(signif(quality$kld_approx, 3L)),
-    format(signif(fit@diagnostics$validation_kld, 3L)),
+    format(signif(quality$heldout_kld, 3L)),
     format(signif(quality$validation_gap, 3L))
   ),
   stringsAsFactors = FALSE
@@ -215,9 +215,10 @@ knitr::kable(
 The effective sample size is the number of equally weighted draws that the
 weighted sample is worth. The fit was tuned to the draws it was fitted on,
 so the KL computed on them is too low. The KL on a fresh set of draws is the
-one to report. The approximate KL divergence comes from the spread of the
-weights on the fitting draws. It is a rough check, and the package flags a
-fit when it exceeds 0.3.
+one to report. The package flags a fit when this KL exceeds 0.3, when the
+fit did not converge, or when it is degenerate. Half the
+variance of the log density ratio on the fitting draws approximates the KL
+when the proxy is already close to the target. It is only a rough check.
 
 ### Compare the proxy with the target
 
@@ -231,7 +232,7 @@ grid_g$target <- exp(tgt@log_density(grid_mat))
 grid_g$proxy <- dgmm(grid_mat, fit)
 ```
 
-```{r overlay, eval = has_ggplot2, echo = has_ggplot2, fig.cap = sprintf("The banana target (filled contours) with the three-component proxy overlaid as dashed contours. The three components line up along the curve instead of one bell curve sitting across it. The KL divergence on fresh draws is %s.", format(signif(fit@diagnostics$validation_kld, 2L))), fig.alt = "Filled contour map of the curved banana density with dashed contours of the three-component Gaussian-mixture proxy following the same curve."}
+```{r overlay, eval = has_ggplot2, echo = has_ggplot2, fig.cap = sprintf("The banana target (filled contours) with the three-component proxy overlaid as dashed contours. The dashed contours follow the curve of the banana, which a single bell curve could not do. The KL divergence on fresh draws is %s.", format(signif(fit@diagnostics$validation_kld, 2L))), fig.alt = "Filled contour map of the curved banana density with dashed contours of the three-component Gaussian-mixture proxy following the same curve."}
 ggplot2::ggplot(grid_g, ggplot2::aes(x1, x2)) +
   ggplot2::geom_contour_filled(ggplot2::aes(z = target), bins = 10L,
                                alpha = 0.85) +
@@ -357,7 +358,7 @@ follow the curve of the banana. On the tail probability, however, the
 Laplace approximation was the most accurate, with an error of
 `r fixed(sim_value("Laplace", "tail_rmse"), 5)`. On its own, $x_1$ has a
 standard normal distribution, and on this target the Laplace approximation
-reproduces it exactly.
+reproduces it almost exactly.
 proxymix came second on the tail, with an error of
 `r tail_error("proxymix")` against `r tail_range` for the two samplers and
 the mixture fitted to the NUTS draws.
@@ -365,9 +366,10 @@ The held-out KL of `r fixed(fit@diagnostics$validation_kld, 4)` reported for
 the three-component fit above is itself estimated from random draws, with a
 standard error of about `r fixed(fit@diagnostics$validation_mc_se, 4)`. On
 the grid used for the table, that fit has a KL divergence of
-`r fixed(kl_fit_quad, 4)`. This is
+`r fixed(kl_fit_quad, 4)`. That value lies
 `r fixed((kl_fit_quad - sim_value("proxymix", "kl_mean")) / sim_value("proxymix", "kl_sd"), 1)`
-standard deviations above the proxymix mean in the table.
+standard deviations above the proxymix mean in the table, using the
+standard deviation across runs shown there in brackets.
 
 The Laplace approximation was also the fastest, at
 `r if (sim_value("Laplace", "secs") < 0.01) "under 0.01" else secs("Laplace")`
@@ -481,23 +483,26 @@ The KL divergence on fresh draws is
 `r format(signif(fit@diagnostics$validation_kld, 2L))`, with a standard error
 of `r format(signif(fit@diagnostics$validation_mc_se, 2L))`. For a sense of
 scale, this value means that the probabilities the proxy and the target give
-to any region differ by at most about
+to any region differ by at most $\sqrt{\mathrm{KL}/2}$, about
 `r round(100 * sqrt(fit@diagnostics$validation_kld / 2), 0L)` percentage
-points (Pinsker's inequality). The exact KL divergence on the grid,
-`r fixed(kl_fit_quad, 4)`, is
+points (Pinsker's inequality). The KL divergence computed on the grid,
+`r fixed(kl_fit_quad, 4)`, lies
+`r if (kl_fit_quad > fit@diagnostics$validation_kld) "above" else "below"`
+the fresh-draw estimate by
 `r fixed(abs(kl_fit_quad - fit@diagnostics$validation_kld) / fit@diagnostics$validation_mc_se, 1)`
-standard errors `r if (kl_fit_quad > fit@diagnostics$validation_kld) "above" else "below"`
-this estimate. The KL on the fitting draws is lower because the fit was tuned
+times the standard error of that estimate. The KL on the fitting draws is lower because the fit was tuned
 to those draws. The difference between the two,
-`r format(signif(quality$validation_gap, 1L))`, is about
+`r format(signif(quality$validation_gap, 2L))`, is about
 `r round(quality$validation_gap / fit@diagnostics$mc_se_kld, 0L)` times the
-standard error of the KL on the fitting draws.
+standard error of the KL on the fitting draws, which is
+`r format(signif(fit@diagnostics$mc_se_kld, 2L))`.
 
 ## Limitations
 
-The number of components is set to three by hand here. `select_N()` and
-`bic_aic()` choose it automatically, and too few components show up as a KL
-divergence that more trial draws do not reduce.
+The number of components is set to three by hand here. `select_N()` chooses
+it automatically, and `bic_aic()` reports the BIC and AIC for comparing
+counts. Too few components show up as a KL divergence that more trial draws
+do not reduce.
 
 The choice of broad distribution matters. The Student-t used here is wide
 enough to cover the banana. If the broad distribution misses part of the

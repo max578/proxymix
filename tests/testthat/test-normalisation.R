@@ -56,23 +56,22 @@ test_that("KLD on an unnormalised target reports kld_is_shifted = TRUE", {
   expect_true(is.na(fit@diagnostics$kld_final_absolute))
 })
 
-test_that("supplying log_normalizer corrects the absolute KLD", {
-  ## The same log-density as above, but now declared unnormalised with
-  ## the correct log_normalizer = log(2 * pi) for a 2-D N(0, I).
+test_that("supplying log_normalizer recovers the KL divergence", {
+  ## exp(-0.5 * |x|^2) integrates to 2 * pi in two dimensions.
   unnormalised_log_f <- function(x) -0.5 * rowSums(x^2)
   ut <- gmm_target(n_dim = 2L,
                    log_density = unnormalised_log_f,
                    normalised = FALSE,
                    log_normalizer = log(2 * pi))
   fit <- fit_kld_em(ut, N = 1L, is_size = 1500L,
-                    max_iter = 15L, seed = 1L)
-  expect_true(is.finite(fit@diagnostics$kld_final_absolute))
-  ## The shift uses target@log_normalizer additively.
-  expect_equal(
-    fit@diagnostics$kld_final_absolute,
-    fit@diagnostics$kld_final + log(2 * pi),
-    tolerance = 1e-12
-  )
+                    max_iter = 15L, seed = 1L, validation_size = 4000L)
+  d <- fit@diagnostics
+  expect_equal(d$kld_final_absolute, d$kld_final - log(2 * pi),
+               tolerance = 1e-12)
+  expect_lt(abs(d$kld_final_absolute), 0.05)
+  expect_equal(d$validation_kld_absolute, d$validation_kld - log(2 * pi),
+               tolerance = 1e-12)
+  expect_lt(abs(d$validation_kld_absolute), 0.05)
 })
 
 test_that("hellinger_mc warns when target is not normalised", {

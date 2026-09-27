@@ -46,6 +46,22 @@ test_that("gmm rejects a covariance that is not positive-definite", {
   )
 })
 
+test_that("gmm rejects a zero or non-finite covariance", {
+  expect_error(
+    gmm(weights = 1, means = list(0), covariances = list(matrix(0))),
+    "covariances"
+  )
+  expect_error(
+    gmm(weights = 1, means = list(c(0, 0)),
+        covariances = list(matrix(c(1, NA, NA, 1), 2))),
+    "covariances"
+  )
+  expect_error(
+    gmm(weights = 1, means = list(0), covariances = list(matrix(Inf))),
+    "covariances"
+  )
+})
+
 test_that("gmm_fit inherits from gmm", {
   x <- withr::with_seed(50, matrix(stats::rnorm(200), ncol = 2))
   tgt <- gmm_target_from_samples(x)

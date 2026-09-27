@@ -12,21 +12,24 @@ gmm_fit_quality(g)
 \value{
 A list with elements \code{regime}, \code{converged}, \code{degenerate},
 \code{ess}, \code{ess_relative}, \code{min_component_ess}, \code{max_weight},
-\code{support_fraction}, \code{kld_final}, \code{kld_approx}, and \code{validation_gap}
-(fields not applicable to the regime are \code{NA}), or \code{NULL} for a mixture
-that was never fitted (e.g. built directly with \code{\link[=gmm]{gmm()}}). A certificate
-produced by an operator over several operands has \code{regime = "composite"},
-the conservative worst-case value of each numeric field across the
+\code{support_fraction}, \code{kld_final}, \code{kld_approx}, \code{validation_gap}, and
+\code{heldout_kld} (fields not applicable to the regime are \code{NA}), or \code{NULL}
+for a mixture that was never fitted (e.g. built directly with \code{\link[=gmm]{gmm()}}).
+A certificate produced by an operator over several operands has
+\code{regime = "composite"}, the conservative worst-case value of each numeric field across the
 operands, and an additional \code{quality_sources} element holding the
 operands' own certificates. \code{kld_final} is estimated on the importance
 draws the fit was tuned to, so it reads low; \code{validation_gap} is the
 held-out \code{validation_kld} (see \code{\link[=ess_summary]{ess_summary()}}) minus \code{kld_final}, and is
-\code{NA} when the fit was made with \code{validation_size = 0}. \code{kld_approx} is
-half the importance-weighted variance of \verb{log f - log g} over the fitting
-draws. To second order it equals the KL divergence from the target to
-the proxy, in nats. It does not depend on the target's normalising
-constant, so it is available when \code{kld_final} is shifted. It is \code{NA}
-outside regime \code{"kld"}.
+\code{NA} when the fit was made with \code{validation_size = 0}. \code{heldout_kld} is
+the KL divergence from the target to the proxy estimated on the
+validation draws. For a target with an unknown normalising constant it
+is \code{validation_kld} minus a log normalising constant estimated from the
+same draws. \code{kld_approx} is half the importance-weighted variance of
+\verb{log f - log g} over the fitting draws. It approximates the KL
+divergence only when the proxy is close to the target, and it does not
+depend on the target's normalising constant. Both are \code{NA} outside
+regime \code{"kld"}.
 }
 \description{
 Returns the fit-quality certificate: a small list recording the fitting
@@ -47,9 +50,14 @@ chain of operations that produced it.
 Downstream verbs read the same certificate and raise a one-shot
 advisory (class \code{proxymix_low_quality}) when the source fit is flagged. A
 fit is flagged when it did not converge, when it is degenerate (fewer
-effective importance draws than \code{min_ess}), or when \code{kld_approx} exceeds
-0.3. Relative ESS is not used: with a fixed proposal it describes the
-proposal, not the fit, and stays the same however good the fit is.
+effective importance draws than \code{min_ess}), or when its held-out KL
+divergence \code{heldout_kld} exceeds 0.3 nats. A fit made with
+\code{validation_size = 0} has no held-out estimate, and is flagged when
+\code{kld_approx} exceeds 0.3. That fallback misses a proxy wider than the
+target, because such a proxy can keep \code{kld_approx} below 0.3 while its KL
+divergence is large. Relative ESS is not used: with a fixed proposal it
+describes the proposal, not the fit, and stays the same however good the
+fit is.
 }
 \examples{
 fit <- fit_proxymix(banana_target(), N = 2L, regime = "kld",

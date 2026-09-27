@@ -47,6 +47,9 @@ fit_moment_match <- function(target, N = 1L, ridge_eps = 1e-6,
   p <- target@n_dim
 
   if (!is.null(target@samples)) {
+    if (nrow(target@samples) < 1L) {
+      cli::cli_abort("`target@samples` has no rows; regime {.val moment} needs at least one sample.")
+    }
     mu_hat <- colMeans(target@samples)
     S_hat <- ridge(stats::cov(target@samples), epsilon = ridge_eps)
     n_used <- nrow(target@samples)
@@ -124,6 +127,7 @@ fit_moment_match <- function(target, N = 1L, ridge_eps = 1e-6,
     support_fraction = NA_real_,
     kld_final = NA_real_,
     kld_approx = NA_real_,
-    validation_gap = NA_real_
+    validation_gap = NA_real_,
+    heldout_kld = NA_real_
   )
 }

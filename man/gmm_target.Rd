@@ -39,10 +39,10 @@ integrates to one. \code{TRUE}, \code{FALSE}, or \code{NA} (unknown). Defaults t
 \code{NA}. Downstream diagnostics treat \code{NA} and \code{FALSE} identically and
 label any KLD estimate as shifted.}
 
-\item{log_normalizer}{Numeric scalar \verb{log Z(f)} of the supplied
-\code{log_density}, if known. Default \code{NA_real_}. When \code{normalised = FALSE}
-and \code{log_normalizer} is finite, downstream diagnostics can correct
-shifted KLD estimates by \code{+ log_normalizer}.}
+\item{log_normalizer}{Numeric scalar \verb{log Z(f)}, the log of the integral
+of \code{exp(log_density)}, if known. Default \code{NA_real_}. When
+\code{normalised = FALSE} and \code{log_normalizer} is finite, \code{\link[=fit_kld_em]{fit_kld_em()}}
+subtracts it from the shifted KLD estimates.}
 
 \item{name}{Human-readable name.}
 
@@ -69,11 +69,11 @@ Use \code{\link[=gmm_target]{gmm_target()}} or \code{\link[=gmm_target_from_samp
 Importance-sampled KLD-EM (regime \code{"kld"}) only requires \code{log_density}
 to be specified up to an unknown additive constant — the self-normalised
 weights are invariant to scaling. The package's \emph{diagnostics} downstream,
-however, do depend on normalisation: an importance-sampled KLD estimate
-against an unnormalised log-density measures
-\eqn{\widehat{KL}(f \Vert g) - \log Z(f)} rather than
-\eqn{\widehat{KL}(f \Vert g)}, and a squared-Hellinger Monte Carlo
-estimate is only meaningful when both densities integrate to one.
+however, do depend on normalisation. An importance-sampled KLD estimate
+against an unnormalised log-density equals
+\eqn{KL(f \Vert g) + \log Z(f)}, where \eqn{Z(f)} is the integral of
+\code{exp(log_density)}. A squared-Hellinger Monte Carlo estimate is only
+meaningful when both densities integrate to one.
 Declare the target's normalisation explicitly via \code{normalised} (and,
 where possible, supply \code{log_normalizer}) so that the package can label
 shifted KLDs as shifted and refuse misleading Hellinger reports.

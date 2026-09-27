@@ -52,7 +52,7 @@ importance-weighted EM objective \verb{Q(theta) = sum_n W_n log g(x_n)}.
 \code{Q} is invariant to the target's normalising constant, so the
 stopping rule behaves identically for normalised and unnormalised
 targets (the importance-sampled KLD estimate carries an additive
-\verb{-log Z(f)} offset and is therefore never used for stopping).}
+\verb{log Z(f)} offset and is therefore never used for stopping).}
 
 \item{ridge_eps}{Ridge added to each component covariance at every
 M-step.}
@@ -129,8 +129,9 @@ A \link{gmm_fit} with \code{regime = "kld"}. The diagnostics list
 contains, among others, \code{kld_trace}, \code{kld_final} (in-sample),
 \code{kld_is_shifted}, \code{kld_final_absolute} (when computable), \code{ess},
 \code{ess_relative} (\code{ess / is_size}), \code{max_weight}, \code{support_fraction},
-\code{mc_se_kld}, \code{validation_kld} (held-out), \code{validation_ess}, and
-\code{validation_max_weight}.
+\code{mc_se_kld}, \code{validation_kld} (held-out), \code{validation_ess},
+\code{validation_max_weight}, and \code{heldout_kld}, the held-out estimate of the
+KL divergence that \code{\link[=gmm_fit_quality]{gmm_fit_quality()}} describes.
 }
 \description{
 Implements regime (iii) of Hoek and Elliott (2024). Minimises
@@ -172,12 +173,13 @@ small \code{is_size}. When \code{validation_size > 0} the function also draws an
 \code{validation_kld} is the estimate to quote as the fit's accuracy.
 
 When the target's \code{normalised} property is \code{FALSE} or \code{NA}, the
-importance-sampled \code{kld_final} and \code{kld_trace} measure
-\eqn{\widehat{KL}(f \Vert g) - \log Z(f)} rather than the absolute
-divergence. The fit's diagnostics list records this via
+importance-sampled \code{kld_final}, \code{kld_trace} and \code{validation_kld} estimate
+\eqn{KL(f \Vert g) + \log Z(f)}, where \eqn{Z(f)} is the integral of
+\code{exp(log_density)}. The fit's diagnostics list records this via
 \code{kld_is_shifted = TRUE} and a \code{kld_shift_explanation} string. When the
-target also supplies a finite \code{log_normalizer}, a corrected absolute
-estimate is reported as \code{kld_final_absolute}.
+target also supplies a finite \code{log_normalizer}, the fit subtracts it and
+reports the KL divergence as \code{kld_final_absolute} and
+\code{validation_kld_absolute}.
 }
 \examples{
 tgt <- banana_target()

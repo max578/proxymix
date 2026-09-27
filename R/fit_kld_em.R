@@ -43,12 +43,13 @@
 #' `validation_kld` is the estimate to quote as the fit's accuracy.
 #'
 #' When the target's `normalised` property is `FALSE` or `NA`, the
-#' importance-sampled `kld_final` and `kld_trace` measure
-#' \eqn{\widehat{KL}(f \Vert g) - \log Z(f)} rather than the absolute
-#' divergence. The fit's diagnostics list records this via
+#' importance-sampled `kld_final`, `kld_trace` and `validation_kld` estimate
+#' \eqn{KL(f \Vert g) + \log Z(f)}, where \eqn{Z(f)} is the integral of
+#' `exp(log_density)`. The fit's diagnostics list records this via
 #' `kld_is_shifted = TRUE` and a `kld_shift_explanation` string. When the
-#' target also supplies a finite `log_normalizer`, a corrected absolute
-#' estimate is reported as `kld_final_absolute`.
+#' target also supplies a finite `log_normalizer`, the fit subtracts it and
+#' reports the KL divergence as `kld_final_absolute` and
+#' `validation_kld_absolute`.
 #'
 #' @param target A [gmm_target] with a non-NULL `log_density`.
 #' @param N Number of mixture components.
@@ -66,7 +67,7 @@
 #'   `Q` is invariant to the target's normalising constant, so the
 #'   stopping rule behaves identically for normalised and unnormalised
 #'   targets (the importance-sampled KLD estimate carries an additive
-#'   `-log Z(f)` offset and is therefore never used for stopping).
+#'   `log Z(f)` offset and is therefore never used for stopping).
 #' @param ridge_eps Ridge added to each component covariance at every
 #'   M-step.
 #' @param min_ess Minimum effective sample size below which the fit is
@@ -127,8 +128,9 @@
 #'   contains, among others, `kld_trace`, `kld_final` (in-sample),
 #'   `kld_is_shifted`, `kld_final_absolute` (when computable), `ess`,
 #'   `ess_relative` (`ess / is_size`), `max_weight`, `support_fraction`,
-#'   `mc_se_kld`, `validation_kld` (held-out), `validation_ess`, and
-#'   `validation_max_weight`.
+#'   `mc_se_kld`, `validation_kld` (held-out), `validation_ess`,
+#'   `validation_max_weight`, and `heldout_kld`, the held-out estimate of the
+#'   KL divergence that [gmm_fit_quality()] describes.
 #' @family fitting
 #' @references Cappé, O., Douc, R., Guillin, A., Marin, J.-M. and
 #'   Robert, C. P. (2008) Adaptive importance sampling in general mixture
@@ -365,14 +367,17 @@ fit_kld_em <- function(target,
     ##     KL(f || g) ~ sum_n W_n (log f(x_n) - log g(x_n));
     ##   * the IS-weighted Q-objective minimised by EM,
     ##     Q(theta) = sum_n W_n log g(x_n).
-    kld <- sum(W * (log_f - log_g))
+    ## A draw outside the target support has W = 0 and log f = -Inf.
+    d_it <- log_f - log_g
+    fin_it <- is.finite(d_it) & is.finite(W) & W > 0
+    kld <- sum(W[fin_it] * d_it[fin_it])
     weighted_obj <- sum(W * log_g)
     kld_trace <- c(kld_trace, kld)
     weighted_obj_trace <- c(weighted_obj_trace, weighted_obj)
 
     ## Convergence is judged on the importance-weighted EM objective
     ## Q(theta) = sum_n W_n log g(x_n), never on the KLD trace: for an
-    ## unnormalised target the KLD trace carries the additive -log Z(f)
+    ## unnormalised target the KLD trace carries the additive log Z(f)
     ## offset, so a relative-change rule on it would depend on the
     ## target's arbitrary normalisation. Q is offset-free by construction
     ## (the self-normalised W and log g never touch the constant). Both
@@ -533,7 +538,7 @@ fit_kld_em <- function(target,
   kld_final_absolute <- if (!kld_is_shifted) {
     kld_final
   } else if (is.finite(target@log_normalizer)) {
-    kld_final + target@log_normalizer
+    kld_final - target@log_normalizer
   } else {
     NA_real_
   }
@@ -565,14 +570,20 @@ fit_kld_em <- function(target,
         finite_v <- is.finite(d_v) & is.finite(wts$W) & wts$W > 0
         est <- sum(wts$W[finite_v] * d_v[finite_v])
         se <- sqrt(sum(wts$W[finite_v]^2 * (d_v[finite_v] - est)^2))
-        kl_abs <- est + log_z_shift
+        kl_abs <- est - log_z_shift
         se_goal <- if (is.finite(kl_abs)) 0.1 * max(kl_abs, 0.01) else 0.001
         if (se <= se_goal ||
               length(log_f_v) + validation_size > max_validation) {
           break
         }
       }
-      c(wts, list(kld = est, mc_se = se, n = length(log_f_v)))
+      ## log of the mean of f / q over every validation draw, zeros kept.
+      lw_v <- log_f_v - log_q_v
+      lw_v <- lw_v[is.finite(lw_v)]
+      log_z_v <- max(lw_v) + log(sum(exp(lw_v - max(lw_v)))) -
+        log(length(log_f_v))
+      c(wts, list(kld = est, mc_se = se, n = length(log_f_v),
+                  log_z = log_z_v))
     }
     vdraws <- if (is.null(v_seed)) {
       draw_validation()
@@ -582,12 +593,16 @@ fit_kld_em <- function(target,
     val_kld <- vdraws$kld
     val_mc_se <- vdraws$mc_se
     validation_size <- vdraws$n
+    val_kld_absolute <- if (!kld_is_shifted) val_kld
+      else if (is.finite(target@log_normalizer)) val_kld - target@log_normalizer
+      else NA_real_
     list(
       validation_kld = val_kld,
       validation_mc_se = val_mc_se,
-      validation_kld_absolute = if (!kld_is_shifted) val_kld
-        else if (is.finite(target@log_normalizer)) val_kld + target@log_normalizer
-        else NA_real_,
+      validation_kld_absolute = val_kld_absolute,
+      validation_log_z = vdraws$log_z,
+      heldout_kld = if (is.finite(val_kld_absolute)) val_kld_absolute
+        else val_kld - vdraws$log_z,
       validation_ess = vdraws$ess,
       validation_ess_relative = vdraws$ess / validation_size,
       validation_max_weight = vdraws$max_weight,
@@ -600,6 +615,8 @@ fit_kld_em <- function(target,
       validation_kld = NA_real_,
       validation_mc_se = NA_real_,
       validation_kld_absolute = NA_real_,
+      validation_log_z = NA_real_,
+      heldout_kld = NA_real_,
       validation_ess = NA_real_,
       validation_ess_relative = NA_real_,
       validation_max_weight = NA_real_,
@@ -660,7 +677,8 @@ fit_kld_em <- function(target,
       validation_diag$validation_kld - kld_final
     } else {
       NA_real_
-    }
+    },
+    heldout_kld = validation_diag$heldout_kld
   )
 
   fit <- gmm_fit(

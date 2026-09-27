@@ -9,9 +9,11 @@
 #' target \eqn{f}, using the fitted mixture \eqn{\hat g} as the proposal:
 #' \deqn{\widehat{Z} = \frac{1}{n} \sum_{i=1}^n
 #'   \frac{f(x_i)}{\hat g(x_i)}, \qquad x_i \sim \hat g,}
-#' computed in the log domain. For a Bayesian posterior handed over as
-#' `likelihood x prior`, \eqn{\log Z} is the log marginal likelihood, so a
-#' fitted proxy doubles as a model-comparison device.
+#' computed in the log domain. A draw at which the target density is zero
+#' contributes a zero term and stays in the average. For a Bayesian
+#' posterior handed over as `likelihood x prior`, \eqn{\log Z} is the log
+#' marginal likelihood, so a fitted proxy doubles as a model-comparison
+#' device.
 #'
 #' The estimator is exact in expectation for any proposal that dominates
 #' \eqn{f}, and its Monte Carlo error is driven by how well \eqn{\hat g}
@@ -66,13 +68,19 @@ gmm_evidence <- function(fit, n = 4000L, seed = NULL) {
   log_f <- tgt@log_density(x)
   log_g <- dgmm(x, fit, log = TRUE)
   log_w <- log_f - log_g
-  finite <- is.finite(log_w)
-  if (!any(finite)) {
-    cli::cli_abort("every evidence draw received a non-finite weight; the proxy does not overlap the target.")
+  bad <- is.nan(log_w) | (is.infinite(log_w) & log_w > 0)
+  if (any(bad)) {
+    cli::cli_abort(c(
+      "{sum(bad)} evidence draw{?s} received a log weight of +Inf or NaN.",
+      "i" = "Check that {.code log_density} is finite where the proxy puts mass, or returns -Inf outside the support."
+    ))
   }
-  lw <- log_w[finite]
-  m <- max(lw)
-  a <- exp(lw - m)
+  if (all(log_w == -Inf)) {
+    cli::cli_abort("every evidence draw fell where the target density is zero; the proxy does not overlap the target.")
+  }
+  ## A draw where the target density is zero contributes a zero weight.
+  m <- max(log_w)
+  a <- exp(log_w - m)
   ## log Z-hat = m + log(mean(a)); delta-method SE of log Z-hat.
   log_z <- m + log(mean(a))
   se_log_z <- stats::sd(a) / (sqrt(length(a)) * mean(a))

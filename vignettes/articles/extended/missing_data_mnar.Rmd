@@ -1071,41 +1071,41 @@ step that every gate multiplies into, and what else it buys.
 
 * Diggle, P. and Kenward, M. G. (1994). *Informative drop-out in
   longitudinal data analysis.* Journal of the Royal Statistical Society C
-  43(1), 49--93. <doi:10.2307/2986113>.
+  43(1), 49--93. <https://doi.org/10.2307/2986113>.
 * Fair, R. C. (1978). *A theory of extramarital affairs.* Journal of
-  Political Economy 86(1), 45--61. <doi:10.1086/260646>.
+  Political Economy 86(1), 45--61. <https://doi.org/10.1086/260646>.
 * Gorman, K. B., Williams, T. D. and Fraser, W. R. (2014). *Ecological
   sexual dimorphism and environmental variability within a community of
   Antarctic penguins (genus Pygoscelis).* PLoS ONE 9(3), e90081.
-  <doi:10.1371/journal.pone.0090081>.
+  <https://doi.org/10.1371/journal.pone.0090081>.
 * Heckman, J. J. (1979). *Sample selection bias as a specification error.*
-  Econometrica 47(1), 153--161. <doi:10.2307/1912352>.
+  Econometrica 47(1), 153--161. <https://doi.org/10.2307/1912352>.
 * Honaker, J., King, G. and Blackwell, M. (2011). *Amelia II: A program for
   missing data.* Journal of Statistical Software 45(7), 1--47.
-  <doi:10.18637/jss.v045.i07>.
+  <https://doi.org/10.18637/jss.v045.i07>.
 * Horst, A. M., Presmanes Hill, A. and Gorman, K. B. (2022). *Palmer
   Archipelago penguins data in the palmerpenguins R package -- an
   alternative to Anderson's irises.* The R Journal 14(1), 244--254.
-  <doi:10.32614/RJ-2022-020>.
+  <https://doi.org/10.32614/RJ-2022-020>.
 * Kleiber, C. and Zeileis, A. (2008). *Applied Econometrics with R.*
-  Springer. <doi:10.1007/978-0-387-77318-6>.
+  Springer. <https://doi.org/10.1007/978-0-387-77318-6>.
 * Little, R. J. A. (1993). *Pattern-mixture models for multivariate
   incomplete data.* Journal of the American Statistical Association
-  88(421), 125--134. <doi:10.1080/01621459.1993.10594302>.
+  88(421), 125--134. <https://doi.org/10.1080/01621459.1993.10594302>.
 * Rubin, D. B. (1987). *Multiple Imputation for Nonresponse in Surveys.*
   Wiley.
 * Therneau, T. M. and Grambsch, P. M. (2000). *Modeling Survival Data:
-  Extending the Cox Model.* Springer. <doi:10.1007/978-1-4757-3294-8>.
+  Extending the Cox Model.* Springer. <https://doi.org/10.1007/978-1-4757-3294-8>.
 * Tobin, J. (1958). *Estimation of relationships for limited dependent
-  variables.* Econometrica 26(1), 24--36. <doi:10.2307/1907382>.
+  variables.* Econometrica 26(1), 24--36. <https://doi.org/10.2307/1907382>.
 * Toomet, O. and Henningsen, A. (2008). *Sample selection models in R:
   Package sampleSelection.* Journal of Statistical Software 27(7), 1--23.
-  <doi:10.18637/jss.v027.i07>.
+  <https://doi.org/10.18637/jss.v027.i07>.
 * van Buuren, S. (2018). *Flexible Imputation of Missing Data*, second
-  edition. Chapman and Hall/CRC. <doi:10.1201/9780429492259>.
+  edition. Chapman and Hall/CRC. <https://doi.org/10.1201/9780429492259>.
 * van Buuren, S. and Groothuis-Oudshoorn, K. (2011). *mice: Multivariate
   imputation by chained equations in R.* Journal of Statistical Software
-  45(3), 1--67. <doi:10.18637/jss.v045.i03>.
+  45(3), 1--67. <https://doi.org/10.18637/jss.v045.i03>.
 
 ## Reproduce
 

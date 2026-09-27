@@ -265,10 +265,10 @@ pgmm <- function(q, g, lower.tail = TRUE) {
   .check_gmm_1d(g)
   sds <- sqrt(vapply(g@covariances, function(S) S[1L, 1L], numeric(1L)))
   mus <- vapply(g@means, function(m) m[1L], numeric(1L))
-  out <- vapply(q, function(qi) {
-    sum(g@weights * stats::pnorm(qi, mean = mus, sd = sds))
+  lower <- isTRUE(lower.tail)
+  vapply(q, function(qi) {
+    sum(g@weights * stats::pnorm(qi, mean = mus, sd = sds, lower.tail = lower))
   }, numeric(1L))
-  if (isTRUE(lower.tail)) out else 1 - out
 }
 
 #' @rdname pgmm

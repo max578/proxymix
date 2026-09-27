@@ -71,9 +71,9 @@ gmm_target_from_posterior.default <- function(model, ...) {
 #' @param parameter_names Character vector of parameter names. Required
 #'   for the `function` method (or attached as
 #'   `attr(model, "parameter_names")`). The length determines `n_dim`.
-#' @param log_normalizer Numeric scalar `log Z` of the posterior, if known.
-#'   `NA_real_` (the default) otherwise; downstream diagnostics will label
-#'   any KLD estimate as shifted.
+#' @param log_normalizer Numeric scalar `log Z`, the log of the integral of
+#'   `exp()` of the log-posterior, if known. With `NA_real_` (the default),
+#'   downstream diagnostics label any KLD estimate as shifted.
 #' @param name Optional human-readable target name. Defaults to
 #'   `"posterior"`.
 #' @export

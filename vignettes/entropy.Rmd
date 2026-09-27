@@ -76,7 +76,7 @@ measures have exact formulas and others must be estimated by simulation.
   entropy, with its standard error and an exact upper bound.
 - `gmm_divergence()` returns the exact Cauchy-Schwarz divergence between
   two mixtures. With `type = "kl"` it returns a simulation estimate of the
-  Kullback-Leibler divergence from `gmm_kld()`.
+  Kullback-Leibler divergence computed by `gmm_kld()`.
 - `gmm_mutual_information()` measures the dependence between two groups of
   variables. `gmm_conditional_entropy()` returns the entropy of one
   variable when the others are held at given values.
@@ -197,10 +197,11 @@ knitr::kable(
 ### Dependence between variables
 
 The Cauchy-Schwarz mutual information compares the joint distribution with
-the distribution the variables would have if they were independent. The
-conditional entropy of $x_1$ given $x_2$ is the Rényi-2 entropy of $x_1$
-when $x_2$ is held at a value. `gmm_conditional_entropy()` takes one row
-per value, with `NA` marking the free variable.
+the distribution the variables would have if they were independent. Here
+the conditional entropy of $x_1$ at a value of $x_2$ is the Rényi-2 entropy
+of $x_1$ when $x_2$ is held at that value. It is computed at each value
+separately, not averaged over $x_2$. `gmm_conditional_entropy()` takes one
+row per value, with `NA` marking the free variable.
 
 ```{r mutual-information}
 sigma_joint <- matrix(c(1, 0.7, 0.7, 1), 2L, 2L)
@@ -250,8 +251,11 @@ weight of the component. At a high temperature every component sits at the
 mean of the data. As $T$ falls towards one, the components split apart at
 critical temperatures. The quantity minimised is the free energy
 $F = \langle E \rangle - T H$, where $\langle E \rangle$ is the average of
-$-\log \phi(x_i;\ \mu_k, \Sigma_k)$ over the shares and $H$ is the
-entropy of the shares. With `anneal = TRUE`, `fit_em_samples()` and
+$-\log \phi(x_i;\ \mu_k, \Sigma_k)$ over the shares. $H$ is the entropy
+of the shares relative to the component weights,
+$H = -n^{-1} \sum_{i,k} \gamma_{ik} \log(\gamma_{ik} / \pi_k)$, where
+$\gamma_{ik}$ is the share of point $i$ given to component $k$. It is zero
+when every point is shared in proportion to the weights. With `anneal = TRUE`, `fit_em_samples()` and
 `fit_kld_em()` cool first and start the usual fit from the result. The data
 below are three far-apart clusters of 100 points each.
 
@@ -352,8 +356,8 @@ largest entropy assumes nothing beyond them (Jaynes, 1957).
 the normal distribution, for a given range alone the uniform, and for a
 mean and covariance matrix on a bounded box a truncated normal. A bounded
 target records its range. When such a target is fitted from its formula
-alone (`regime = "kld"`, van der Hoek and Elliott, 2024), the random points that the fit weights are then
-drawn over that range.
+alone (`regime = "kld"`, van der Hoek and Elliott, 2024), the trial points
+that the fit weights are drawn from within that range.
 
 ```{r maxent}
 me_gauss <- maxent_target(moments = list(mean = c(0, 0), cov = diag(2)))
@@ -398,7 +402,7 @@ x_two <- rbind(
   matrix(rnorm(200L, -4), ncol = 2L),
   matrix(rnorm(200L, 4), ncol = 2L)
 )
-fit_two <- fit_em_samples(gmm_target_from_samples(x_two), N = 2L)
+fit_two <- fit_em_samples(gmm_target_from_samples(x_two), N = 2L, seed = 1L)
 crit <- bic_aic(fit_two)
 ```
 
@@ -491,8 +495,10 @@ prec_exact <- solve(crossprod(g_pts * sqrt(g_w)) - tcrossprod(g_mean))
 pcor_exact <- -prec_exact / tcrossprod(sqrt(diag(prec_exact)))
 pcor_field <- attr(adj_field, "pcor")
 q_field <- gmm_fit_quality(fit_field)
+## the prose quotes the KL on fresh draws, so the fit must have drawn them
+stopifnot(is.finite(q_field$heldout_kld))
 field_flagged <- isTRUE(q_field$degenerate) || isFALSE(q_field$converged) ||
-  q_field$kld_approx > 0.3
+  q_field$heldout_kld > 0.3
 field_is_chain <- edges_field == 2L && adj_field[1L, 3L] == 0L
 ```
 
@@ -530,6 +536,10 @@ k_two <- function(design, selector) {
 ## pairs with no edge in the six-variable chain of the graph design
 n_absent <- choose(6L, 2L) - 5L
 t_s <- function(s1) fixed(res$time_secs[[s1]], 3)
+## a share of datasets as a percentage
+pct <- function(v, digits = 0L) {
+  paste(format(round(100 * v, digits), nsmall = digits), "per cent")
+}
 ```
 
 The FNN package estimates the Shannon entropy from the distances between
@@ -580,32 +590,38 @@ knitr::kable(
 ```
 
 proxymix had the smaller error for the entropy in both designs and for the
-mutual information with two variables, each by at least
-`r fixed(floor(10 * min(pair_z[!mi_4d])) / 10, 1)` standard errors. With four variables, the
+mutual information with two variables. The difference was
+`r fixed(pair_z[res$pair_tab$design == d2 & res$pair_tab$quantity == "Shannon entropy"], 1)`
+standard errors for the entropy with two variables,
+`r fixed(pair_z[res$pair_tab$design == d4 & res$pair_tab$quantity == "Shannon entropy"], 1)`
+for the entropy with four variables, and
+`r fixed(pair_z[res$pair_tab$design == d2 & res$pair_tab$quantity == "Shannon mutual information"], 1)`
+for the mutual information with two variables. With four variables, the
 difference in mutual information is `r fixed(pair_z[mi_4d], 1)` standard
 errors, too small to separate the two methods.
 
 Where the same simulation chose the number of components or recovered a
 graph, other packages did better. With three overlapping components, the
 BIC of the mclust package (Scrucca et al., 2016) chose the true count in
-`r fixed(k_value(d2, "mclust, BIC"), 2)` of datasets and proxymix's BIC in
-`r fixed(k_value(d2, "proxymix, BIC"), 2)`. Both ICLs mostly chose two
+`r pct(k_value(d2, "mclust, BIC"))` of datasets and proxymix's BIC in
+`r pct(k_value(d2, "proxymix, BIC"))`. Both ICLs mostly chose two
 components, and found the true count in
-`r fixed(k_value(d2, "mclust, ICL"), 2)` of datasets for mclust and
-`r fixed(k_value(d2, "proxymix, ICL"), 2)` for proxymix. With two
+`r pct(k_value(d2, "mclust, ICL"))` of datasets for mclust and
+`r pct(k_value(d2, "proxymix, ICL"))` for proxymix. With two
 components in four variables, mclust's ICL found the true count in
-`r fixed(k_value(d4, "mclust, ICL"), 2)` of datasets and proxymix's in
-`r fixed(k_value(d4, "proxymix, ICL"), 2)`. On a six-variable
+`r pct(k_value(d4, "mclust, ICL"))` of datasets and proxymix's in
+`r pct(k_value(d4, "proxymix, ICL"))`. On a six-variable
 chain with two components, the PC algorithm of the pcalg package (Kalisch
 et al., 2012), which removes edges by repeated tests of partial
 correlations, was run at level 0.01 and recovered the graph exactly in
-`r fixed(g_value("pcalg", "share_exact"), 3)` of datasets.
+`r pct(g_value("pcalg", "share_exact"), 1L)` of datasets.
 `gmm_independence_graph()`, at level 0.05 per pair, did so in
-`r fixed(g_value("proxymix", "share_exact"), 2)`. The chain leaves
+`r pct(g_value("proxymix", "share_exact"))`. The chain leaves
 `r n_absent` pairs without an edge. Were their tests independent, all
 `r n_absent` would be left out at level 0.05 with probability
-`r fixed(0.95^n_absent, 2)`, close to proxymix's share, so most of the gap
-comes from the looser level.
+`r fixed(0.95^n_absent, 2)`, close to proxymix's
+`r pct(g_value("proxymix", "share_exact"))`, so most of the gap comes from
+the looser level.
 
 proxymix was slower than FNN and pcalg. On one dataset of `r res$n` rows,
 the FNN estimates took
@@ -684,7 +700,7 @@ install.packages("pcalg")
 
 The [extended version of this
 article](https://max578.github.io/proxymix/articles/extended/entropy.html)
-gives the full simulation, adds the graphical lasso and the huge package to
+gives the full code and results of this comparison, adds the graphical lasso and the huge package to
 the graph comparison, and applies each method to the Palmer penguins data.
 
 ## Interpretation
@@ -702,14 +718,14 @@ The Cauchy-Schwarz divergence of $g$ from itself is
 The Kullback-Leibler estimate of `r fixed(d_kl$mc, 3)` nats has a standard
 error of `r fixed(d_kl$mc_se, 3)`, and the Hershey-Olsen approximation is
 `r fixed(d_kl$variational, 3)`. The Cauchy-Schwarz and Kullback-Leibler
-divergences are on different scales. Compare fits with one of them, never
-one with the other.
+divergences are on different scales. To compare several fits, use the same
+divergence for all of them.
 
 The mutual information is zero for independent variables, as it should be.
 The conditional entropy is `r fixed(h_cond[1L], 4)` nats at all three
 values of $x_2$. For a single normal distribution the spread of $x_1$ given
 $x_2$ does not depend on $x_2$, but for a mixture of several components it
-would.
+can.
 
 Cooling found `r k_found` components, the number of clusters in the data.
 The first split was recorded at temperature `r fixed(t_empirical, 1)`,
@@ -727,7 +743,7 @@ shown, because $E_N$ is only
 `r sci(crit$classification_entropy, 1L)`. With
 overlapping components the ICL favours fewer of them. In the comparison,
 proxymix's ICL chose two components in
-`r fixed(k_two(d2, "proxymix, ICL"), 2)` of the datasets drawn with three
+`r pct(k_two(d2, "proxymix, ICL"))` of the datasets drawn with three
 overlapping components.
 
 The graph of the four-variable chain has `r edges_chain` edges and is the
@@ -738,12 +754,13 @@ The fitted mixture puts the partial correlation of $x_1$ and $x_3$ at
 `r fixed(pcor_field[1L, 3L], 3)`, above the threshold of 0.05. The
 target's own partial correlation, computed by summation over a fine grid,
 is `r fixed(pcor_exact[1L, 3L], 4)`.
-The fit's certificate from `gmm_fit_quality()` reports that the fit
+According to `gmm_fit_quality()`, the fit
 `r if (isTRUE(q_field$converged)) "converged" else "did not converge"`,
 `r if (isTRUE(q_field$degenerate)) "is" else "is not"` degenerate, and has
-an approximate KL divergence of `r fixed(q_field$kld_approx, 3)` nats. The
-package flags a fit that did not converge, is degenerate, or has an
-approximate KL divergence above 0.3.
+a KL divergence of `r fixed(q_field$heldout_kld, 3)` nats, measured on fresh
+draws that the fit did not use. The
+package flags a fit that did not converge, is degenerate, or has a KL
+divergence above 0.3 on fresh draws.
 `r if (field_flagged) "This fit is flagged, and \x60gmm_independence_graph()\x60 printed a notice. Do not trust a graph from a flagged fit without refitting." else "This fit is not flagged."`
 
 ```{r field-seeds, include = FALSE}
@@ -751,13 +768,16 @@ approximate KL divergence above 0.3.
 seed_count <- function(size, what) sum(res$field_tab[[what]][res$field_tab$is_size == size])
 seed_n <- function(size) sum(res$field_tab$is_size == size)
 ft <- res$field_tab
+## every stored fit drew fresh draws, so the flag used their KL
+stopifnot("heldout_kld" %in% names(ft), all(is.finite(ft$heldout_kld)),
+          identical(ft$flagged, !ft$converged | ft$degenerate | ft$heldout_kld > 0.3))
 n_flag <- sum(ft$flagged)
 flag_chain <- sum(ft$flagged & ft$chain)
 n_miss <- sum(!ft$chain)
 miss_flag <- sum(ft$flagged & !ft$chain)
 ## TRUE when every flag came from a fit that reached its round limit
 flag_by_rounds <- n_flag > 0L && all(!ft$converged[ft$flagged]) &&
-  !any(ft$degenerate[ft$flagged]) && all(ft$kld_approx[ft$flagged] <= 0.3)
+  !any(ft$degenerate[ft$flagged]) && all(ft$heldout_kld[ft$flagged] <= 0.3)
 miss_text <- if (n_miss == 0L) {
   "No fit missed the chain."
 } else if (n_miss == 1L) {
@@ -771,13 +791,12 @@ miss_text <- if (n_miss == 0L) {
 Refitted with seeds 1 to `r seed_n(6000L)` and 6000 trial points each,
 the mixture recovered the chain in `r seed_count(6000L, "chain")` of
 `r seed_n(6000L)` fits, and with 12000 trial points in
-`r seed_count(12000L, "chain")` of `r seed_n(12000L)`. With more trial points,
-recovery was more reliable here. The flag was raised on
+`r seed_count(12000L, "chain")` of `r seed_n(12000L)`. The flag was raised on
 `r seed_count(6000L, "flagged")` of the fits with 6000 points and
 `r seed_count(12000L, "flagged")` of those with 12000.
-`r if (flag_by_rounds) "Each flagged fit reached its round limit without converging. None was degenerate or had an approximate KL divergence above 0.3." else ""`
+`r if (flag_by_rounds) "Each flagged fit reached its round limit without converging. None was degenerate or had a KL divergence above 0.3 on fresh draws." else ""`
 `r if (n_flag > 0L && flag_chain == n_flag) "Every flagged fit recovered the chain." else paste0("Of the ", n_flag, " flagged fits, ", flag_chain, " recovered the chain.")`
-`r miss_text` The flag checks the fit, not the graph read from it. To check
+`r miss_text` The flag describes the fit, not the graph read from it. To check
 a graph, refit with more trial points and see whether it stays the same.
 
 ## Limitations
@@ -798,26 +817,25 @@ pair at 0.05 lets false edges add up. The six-variable chain has
 `r n_absent` pairs without an edge, and `r n_absent` independent tests at
 0.05 would give at least one false edge with probability
 `r fixed(1 - 0.95^n_absent, 2)`. `alpha = 0.05 / choose(p, 2)` for $p$
-variables keeps that probability below 0.05. The PC algorithm recovered the
-simulated chain more often.
+variables keeps that probability below 0.05.
 
 Cooling found the right count on well-separated clusters, where other
 methods also succeed. On overlapping clusters the staircase is hard to
-read, and the rule of the most steps can pick a count no criterion
-supports. The exact critical temperature applies only to the first split.
+read, and the count held over the most cooling steps can be one that no
+criterion supports. The exact critical temperature applies only to the first split.
 The ICL ranks the counts that were fitted but gives no test of the winner. It
 undercounts overlapping components, and mclust's ICL did better than
 proxymix's in the comparison.
 
-Every number here is read from a mixture already fitted, and none of these
-numbers checks that the mixture is a good proxy for its target. Check that
+Every number here is read from a mixture already fitted. None of these
+numbers shows whether the mixture is a good proxy for its target. Check that
 with `gmm_fit_quality()` first. An entropy computed on a poor fit can
 be precise and still wrong.
 
 ## Further reading
 
-The quality checks that these measures rely on are shown for several
-target shapes in *How well a mixture proxies four awkward shapes*.
+*How well a mixture proxies four awkward shapes* applies the fit-quality
+checks of `gmm_fit_quality()` to several target shapes.
 
 *Choosing between the three fitting regimes* explains the difference
 between fitting from data and fitting from a formula alone.
@@ -871,12 +889,12 @@ mixture models.* The R Journal 8(1), 289--317.
 
 ## Reproduce
 
-The vignette sets `set.seed(20260618)` once. Each function that draws its
-own simulation sample gets a `seed` argument, except
-`gmm_divergence(type = "kl")`, which uses the stream that `set.seed()`
-started. The comparison reads stored results of the simulation in the
-extended article, run under proxymix `r res$proxymix_version` on
-`r res$run_date`.
+The vignette sets `set.seed(20260618)` once, and the simulated data are
+drawn from that stream. Every call that draws its own random numbers and
+has a `seed` argument is given one. `gmm_divergence(type = "kl")` has no
+`seed` argument and uses the stream that `set.seed()` started. The
+comparison and the refits over `r seed_n(6000L)` seeds read stored results, run under
+proxymix `r res$proxymix_version` on `r res$run_date`.
 
 ```{r session-info, collapse = FALSE, class.output = "session-info"}
 sessionInfo()

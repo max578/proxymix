@@ -18,12 +18,15 @@
   estimate on a close fit. Give `validation_size` to fix the number of draws.
 * The fit-quality advisory (class `proxymix_low_quality`) no longer fires on
   relative ESS below 0.05. With a fixed proposal, relative ESS describes the
-  proposal rather than the fit, so the advisory fired on about half of good
+  proposal and not the fit, so the advisory fired on about half of good
   regime `"kld"` fits and more often as `is_size` grew. It now fires when a fit
-  did not converge, is degenerate, or has `kld_approx` above 0.3.
-  `gmm_fit_quality()` reports the new field `kld_approx`: half the weighted
-  variance of `log f - log g`, which approximates the KL divergence and does
-  not depend on the target's normalising constant.
+  did not converge, is degenerate, or has a held-out KL divergence above 0.3.
+  `gmm_fit_quality()` reports that estimate as the new field `heldout_kld`.
+  When the target's normalising constant is unknown, it is estimated from the
+  same validation draws. A fit made with `validation_size = 0` is judged on
+  the new field `kld_approx`, half the weighted variance of `log f - log g`.
+  This approximates the KL divergence only when the proxy is close to the
+  target, and a proxy wider than the target can keep it below 0.3.
 
 ### New features
 
@@ -45,6 +48,30 @@
 
 ### Bug fixes
 
+* `gmm_evidence()` keeps proxy draws at which the target density is zero as
+  zero terms of the average. It dropped them before, which biased `log Z`
+  upwards for a target with bounded support and understated its standard
+  error. The returned `n` is now the number of draws requested.
+* A target's `log_normalizer` is `log Z`, the log of the integral of
+  `exp(log_density)`. `kld_final_absolute` and `validation_kld_absolute` are
+  now the raw estimates minus `log_normalizer`. They added it before, so
+  passing the correct `log Z` doubled the offset. The help now states that the raw
+  estimate against an unnormalised log-density is the KL divergence plus
+  `log Z`. Code that stored minus `log Z` to get a small absolute KL must
+  change sign. This includes `log_normalizer` in the internal
+  `from_fb_posterior()` specifications.
+* `kld_trace()` stays finite when some fitting draws fall where the target
+  density is zero. Those draws are left out of each trace entry, as they
+  already were from `kld_final`.
+* `gmm()` rejects a covariance with a non-finite entry or one whose Cholesky
+  factorisation fails, with an error naming `covariances`. Such a mixture
+  was constructed before and failed later in `rgmm()` or `dgmm()`.
+  `fit_em_samples()` and `fit_moment_match()` refuse a sample target with no
+  rows.
+* `pgmm(lower.tail = FALSE)` sums the upper-tail probabilities of the
+  components. It subtracted the lower-tail probability from one before,
+  which lost accuracy far in the tail (a relative error of 7% at eight
+  standard deviations).
 * `from_objective()` no longer evaluates the objective outside
   `[lower, upper]`. Points outside the box get the same penalty as
   non-finite values, so a map can no longer settle outside the box.

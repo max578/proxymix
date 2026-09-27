@@ -40,3 +40,16 @@ test_that("regime (iii) reduces KLD over iterations on average", {
     expect_lt(trace[length(trace)], trace[1L])
   })
 })
+
+test_that("the KLD trace stays finite when proposal draws fall outside the support", {
+  unif <- maxent_target(support = list(lower = -1, upper = 1))
+  fit <- suppressWarnings(
+    fit_kld_em(unif, N = 2L,
+               proposal = proposal_mvt(1L, mean = 0, sigma = matrix(4), df = 5),
+               is_size = 1500L, max_iter = 15L, seed = 1L,
+               validation_size = 0L),
+    classes = "proxymix_support"
+  )
+  expect_true(all(is.finite(kld_trace(fit))))
+  expect_true(is.finite(fit@diagnostics$kld_final))
+})

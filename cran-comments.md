@@ -14,9 +14,8 @@ the first submission of the package to CRAN.
 0 errors | 0 warnings | 1 note
 
 * This is a new submission.
-* The note also lists Hoek, Kullback, Leibler and KLD as possibly
-  misspelled. Hoek, Kullback and Leibler are surnames, and KLD is the
-  usual abbreviation for Kullback-Leibler divergence.
+* The note may also list Hoek, Kullback and Leibler as possibly
+  misspelled. They are surnames.
 
 ## Comments
 

@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-title: "proxymix: KL-Optimal Gaussian Mixture Proxies for Arbitrary Target Densities"
+title: "proxymix: Kullback-Leibler Optimal Gaussian Mixture Proxies for Target Densities"
 message: "If you use this software, please cite it using the metadata in this file."
 type: software
 authors:

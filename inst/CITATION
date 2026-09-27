@@ -2,7 +2,7 @@ citHeader("To cite proxymix in publications use:")
 
 bibentry(
   bibtype  = "Manual",
-  title    = "{proxymix}: KL-Optimal Gaussian Mixture Proxies for Arbitrary Target Densities",
+  title    = "{proxymix}: Kullback-Leibler Optimal Gaussian Mixture Proxies for Target Densities",
   author   = c(
     person("Max", "Moldovan", email = "max.moldovan@gmail.com",
            comment = c(ORCID = "0000-0001-9680-8474")),

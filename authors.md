@@ -12,12 +12,12 @@
 Source:
 [`inst/CITATION`](https://github.com/max578/proxymix/blob/HEAD/inst/CITATION)
 
-Moldovan M, van der Hoek J (2026). *proxymix: KL-Optimal Gaussian
-Mixture Proxies for Arbitrary Target Densities*. R package version
+Moldovan M, van der Hoek J (2026). *proxymix: Kullback-Leibler Optimal
+Gaussian Mixture Proxies for Target Densities*. R package version
 0.16.0.
 
     @Manual{,
-      title = {{proxymix}: KL-Optimal Gaussian Mixture Proxies for Arbitrary Target Densities},
+      title = {{proxymix}: Kullback-Leibler Optimal Gaussian Mixture Proxies for Target Densities},
       author = {Max Moldovan and John {van der Hoek}},
       year = {2026},
       note = {R package version 0.16.0},

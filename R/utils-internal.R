@@ -64,22 +64,23 @@ kl_gauss <- function(mu_a, S_a, mu_b, S_b) {
            p + log_det_S_b - log_det_S_a)
 }
 
-## Ridge a matrix to make it positive-definite-ish: S + epsilon * I.
-## `epsilon` is absolute. Callers that regularise across EM iterations pass
-## a DATA-scaled epsilon (see `.data_scaled_eps()`), so the floor is
-## invariant to the data's units but constant across iterations -- a ridge
-## relative to the component's own diagonal would shrink together with a
-## collapsing component and stop flooring exactly when needed.
+## Ridge a matrix to make it positive-definite-ish: S + diag(epsilon).
+## `epsilon` is absolute, either one value or one per coordinate. Callers
+## that regularise across EM iterations pass a DATA-scaled epsilon (see
+## `.data_scaled_eps()`), so the floor is invariant to the data's units but
+## constant across iterations -- a ridge relative to the component's own
+## diagonal would shrink together with a collapsing component and stop
+## flooring exactly when needed.
 ridge <- function(S, epsilon = 1e-6) {
   S + diag(epsilon, nrow = nrow(S))
 }
 
-## Scale a user-facing relative ridge epsilon by the data's covariance
-## scale (mean diagonal), so the same default regularises identically at
-## data scale 1e-8 and 1e+8 while remaining a fixed floor within a fit.
-.data_scaled_eps <- function(epsilon, data_cov_diag_mean) {
-  s <- data_cov_diag_mean
-  if (!is.finite(s) || s <= 0) s <- 1
+## Relative ridge per coordinate: epsilon times that coordinate's variance.
+## A zero or non-finite variance takes the mean of the positive ones (1 if none).
+.data_scaled_eps <- function(epsilon, data_cov_diag) {
+  s <- data_cov_diag
+  ok <- is.finite(s) & s > 0
+  s[!ok] <- if (any(ok)) mean(s[ok]) else 1
   epsilon * s
 }
 

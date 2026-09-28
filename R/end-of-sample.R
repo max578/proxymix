@@ -26,7 +26,10 @@
   n <- nrow(Y)
   p <- gmm_dim(prior)
   z2 <- numeric(n)
-  g <- prior
+  ## The Kalman recursion runs on plain matrices: with no measurement noise
+  ## the filtered covariance is singular, which a `gmm` cannot hold.
+  mu <- as.numeric(prior@means[[1L]])
+  p_mat <- prior@covariances[[1L]]
   for (t in seq_len(n)) {
     dyn <- .resolve_dynamics(dynamics, t, p)
     meas <- .resolve_measurement(measurement, t, p)
@@ -36,14 +39,15 @@
         "i" = "Both calibrations are defined for standardised Gaussian innovations; Gaussian-sum noise makes the innovation non-Gaussian."
       ))
     }
-    pred <- gmm_affine(g, dyn$A, b = dyn$b, noise_cov = dyn$Q, ridge_eps = 0)
-    mu_pred <- as.numeric(pred@means[[1L]])
-    p_pred <- pred@covariances[[1L]]
+    mu_pred <- as.numeric(dyn$A %*% mu) + dyn$b
+    p_pred <- dyn$A %*% p_mat %*% t(dyn$A)
+    if (!is.null(dyn$Q)) p_pred <- p_pred + dyn$Q
     e <- as.numeric(Y[t, ]) - (as.numeric(meas$C %*% mu_pred) + meas$d)
     s_mat <- meas$C %*% p_pred %*% t(meas$C) + meas$R
     z2[t] <- drop(crossprod(e, solve(s_mat, e)))
-    g <- gmm_observe(pred, A = meas$C, y = as.numeric(Y[t, ]),
-                     noise_cov = meas$R, b = meas$d, ridge_eps = 0)
+    gain <- t(solve(s_mat, meas$C %*% p_pred))
+    mu <- mu_pred + as.numeric(gain %*% e)
+    p_mat <- symmetrise(p_pred - gain %*% meas$C %*% p_pred)
   }
   z2
 }

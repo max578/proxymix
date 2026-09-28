@@ -53,3 +53,20 @@ test_that("the KLD trace stays finite when proposal draws fall outside the suppo
   expect_true(all(is.finite(kld_trace(fit))))
   expect_true(is.finite(fit@diagnostics$kld_final))
 })
+
+test_that("regime (iii) keeps small-scale coordinates when scales differ widely", {
+  sds <- c(0.01, 100)
+  tgt <- gmm_target(
+    n_dim = 2L,
+    log_density = function(x) {
+      if (is.null(dim(x))) x <- matrix(x, nrow = 1L)
+      stats::dnorm(x[, 1L], sd = sds[1L], log = TRUE) +
+        stats::dnorm(x[, 2L], sd = sds[2L], log = TRUE)
+    }
+  )
+  q <- is_mvt(n_dim = 2L, mean = c(0, 0), sigma = diag(4 * sds^2), df = 5)
+  fit <- fit_kld_em(tgt, N = 1L, proposal = q, is_size = 4000L,
+                    max_iter = 20L, seed = 1L)
+  ratio <- sqrt(diag(fit@covariances[[1L]])) / sds
+  expect_equal(ratio, c(1, 1), tolerance = 0.1)
+})

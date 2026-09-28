@@ -29,7 +29,9 @@ fit_em_samples(
 
 \item{tol}{Relative-log-likelihood convergence tolerance.}
 
-\item{ridge_eps}{Ridge added to each component covariance at every M-step.}
+\item{ridge_eps}{Relative ridge. At every M-step, \code{ridge_eps} times
+each coordinate's sample variance is added to that coordinate's
+diagonal entry of each component covariance.}
 
 \item{n_starts}{Number of multi-start initialisations (only when \code{init}
 is \code{NULL}). The best fit by final log-likelihood is returned.}

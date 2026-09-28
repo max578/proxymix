@@ -46,3 +46,11 @@ test_that("a sample target with no rows is refused before initialisation", {
   expect_error(fit_proxymix(tgt, N = 1L, regime = "sample"), "samples")
   expect_error(fit_proxymix(tgt, N = 1L, regime = "moment"), "samples")
 })
+
+test_that("regime (ii) keeps small-scale coordinates when scales differ widely", {
+  sds <- c(0.026, 0.3, 5, 80, 5078)
+  x <- withr::with_seed(1, sapply(sds, function(s) stats::rnorm(5000, 0, s)))
+  fit <- fit_em_samples(gmm_target_from_samples(x), N = 1L, seed = 1L)
+  ratio <- sqrt(diag(fit@covariances[[1L]])) / apply(x, 2L, stats::sd)
+  expect_equal(ratio, rep(1, 5L), tolerance = 1e-3)
+})

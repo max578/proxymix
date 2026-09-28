@@ -14,7 +14,9 @@
 #' @param init A [gmm] initialisation, or `NULL` to use [init_kmeans()].
 #' @param max_iter Maximum number of EM iterations.
 #' @param tol Relative-log-likelihood convergence tolerance.
-#' @param ridge_eps Ridge added to each component covariance at every M-step.
+#' @param ridge_eps Relative ridge. At every M-step, `ridge_eps` times
+#'   each coordinate's sample variance is added to that coordinate's
+#'   diagonal entry of each component covariance.
 #' @param n_starts Number of multi-start initialisations (only when `init`
 #'   is `NULL`). The best fit by final log-likelihood is returned.
 #' @param anneal Logical. If `TRUE`, a deterministic-annealing warm-start
@@ -140,9 +142,9 @@ em_samples_one_run <- function(samples, init, target,
 
   weights <- init@weights
   means <- init@means
-  ## Data-scaled ridge: invariant to the data's units, constant within the
-  ## fit (see `.data_scaled_eps()`).
-  ridge_eps <- .data_scaled_eps(ridge_eps, mean(diag(stats::cov(samples))))
+  ## Per-coordinate data-scaled ridge: invariant to each coordinate's units,
+  ## constant within the fit (see `.data_scaled_eps()`).
+  ridge_eps <- .data_scaled_eps(ridge_eps, diag(stats::cov(samples)))
   covs <- lapply(init@covariances, function(S) ridge(S, ridge_eps))
 
   loglik_trace <- numeric(0L)

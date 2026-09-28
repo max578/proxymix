@@ -54,8 +54,9 @@ stopping rule behaves identically for normalised and unnormalised
 targets (the importance-sampled KLD estimate carries an additive
 \verb{log Z(f)} offset and is therefore never used for stopping).}
 
-\item{ridge_eps}{Ridge added to each component covariance at every
-M-step.}
+\item{ridge_eps}{Relative ridge. At every M-step, \code{ridge_eps} times
+each coordinate's variance under the target is added to that
+coordinate's diagonal entry of each component covariance.}
 
 \item{min_ess}{Minimum effective sample size below which the fit is
 flagged as degenerate: a classed warning (\code{proxymix_low_ess}) is

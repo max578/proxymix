@@ -101,3 +101,13 @@ test_that("a positional second argument is still the threshold", {
   expect_equal(gmm_independence_graph(g, 0.5)[1L, 2L], 0L)
   expect_equal(gmm_independence_graph(g, 0.1)[1L, 2L], 1L)
 })
+
+test_that("gmm_independence_graph keeps partial correlations of small-scale coordinates", {
+  sds <- c(0.001, 0.001, 1e4)
+  R <- matrix(c(1, 0.6, 0, 0.6, 1, 0, 0, 0, 1), 3L)
+  S <- diag(sds) %*% R %*% diag(sds)
+  g <- gmm(weights = 1, means = list(c(0, 0, 0)), covariances = list(S))
+  adj <- gmm_independence_graph(g, threshold = 0.3)
+  expect_equal(attr(adj, "pcor")[1L, 2L], 0.6, tolerance = 1e-6)
+  expect_equal(adj[1L, 2L], 1)
+})

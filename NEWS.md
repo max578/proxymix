@@ -48,6 +48,16 @@
 
 ### Bug fixes
 
+* `fit_em_samples()` and `fit_kld_em()` scale the ridge `ridge_eps` by each
+  coordinate's variance. They scaled one ridge by the mean variance, which
+  inflated the fitted spread of coordinates whose variance is far below the
+  mean: with standard deviations from 0.026 to 5078, the smallest came out 85
+  times too wide. Fits whose coordinates have similar variances barely
+  change.
+* `gmm_independence_graph()` scales its ridge by each coordinate's variance
+  for the same reason. A partial correlation of 0.6 between two coordinates
+  with standard deviation 0.001, beside one with standard deviation 10000,
+  was reported as 0.
 * `gmm_evidence()` keeps proxy draws at which the target density is zero as
   zero terms of the average. It dropped them before, which biased `log Z`
   upwards for a target with bounded support and understated its standard

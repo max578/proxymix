@@ -68,8 +68,9 @@
 #'   stopping rule behaves identically for normalised and unnormalised
 #'   targets (the importance-sampled KLD estimate carries an additive
 #'   `log Z(f)` offset and is therefore never used for stopping).
-#' @param ridge_eps Ridge added to each component covariance at every
-#'   M-step.
+#' @param ridge_eps Relative ridge. At every M-step, `ridge_eps` times
+#'   each coordinate's variance under the target is added to that
+#'   coordinate's diagonal entry of each component covariance.
 #' @param min_ess Minimum effective sample size below which the fit is
 #'   flagged as degenerate: a classed warning (`proxymix_low_ess`) is
 #'   issued (or, with `on_low_ess = "abort"`, a classed error
@@ -298,9 +299,9 @@ fit_kld_em <- function(target,
   mu_w <- colSums(W * x)
   S_w <- crossprod((x - matrix(mu_w, nrow = is_size, ncol = p, byrow = TRUE)) *
                      sqrt(W))
-  ## Data-scaled ridge: invariant to the target's units, constant within
-  ## the fit (see `.data_scaled_eps()`).
-  ridge_eps <- .data_scaled_eps(ridge_eps, mean(diag(S_w)))
+  ## Per-coordinate data-scaled ridge: invariant to each coordinate's units,
+  ## constant within the fit (see `.data_scaled_eps()`).
+  ridge_eps <- .data_scaled_eps(ridge_eps, diag(S_w))
 
   ## ---- Deterministic-annealing warm-start (optional) ----
   anneal_schedule_used <- NULL
@@ -427,7 +428,7 @@ fit_kld_em <- function(target,
                            sample.int(is_size, size = 1L, prob = W))
         }
         means[[k]] <- as.numeric(x[idx, ])
-        covs[[k]] <- ridge(S_w, max(ridge_eps, 1e-6))
+        covs[[k]] <- ridge(S_w, pmax(ridge_eps, 1e-6))
         next
       }
       mu_new <- as.numeric(colSums(W_resp[, k] * x) / Nk_W[k])

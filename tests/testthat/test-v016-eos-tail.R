@@ -42,3 +42,15 @@ test_that("tail_warn = NULL or 0 silences the warning", {
   expect_no_warning(proxy_functional_ci(ens, tail_fn, tail_warn = 0))
   expect_error(proxy_functional_ci(ens, tail_fn, tail_warn = -1), "tail_warn")
 })
+
+test_that("gmm_eos_test runs with no measurement noise and matches the AR(1) innovations", {
+  y <- withr::with_seed(3, as.numeric(stats::arima.sim(list(ar = 0.6), n = 80L))) + 2
+  n <- length(y)
+  prior <- gmm(weights = 1, means = list(2),
+               covariances = list(matrix(1 / (1 - 0.36))))
+  dynamics <- list(A = matrix(0.6), b = 2 * 0.4, Q = matrix(1))
+  measurement <- list(C = matrix(1), R = matrix(0))
+  res <- gmm_eos_test(prior, dynamics, measurement, y, m = 3L)
+  z2 <- (y[-1L] - 2 - 0.6 * (y[-n] - 2))^2
+  expect_equal(res$statistic, sum(z2[(n - 3L):(n - 1L)]), tolerance = 1e-10)
+})

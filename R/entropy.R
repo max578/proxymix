@@ -388,7 +388,7 @@ gmm_independence_graph <- function(g, threshold = NULL, alpha = 0.05, n = NULL) 
     covx <- covx + w[k] * (s[[k]] + tcrossprod(mu[[k]]))
   }
   covx <- covx - tcrossprod(mbar)
-  omega <- solve(covx + diag(1e-8 * mean(diag(covx)), p))   # precision (ridged)
+  omega <- solve(covx + diag(.data_scaled_eps(1e-8, diag(covx)), p))   # precision (ridged per coordinate)
   d <- sqrt(diag(omega))
   pcor <- -omega / tcrossprod(d)
   diag(pcor) <- 1

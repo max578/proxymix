@@ -414,7 +414,7 @@ stopifnot(sim_value(1L, "shift", "proxymix subsampling") <
             min(sim_value(1L, "shift", "proxymix chi-square"),
                 sim_value(1L, "shift", "KFAS forecast interval"),
                 sim_value(1L, "shift", "dlm forecast interval")))
-stopifnot(which.max(res$time_secs) == 1L,
+stopifnot(names(which.max(res$time_secs)) == "KFAS",
           res$time_secs[["strucchange"]] < 0.001,
           res$time_secs[["changepoint"]] < 0.001)
 ```
@@ -508,13 +508,13 @@ and `r power_at("strucchange OLS-CUSUM", 5)` at $m = 5$. `cpt.mean()`
 detected it in `r power_at("changepoint cpt.mean", 1)` of series at
 $m = 1$ and `r power_at("changepoint cpt.mean", 5)` at $m = 5$.
 
-proxymix was the slowest of the five packages. For one series at $m$ =
-`r res$time_m`, the two proxymix calibrations together took
-`r ms_of("proxymix")` ms,
-including the `arima()` fit that supplies the parameters. `KFAS` took
-`r ms_of("KFAS")` ms and `dlm` `r ms_of("dlm")` ms, each including its own
-fit. `strucchange` and `changepoint` each took less than 1 ms (median of
-five runs of `r res$time_n_call` calls each, on one computer).
+`KFAS` was the slowest of the five packages. For one series at $m$ =
+`r res$time_m`, it took `r ms_of("KFAS")` ms and `dlm` took
+`r ms_of("dlm")` ms, each including its own fit. The two proxymix
+calibrations together took `r ms_of("proxymix")` ms, including the `arima()`
+fit that supplies the parameters. `strucchange` and `changepoint` each took
+less than 1 ms (median of five runs of `r res$time_n_call` calls each, on one
+computer).
 
 The code below applies every check to one simulated series with `m = 3`.
 It is the simulation code for a single series. It needs

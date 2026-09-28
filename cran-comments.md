@@ -14,8 +14,9 @@ the first submission of the package to CRAN.
 0 errors | 0 warnings | 1 note
 
 * This is a new submission.
-* The note may also list Hoek, Kullback and Leibler as possibly
-  misspelled. They are surnames.
+* The note may also list Hoek, der, Kullback and Leibler as possibly
+  misspelled. They come from the surnames van der Hoek, Kullback and
+  Leibler.
 
 ## Comments
 

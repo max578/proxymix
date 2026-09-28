@@ -1,7 +1,17 @@
-## Submission: proxymix 0.16.0 (first submission)
+## Resubmission: proxymix 0.16.0 (first submission)
 
 An earlier attempt to submit version 0.15.1 was not completed, so this is
 the first submission of the package to CRAN.
+
+This resubmission fixes the two NOTEs raised by the incoming pretest on
+Debian (r-devel):
+
+* Rd files without \usage (autoplot.gmm_fit, glance.gmm_fit, tidy.gmm):
+  these document methods registered on generics from suggested packages.
+  Their argument descriptions now sit in a section of their own, so the
+  pages no longer have an \arguments section without \usage.
+* The example of proxy_mnar_sensitivity() took 6.3 s. It now uses a
+  smaller data set and runs in under 1 s locally.
 
 ## Test environments
 

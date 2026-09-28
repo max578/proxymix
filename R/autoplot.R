@@ -28,22 +28,25 @@
 #' `ggplot2` first. It returns the `ggplot` object, so the usual `+` layering
 #' applies for further customisation.
 #'
-#' @param object A [gmm_fit], typically from [fit_proxymix()].
-#' @param dims Integer vector of length one or two giving the coordinate(s) to
+#' @section Arguments:
+#' Called as `ggplot2::autoplot(object, dims = c(1L, 2L), n_grid = 120L,
+#' n_sd = 3.5, level = 0.95, show_components = TRUE, show_data = TRUE, ...)`.
+#' * `object`: a [gmm_fit], typically from [fit_proxymix()].
+#' * `dims`: integer vector of length one or two giving the coordinate(s) to
 #'   display, in `1:p`. Defaults to the first two coordinates (or the only
 #'   coordinate when `p == 1`).
-#' @param n_grid Integer scalar — the number of grid points per axis at which
+#' * `n_grid`: integer scalar, the number of grid points per axis at which
 #'   the density is evaluated. A two-dimensional plot evaluates `n_grid^2`
 #'   points.
-#' @param n_sd Numeric scalar — how many component standard deviations beyond
+#' * `n_sd`: numeric scalar, how many component standard deviations beyond
 #'   the extreme component means the plotting window extends.
-#' @param level Numeric scalar in `(0, 1)` — the probability level of the
+#' * `level`: numeric scalar in `(0, 1)`, the probability level of the
 #'   per-component ellipse drawn on a two-dimensional plot.
-#' @param show_components Logical scalar — whether to overlay the per-component
+#' * `show_components`: logical scalar, whether to overlay the per-component
 #'   densities (one dimension) or mean-and-ellipse glyphs (two dimensions).
-#' @param show_data Logical scalar — whether to overlay the target's samples,
+#' * `show_data`: logical scalar, whether to overlay the target's samples,
 #'   when the fitted target carries any.
-#' @param ... Currently ignored, present for generic compatibility.
+#' * `...`: ignored, present for generic compatibility.
 #'
 #' @returns A `ggplot` object.
 #' @family classes

@@ -2,6 +2,7 @@
 
 S3method(gmm_target_from_posterior,"function")
 S3method(gmm_target_from_posterior,default)
+S3method(print,fb_log_posterior_spec)
 S3method(print,gmm_ensemble)
 S3method(print,gmm_eos_test)
 S3method(print,proxymix_evidence)

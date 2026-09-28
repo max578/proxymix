@@ -3,11 +3,6 @@
 \name{glance.gmm_fit}
 \alias{glance.gmm_fit}
 \title{Glance at a fitted Gaussian-mixture proxy}
-\arguments{
-\item{x}{A \link{gmm_fit}.}
-
-\item{...}{Ignored, for generic compatibility.}
-}
 \value{
 A one-row data frame with columns \code{regime}, \code{n_components},
 \code{dim}, \code{converged}, \code{iterations}, \code{ess}, \code{kld_final}, \code{validation_kld},
@@ -26,6 +21,12 @@ draws the fit was tuned to, so it reads low and can be negative.
 quote as the fit's accuracy; it is \code{NA} when the fit was made with
 \code{validation_size = 0}.
 }
+\section{Arguments}{
+
+Called as \code{generics::glance(x, ...)}, where \code{x} is a \link{gmm_fit} and \code{...}
+is ignored.
+}
+
 \examples{
 \dontshow{if (requireNamespace("generics", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 fit <- fit_proxymix(banana_target(), N = 2L, regime = "kld",

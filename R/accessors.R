@@ -56,8 +56,9 @@ gmm_covariances <- function(g) {
 #' (`var_1`, ...). Available as `generics::tidy(g)` (or `broom::tidy(g)`)
 #' when the `generics` package is installed.
 #'
-#' @param x A [gmm] (or [gmm_fit]).
-#' @param ... Ignored, for generic compatibility.
+#' @section Arguments:
+#' Called as `generics::tidy(x, ...)`, where `x` is a [gmm] (or [gmm_fit])
+#' and `...` is ignored.
 #'
 #' @returns A data frame with `K` rows.
 #' @family classes
@@ -92,8 +93,9 @@ NULL
 #' quote as the fit's accuracy; it is `NA` when the fit was made with
 #' `validation_size = 0`.
 #'
-#' @param x A [gmm_fit].
-#' @param ... Ignored, for generic compatibility.
+#' @section Arguments:
+#' Called as `generics::glance(x, ...)`, where `x` is a [gmm_fit] and `...`
+#' is ignored.
 #'
 #' @returns A one-row data frame with columns `regime`, `n_components`,
 #'   `dim`, `converged`, `iterations`, `ess`, `kld_final`, `validation_kld`,

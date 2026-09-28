@@ -44,9 +44,9 @@
 #' @export
 #' @examples
 #' set.seed(1)
-#' x1 <- rnorm(300)
-#' y <- x1 + rnorm(300)
-#' y[runif(300) < plogis(-0.4 + 0.8 * y)] <- NA      # MNAR on y
+#' x1 <- rnorm(200)
+#' y <- x1 + rnorm(200)
+#' y[runif(200) < plogis(-0.4 + 0.8 * y)] <- NA      # MNAR on y
 #' dat <- data.frame(x1 = x1, y = y)
 #' proxy_mnar_sensitivity(dat, "y", beta_grid = c(0, 0.5, 1), m = 5L, seed = 1L)
 proxy_mnar_sensitivity <- function(data, coord, beta_grid = seq(0, 1, by = 0.25),

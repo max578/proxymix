@@ -3,31 +3,6 @@
 \name{autoplot.gmm_fit}
 \alias{autoplot.gmm_fit}
 \title{Plot a fitted Gaussian-mixture proxy}
-\arguments{
-\item{object}{A \link{gmm_fit}, typically from \code{\link[=fit_proxymix]{fit_proxymix()}}.}
-
-\item{dims}{Integer vector of length one or two giving the coordinate(s) to
-display, in \code{1:p}. Defaults to the first two coordinates (or the only
-coordinate when \code{p == 1}).}
-
-\item{n_grid}{Integer scalar — the number of grid points per axis at which
-the density is evaluated. A two-dimensional plot evaluates \code{n_grid^2}
-points.}
-
-\item{n_sd}{Numeric scalar — how many component standard deviations beyond
-the extreme component means the plotting window extends.}
-
-\item{level}{Numeric scalar in \verb{(0, 1)} — the probability level of the
-per-component ellipse drawn on a two-dimensional plot.}
-
-\item{show_components}{Logical scalar — whether to overlay the per-component
-densities (one dimension) or mean-and-ellipse glyphs (two dimensions).}
-
-\item{show_data}{Logical scalar — whether to overlay the target's samples,
-when the fitted target carries any.}
-
-\item{...}{Currently ignored, present for generic compatibility.}
-}
 \value{
 A \code{ggplot} object.
 }
@@ -49,6 +24,29 @@ when \code{ggplot2} is installed; call it as \code{ggplot2::autoplot(fit)} or lo
 \code{ggplot2} first. It returns the \code{ggplot} object, so the usual \code{+} layering
 applies for further customisation.
 }
+\section{Arguments}{
+
+Called as \code{ggplot2::autoplot(object, dims = c(1L, 2L), n_grid = 120L, n_sd = 3.5, level = 0.95, show_components = TRUE, show_data = TRUE, ...)}.
+\itemize{
+\item \code{object}: a \link{gmm_fit}, typically from \code{\link[=fit_proxymix]{fit_proxymix()}}.
+\item \code{dims}: integer vector of length one or two giving the coordinate(s) to
+display, in \code{1:p}. Defaults to the first two coordinates (or the only
+coordinate when \code{p == 1}).
+\item \code{n_grid}: integer scalar, the number of grid points per axis at which
+the density is evaluated. A two-dimensional plot evaluates \code{n_grid^2}
+points.
+\item \code{n_sd}: numeric scalar, how many component standard deviations beyond
+the extreme component means the plotting window extends.
+\item \code{level}: numeric scalar in \verb{(0, 1)}, the probability level of the
+per-component ellipse drawn on a two-dimensional plot.
+\item \code{show_components}: logical scalar, whether to overlay the per-component
+densities (one dimension) or mean-and-ellipse glyphs (two dimensions).
+\item \code{show_data}: logical scalar, whether to overlay the target's samples,
+when the fitted target carries any.
+\item \code{...}: ignored, present for generic compatibility.
+}
+}
+
 \examples{
 \dontshow{if (requireNamespace("ggplot2", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 samples <- matrix(stats::rnorm(200), ncol = 2)

@@ -3,11 +3,6 @@
 \name{tidy.gmm}
 \alias{tidy.gmm}
 \title{Tidy a Gaussian mixture into a component table}
-\arguments{
-\item{x}{A \link{gmm} (or \link{gmm_fit}).}
-
-\item{...}{Ignored, for generic compatibility.}
-}
 \value{
 A data frame with \code{K} rows.
 }
@@ -17,6 +12,12 @@ the mean coordinates (\code{mean_1}, ...), and the marginal variances
 (\code{var_1}, ...). Available as \code{generics::tidy(g)} (or \code{broom::tidy(g)})
 when the \code{generics} package is installed.
 }
+\section{Arguments}{
+
+Called as \code{generics::tidy(x, ...)}, where \code{x} is a \link{gmm} (or \link{gmm_fit})
+and \code{...} is ignored.
+}
+
 \examples{
 \dontshow{if (requireNamespace("generics", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 g <- gmm(weights = c(0.3, 0.7), means = list(c(-1, 0), c(2, 1)),

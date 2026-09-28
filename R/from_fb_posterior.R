@@ -124,6 +124,7 @@ fb_log_posterior_spec <- function(producer,
   spec
 }
 
+#' @exportS3Method
 #' @noRd
 print.fb_log_posterior_spec <- function(x, ...) {
   cat(sprintf("<fb_log_posterior_spec>: \"%s\" in p = %d dimensions\n",

@@ -7,7 +7,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-<!-- Render time: ~25 s under rmarkdown::render() with ggplot2 installed;
+<!-- Render time: ~7 s under rmarkdown::render() with ggplot2 installed;
      macOS arm64 (Apple silicon), R 4.6.1, one core. The sweep over five
      slopes takes most of it. The comparison with mice, Amelia,
      sampleSelection, AER and survival is read from
@@ -162,13 +162,13 @@ dat[miss, "y"] <- NA
 ### Impute under two assumptions
 
 The first imputation assumes missing at random. The second supplies the
-slope that generated the data, `beta = 0.7`, to `mnar()`. Both make 10
+slope that generated the data, `beta = 0.7`, to `mnar()`. Both make 5
 completed datasets. Both allow up to 500 fitting rounds (`max_iter`), the
 default of `proxy_mnar_sensitivity()` below. Near missing at random, the
 fitting can take more rounds than the `gmm_impute()` default of 100.
 
 ```{r recover}
-m_draws <- 10L
+m_draws <- 5L
 mar_fit <- gmm_impute(dat, N = 2L, m = m_draws, mechanism = mar(),
                       seed = 1L, max_iter = 500L)
 mnar_fit <- gmm_impute(dat, N = 2L, m = m_draws,

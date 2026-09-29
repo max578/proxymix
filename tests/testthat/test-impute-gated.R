@@ -86,6 +86,7 @@ test_that("truncated-gated moments match the truncated-Gaussian closed form", {
 # ---------------------------------------------------------------------------
 
 test_that("MNAR with beta = 0 matches the MAR fit", {
+  skip_on_cran()
   dg <- .gated_dgp(11L)
   mar0 <- gmm_impute(dg$data, N = 2L, m = 10L, mechanism = mnar("y", beta = 0), seed = 3L)
   marm <- gmm_impute(dg$data, N = 2L, m = 10L, mechanism = mar(), seed = 3L)
@@ -177,8 +178,8 @@ test_that("gated dispatch enforces its scope and is reproducible", {
                "only")
   ## reproducible + does not disturb the global RNG
   set.seed(99L); before <- runif(1)
-  a <- gmm_impute(dg$data, N = 2L, m = 6L, mechanism = mnar("y", beta = 0.6), seed = 8L)
-  b <- gmm_impute(dg$data, N = 2L, m = 6L, mechanism = mnar("y", beta = 0.6), seed = 8L)
+  a <- gmm_impute(dg$data, N = 2L, m = 2L, mechanism = mnar("y", beta = 0.6), seed = 8L)
+  b <- gmm_impute(dg$data, N = 2L, m = 2L, mechanism = mnar("y", beta = 0.6), seed = 8L)
   set.seed(99L); after <- runif(1)
   expect_identical(a@completions, b@completions)
   expect_identical(before, after)

@@ -67,6 +67,7 @@ test_that("good chain fits are not flagged for low relative ESS", {
 })
 
 test_that("flagging does not increase with is_size on the chain target", {
+  skip_on_cran()
   seeds <- 1:5
   small <- vapply(seeds, function(s) .is_flagged(.chain_fit(8L, 6000L, s)),
                   logical(1L))

@@ -13,11 +13,17 @@ Debian (r-devel):
 * The example of proxy_mnar_sensitivity() took 6.3 s. It now uses a
   smaller data set and runs in under 1 s locally.
 
+It also fixes a defect found after the pretest: the small ridge added to
+fitted covariances is now scaled per coordinate, so coordinates on a small
+scale are no longer over-smoothed.
+
 ## Test environments
 
 * local: macOS 26.6 (Apple silicon), R 4.6.1
 * win-builder: Windows, R 4.6.1 (release)
 * win-builder: Windows, R-devel (2026-09-25 r90590)
+* R-hub: Ubuntu 24.04, R-devel (2026-09-25 r90590)
+* R-hub: Ubuntu 24.04 (ubuntu-next), R 4.6.1 patched (2026-09-17 r90590)
 
 ## R CMD check results
 
@@ -34,8 +40,8 @@ Debian (r-devel):
   Kullback-Leibler divergence, including targets that can be evaluated but
   not sampled, following van der Hoek and Elliott (2024)
   <doi:10.1080/07362994.2024.2372605>.
-* Examples run in about 20 s in total. The slowest single example takes
-  about 4 s.
-* The twelve vignettes build in about 60 s. Longer versions that compare
+* Examples run in about 4 s in total. The slowest single example takes
+  about 1.3 s.
+* The twelve vignettes build in about 40 s. Longer versions that compare
   the package with other methods are published only on the package website
   and are excluded from the build.

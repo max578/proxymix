@@ -17,6 +17,10 @@ It also fixes a defect found after the pretest: the small ridge added to
 fitted covariances is now scaled per coordinate, so coordinates on a small
 scale are no longer over-smoothed.
 
+The second pretest reported an overall check time of 11 min on Windows
+(r-devel). Two slow tests now skip on CRAN and two vignettes compute less,
+and the check time on win-builder (R-devel, 2026-09-29) is now 7.1 min.
+
 ## Test environments
 
 * local: macOS 26.6 (Apple silicon), R 4.6.1

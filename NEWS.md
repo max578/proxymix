@@ -19,7 +19,9 @@
 * `from_cf_sources()` fits a linear mix of independent sources, with or
   without Gaussian noise. It returns a list with functions for the
   characteristic function, sampling and one-dimensional projections, not a
-  `gmm`.
+  `gmm`. The separated coordinates are tested for pairwise independence with
+  the criterion of Eriksson and Koivunen (2003), reported as
+  `diagnostics$dependence`.
 
 # proxymix 0.16.0
 

@@ -404,6 +404,41 @@ from_cf_elliptical <- function(
   )
 }
 
+## Gauss-Hermite nodes and weights for the standard normal density.
+.cf_normal_nodes <- function(n) {
+  J <- matrix(0, n, n)
+  J[cbind(seq_len(n - 1L), seq_len(n - 1L) + 1L)] <- sqrt(seq_len(n - 1L))
+  e <- eigen(J + t(J), symmetric = TRUE)
+  list(x = e$values, w = e$vectors[1L, ]^2)
+}
+
+## Largest pairwise dependence of z = B x (Eriksson and Koivunen, 2003):
+## the root of the integral of |joint cf - product of marginal cfs|^2
+## against the N(0, I) density, over pairs of coordinates. Gaussian noise
+## multiplies the product by exp(-u_j u_k noise_cov[j, k]), so the value is
+## 0 for x = A s + noise with independent s and B the inverse of A.
+.cf_pair_dependence <- function(phi, B, noise_cov, n_node = 32L) {
+  p <- nrow(B)
+  gh <- .cf_normal_nodes(n_node)
+  marginal <- vapply(
+    seq_len(p), function(j) phi(outer(gh$x, B[j, ])), complex(n_node)
+  )
+  g <- expand.grid(a = seq_len(n_node), b = seq_len(n_node))
+  w <- gh$w[g$a] * gh$w[g$b]
+  ua <- gh$x[g$a]
+  ub <- gh$x[g$b]
+  worst <- 0
+  for (j in seq_len(p - 1L)) {
+    for (k in (j + 1L):p) {
+      joint <- phi(outer(ua, B[j, ]) + outer(ub, B[k, ]))
+      product <- marginal[g$a, j] * marginal[g$b, k] *
+        exp(-ua * ub * noise_cov[j, k])
+      worst <- max(worst, sum(w * Mod(joint - product)^2))
+    }
+  }
+  sqrt(worst)
+}
+
 .check_cf_sources_arguments <- function(cf, n_dim, N) {
   if (!is.function(cf)) {
     cli::cli_abort("{.arg cf} must be a function of a matrix of frequencies.")
@@ -433,16 +468,29 @@ from_cf_elliptical <- function(
 #' each source is then fitted in one dimension with [from_cf()]. A joint fit
 #' in `n_dim` dimensions would be less accurate.
 #'
+#' The fitted family, independent sources that are each a one-dimensional
+#' Gaussian mixture, is the independent factor model of Attias (1999), who
+#' fits it to a sample by maximum likelihood.
+#'
 #' The result is a list, not a [gmm]. As a single mixture it would need
 #' `N^n_dim` components. It has three functions: `cf()`, `draw()` (sampling
 #' from the fit) and `project()` (the one-dimensional mixture along a
 #' direction). `draw()` gives an error when the noise covariance estimated
 #' from `cf` is too far from positive semi-definite to be sampled.
 #'
+#' The mixing matrix is found from second derivatives of the logarithm of
+#' `cf` at two random frequencies (Yeredor, 2000). The coordinates it
+#' separates are then tested for pairwise independence with the criterion of
+#' Eriksson and Koivunen (2003), which compares the joint characteristic
+#' function of each pair with the product of the two marginal ones at all
+#' frequencies. If the criterion is above 0.01 the frequencies are drawn
+#' again, up to four times, and the directions with the smallest value are
+#' kept.
+#'
 #' The target must have a finite, positive definite covariance. A warning of class
-#' `proxymix_cf_not_sources` is raised when the directions found do not
-#' separate the sources at a third frequency, which is the sign that the
-#' target is not of the form above.
+#' `proxymix_cf_not_sources` is raised when the criterion is still above
+#' 0.01, or when the directions do not separate the sources at a third
+#' frequency. Either is the sign that the target is not of the form above.
 #'
 #' @param cf,n_dim As in [from_cf()]. `n_dim` must be at least 2.
 #' @param N Number of mixture components for each source.
@@ -470,11 +518,23 @@ from_cf_elliptical <- function(
 #'   * `diagnostics`, with `off_diagonal` (the largest off-diagonal entry
 #'     divided by the largest diagonal entry of the Hessian difference at the
 #'     third frequency, transformed by the inverse of `mixing`, 0 if the sources are separated
-#'     exactly, with a warning above 0.05), `imaginary` (the largest imaginary part of the
+#'     exactly, with a warning above 0.05), `dependence` (the largest over
+#'     pairs of coordinates of \eqn{Z} of the root of the integral, against
+#'     the standard normal density in two dimensions, of the squared modulus
+#'     of the joint characteristic function minus the product of the
+#'     marginal ones, with the Gaussian noise term allowed for; 0 for
+#'     independent sources, with a warning above 0.01), `imaginary` (the largest imaginary part of the
 #'     directions before it is dropped) and `heldout_rms` (the root mean
 #'     square of the difference between `cf` and the fit's characteristic
 #'     function on fresh frequencies).
 #' @references
+#' Attias, H. (1999). Independent factor analysis. *Neural Computation*,
+#' 11(4), 803--851. \doi{10.1162/089976699300016458}
+#'
+#' Eriksson, J., and Koivunen, V. (2003). Characteristic-function-based
+#' independent component analysis. *Signal Processing*, 83(10), 2195--2208.
+#' \doi{10.1016/S0165-1684(03)00162-2}
+#'
 #' Yeredor, A. (2000). Blind source separation via the second
 #' characteristic function. *Signal Processing*, 80(5), 897--902.
 #' \doi{10.1016/S0165-1684(00)00062-1}
@@ -521,15 +581,33 @@ from_cf_sources <- function(
     }
 
     # Mixing directions --------------------------------------------------------
-    pts <- (0.8 * matrix(stats::rnorm(3L * p), 3L, p) / sqrt(p)) %*%
-      solve(co$A)
-    dirs <- .cf_mixing_directions(phi, p, pts, 0.02 * th)
-    B <- solve(dirs$A)
-    sd_z <- sqrt(diag(B %*% co$cov %*% t(B)))
-    B <- B / sd_z
-    A_hat <- dirs$A * rep(sd_z, each = p)
-    noise_cov <- B %*% co$cov %*% t(B)
-    diag(noise_cov) <- 0
+    directions <- function() {
+      pts <- (0.8 * matrix(stats::rnorm(3L * p), 3L, p) / sqrt(p)) %*%
+        solve(co$A)
+      dirs <- .cf_mixing_directions(phi, p, pts, 0.02 * th)
+      B <- solve(dirs$A)
+      sd_z <- sqrt(diag(B %*% co$cov %*% t(B)))
+      B <- B / sd_z
+      noise_cov <- B %*% co$cov %*% t(B)
+      diag(noise_cov) <- 0
+      c(dirs, list(
+        B = B, A_hat = dirs$A * rep(sd_z, each = p), noise_cov = noise_cov,
+        dependence = .cf_pair_dependence(phi, B, noise_cov)
+      ))
+    }
+    ## The frequencies are drawn again, up to four times, while the
+    ## separated coordinates are still dependent.
+    dirs <- directions()
+    for (i in seq_len(4L)) {
+      if (dirs$dependence <= 0.01) break
+      again <- tryCatch(
+        directions(), proxymix_cf_not_sources = function(e) NULL
+      )
+      if (!is.null(again) && again$dependence < dirs$dependence) dirs <- again
+    }
+    B <- dirs$B
+    A_hat <- dirs$A_hat
+    noise_cov <- dirs$noise_cov
 
     # One-dimensional fits -----------------------------------------------------
     sources <- lapply(seq_len(p), function(j) {
@@ -541,16 +619,18 @@ from_cf_sources <- function(
     list(
       A = A_hat, sources = sources, noise_cov = noise_cov, cov = co$cov,
       imaginary = dirs$imaginary, off_diagonal = dirs$off_diagonal,
+      dependence = dirs$dependence,
       fresh = .cf_frequencies(2048L, p, bandwidths)$U %*% solve(co$A)
     )
   }
   res <- if (is.null(seed)) run() else withr::with_seed(seed, run())
 
-  if (res$off_diagonal > 0.05) {
+  if (res$off_diagonal > 0.05 || res$dependence > 0.01) {
     cli::cli_warn(
       c(
         "The target does not look like a linear mix of independent sources.",
         "i" = "At a third test frequency, off-diagonal entries are {signif(100 * res$off_diagonal, 2)}% of diagonal ones; for independent sources they would be 0.",
+        "i" = "The pairwise dependence of the separated coordinates is {signif(res$dependence, 2)}; for independent sources it would be 0.",
         "i" = "{.fn from_cf} makes no assumption on the structure."
       ),
       class = "proxymix_cf_not_sources"
@@ -646,6 +726,7 @@ from_cf_sources <- function(
       project = project,
       diagnostics = list(
         off_diagonal = res$off_diagonal,
+        dependence = res$dependence,
         imaginary = res$imaginary,
         heldout_rms = sqrt(mean(Mod(phi(res$fresh) - cf_fit(res$fresh))^2))
       )

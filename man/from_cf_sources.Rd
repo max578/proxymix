@@ -46,7 +46,12 @@ projection needs more than \code{max_components} components.
 \item \code{diagnostics}, with \code{off_diagonal} (the largest off-diagonal entry
 divided by the largest diagonal entry of the Hessian difference at the
 third frequency, transformed by the inverse of \code{mixing}, 0 if the sources are separated
-exactly, with a warning above 0.05), \code{imaginary} (the largest imaginary part of the
+exactly, with a warning above 0.05), \code{dependence} (the largest over
+pairs of coordinates of \eqn{Z} of the root of the integral, against
+the standard normal density in two dimensions, of the squared modulus
+of the joint characteristic function minus the product of the
+marginal ones, with the Gaussian noise term allowed for; 0 for
+independent sources, with a warning above 0.01), \code{imaginary} (the largest imaginary part of the
 directions before it is dropped) and \code{heldout_rms} (the root mean
 square of the difference between \code{cf} and the fit's characteristic
 function on fresh frequencies).
@@ -61,16 +66,29 @@ each source is then fitted in one dimension with \code{\link[=from_cf]{from_cf()
 in \code{n_dim} dimensions would be less accurate.
 }
 \details{
+The fitted family, independent sources that are each a one-dimensional
+Gaussian mixture, is the independent factor model of Attias (1999), who
+fits it to a sample by maximum likelihood.
+
 The result is a list, not a \link{gmm}. As a single mixture it would need
 \code{N^n_dim} components. It has three functions: \code{cf()}, \code{draw()} (sampling
 from the fit) and \code{project()} (the one-dimensional mixture along a
 direction). \code{draw()} gives an error when the noise covariance estimated
 from \code{cf} is too far from positive semi-definite to be sampled.
 
+The mixing matrix is found from second derivatives of the logarithm of
+\code{cf} at two random frequencies (Yeredor, 2000). The coordinates it
+separates are then tested for pairwise independence with the criterion of
+Eriksson and Koivunen (2003), which compares the joint characteristic
+function of each pair with the product of the two marginal ones at all
+frequencies. If the criterion is above 0.01 the frequencies are drawn
+again, up to four times, and the directions with the smallest value are
+kept.
+
 The target must have a finite, positive definite covariance. A warning of class
-\code{proxymix_cf_not_sources} is raised when the directions found do not
-separate the sources at a third frequency, which is the sign that the
-target is not of the form above.
+\code{proxymix_cf_not_sources} is raised when the criterion is still above
+0.01, or when the directions do not separate the sources at a third
+frequency. Either is the sign that the target is not of the form above.
 }
 \examples{
 ## Two independent Gamma(3) sources, mixed, with N(0, 0.25 I) noise.
@@ -86,6 +104,13 @@ first <- fit$project(c(1, 0))
 gmm_cf_distance(first, function(s) cf(cbind(s[, 1], 0)))$distance
 }
 \references{
+Attias, H. (1999). Independent factor analysis. \emph{Neural Computation},
+11(4), 803--851. \doi{10.1162/089976699300016458}
+
+Eriksson, J., and Koivunen, V. (2003). Characteristic-function-based
+independent component analysis. \emph{Signal Processing}, 83(10), 2195--2208.
+\doi{10.1016/S0165-1684(03)00162-2}
+
 Yeredor, A. (2000). Blind source separation via the second
 characteristic function. \emph{Signal Processing}, 80(5), 897--902.
 \doi{10.1016/S0165-1684(00)00062-1}

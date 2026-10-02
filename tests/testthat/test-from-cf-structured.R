@@ -102,6 +102,7 @@ test_that("two mixed Gamma sources are separated and fitted", {
   fit <- from_cf_sources(cf, n_dim = 2L, N = 3L, n_freq = 1024L, seed = 1L)
   expect_s3_class(fit, "proxymix_cf_sources")
   expect_lt(fit$diagnostics$off_diagonal, 0.01)
+  expect_lt(fit$diagnostics$dependence, 1e-3)
   unit <- function(M) M / rep(sqrt(colSums(M^2)), each = 2L)
   cosine <- abs(crossprod(unit(fit$mixing), unit(A)))
   expect_gt(min(apply(cosine, 1L, max)), 1 - 1e-4)
@@ -119,6 +120,37 @@ test_that("two mixed Gamma sources are separated and fitted", {
   X <- withr::with_seed(3L, fit$draw(20000L))
   expect_equal(dim(X), c(20000L, 2L))
   expect_equal(colMeans(X), as.vector(A %*% c(3, 3)), tolerance = 0.03)
+})
+
+test_that("the pairwise dependence is 0 at the true directions and grows with a rotation", {
+  A <- matrix(c(0.7, 0.3, 0, -0.7), 2L)
+  phi <- .cf_checked(gamma_mix_cf(A), 2L)
+  covariance <- 3 * A %*% t(A) + 0.25 * diag(2L)
+  dependence <- function(angle) {
+    R <- matrix(c(cos(angle), sin(angle), -sin(angle), cos(angle)), 2L)
+    B <- R %*% solve(A)
+    B <- B / sqrt(diag(B %*% covariance %*% t(B)))
+    noise <- B %*% covariance %*% t(B)
+    diag(noise) <- 0
+    .cf_pair_dependence(phi, B, noise)
+  }
+  expect_lt(dependence(0), 1e-10)
+  expect_gt(dependence(0.1), 0.01)
+  expect_gt(dependence(0.3), dependence(0.1))
+})
+
+test_that("a target that is not a mix of independent sources is flagged by its dependence", {
+  skip_on_cran()
+  cf <- function(t) {
+    0.5 * exp(1i * (t %*% c(2, 1))[, 1L] - 0.5 * rowSums(t^2)) +
+      0.5 * exp(-1i * (t %*% c(2, -1))[, 1L] -
+        0.5 * (t[, 1L]^2 + 4 * t[, 2L]^2 + 1.6 * t[, 1L] * t[, 2L]))
+  }
+  expect_warning(
+    fit <- from_cf_sources(cf, n_dim = 2L, N = 3L, n_freq = 1024L, seed = 1L),
+    class = "proxymix_cf_not_sources"
+  )
+  expect_gt(fit$diagnostics$dependence, 0.01)
 })
 
 test_that("from_cf_sources errors on a Gaussian target and on a target without variance", {

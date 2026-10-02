@@ -1,3 +1,26 @@
+# proxymix (development version)
+
+### New features
+
+* `from_cf()` fits a Gaussian mixture to a distribution given by its
+  characteristic function, for targets with no usable density such as stable
+  laws. The fit reports its error on frequencies
+  it did not use and warns when the target has heavy tails.
+* `gmm_cf()` evaluates the characteristic function of a mixture.
+* `gmm_cf_distance()` returns a lower and an upper bound for the Kolmogorov
+  distance between a characteristic-function target and a mixture along a
+  direction, computed by numerical inversion and without sampling. The upper
+  bound needs a target whose projected characteristic function is integrable.
+* `from_cf_elliptical()` fits normal components with a common centre and
+  proportional covariances to an elliptical characteristic function, such as
+  a multivariate Cauchy or an elliptical stable law. It needs no starting
+  value and matches the distribution out to about its 0.999 quantile, even
+  with heavy tails.
+* `from_cf_sources()` fits a linear mix of independent sources, with or
+  without Gaussian noise. It returns a list with functions for the
+  characteristic function, sampling and one-dimensional projections, not a
+  `gmm`.
+
 # proxymix 0.16.0
 
 ### Changes to defaults

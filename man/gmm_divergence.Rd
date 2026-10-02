@@ -43,6 +43,7 @@ gmm_divergence(p, p)
 Other ops:
 \code{\link[=dgmm]{dgmm()}},
 \code{\link[=gmm_canonicalise]{gmm_canonicalise()}},
+\code{\link[=gmm_cf]{gmm_cf()}},
 \code{\link[=gmm_conditionalise]{gmm_conditionalise()}},
 \code{\link[=gmm_kld]{gmm_kld()}},
 \code{\link[=gmm_marginalise]{gmm_marginalise()}},

@@ -42,6 +42,7 @@ qgmm(c(0.1, 0.5, 0.9), g)
 Other ops:
 \code{\link[=dgmm]{dgmm()}},
 \code{\link[=gmm_canonicalise]{gmm_canonicalise()}},
+\code{\link[=gmm_cf]{gmm_cf()}},
 \code{\link[=gmm_conditionalise]{gmm_conditionalise()}},
 \code{\link[=gmm_divergence]{gmm_divergence()}},
 \code{\link[=gmm_kld]{gmm_kld()}},

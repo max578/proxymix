@@ -9,6 +9,8 @@ Alspach
 Athey
 Ax
 Biernacki
+Biometrika
+Brück
 BugReports
 Buuren
 C0
@@ -55,14 +57,18 @@ Kenward
 Kullback
 LOD
 Leibler
+Levenberg
+Lévy
 M0
 MNAR
+Marquardt
 Nadaraya
 Nonresponse
 O0
 O2
 ORCID
 Oudshoorn
+Pelaez
 Perpinan
 Pushforward
 README
@@ -86,6 +92,7 @@ Veaux
 Vectorisation
 Visualization
 Xekalaki
+Yeredor
 Zhou
 al
 canonicalise
@@ -129,6 +136,7 @@ integrand
 interop
 interventional
 invariants
+invertible
 iterate's
 kld
 kmeans

@@ -28,6 +28,7 @@ Other diagnostics:
 \code{\link[=ess_summary]{ess_summary()}},
 \code{\link[=ess_trace]{ess_trace()}},
 \code{\link[=gmm_anneal_path]{gmm_anneal_path()}},
+\code{\link[=gmm_cf_distance]{gmm_cf_distance()}},
 \code{\link[=gmm_conditional_entropy]{gmm_conditional_entropy()}},
 \code{\link[=gmm_entropy]{gmm_entropy()}},
 \code{\link[=gmm_evidence]{gmm_evidence()}},

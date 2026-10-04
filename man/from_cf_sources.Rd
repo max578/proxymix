@@ -40,7 +40,7 @@ variance on the diagonal stays inside \code{sources}.
 \item \code{draw(n)}, an \code{n} by \code{n_dim} matrix of draws from the fit.
 \item \code{project(direction, max_components = 1e5)}, the \link{gmm} of
 \eqn{a^\top X} under the fit for a direction \eqn{a}. Sources whose
-coefficient is below \code{1e-4} of the largest are replaced by a single
+coefficient is below \code{1e-3} of the largest are replaced by a single
 normal with the same mean and variance. It gives an error if the
 projection needs more than \code{max_components} components.
 \item \code{diagnostics}, with \code{off_diagonal} (the largest off-diagonal entry

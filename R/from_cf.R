@@ -602,9 +602,11 @@
 #' frequency at which \eqn{|\varphi|} has fallen to about one half. The
 #' same criterion is used by Brück (2025) to train a neural sampler.
 #'
-#' The starting mixture is built one component at a time. Each component is
-#' added at the mean where the characteristic-function residual is largest,
-#' and all components are refitted after each addition. The fit then tries
+#' The starting mixture is built one component at a time. Each new
+#' component is placed at the mean where the fit falls furthest short of the
+#' target, after both are smoothed by a Gaussian. That mean is computed from
+#' the characteristic-function residual, so no density of the target is
+#' needed. All components are refitted after each addition. The fit then tries
 #' moving each of the two least useful components to a better mean, keeping
 #' a move if it cuts the loss by at least 10%, up to `N` moves.
 #'
@@ -637,16 +639,17 @@
 #' @param bandwidths Increasing positive numbers, the typical length of a
 #'   frequency vector in units of the target's half-height frequency (each
 #'   coordinate has standard deviation `bandwidth / sqrt(n_dim)` of that).
-#'   Lower bandwidths are fitted first. Extend the range upwards
+#'   The grown start and `init` use all bandwidths together. Random starts
+#'   are fitted from the lowest bandwidth upwards. Extend the range upwards
 #'   for a target with fine structure and downwards for a heavy-tailed
 #'   target.
 #' @param n_start Number of starts. The first start is `init` if given,
 #'   otherwise the grown start described above; the others are random. The
 #'   fit with the lowest loss is returned. Default `1L`. With ten or more
 #'   components in five or more dimensions a single start can stop at a
-#'   poor fit (the grown start alone did so for ten components in ten
-#'   dimensions, which four starts recovered), so four starts are a safer
-#'   choice.
+#'   poor fit, so four starts are a safer choice. For ten components in ten
+#'   dimensions the grown start stopped at a poor fit and a random start
+#'   recovered the target.
 #' @param max_iter Maximum number of L-BFGS iterations per frequency stage.
 #'   A Levenberg-Marquardt step with at most 200 iterations follows when the
 #'   fit has at most 700 parameters. Default `300L`.

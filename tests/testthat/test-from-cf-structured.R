@@ -116,6 +116,14 @@ test_that("two mixed Gamma sources are separated and fitted", {
   expect_equal(gmm_dim(first), 1L)
   d <- gmm_cf_distance(first, function(s) cf(cbind(s[, 1L], 0)))
   expect_lt(d$distance, 0.01)
+  ## a source with a coefficient below 1e-3 of the largest is replaced by
+  ## one normal, which keeps the mean of the projection
+  a <- as.vector(c(1, 5e-4) %*% solve(fit$mixing))
+  small <- fit$project(a)
+  expect_length(small@weights, 3L)
+  expect_length(fit$project(as.vector(c(1, 2e-3) %*% solve(fit$mixing)))@weights, 9L)
+  expect_equal(sum(small@weights * unlist(small@means)),
+               sum(a * as.vector(A %*% c(3, 3))), tolerance = 0.01)
   ## draws have the target's mean, A %*% c(3, 3)
   X <- withr::with_seed(3L, fit$draw(20000L))
   expect_equal(dim(X), c(20000L, 2L))

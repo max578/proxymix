@@ -512,7 +512,7 @@ from_cf_elliptical <- function(
 #'   * `draw(n)`, an `n` by `n_dim` matrix of draws from the fit.
 #'   * `project(direction, max_components = 1e5)`, the [gmm] of
 #'     \eqn{a^\top X} under the fit for a direction \eqn{a}. Sources whose
-#'     coefficient is below `1e-4` of the largest are replaced by a single
+#'     coefficient is below `1e-3` of the largest are replaced by a single
 #'     normal with the same mean and variance. It gives an error if the
 #'     projection needs more than `max_components` components.
 #'   * `diagnostics`, with `off_diagonal` (the largest off-diagonal entry
@@ -683,7 +683,7 @@ from_cf_sources <- function(
       )
     }
     co <- as.vector(direction %*% A)
-    big <- which(abs(co) > 1e-4 * max(abs(co)))
+    big <- which(abs(co) > 1e-3 * max(abs(co)))
     small <- setdiff(seq_len(p), big)
     n_comp <- prod(lengths(w_l[big]))
     if (n_comp > max_components) {

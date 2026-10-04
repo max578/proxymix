@@ -45,6 +45,7 @@ fit_moment_match(tgt, N = 1L)
 Other fitting:
 \code{\link[=fit_em_samples]{fit_em_samples()}},
 \code{\link[=fit_kld_em]{fit_kld_em()}},
+\code{\link[=fit_mppca_samples]{fit_mppca_samples()}},
 \code{\link[=from_cf]{from_cf()}},
 \code{\link[=from_cf_elliptical]{from_cf_elliptical()}},
 \code{\link[=from_cf_sources]{from_cf_sources()}},

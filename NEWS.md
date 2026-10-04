@@ -2,6 +2,11 @@
 
 ### New features
 
+* `fit_mppca_samples()` fits a mixture of probabilistic principal component
+  analysers (Tipping and Bishop, 1999): each component covariance is a rank-`q`
+  term plus equal noise in every direction. It can be fitted when a component
+  holds fewer points than there are variables, where a full-covariance fit is
+  singular, and returns an ordinary fitted mixture.
 * `from_cf()` fits a Gaussian mixture to a distribution given by its
   characteristic function, for targets with no usable density such as stable
   laws. The fit reports its error on frequencies

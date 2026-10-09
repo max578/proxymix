@@ -5,6 +5,8 @@
 
 <!-- badges: start -->
 
+[![CRAN
+status](https://www.r-pkg.org/badges/version/proxymix)](https://CRAN.R-project.org/package=proxymix)
 <!-- badges: end -->
 
 `proxymix` fits multivariate Gaussian-mixture proxies that are
@@ -45,7 +47,11 @@ regime (ii) on the draws.
 
 ## Installation
 
-From GitHub:
+From CRAN:
+
+    install.packages("proxymix")
+
+The development version from GitHub:
 
     # install.packages("remotes")
     remotes::install_github("max578/proxymix")

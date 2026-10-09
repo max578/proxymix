@@ -17,6 +17,7 @@ set.seed(20260513)
 # proxymix
 
 <!-- badges: start -->
+[![CRAN status](https://www.r-pkg.org/badges/version/proxymix)](https://CRAN.R-project.org/package=proxymix)
 <!-- badges: end -->
 
 `proxymix` fits multivariate Gaussian-mixture proxies that are **Kullback--Leibler optimal** to user-supplied target densities on $\mathbb{R}^p$. Three regimes from van der Hoek and Elliott (2024) are unified under one verb:
@@ -33,7 +34,11 @@ Regime (iii) is the reason the package exists. The sample-based mixture packages
 
 ## Installation
 
-From GitHub:
+From CRAN:
+
+    install.packages("proxymix")
+
+The development version from GitHub:
 
     # install.packages("remotes")
     remotes::install_github("max578/proxymix")

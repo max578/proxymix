@@ -1,14 +1,10 @@
 # The closed-form operator calculus on a mixture
 
-``` r
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`
 
-library(proxymix)
-```
-
-``` r
-
-has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
-```
+\
+`has_ggplot2`` ``<-`` `[`requireNamespace`](https://rdrr.io/r/base/ns-load.html)`(``"ggplot2"``, quietly ``=`` ``TRUE``)`
 
 ## The problem
 
@@ -62,27 +58,23 @@ same use, in non-linear Kalman-type filtering.
 
 ## Addressing the problem
 
-``` r
-
-set.seed(20260514)
-```
+\
+[`set.seed`](https://rdrr.io/r/base/Random.html)`(``20260514``)`
 
 ### A mixture to operate on
 
 A two-component mixture over a pair of latent variables.
 
-``` r
-
-g_prior <- gmm(
-  weights = c(0.6, 0.4),
-  means = list(c(-1, 0), c(1.5, 0.5)),
-  covariances = list(diag(c(0.6, 0.8)), diag(c(0.7, 0.5)))
-)
-g_prior
-#> <gmm>: K = 2 components in p = 2 dimensions
-#>   [1] w = 0.6000, |mu| = 1.0000, tr(Sigma) = 1.4000
-#>   [2] w = 0.4000, |mu| = 1.5811, tr(Sigma) = 1.2000
-```
+\
+`g_prior`` ``<-`` `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(`\
+`  weights ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``0.6``, ``0.4``)``,`\
+`  means ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``-``1``, ``0``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``1.5``, ``0.5``)``)``,`\
+`  covariances ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`diag`](https://rdrr.io/r/base/diag.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0.6``, ``0.8``)``)``, `[`diag`](https://rdrr.io/r/base/diag.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0.7``, ``0.5``)``)``)`\
+`)`\
+`g_prior`\
+`#> <gmm>: K = 2 components in p = 2 dimensions`\
+`#>   [1] w = 0.6000, |mu| = 1.0000, tr(Sigma) = 1.4000`\
+`#>   [2] w = 0.4000, |mu| = 1.5811, tr(Sigma) = 1.2000`
 
 ### Pushforward through a linear sensor
 
@@ -90,95 +82,87 @@ Suppose the latent state is observed through $`y = A x + \epsilon`$ with
 $`\epsilon \sim \mathcal{N}(0, R)`$ and a sensor matrix that reports
 both coordinates and their sum.
 
-``` r
-
-A_sensor <- matrix(
-  c(1, 0,
-    0, 1,
-    1, 1),
-  nrow = 3L, byrow = TRUE
-)
-b_sensor <- c(0, 0, 0)
-R_sensor <- 0.05 * diag(3)
-
-g_pushed <- gmm_affine(
-  g_prior, A_sensor, b_sensor, noise_cov = R_sensor
-)
-```
+\
+`A_sensor`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`\
+`  `[`c`](https://rdrr.io/r/base/c.html)`(``1``, ``0``,`\
+`    ``0``, ``1``,`\
+`    ``1``, ``1``)``,`\
+`  nrow ``=`` ``3L``, byrow ``=`` ``TRUE`\
+`)`\
+`b_sensor`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``, ``0``)`\
+`R_sensor`` ``<-`` ``0.05`` ``*`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``3``)`\
+\
+`g_pushed`` ``<-`` `[`gmm_affine`](https://max578.github.io/proxymix/reference/gmm_affine.md)`(`\
+`  ``g_prior``, ``A_sensor``, ``b_sensor``, noise_cov ``=`` ``R_sensor`\
+`)`
 
 The weights are unchanged, the means are $`A \mu_k + b`$ and the
 covariances are $`A \Sigma_k A^\top + R`$, which the hand computation
 below reproduces.
 
-``` r
-
-mu_hand <- lapply(g_prior@means, function(mu) {
-  as.numeric(A_sensor %*% mu + b_sensor)
-})
-cov_hand <- lapply(g_prior@covariances, function(s) {
-  A_sensor %*% s %*% t(A_sensor) + R_sensor
-})
-affine_gap <- max(
-  abs(unlist(g_pushed@means) - unlist(mu_hand)),
-  abs(unlist(g_pushed@covariances) - unlist(cov_hand)),
-  abs(g_pushed@weights - g_prior@weights)
-)
-```
+\
+`mu_hand`` ``<-`` `[`lapply`](https://rdrr.io/r/base/lapply.html)`(``g_prior``@``means``, ``function``(``mu``)`` ``{`\
+`  `[`as.numeric`](https://rdrr.io/r/base/numeric.html)`(``A_sensor`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``mu`` ``+`` ``b_sensor``)`\
+`}``)`\
+`cov_hand`` ``<-`` `[`lapply`](https://rdrr.io/r/base/lapply.html)`(``g_prior``@``covariances``, ``function``(``s``)`` ``{`\
+`  ``A_sensor`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``s`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` `[`t`](https://rdrr.io/r/base/t.html)`(``A_sensor``)`` ``+`` ``R_sensor`\
+`}``)`\
+`affine_gap`` ``<-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(`\
+`  `[`abs`](https://rdrr.io/r/base/MathFun.html)`(`[`unlist`](https://rdrr.io/r/base/unlist.html)`(``g_pushed``@``means``)`` ``-`` `[`unlist`](https://rdrr.io/r/base/unlist.html)`(``mu_hand``)``)``,`\
+`  `[`abs`](https://rdrr.io/r/base/MathFun.html)`(`[`unlist`](https://rdrr.io/r/base/unlist.html)`(``g_pushed``@``covariances``)`` ``-`` `[`unlist`](https://rdrr.io/r/base/unlist.html)`(``cov_hand``)``)``,`\
+`  `[`abs`](https://rdrr.io/r/base/MathFun.html)`(``g_pushed``@``weights`` ``-`` ``g_prior``@``weights``)`\
+`)`
 
 ### Bayesian update on a noisy observation
 
 Now observe `y = 0.8` on the first coordinate alone, with noise variance
 0.25.
 
-``` r
-
-A_obs <- matrix(c(1, 0), nrow = 1L)
-g_post <- gmm_observe(
-  g_prior, A = A_obs, y = 0.8, noise_cov = matrix(0.25, 1L, 1L)
-)
-g_post
-#> <observe(gmm)>: K = 2 components in p = 2 dimensions
-#>   [1] w = 0.2338, |mu| = 0.2706, tr(Sigma) = 0.9765
-#>   [2] w = 0.7662, |mu| = 1.1039, tr(Sigma) = 0.6842
-```
+\
+`A_obs`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``1``, ``0``)``, nrow ``=`` ``1L``)`\
+`g_post`` ``<-`` `[`gmm_observe`](https://max578.github.io/proxymix/reference/gmm_observe.md)`(`\
+`  ``g_prior``, A ``=`` ``A_obs``, y ``=`` ``0.8``, noise_cov ``=`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``0.25``, ``1L``, ``1L``)`\
+`)`\
+`g_post`\
+`#> <observe(gmm)>: K = 2 components in p = 2 dimensions`\
+`#>   [1] w = 0.2338, |mu| = 0.2706, tr(Sigma) = 0.9765`\
+`#>   [2] w = 0.7662, |mu| = 1.1039, tr(Sigma) = 0.6842`
 
 Component weights have been multiplied by the marginal evidence
 $`\pi_k \, \mathcal{N}(y;\, A \mu_k,\, S_k)`$ and renormalised;
 component means and covariances have been Kalman-updated component-wise.
 
-``` r
-
-grid <- expand.grid(
-  x = seq(-4, 5, length.out = 80L),
-  y = seq(-3, 3, length.out = 60L)
-)
-gm <- as.matrix(grid)
-long <- rbind(
-  data.frame(x = grid$x, y = grid$y, d = dgmm(gm, g_prior), part = "Prior"),
-  data.frame(
-    x = grid$x, y = grid$y, d = dgmm(gm, g_post), part = "Posterior"
-  )
-)
-long$part <- factor(long$part, levels = c("Prior", "Posterior"))
-ggplot2::ggplot(long, ggplot2::aes(x, y)) +
-  ggplot2::geom_raster(ggplot2::aes(fill = d), interpolate = TRUE) +
-  ggplot2::geom_contour(
-    ggplot2::aes(z = d), colour = "white", linewidth = 0.2,
-    alpha = 0.6, bins = 8L
-  ) +
-  ggplot2::facet_wrap(~ part) +
-  ggplot2::coord_equal(expand = FALSE) +
-  ggplot2::scale_fill_viridis_c(name = "density") +
-  ggplot2::labs(
-    x = expression(x[1]), y = expression(x[2]),
-    title = "Prior and posterior after observing the first coordinate"
-  ) +
-  ggplot2::theme_minimal(base_size = 11) +
-  ggplot2::theme(
-    strip.text = ggplot2::element_text(face = "bold"),
-    panel.grid = ggplot2::element_blank()
-  )
-```
+\
+`grid`` ``<-`` `[`expand.grid`](https://rdrr.io/r/base/expand.grid.html)`(`\
+`  x ``=`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``4``, ``5``, length.out ``=`` ``80L``)``,`\
+`  y ``=`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``3``, ``3``, length.out ``=`` ``60L``)`\
+`)`\
+`gm`` ``<-`` `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(``grid``)`\
+`long`` ``<-`` `[`rbind`](https://amices.org/mice/reference/cbind.html)`(`\
+`  `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``x ``=`` ``grid``$``x``, y ``=`` ``grid``$``y``, d ``=`` `[`dgmm`](https://max578.github.io/proxymix/reference/dgmm.md)`(``gm``, ``g_prior``)``, part ``=`` ``"Prior"``)``,`\
+`  `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(`\
+`    x ``=`` ``grid``$``x``, y ``=`` ``grid``$``y``, d ``=`` `[`dgmm`](https://max578.github.io/proxymix/reference/dgmm.md)`(``gm``, ``g_post``)``, part ``=`` ``"Posterior"`\
+`  ``)`\
+`)`\
+`long``$``part`` ``<-`` `[`factor`](https://rdrr.io/r/base/factor.html)`(``long``$``part``, levels ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"Prior"``, ``"Posterior"``)``)`\
+`ggplot2``::`[`ggplot`](https://ggplot2.tidyverse.org/reference/ggplot.html)`(``long``, ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``x``, ``y``)``)`` ``+`\
+`  ``ggplot2``::`[`geom_raster`](https://ggplot2.tidyverse.org/reference/geom_tile.html)`(``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``fill ``=`` ``d``)``, interpolate ``=`` ``TRUE``)`` ``+`\
+`  ``ggplot2``::`[`geom_contour`](https://ggplot2.tidyverse.org/reference/geom_contour.html)`(`\
+`    ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``z ``=`` ``d``)``, colour ``=`` ``"white"``, linewidth ``=`` ``0.2``,`\
+`    alpha ``=`` ``0.6``, bins ``=`` ``8L`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`facet_wrap`](https://ggplot2.tidyverse.org/reference/facet_wrap.html)`(``~`` ``part``)`` ``+`\
+`  ``ggplot2``::`[`coord_equal`](https://ggplot2.tidyverse.org/reference/coord_fixed.html)`(``expand ``=`` ``FALSE``)`` ``+`\
+`  ``ggplot2``::`[`scale_fill_viridis_c`](https://ggplot2.tidyverse.org/reference/scale_viridis.html)`(``name ``=`` ``"density"``)`` ``+`\
+`  ``ggplot2``::`[`labs`](https://ggplot2.tidyverse.org/reference/labs.html)`(`\
+`    x ``=`` `[`expression`](https://rdrr.io/r/base/expression.html)`(``x``[``1``]``)``, y ``=`` `[`expression`](https://rdrr.io/r/base/expression.html)`(``x``[``2``]``)``,`\
+`    title ``=`` ``"Prior and posterior after observing the first coordinate"`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`theme_minimal`](https://ggplot2.tidyverse.org/reference/ggtheme.html)`(``base_size ``=`` ``11``)`` ``+`\
+`  ``ggplot2``::`[`theme`](https://ggplot2.tidyverse.org/reference/theme.html)`(`\
+`    strip.text ``=`` ``ggplot2``::`[`element_text`](https://ggplot2.tidyverse.org/reference/element.html)`(``face ``=`` ``"bold"``)``,`\
+`    panel.grid ``=`` ``ggplot2``::`[`element_blank`](https://ggplot2.tidyverse.org/reference/element.html)`(``)`\
+`  ``)`
 
 ![Two side-by-side density rasters on the same axes; the right-hand
 posterior panel is visibly more concentrated than the left-hand prior
@@ -201,31 +185,29 @@ should collapse exactly to a Kalman update. The hand recursion below is
 written out in full so that the comparison is against arithmetic this
 package did not produce.
 
-``` r
-
-g_single <- gmm(
-  weights = 1, means = list(c(0, 0)),
-  covariances = list(diag(c(1, 2)))
-)
-g_one_obs <- gmm_observe(
-  g_single, A = matrix(c(1, 0), nrow = 1L), y = 0.5,
-  noise_cov = matrix(0.5, 1L, 1L)
-)
-
-s_prior <- diag(c(1, 2))
-h_obs <- matrix(c(1, 0), nrow = 1L)
-r_obs <- matrix(0.5, 1L, 1L)
-s_innov <- h_obs %*% s_prior %*% t(h_obs) + r_obs
-gain <- s_prior %*% t(h_obs) %*% solve(s_innov)
-mu_kalman <- as.numeric(gain * 0.5)
-cov_kalman <- s_prior - gain %*% h_obs %*% s_prior
-
-kalman_gap <- max(
-  abs(mu_kalman - g_one_obs@means[[1L]]),
-  abs(cov_kalman - g_one_obs@covariances[[1L]])
-)
-ridge_default <- 1e-6
-```
+\
+`g_single`` ``<-`` `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(`\
+`  weights ``=`` ``1``, means ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)``)``,`\
+`  covariances ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`diag`](https://rdrr.io/r/base/diag.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``1``, ``2``)``)``)`\
+`)`\
+`g_one_obs`` ``<-`` `[`gmm_observe`](https://max578.github.io/proxymix/reference/gmm_observe.md)`(`\
+`  ``g_single``, A ``=`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``1``, ``0``)``, nrow ``=`` ``1L``)``, y ``=`` ``0.5``,`\
+`  noise_cov ``=`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``0.5``, ``1L``, ``1L``)`\
+`)`\
+\
+`s_prior`` ``<-`` `[`diag`](https://rdrr.io/r/base/diag.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``1``, ``2``)``)`\
+`h_obs`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``1``, ``0``)``, nrow ``=`` ``1L``)`\
+`r_obs`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``0.5``, ``1L``, ``1L``)`\
+`s_innov`` ``<-`` ``h_obs`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``s_prior`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` `[`t`](https://rdrr.io/r/base/t.html)`(``h_obs``)`` ``+`` ``r_obs`\
+`gain`` ``<-`` ``s_prior`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` `[`t`](https://rdrr.io/r/base/t.html)`(``h_obs``)`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` `[`solve`](https://rdrr.io/r/base/solve.html)`(``s_innov``)`\
+`mu_kalman`` ``<-`` `[`as.numeric`](https://rdrr.io/r/base/numeric.html)`(``gain`` ``*`` ``0.5``)`\
+`cov_kalman`` ``<-`` ``s_prior`` ``-`` ``gain`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``h_obs`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``s_prior`\
+\
+`kalman_gap`` ``<-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(`\
+`  `[`abs`](https://rdrr.io/r/base/MathFun.html)`(``mu_kalman`` ``-`` ``g_one_obs``@``means``[[``1L``]``]``)``,`\
+`  `[`abs`](https://rdrr.io/r/base/MathFun.html)`(``cov_kalman`` ``-`` ``g_one_obs``@``covariances``[[``1L``]``]``)`\
+`)`\
+`ridge_default`` ``<-`` ``1e-6`
 
 ### Aggregation through a coarsening matrix
 
@@ -235,21 +217,19 @@ the first two coordinates, and the third on its own – is
 with a row-sum matrix, exposed as
 [`gmm_aggregate()`](https://max578.github.io/proxymix/reference/gmm_aggregate.md).
 
-``` r
-
-g_fine <- gmm(
-  weights = c(0.3, 0.4, 0.3),
-  means = list(c(0, 0, 0), c(2, 1, -1), c(-1, -1, 2)),
-  covariances = list(diag(3), diag(3), diag(3))
-)
-A_agg <- matrix(
-  c(1, 1, 0,
-    0, 0, 1),
-  nrow = 2L, byrow = TRUE
-)
-g_coarse <- gmm_aggregate(g_fine, A_agg)
-weights_kept <- max(abs(g_coarse@weights - g_fine@weights))
-```
+\
+`g_fine`` ``<-`` `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(`\
+`  weights ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``0.3``, ``0.4``, ``0.3``)``,`\
+`  means ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``, ``0``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``2``, ``1``, ``-``1``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``-``1``, ``-``1``, ``2``)``)``,`\
+`  covariances ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`diag`](https://rdrr.io/r/base/diag.html)`(``3``)``, `[`diag`](https://rdrr.io/r/base/diag.html)`(``3``)``, `[`diag`](https://rdrr.io/r/base/diag.html)`(``3``)``)`\
+`)`\
+`A_agg`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`\
+`  `[`c`](https://rdrr.io/r/base/c.html)`(``1``, ``1``, ``0``,`\
+`    ``0``, ``0``, ``1``)``,`\
+`  nrow ``=`` ``2L``, byrow ``=`` ``TRUE`\
+`)`\
+`g_coarse`` ``<-`` `[`gmm_aggregate`](https://max578.github.io/proxymix/reference/gmm_aggregate.md)`(``g_fine``, ``A_agg``)`\
+`weights_kept`` ``<-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``g_coarse``@``weights`` ``-`` ``g_fine``@``weights``)``)`
 
 | Component | Weight | Mean of $`x_1 + x_2`$ | Mean of $`x_3`$ |
 |----------:|-------:|----------------------:|----------------:|
@@ -269,42 +249,38 @@ routes through the Schur-complement path. It is the same operation as
 [`gmm_conditionalise()`](https://max578.github.io/proxymix/reference/gmm_conditionalise.md)
 with an index-based signature, and the two agree.
 
-``` r
-
-g_cond_index <- gmm_missing(g_prior, observed = 2L, values = 0.5)
-g_cond_given <- gmm_conditionalise(g_prior, given = c(NA, 0.5))
-cond_gap <- max(
-  abs(unlist(g_cond_index@means) - unlist(g_cond_given@means)),
-  abs(unlist(g_cond_index@covariances) -
-        unlist(g_cond_given@covariances)),
-  abs(g_cond_index@weights - g_cond_given@weights)
-)
-```
+\
+`g_cond_index`` ``<-`` `[`gmm_missing`](https://max578.github.io/proxymix/reference/gmm_missing.md)`(``g_prior``, observed ``=`` ``2L``, values ``=`` ``0.5``)`\
+`g_cond_given`` ``<-`` `[`gmm_conditionalise`](https://max578.github.io/proxymix/reference/gmm_conditionalise.md)`(``g_prior``, given ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``NA``, ``0.5``)``)`\
+`cond_gap`` ``<-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(`\
+`  `[`abs`](https://rdrr.io/r/base/MathFun.html)`(`[`unlist`](https://rdrr.io/r/base/unlist.html)`(``g_cond_index``@``means``)`` ``-`` `[`unlist`](https://rdrr.io/r/base/unlist.html)`(``g_cond_given``@``means``)``)``,`\
+`  `[`abs`](https://rdrr.io/r/base/MathFun.html)`(`[`unlist`](https://rdrr.io/r/base/unlist.html)`(``g_cond_index``@``covariances``)`` ``-`\
+`        `[`unlist`](https://rdrr.io/r/base/unlist.html)`(``g_cond_given``@``covariances``)``)``,`\
+`  `[`abs`](https://rdrr.io/r/base/MathFun.html)`(``g_cond_index``@``weights`` ``-`` ``g_cond_given``@``weights``)`\
+`)`
 
 ### Sequential observations compose
 
 Two observations on disjoint coordinates, applied one after the other,
 should equal one observation on the stacked coordinates.
 
-``` r
-
-g_a <- gmm_observe(
-  g_prior, A = matrix(c(1, 0), nrow = 1L), y = 0.5,
-  noise_cov = matrix(0.25, 1L, 1L)
-)
-g_ab <- gmm_observe(
-  g_a, A = matrix(c(0, 1), nrow = 1L), y = 0.2,
-  noise_cov = matrix(0.25, 1L, 1L)
-)
-g_stack <- gmm_observe(
-  g_prior, A = diag(2), y = c(0.5, 0.2), noise_cov = 0.25 * diag(2)
-)
-compose_gap <- max(
-  abs(g_ab@weights - g_stack@weights),
-  abs(unlist(g_ab@means) - unlist(g_stack@means)),
-  abs(unlist(g_ab@covariances) - unlist(g_stack@covariances))
-)
-```
+\
+`g_a`` ``<-`` `[`gmm_observe`](https://max578.github.io/proxymix/reference/gmm_observe.md)`(`\
+`  ``g_prior``, A ``=`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``1``, ``0``)``, nrow ``=`` ``1L``)``, y ``=`` ``0.5``,`\
+`  noise_cov ``=`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``0.25``, ``1L``, ``1L``)`\
+`)`\
+`g_ab`` ``<-`` `[`gmm_observe`](https://max578.github.io/proxymix/reference/gmm_observe.md)`(`\
+`  ``g_a``, A ``=`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``1``)``, nrow ``=`` ``1L``)``, y ``=`` ``0.2``,`\
+`  noise_cov ``=`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``0.25``, ``1L``, ``1L``)`\
+`)`\
+`g_stack`` ``<-`` `[`gmm_observe`](https://max578.github.io/proxymix/reference/gmm_observe.md)`(`\
+`  ``g_prior``, A ``=`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``, y ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``0.5``, ``0.2``)``, noise_cov ``=`` ``0.25`` ``*`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)`\
+`)`\
+`compose_gap`` ``<-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(`\
+`  `[`abs`](https://rdrr.io/r/base/MathFun.html)`(``g_ab``@``weights`` ``-`` ``g_stack``@``weights``)``,`\
+`  `[`abs`](https://rdrr.io/r/base/MathFun.html)`(`[`unlist`](https://rdrr.io/r/base/unlist.html)`(``g_ab``@``means``)`` ``-`` `[`unlist`](https://rdrr.io/r/base/unlist.html)`(``g_stack``@``means``)``)``,`\
+`  `[`abs`](https://rdrr.io/r/base/MathFun.html)`(`[`unlist`](https://rdrr.io/r/base/unlist.html)`(``g_ab``@``covariances``)`` ``-`` `[`unlist`](https://rdrr.io/r/base/unlist.html)`(``g_stack``@``covariances``)``)`\
+`)`
 
 ### Filtering over time, and the Kalman filter as a special case
 
@@ -323,65 +299,59 @@ Take a one-dimensional constant-velocity track, with state (position,
 velocity), linear dynamics $`A`$, process noise $`Q`$, and a noisy
 position sensor $`C = [1, 0]`$ with noise $`R`$.
 
-``` r
-
-dt <- 1
-A_dyn <- matrix(c(1, dt, 0, 1), 2L, 2L, byrow = TRUE)
-C_obs <- matrix(c(1, 0), 1L, 2L)
-Q_proc <- 0.01 * diag(2)
-R_meas <- matrix(0.5, 1L, 1L)
-
-n_steps <- 30L
-truth <- matrix(0, n_steps, 2L)
-truth[1L, ] <- c(0, 1)
-for (k1 in 2:n_steps) {
-  truth[k1, ] <- as.numeric(A_dyn %*% truth[k1 - 1L, ]) +
-    mvnfast::rmvn(1L, c(0, 0), Q_proc)
-} # ends k1, over the simulated state track
-y_track <- truth[, 1L] + rnorm(n_steps, 0, sqrt(R_meas[1L, 1L]))
-```
+\
+`dt`` ``<-`` ``1`\
+`A_dyn`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``1``, ``dt``, ``0``, ``1``)``, ``2L``, ``2L``, byrow ``=`` ``TRUE``)`\
+`C_obs`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``1``, ``0``)``, ``1L``, ``2L``)`\
+`Q_proc`` ``<-`` ``0.01`` ``*`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)`\
+`R_meas`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``0.5``, ``1L``, ``1L``)`\
+\
+`n_steps`` ``<-`` ``30L`\
+`truth`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``0``, ``n_steps``, ``2L``)`\
+`truth``[``1L``, ``]`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``1``)`\
+`for`` ``(``k1`` ``in`` ``2``:``n_steps``)`` ``{`\
+`  ``truth``[``k1``, ``]`` ``<-`` `[`as.numeric`](https://rdrr.io/r/base/numeric.html)`(``A_dyn`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``truth``[``k1`` ``-`` ``1L``, ``]``)`` ``+`\
+`    ``mvnfast``::`[`rmvn`](https://rdrr.io/pkg/mvnfast/man/rmvn.html)`(``1L``, `[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)``, ``Q_proc``)`\
+`}`` ``# ends k1, over the simulated state track`\
+`y_track`` ``<-`` ``truth``[``, ``1L``]`` ``+`` `[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n_steps``, ``0``, `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(``R_meas``[``1L``, ``1L``]``)``)`
 
 The filter is the operator calculus in a loop.
 
-``` r
-
-g_state <- gmm(
-  weights = 1, means = list(c(0, 0)), covariances = list(diag(2))
-)
-filtered <- numeric(n_steps)
-for (k1 in seq_len(n_steps)) {
-  if (k1 > 1L) {
-    g_state <- gmm_affine(
-      g_state, A = A_dyn, b = c(0, 0), noise_cov = Q_proc
-    )                                                       # predict
-  }
-  g_state <- gmm_observe(
-    g_state, A = C_obs, y = y_track[k1], noise_cov = R_meas
-  )                                                         # update
-  filtered[k1] <- g_state@means[[1L]][1L]
-} # ends k1, over the filtering recursion
-```
+\
+`g_state`` ``<-`` `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(`\
+`  weights ``=`` ``1``, means ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)``)``, covariances ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``)`\
+`)`\
+`filtered`` ``<-`` `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``n_steps``)`\
+`for`` ``(``k1`` ``in`` `[`seq_len`](https://rdrr.io/r/base/seq.html)`(``n_steps``)``)`` ``{`\
+`  ``if`` ``(``k1`` ``>`` ``1L``)`` ``{`\
+`    ``g_state`` ``<-`` `[`gmm_affine`](https://max578.github.io/proxymix/reference/gmm_affine.md)`(`\
+`      ``g_state``, A ``=`` ``A_dyn``, b ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)``, noise_cov ``=`` ``Q_proc`\
+`    ``)``                                                       ``# predict`\
+`  ``}`\
+`  ``g_state`` ``<-`` `[`gmm_observe`](https://max578.github.io/proxymix/reference/gmm_observe.md)`(`\
+`    ``g_state``, A ``=`` ``C_obs``, y ``=`` ``y_track``[``k1``]``, noise_cov ``=`` ``R_meas`\
+`  ``)``                                                         ``# update`\
+`  ``filtered``[``k1``]`` ``<-`` ``g_state``@``means``[[``1L``]``]``[``1L``]`\
+`}`` ``# ends k1, over the filtering recursion`
 
 Against a hand-coded textbook Kalman filter:
 
-``` r
-
-mu_kf <- c(0, 0)
-p_kf <- diag(2)
-kf_track <- numeric(n_steps)
-for (k1 in seq_len(n_steps)) {
-  if (k1 > 1L) {
-    mu_kf <- as.numeric(A_dyn %*% mu_kf)
-    p_kf <- A_dyn %*% p_kf %*% t(A_dyn) + Q_proc            # predict
-  }
-  gain_kf <- p_kf %*% t(C_obs) %*%
-    solve(C_obs %*% p_kf %*% t(C_obs) + R_meas)             # gain
-  mu_kf <- mu_kf + as.numeric(gain_kf %*% (y_track[k1] - C_obs %*% mu_kf))
-  p_kf <- (diag(2) - gain_kf %*% C_obs) %*% p_kf
-  kf_track[k1] <- mu_kf[1L]
-} # ends k1, over the hand-coded Kalman recursion
-loop_gap <- max(abs(filtered - kf_track))
-```
+\
+`mu_kf`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)`\
+`p_kf`` ``<-`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)`\
+`kf_track`` ``<-`` `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``n_steps``)`\
+`for`` ``(``k1`` ``in`` `[`seq_len`](https://rdrr.io/r/base/seq.html)`(``n_steps``)``)`` ``{`\
+`  ``if`` ``(``k1`` ``>`` ``1L``)`` ``{`\
+`    ``mu_kf`` ``<-`` `[`as.numeric`](https://rdrr.io/r/base/numeric.html)`(``A_dyn`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``mu_kf``)`\
+`    ``p_kf`` ``<-`` ``A_dyn`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``p_kf`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` `[`t`](https://rdrr.io/r/base/t.html)`(``A_dyn``)`` ``+`` ``Q_proc``            ``# predict`\
+`  ``}`\
+`  ``gain_kf`` ``<-`` ``p_kf`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` `[`t`](https://rdrr.io/r/base/t.html)`(``C_obs``)`` `[`%*%`](https://rdrr.io/r/base/matmult.html)\
+`    `[`solve`](https://rdrr.io/r/base/solve.html)`(``C_obs`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``p_kf`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` `[`t`](https://rdrr.io/r/base/t.html)`(``C_obs``)`` ``+`` ``R_meas``)``             ``# gain`\
+`  ``mu_kf`` ``<-`` ``mu_kf`` ``+`` `[`as.numeric`](https://rdrr.io/r/base/numeric.html)`(``gain_kf`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``(``y_track``[``k1``]`` ``-`` ``C_obs`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``mu_kf``)``)`\
+`  ``p_kf`` ``<-`` ``(`[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)`` ``-`` ``gain_kf`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``C_obs``)`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``p_kf`\
+`  ``kf_track``[``k1``]`` ``<-`` ``mu_kf``[``1L``]`\
+`}`` ``# ends k1, over the hand-coded Kalman recursion`\
+`loop_gap`` ``<-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``filtered`` ``-`` ``kf_track``)``)`
 
 [`gmm_affine()`](https://max578.github.io/proxymix/reference/gmm_affine.md)
 and
@@ -390,58 +360,54 @@ add a ridge of $`10^{-6}`$ to the diagonal of every covariance they
 return, to keep it positive-definite. The same loop with `ridge_eps = 0`
 in both calls leaves the ridge out.
 
-``` r
+\
+`g_state`` ``<-`` `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(`\
+`  weights ``=`` ``1``, means ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)``)``, covariances ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``)`\
+`)`\
+`filtered_noridge`` ``<-`` `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``n_steps``)`\
+`for`` ``(``k1`` ``in`` `[`seq_len`](https://rdrr.io/r/base/seq.html)`(``n_steps``)``)`` ``{`\
+`  ``if`` ``(``k1`` ``>`` ``1L``)`` ``{`\
+`    ``g_state`` ``<-`` `[`gmm_affine`](https://max578.github.io/proxymix/reference/gmm_affine.md)`(`\
+`      ``g_state``, A ``=`` ``A_dyn``, b ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)``, noise_cov ``=`` ``Q_proc``, ridge_eps ``=`` ``0`\
+`    ``)`\
+`  ``}`\
+`  ``g_state`` ``<-`` `[`gmm_observe`](https://max578.github.io/proxymix/reference/gmm_observe.md)`(`\
+`    ``g_state``, A ``=`` ``C_obs``, y ``=`` ``y_track``[``k1``]``, noise_cov ``=`` ``R_meas``, ridge_eps ``=`` ``0`\
+`  ``)`\
+`  ``filtered_noridge``[``k1``]`` ``<-`` ``g_state``@``means``[[``1L``]``]``[``1L``]`\
+`}`` ``# ends k1, over the filtering recursion without the ridge`\
+`loop_gap_noridge`` ``<-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``filtered_noridge`` ``-`` ``kf_track``)``)`
 
-g_state <- gmm(
-  weights = 1, means = list(c(0, 0)), covariances = list(diag(2))
-)
-filtered_noridge <- numeric(n_steps)
-for (k1 in seq_len(n_steps)) {
-  if (k1 > 1L) {
-    g_state <- gmm_affine(
-      g_state, A = A_dyn, b = c(0, 0), noise_cov = Q_proc, ridge_eps = 0
-    )
-  }
-  g_state <- gmm_observe(
-    g_state, A = C_obs, y = y_track[k1], noise_cov = R_meas, ridge_eps = 0
-  )
-  filtered_noridge[k1] <- g_state@means[[1L]][1L]
-} # ends k1, over the filtering recursion without the ridge
-loop_gap_noridge <- max(abs(filtered_noridge - kf_track))
-```
-
-``` r
-
-track_df <- data.frame(
-  t = seq_len(n_steps), truth = truth[, 1L], y = y_track,
-  filtered = filtered
-)
-ggplot2::ggplot(track_df, ggplot2::aes(t)) +
-  ggplot2::geom_point(
-    ggplot2::aes(y = y, colour = "noisy reading"), size = 1.3, alpha = 0.7
-  ) +
-  ggplot2::geom_line(
-    ggplot2::aes(y = truth, colour = "latent truth"), linewidth = 0.8
-  ) +
-  ggplot2::geom_line(
-    ggplot2::aes(y = filtered, colour = "filtered, one component"),
-    linewidth = 0.9
-  ) +
-  ggplot2::scale_colour_manual(
-    name = NULL,
-    values = c(
-      "noisy reading" = "grey60",
-      "latent truth" = "#0072B2",
-      "filtered, one component" = "#D55E00"
-    )
-  ) +
-  ggplot2::labs(
-    x = "time step", y = "position",
-    title = "Predict and update over time is a Kalman filter"
-  ) +
-  ggplot2::theme_minimal(base_size = 11) +
-  ggplot2::theme(legend.position = "top")
-```
+\
+`track_df`` ``<-`` `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(`\
+`  t ``=`` `[`seq_len`](https://rdrr.io/r/base/seq.html)`(``n_steps``)``, truth ``=`` ``truth``[``, ``1L``]``, y ``=`` ``y_track``,`\
+`  filtered ``=`` ``filtered`\
+`)`\
+`ggplot2``::`[`ggplot`](https://ggplot2.tidyverse.org/reference/ggplot.html)`(``track_df``, ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``t``)``)`` ``+`\
+`  ``ggplot2``::`[`geom_point`](https://ggplot2.tidyverse.org/reference/geom_point.html)`(`\
+`    ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``y ``=`` ``y``, colour ``=`` ``"noisy reading"``)``, size ``=`` ``1.3``, alpha ``=`` ``0.7`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`geom_line`](https://ggplot2.tidyverse.org/reference/geom_path.html)`(`\
+`    ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``y ``=`` ``truth``, colour ``=`` ``"latent truth"``)``, linewidth ``=`` ``0.8`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`geom_line`](https://ggplot2.tidyverse.org/reference/geom_path.html)`(`\
+`    ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``y ``=`` ``filtered``, colour ``=`` ``"filtered, one component"``)``,`\
+`    linewidth ``=`` ``0.9`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`scale_colour_manual`](https://ggplot2.tidyverse.org/reference/scale_manual.html)`(`\
+`    name ``=`` ``NULL``,`\
+`    values ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(`\
+`      ``"noisy reading"`` ``=`` ``"grey60"``,`\
+`      ``"latent truth"`` ``=`` ``"#0072B2"``,`\
+`      ``"filtered, one component"`` ``=`` ``"#D55E00"`\
+`    ``)`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`labs`](https://ggplot2.tidyverse.org/reference/labs.html)`(`\
+`    x ``=`` ``"time step"``, y ``=`` ``"position"``,`\
+`    title ``=`` ``"Predict and update over time is a Kalman filter"`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`theme_minimal`](https://ggplot2.tidyverse.org/reference/ggtheme.html)`(``base_size ``=`` ``11``)`` ``+`\
+`  ``ggplot2``::`[`theme`](https://ggplot2.tidyverse.org/reference/theme.html)`(``legend.position ``=`` ``"top"``)`
 
 ![A time series with scattered grey noisy position readings, a smooth
 latent-truth line, and a filtered-estimate line closely following the
@@ -481,21 +447,19 @@ Gaussian-product identity as
 Take a six-component mixture that really has three clusters, each split
 into two near-identical components, and reduce it to three.
 
-``` r
-
-g_six <- gmm(
-  weights = rep(1 / 6, 6L),
-  means = list(
-    c(-5, 0), c(-5, 0.15), c(5, 0), c(5.1, -0.1), c(0, 6), c(0.1, 6.1)
-  ),
-  covariances = rep(list(0.5 * diag(2)), 6L)
-)
-g_three <- gmm_reduce(g_six, k_max = 3L)
-
-mix_mean <- function(g) Reduce(`+`, Map(`*`, g@weights, g@means))
-reduce_shift <- max(abs(mix_mean(g_six) - mix_mean(g_three)))
-reduce_divergence <- gmm_divergence(g_six, g_three, type = "cs")
-```
+\
+`g_six`` ``<-`` `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(`\
+`  weights ``=`` `[`rep`](https://rdrr.io/r/base/rep.html)`(``1`` ``/`` ``6``, ``6L``)``,`\
+`  means ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`\
+`    `[`c`](https://rdrr.io/r/base/c.html)`(``-``5``, ``0``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``-``5``, ``0.15``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``5``, ``0``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``5.1``, ``-``0.1``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``6``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``0.1``, ``6.1``)`\
+`  ``)``,`\
+`  covariances ``=`` `[`rep`](https://rdrr.io/r/base/rep.html)`(`[`list`](https://rdrr.io/r/base/list.html)`(``0.5`` ``*`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``)``, ``6L``)`\
+`)`\
+`g_three`` ``<-`` `[`gmm_reduce`](https://max578.github.io/proxymix/reference/gmm_reduce.md)`(``g_six``, k_max ``=`` ``3L``)`\
+\
+`mix_mean`` ``<-`` ``function``(``g``)`` `[`Reduce`](https://rdrr.io/r/base/funprog.html)`(``` `+` ```, `[`Map`](https://rdrr.io/r/base/funprog.html)`(``` `*` ```, ``g``@``weights``, ``g``@``means``)``)`\
+`reduce_shift`` ``<-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``mix_mean``(``g_six``)`` ``-`` ``mix_mean``(``g_three``)``)``)`\
+`reduce_divergence`` ``<-`` `[`gmm_divergence`](https://max578.github.io/proxymix/reference/gmm_divergence.md)`(``g_six``, ``g_three``, type ``=`` ``"cs"``)`
 
 | Quantity                  | Value   |
 |:--------------------------|:--------|
@@ -528,32 +492,30 @@ covariance matrix – it is the Gaussian-sum filter, bounded by
 [`gmm_reduce()`](https://max578.github.io/proxymix/reference/gmm_reduce.md)
 after each step.
 
-``` r
-
-prior_state <- gmm(
-  weights = 1, means = list(c(0, 0)), covariances = list(diag(2))
-)
-out_verb <- gmm_filter(
-  prior_state,
-  dynamics = list(A = A_dyn, Q = Q_proc),
-  measurement = list(C = C_obs, R = R_meas),
-  y = y_track, ridge_eps = 0
-)
-
-mu_v <- c(0, 0)
-p_v <- diag(2)
-kf_verb <- numeric(n_steps)
-for (k1 in seq_len(n_steps)) {
-  mu_v <- as.numeric(A_dyn %*% mu_v)
-  p_v <- A_dyn %*% p_v %*% t(A_dyn) + Q_proc                # predict
-  gain_v <- p_v %*% t(C_obs) %*%
-    solve(C_obs %*% p_v %*% t(C_obs) + R_meas)              # gain
-  mu_v <- mu_v + as.numeric(gain_v %*% (y_track[k1] - C_obs %*% mu_v))
-  p_v <- (diag(2) - gain_v %*% C_obs) %*% p_v               # update
-  kf_verb[k1] <- mu_v[1L]
-} # ends k1, over the predict-then-update reference recursion
-verb_gap <- max(abs(out_verb$mean[, 1L] - kf_verb))
-```
+\
+`prior_state`` ``<-`` `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(`\
+`  weights ``=`` ``1``, means ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)``)``, covariances ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``)`\
+`)`\
+`out_verb`` ``<-`` `[`gmm_filter`](https://max578.github.io/proxymix/reference/gmm_filter.md)`(`\
+`  ``prior_state``,`\
+`  dynamics ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``A ``=`` ``A_dyn``, Q ``=`` ``Q_proc``)``,`\
+`  measurement ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``C ``=`` ``C_obs``, R ``=`` ``R_meas``)``,`\
+`  y ``=`` ``y_track``, ridge_eps ``=`` ``0`\
+`)`\
+\
+`mu_v`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)`\
+`p_v`` ``<-`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)`\
+`kf_verb`` ``<-`` `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``n_steps``)`\
+`for`` ``(``k1`` ``in`` `[`seq_len`](https://rdrr.io/r/base/seq.html)`(``n_steps``)``)`` ``{`\
+`  ``mu_v`` ``<-`` `[`as.numeric`](https://rdrr.io/r/base/numeric.html)`(``A_dyn`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``mu_v``)`\
+`  ``p_v`` ``<-`` ``A_dyn`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``p_v`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` `[`t`](https://rdrr.io/r/base/t.html)`(``A_dyn``)`` ``+`` ``Q_proc``                ``# predict`\
+`  ``gain_v`` ``<-`` ``p_v`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` `[`t`](https://rdrr.io/r/base/t.html)`(``C_obs``)`` `[`%*%`](https://rdrr.io/r/base/matmult.html)\
+`    `[`solve`](https://rdrr.io/r/base/solve.html)`(``C_obs`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``p_v`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` `[`t`](https://rdrr.io/r/base/t.html)`(``C_obs``)`` ``+`` ``R_meas``)``              ``# gain`\
+`  ``mu_v`` ``<-`` ``mu_v`` ``+`` `[`as.numeric`](https://rdrr.io/r/base/numeric.html)`(``gain_v`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``(``y_track``[``k1``]`` ``-`` ``C_obs`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``mu_v``)``)`\
+`  ``p_v`` ``<-`` ``(`[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)`` ``-`` ``gain_v`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``C_obs``)`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``p_v``               ``# update`\
+`  ``kf_verb``[``k1``]`` ``<-`` ``mu_v``[``1L``]`\
+`}`` ``# ends k1, over the predict-then-update reference recursion`\
+`verb_gap`` ``<-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``out_verb``$``mean``[``, ``1L``]`` ``-`` ``kf_verb``)``)`
 
 A heavy-tailed disturbance is awkward for a single Gaussian process
 noise. Modelled as a two-component Gaussian sum – a calm regime and an
@@ -562,56 +524,52 @@ filter. Each step multiplies the component count by two, so the cap
 returns it to budget. The track above was simulated with Gaussian
 process noise, so this heavy-tailed noise model is misspecified for it.
 
-``` r
+\
+`q_heavy`` ``<-`` `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(`\
+`  weights ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``0.9``, ``0.1``)``,`\
+`  means ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)``)``,`\
+`  covariances ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``0.01`` ``*`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``, ``0.5`` ``*`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``)`\
+`)`\
+`out_gsf`` ``<-`` `[`gmm_filter`](https://max578.github.io/proxymix/reference/gmm_filter.md)`(`\
+`  ``prior_state``,`\
+`  dynamics ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``A ``=`` ``A_dyn``, Q ``=`` ``q_heavy``)``,`\
+`  measurement ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``C ``=`` ``C_obs``, R ``=`` ``R_meas``)``,`\
+`  y ``=`` ``y_track``, k_max ``=`` ``6L`\
+`)`\
+`gsf_max_k`` ``<-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(``out_gsf``$``summary``$``n_components``)`\
+`gsf_rmse`` ``<-`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(`[`mean`](https://rdrr.io/r/base/mean.html)`(``(``out_gsf``$``mean``[``, ``1L``]`` ``-`` ``truth``[``, ``1L``]``)``^``2``)``)`\
+`kalman_rmse`` ``<-`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(`[`mean`](https://rdrr.io/r/base/mean.html)`(``(``out_verb``$``mean``[``, ``1L``]`` ``-`` ``truth``[``, ``1L``]``)``^``2``)``)`
 
-q_heavy <- gmm(
-  weights = c(0.9, 0.1),
-  means = list(c(0, 0), c(0, 0)),
-  covariances = list(0.01 * diag(2), 0.5 * diag(2))
-)
-out_gsf <- gmm_filter(
-  prior_state,
-  dynamics = list(A = A_dyn, Q = q_heavy),
-  measurement = list(C = C_obs, R = R_meas),
-  y = y_track, k_max = 6L
-)
-gsf_max_k <- max(out_gsf$summary$n_components)
-gsf_rmse <- sqrt(mean((out_gsf$mean[, 1L] - truth[, 1L])^2))
-kalman_rmse <- sqrt(mean((out_verb$mean[, 1L] - truth[, 1L])^2))
-```
-
-``` r
-
-gsf_df <- data.frame(
-  t = seq_len(n_steps), truth = truth[, 1L], y = y_track,
-  filtered = out_gsf$mean[, 1L]
-)
-ggplot2::ggplot(gsf_df, ggplot2::aes(t)) +
-  ggplot2::geom_point(
-    ggplot2::aes(y = y, colour = "noisy reading"), size = 1.3, alpha = 0.7
-  ) +
-  ggplot2::geom_line(
-    ggplot2::aes(y = truth, colour = "latent truth"), linewidth = 0.8
-  ) +
-  ggplot2::geom_line(
-    ggplot2::aes(y = filtered, colour = "Gaussian-sum filter"),
-    linewidth = 0.9
-  ) +
-  ggplot2::scale_colour_manual(
-    name = NULL,
-    values = c(
-      "noisy reading" = "grey60",
-      "latent truth" = "#0072B2",
-      "Gaussian-sum filter" = "#D55E00"
-    )
-  ) +
-  ggplot2::labs(
-    x = "time step", y = "position",
-    title = "A bounded Gaussian-sum filter in one call"
-  ) +
-  ggplot2::theme_minimal(base_size = 11) +
-  ggplot2::theme(legend.position = "top")
-```
+\
+`gsf_df`` ``<-`` `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(`\
+`  t ``=`` `[`seq_len`](https://rdrr.io/r/base/seq.html)`(``n_steps``)``, truth ``=`` ``truth``[``, ``1L``]``, y ``=`` ``y_track``,`\
+`  filtered ``=`` ``out_gsf``$``mean``[``, ``1L``]`\
+`)`\
+`ggplot2``::`[`ggplot`](https://ggplot2.tidyverse.org/reference/ggplot.html)`(``gsf_df``, ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``t``)``)`` ``+`\
+`  ``ggplot2``::`[`geom_point`](https://ggplot2.tidyverse.org/reference/geom_point.html)`(`\
+`    ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``y ``=`` ``y``, colour ``=`` ``"noisy reading"``)``, size ``=`` ``1.3``, alpha ``=`` ``0.7`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`geom_line`](https://ggplot2.tidyverse.org/reference/geom_path.html)`(`\
+`    ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``y ``=`` ``truth``, colour ``=`` ``"latent truth"``)``, linewidth ``=`` ``0.8`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`geom_line`](https://ggplot2.tidyverse.org/reference/geom_path.html)`(`\
+`    ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``y ``=`` ``filtered``, colour ``=`` ``"Gaussian-sum filter"``)``,`\
+`    linewidth ``=`` ``0.9`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`scale_colour_manual`](https://ggplot2.tidyverse.org/reference/scale_manual.html)`(`\
+`    name ``=`` ``NULL``,`\
+`    values ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(`\
+`      ``"noisy reading"`` ``=`` ``"grey60"``,`\
+`      ``"latent truth"`` ``=`` ``"#0072B2"``,`\
+`      ``"Gaussian-sum filter"`` ``=`` ``"#D55E00"`\
+`    ``)`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`labs`](https://ggplot2.tidyverse.org/reference/labs.html)`(`\
+`    x ``=`` ``"time step"``, y ``=`` ``"position"``,`\
+`    title ``=`` ``"A bounded Gaussian-sum filter in one call"`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`theme_minimal`](https://ggplot2.tidyverse.org/reference/ggtheme.html)`(``base_size ``=`` ``11``)`` ``+`\
+`  ``ggplot2``::`[`theme`](https://ggplot2.tidyverse.org/reference/theme.html)`(``legend.position ``=`` ``"top"``)`
 
 ![A time series with grey noisy position readings, a latent-truth line,
 and a Gaussian-sum-filter estimate line following the truth
@@ -772,58 +730,50 @@ initial variance plus $`Q`$.
 
 The competitors install from CRAN once and load as usual:
 
-``` r
+\
+[`install.packages`](https://rdrr.io/r/utils/install.packages.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``"dlm"``, ``"KFAS"``, ``"nimble"``, ``"nimbleSMC"``)``)`
 
-install.packages(c("dlm", "KFAS", "nimble", "nimbleSMC"))
-```
+\
+[`library`](https://rdrr.io/r/base/library.html)`(``dlm``)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`KFAS`](https://github.com/helske/KFAS)`)`
 
-``` r
+\
+`y_nile`` ``<-`` `[`as.numeric`](https://rdrr.io/r/base/numeric.html)`(``datasets``::`[`Nile`](https://rdrr.io/r/datasets/Nile.html)`)`\
+`n_nile`` ``<-`` `[`length`](https://rdrr.io/r/base/length.html)`(``y_nile``)`\
+`build_level`` ``<-`` ``function``(``p``)`` `[`dlmModPoly`](https://rdrr.io/pkg/dlm/man/dlmModPoly.html)`(``1L``, dV ``=`` `[`exp`](https://rdrr.io/r/base/Log.html)`(``p``[``1L``]``)``, dW ``=`` `[`exp`](https://rdrr.io/r/base/Log.html)`(``p``[``2L``]``)``)`\
+`fit_nile`` ``<-`` `[`dlmMLE`](https://rdrr.io/pkg/dlm/man/dlmMLE.html)`(``y_nile``, parm ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(`[`log`](https://rdrr.io/r/base/Log.html)`(``15000``)``, `[`log`](https://rdrr.io/r/base/Log.html)`(``1500``)``)``,`\
+`                   build ``=`` ``build_level``)`\
+`h_nile`` ``<-`` `[`exp`](https://rdrr.io/r/base/Log.html)`(``fit_nile``$``par``[``1L``]``)``   ``# observation noise variance`\
+`q_nile`` ``<-`` `[`exp`](https://rdrr.io/r/base/Log.html)`(``fit_nile``$``par``[``2L``]``)``   ``# variance of the level increments`\
+`m0_nile`` ``<-`` ``1000`\
+`c0_nile`` ``<-`` ``1e5`
 
-library(dlm)
-library(KFAS)
-```
-
-``` r
-
-y_nile <- as.numeric(datasets::Nile)
-n_nile <- length(y_nile)
-build_level <- function(p) dlmModPoly(1L, dV = exp(p[1L]), dW = exp(p[2L]))
-fit_nile <- dlmMLE(y_nile, parm = c(log(15000), log(1500)),
-                   build = build_level)
-h_nile <- exp(fit_nile$par[1L])   # observation noise variance
-q_nile <- exp(fit_nile$par[2L])   # variance of the level increments
-m0_nile <- 1000
-c0_nile <- 1e5
-```
-
-``` r
-
-mod_dlm <- dlmModPoly(1L, dV = h_nile, dW = q_nile, m0 = m0_nile,
-                      C0 = c0_nile)
-f_dlm <- dlmFilter(y_nile, mod_dlm)
-mean_dlm <- as.numeric(f_dlm$m[-1L])
-var_dlm <- unlist(dlmSvd2var(f_dlm$U.C, f_dlm$D.C))[-1L]
-ll_dlm <- -dlmLL(y_nile, mod_dlm) - n_nile / 2 * log(2 * pi)
-
-mod_kfas <- SSModel(y_nile ~ SSMtrend(1L, Q = q_nile, a1 = m0_nile,
-                                      P1 = c0_nile + q_nile), H = h_nile)
-f_kfas <- KFS(mod_kfas, filtering = "state", smoothing = "none")
-mean_kfas <- as.numeric(f_kfas$att)
-var_kfas <- as.numeric(f_kfas$Ptt)
-ll_kfas <- as.numeric(logLik(mod_kfas))
-
-prior_nile <- gmm(weights = 1, means = list(m0_nile),
-                  covariances = list(matrix(c0_nile)))
-f_pm <- gmm_filter(
-  prior_nile,
-  dynamics = list(A = matrix(1), Q = matrix(q_nile)),
-  measurement = list(C = matrix(1), R = matrix(h_nile)),
-  y = y_nile, ridge_eps = 0
-)
-mean_pm <- f_pm$mean[, 1L]
-var_pm <- f_pm$summary$sd_1^2
-ll_pm <- sum(f_pm$summary$log_evidence)
-```
+\
+`mod_dlm`` ``<-`` `[`dlmModPoly`](https://rdrr.io/pkg/dlm/man/dlmModPoly.html)`(``1L``, dV ``=`` ``h_nile``, dW ``=`` ``q_nile``, m0 ``=`` ``m0_nile``,`\
+`                      C0 ``=`` ``c0_nile``)`\
+`f_dlm`` ``<-`` `[`dlmFilter`](https://rdrr.io/pkg/dlm/man/dlmFilter.html)`(``y_nile``, ``mod_dlm``)`\
+`mean_dlm`` ``<-`` `[`as.numeric`](https://rdrr.io/r/base/numeric.html)`(``f_dlm``$``m``[``-``1L``]``)`\
+`var_dlm`` ``<-`` `[`unlist`](https://rdrr.io/r/base/unlist.html)`(`[`dlmSvd2var`](https://rdrr.io/pkg/dlm/man/dlmSvd2var.html)`(``f_dlm``$``U.C``, ``f_dlm``$``D.C``)``)``[``-``1L``]`\
+`ll_dlm`` ``<-`` ``-`[`dlmLL`](https://rdrr.io/pkg/dlm/man/dlmLL.html)`(``y_nile``, ``mod_dlm``)`` ``-`` ``n_nile`` ``/`` ``2`` ``*`` `[`log`](https://rdrr.io/r/base/Log.html)`(``2`` ``*`` ``pi``)`\
+\
+`mod_kfas`` ``<-`` `[`SSModel`](https://rdrr.io/pkg/KFAS/man/SSModel.html)`(``y_nile`` ``~`` `[`SSMtrend`](https://rdrr.io/pkg/KFAS/man/SSModel.html)`(``1L``, Q ``=`` ``q_nile``, a1 ``=`` ``m0_nile``,`\
+`                                      P1 ``=`` ``c0_nile`` ``+`` ``q_nile``)``, H ``=`` ``h_nile``)`\
+`f_kfas`` ``<-`` `[`KFS`](https://rdrr.io/pkg/KFAS/man/KFS.html)`(``mod_kfas``, filtering ``=`` ``"state"``, smoothing ``=`` ``"none"``)`\
+`mean_kfas`` ``<-`` `[`as.numeric`](https://rdrr.io/r/base/numeric.html)`(``f_kfas``$``att``)`\
+`var_kfas`` ``<-`` `[`as.numeric`](https://rdrr.io/r/base/numeric.html)`(``f_kfas``$``Ptt``)`\
+`ll_kfas`` ``<-`` `[`as.numeric`](https://rdrr.io/r/base/numeric.html)`(`[`logLik`](https://rdrr.io/r/stats/logLik.html)`(``mod_kfas``)``)`\
+\
+`prior_nile`` ``<-`` `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(``weights ``=`` ``1``, means ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``m0_nile``)``,`\
+`                  covariances ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`matrix`](https://rdrr.io/r/base/matrix.html)`(``c0_nile``)``)``)`\
+`f_pm`` ``<-`` `[`gmm_filter`](https://max578.github.io/proxymix/reference/gmm_filter.md)`(`\
+`  ``prior_nile``,`\
+`  dynamics ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``A ``=`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``1``)``, Q ``=`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``q_nile``)``)``,`\
+`  measurement ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``C ``=`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``1``)``, R ``=`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``h_nile``)``)``,`\
+`  y ``=`` ``y_nile``, ridge_eps ``=`` ``0`\
+`)`\
+`mean_pm`` ``<-`` ``f_pm``$``mean``[``, ``1L``]`\
+`var_pm`` ``<-`` ``f_pm``$``summary``$``sd_1``^``2`\
+`ll_pm`` ``<-`` `[`sum`](https://rdrr.io/r/base/sum.html)`(``f_pm``$``summary``$``log_evidence``)`
 
 [`dlmLL()`](https://rdrr.io/pkg/dlm/man/dlmLL.html) returns the negative
 log-likelihood without the $`\tfrac{n}{2} \log 2\pi`$ term, which the
@@ -862,78 +812,72 @@ a bootstrap particle filter (Gordon et al., 1993) under the same
 two-component noise, written out in full below and run with 10 000
 particles.
 
-``` r
+\
+`r_mix_nile`` ``<-`` `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(`\
+`  weights ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``0.9``, ``0.1``)``, means ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``0``, ``0``)``,`\
+`  covariances ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`matrix`](https://rdrr.io/r/base/matrix.html)`(``h_nile`` ``/`` ``1.9``)``, `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``10`` ``*`` ``h_nile`` ``/`` ``1.9``)``)`\
+`)`\
+`f_mix`` ``<-`` `[`gmm_filter`](https://max578.github.io/proxymix/reference/gmm_filter.md)`(`\
+`  ``prior_nile``,`\
+`  dynamics ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``A ``=`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``1``)``, Q ``=`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``q_nile``)``)``,`\
+`  measurement ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``C ``=`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``1``)``, R ``=`` ``r_mix_nile``)``,`\
+`  y ``=`` ``y_nile``, k_max ``=`` ``4L`\
+`)`\
+`mean_mix`` ``<-`` ``f_mix``$``mean``[``, ``1L``]`\
+`ll_mix`` ``<-`` `[`sum`](https://rdrr.io/r/base/sum.html)`(``f_mix``$``summary``$``log_evidence``)`
 
-r_mix_nile <- gmm(
-  weights = c(0.9, 0.1), means = list(0, 0),
-  covariances = list(matrix(h_nile / 1.9), matrix(10 * h_nile / 1.9))
-)
-f_mix <- gmm_filter(
-  prior_nile,
-  dynamics = list(A = matrix(1), Q = matrix(q_nile)),
-  measurement = list(C = matrix(1), R = r_mix_nile),
-  y = y_nile, k_max = 4L
-)
-mean_mix <- f_mix$mean[, 1L]
-ll_mix <- sum(f_mix$summary$log_evidence)
-```
+\
+`bootstrap_filter`` ``<-`` ``function``(``y``, ``n_particles``, ``m0``, ``c0``, ``q``, ``r_sd``, ``r_w``)`` ``{`\
+`  ``n`` ``<-`` `[`length`](https://rdrr.io/r/base/length.html)`(``y``)`\
+`  ``particles`` ``<-`` `[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n_particles``, ``m0``, `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(``c0``)``)`\
+`  ``filtered`` ``<-`` `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``n``)`\
+`  ``log_lik`` ``<-`` ``0`\
+`  ``for`` ``(``t`` ``in`` `[`seq_len`](https://rdrr.io/r/base/seq.html)`(``n``)``)`` ``{`\
+`    ``particles`` ``<-`` ``particles`` ``+`` `[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n_particles``, ``0``, `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(``q``)``)`\
+`    ``lik`` ``<-`` ``r_w``[``1L``]`` ``*`` `[`dnorm`](https://rdrr.io/r/stats/Normal.html)`(``y``[``t``]``, ``particles``, ``r_sd``[``1L``]``)`` ``+`\
+`      ``r_w``[``2L``]`` ``*`` `[`dnorm`](https://rdrr.io/r/stats/Normal.html)`(``y``[``t``]``, ``particles``, ``r_sd``[``2L``]``)`\
+`    ``log_lik`` ``<-`` ``log_lik`` ``+`` `[`log`](https://rdrr.io/r/base/Log.html)`(`[`mean`](https://rdrr.io/r/base/mean.html)`(``lik``)``)`\
+`    ``filtered``[``t``]`` ``<-`` `[`sum`](https://rdrr.io/r/base/sum.html)`(``lik`` ``*`` ``particles``)`` ``/`` `[`sum`](https://rdrr.io/r/base/sum.html)`(``lik``)`\
+`    ``particles`` ``<-`` ``particles``[`[`sample.int`](https://rdrr.io/r/base/sample.html)`(``n_particles``, ``n_particles``,`\
+`                                      replace ``=`` ``TRUE``, prob ``=`` ``lik``)``]`\
+`  ``}`\
+`  `[`list`](https://rdrr.io/r/base/list.html)`(``mean ``=`` ``filtered``, log_lik ``=`` ``log_lik``)`\
+`}`\
+\
+[`set.seed`](https://rdrr.io/r/base/Random.html)`(``20260925``)`\
+`pf_nile`` ``<-`` ``bootstrap_filter``(`\
+`  ``y_nile``, ``10000L``, ``m0_nile``, ``c0_nile``, ``q_nile``,`\
+`  r_sd ``=`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``h_nile`` ``/`` ``1.9``, ``10`` ``*`` ``h_nile`` ``/`` ``1.9``)``)``, r_w ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``0.9``, ``0.1``)`\
+`)`
 
-``` r
-
-bootstrap_filter <- function(y, n_particles, m0, c0, q, r_sd, r_w) {
-  n <- length(y)
-  particles <- rnorm(n_particles, m0, sqrt(c0))
-  filtered <- numeric(n)
-  log_lik <- 0
-  for (t in seq_len(n)) {
-    particles <- particles + rnorm(n_particles, 0, sqrt(q))
-    lik <- r_w[1L] * dnorm(y[t], particles, r_sd[1L]) +
-      r_w[2L] * dnorm(y[t], particles, r_sd[2L])
-    log_lik <- log_lik + log(mean(lik))
-    filtered[t] <- sum(lik * particles) / sum(lik)
-    particles <- particles[sample.int(n_particles, n_particles,
-                                      replace = TRUE, prob = lik)]
-  }
-  list(mean = filtered, log_lik = log_lik)
-}
-
-set.seed(20260925)
-pf_nile <- bootstrap_filter(
-  y_nile, 10000L, m0_nile, c0_nile, q_nile,
-  r_sd = sqrt(c(h_nile / 1.9, 10 * h_nile / 1.9)), r_w = c(0.9, 0.1)
-)
-```
-
-``` r
-
-nile_df <- data.frame(
-  year = as.numeric(time(datasets::Nile)), flow = y_nile,
-  gaussian = mean_pm, mixture = mean_mix, particle = pf_nile$mean
-)
-ggplot2::ggplot(nile_df, ggplot2::aes(year)) +
-  ggplot2::geom_point(ggplot2::aes(y = flow, colour = "annual flow"),
-                      size = 1.3, alpha = 0.7) +
-  ggplot2::geom_line(ggplot2::aes(y = gaussian, colour = "Gaussian noise"),
-                     linewidth = 0.8) +
-  ggplot2::geom_line(
-    ggplot2::aes(y = mixture, colour = "two-component noise"),
-    linewidth = 0.9
-  ) +
-  ggplot2::geom_line(
-    ggplot2::aes(y = particle, colour = "particle filter"),
-    linewidth = 0.7, linetype = "dotted"
-  ) +
-  ggplot2::scale_colour_manual(
-    name = NULL,
-    values = c("annual flow" = "grey60", "Gaussian noise" = "#0072B2",
-               "two-component noise" = "#D55E00",
-               "particle filter" = "#000000")
-  ) +
-  ggplot2::labs(x = "year", y = expression("flow, " * 10^8 * " m"^3),
-                title = "The Nile under Gaussian and two-component noise") +
-  ggplot2::theme_minimal(base_size = 11) +
-  ggplot2::theme(legend.position = "top")
-```
+\
+`nile_df`` ``<-`` `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(`\
+`  year ``=`` `[`as.numeric`](https://rdrr.io/r/base/numeric.html)`(`[`time`](https://rdrr.io/r/stats/time.html)`(``datasets``::`[`Nile`](https://rdrr.io/r/datasets/Nile.html)`)``)``, flow ``=`` ``y_nile``,`\
+`  gaussian ``=`` ``mean_pm``, mixture ``=`` ``mean_mix``, particle ``=`` ``pf_nile``$``mean`\
+`)`\
+`ggplot2``::`[`ggplot`](https://ggplot2.tidyverse.org/reference/ggplot.html)`(``nile_df``, ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``year``)``)`` ``+`\
+`  ``ggplot2``::`[`geom_point`](https://ggplot2.tidyverse.org/reference/geom_point.html)`(``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``y ``=`` ``flow``, colour ``=`` ``"annual flow"``)``,`\
+`                      size ``=`` ``1.3``, alpha ``=`` ``0.7``)`` ``+`\
+`  ``ggplot2``::`[`geom_line`](https://ggplot2.tidyverse.org/reference/geom_path.html)`(``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``y ``=`` ``gaussian``, colour ``=`` ``"Gaussian noise"``)``,`\
+`                     linewidth ``=`` ``0.8``)`` ``+`\
+`  ``ggplot2``::`[`geom_line`](https://ggplot2.tidyverse.org/reference/geom_path.html)`(`\
+`    ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``y ``=`` ``mixture``, colour ``=`` ``"two-component noise"``)``,`\
+`    linewidth ``=`` ``0.9`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`geom_line`](https://ggplot2.tidyverse.org/reference/geom_path.html)`(`\
+`    ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``y ``=`` ``particle``, colour ``=`` ``"particle filter"``)``,`\
+`    linewidth ``=`` ``0.7``, linetype ``=`` ``"dotted"`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`scale_colour_manual`](https://ggplot2.tidyverse.org/reference/scale_manual.html)`(`\
+`    name ``=`` ``NULL``,`\
+`    values ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"annual flow"`` ``=`` ``"grey60"``, ``"Gaussian noise"`` ``=`` ``"#0072B2"``,`\
+`               ``"two-component noise"`` ``=`` ``"#D55E00"``,`\
+`               ``"particle filter"`` ``=`` ``"#000000"``)`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`labs`](https://ggplot2.tidyverse.org/reference/labs.html)`(``x ``=`` ``"year"``, y ``=`` `[`expression`](https://rdrr.io/r/base/expression.html)`(``"flow, "`` ``*`` ``10``^``8`` ``*`` ``" m"``^``3``)``,`\
+`                title ``=`` ``"The Nile under Gaussian and two-component noise"``)`` ``+`\
+`  ``ggplot2``::`[`theme_minimal`](https://ggplot2.tidyverse.org/reference/ggtheme.html)`(``base_size ``=`` ``11``)`` ``+`\
+`  ``ggplot2``::`[`theme`](https://ggplot2.tidyverse.org/reference/theme.html)`(``legend.position ``=`` ``"top"``)`
 
 ![A time series of 100 annual Nile flow readings as grey points, with
 three filtered-level lines: the Gaussian filter, the four-component
@@ -956,7 +900,7 @@ Log-likelihood of the 100 Nile readings under each filter, and the
 largest and mean absolute gap between its filtered level and the
 particle filter’s, the reference, over the 100 years. The particle
 filter has no gap cells because it is the reference. {.table
-style="width:100%;"}
+style="width:99%;"}
 
 The two-component noise lowers the log-likelihood of the series by 2.55
 against the Gaussian noise of the same variance, so the Nile readings do
@@ -1002,173 +946,171 @@ its stored output. For a quick reduced run, change the line
 below add up to about 11 minutes; the rest is compiling nimble’s two
 models and time the process spent waiting rather than computing.
 
-``` r
-
-library(proxymix)
-library(dlm)
-library(KFAS)
-library(nimble)
-library(nimbleSMC)
-
-n_t <- 200L           # steps per series
-n_particles <- 10000L
-n_rep <- 300L         # series
-
-q_state <- 0.25       # variance of the level increments
-r_sd <- c(1, 5)       # noise standard deviations, core and outlier
-r_w <- c(0.9, 0.1)    # their weights
-r_var <- sum(r_w * r_sd^2)
-m0 <- 0
-c0 <- 10
-
-# scale of a Student-t noise with 4 degrees of freedom, fitted by maximum
-# likelihood to the two-component noise
-t_df <- 4
-neg_ll_t <- function(s) {
-  log(s) - integrate(function(v) {
-    (r_w[1L] * dnorm(v, 0, r_sd[1L]) + r_w[2L] * dnorm(v, 0, r_sd[2L])) *
-      dt(v / s, t_df, log = TRUE)
-  }, -60, 60)$value
-}
-t_scale <- optimize(neg_ll_t, c(0.3, 5))$minimum
-
-bootstrap_filter <- function(y, n_particles, m0, c0, q, r_sd, r_w) {
-  n <- length(y)
-  particles <- rnorm(n_particles, m0, sqrt(c0))
-  filtered <- numeric(n)
-  log_lik <- 0
-  for (t in seq_len(n)) {
-    particles <- particles + rnorm(n_particles, 0, sqrt(q))
-    lik <- r_w[1L] * dnorm(y[t], particles, r_sd[1L]) +
-      r_w[2L] * dnorm(y[t], particles, r_sd[2L])
-    log_lik <- log_lik + log(mean(lik))
-    filtered[t] <- sum(lik * particles) / sum(lik)
-    particles <- particles[sample.int(n_particles, n_particles,
-                                      replace = TRUE, prob = lik)]
-  }
-  list(mean = filtered, log_lik = log_lik)
-}
-
-# the two-component noise as a nimble distribution
-dmixnorm <- nimbleFunction(
-  run = function(x = double(0), mean = double(0), sd1 = double(0),
-                 sd2 = double(0), w = double(0),
-                 log = integer(0, default = 0)) {
-    returnType(double(0))
-    d <- w * dnorm(x, mean, sd1) + (1 - w) * dnorm(x, mean, sd2)
-    if (log) return(log(d)) else return(d)
-  }
-)
-rmixnorm <- nimbleFunction(
-  run = function(n = integer(0), mean = double(0), sd1 = double(0),
-                 sd2 = double(0), w = double(0)) {
-    returnType(double(0))
-    if (runif(1) < w) return(rnorm(1, mean, sd1))
-    return(rnorm(1, mean, sd2))
-  }
-)
-registerDistributions(list(
-  dmixnorm = list(BUGSdist = "dmixnorm(mean, sd1, sd2, w)",
-                  types = c("value = double(0)"))
-))
-
-code_mix <- nimbleCode({
-  x[1] ~ dnorm(m0, var = c0 + q_state)
-  y[1] ~ dmixnorm(x[1], sd1, sd2, w1)
-  for (t in 2:n_t) {
-    x[t] ~ dnorm(x[t - 1], var = q_state)
-    y[t] ~ dmixnorm(x[t], sd1, sd2, w1)
-  }
-})
-code_t <- nimbleCode({
-  x[1] ~ dnorm(m0, var = c0 + q_state)
-  y[1] ~ dt(mu = x[1], sigma = t_scale, df = t_df)
-  for (t in 2:n_t) {
-    x[t] ~ dnorm(x[t - 1], var = q_state)
-    y[t] ~ dt(mu = x[t], sigma = t_scale, df = t_df)
-  }
-})
-
-# one compiled model and filter per noise model; the data are replaced
-# in the compiled model for each series
-build_filter <- function(code) {
-  consts <- list(n_t = n_t, m0 = m0, c0 = c0, q_state = q_state,
-                 sd1 = r_sd[1L], sd2 = r_sd[2L], w1 = r_w[1L],
-                 t_df = t_df, t_scale = t_scale)
-  model <- nimbleModel(code, data = list(y = rep(0, n_t)),
-                       constants = consts, inits = list(x = rep(0, n_t)))
-  cmodel <- compileNimble(model)
-  filt <- buildBootstrapFilter(model, nodes = "x",
-                               control = list(saveAll = TRUE, thresh = 1))
-  list(model = cmodel, filter = compileNimble(filt, project = model))
-}
-nimble_mix <- build_filter(code_mix)
-nimble_t <- build_filter(code_t)
-
-run_nimble <- function(nb, y) {
-  nb$model$y <- y
-  log_lik <- nb$filter$run(n_particles)
-  list(mean = colMeans(as.matrix(nb$filter$mvEWSamples, "x")),
-       log_lik = log_lik)
-}
-
-prior_sim <- gmm(weights = 1, means = list(m0), covariances = list(matrix(c0)))
-r_mix_sim <- gmm(weights = r_w, means = list(0, 0),
-                 covariances = list(matrix(r_sd[1L]^2), matrix(r_sd[2L]^2)))
-mod_dlm_sim <- dlmModPoly(1L, dV = r_var, dW = q_state, m0 = m0, C0 = c0)
-
-one_series <- function(r) {
-  set.seed(r)
-  x <- m0 + sqrt(c0) * rnorm(1L) + cumsum(rnorm(n_t, 0, sqrt(q_state)))
-  outlier <- runif(n_t) < r_w[2L]
-  y <- x + rnorm(n_t, 0, ifelse(outlier, r_sd[2L], r_sd[1L]))
-
-  timed <- function(expr) {
-    secs <- system.time(out <- expr)[["elapsed"]]
-    c(out, secs = secs)
-  }
-  fits <- list(
-    "proxymix, two-component noise" = timed({
-      f <- gmm_filter(prior_sim,
-                      dynamics = list(A = matrix(1), Q = matrix(q_state)),
-                      measurement = list(C = matrix(1), R = r_mix_sim),
-                      y = y, k_max = 4L)
-      list(mean = f$mean[, 1L], log_lik = sum(f$summary$log_evidence))
-    }),
-    "dlm, Gaussian noise" = timed({
-      f <- dlmFilter(y, mod_dlm_sim)
-      list(mean = as.numeric(f$m[-1L]),
-           log_lik = -dlmLL(y, mod_dlm_sim) - n_t / 2 * log(2 * pi))
-    }),
-    "KFAS, Gaussian noise" = timed({
-      mod <- SSModel(y ~ SSMtrend(1L, Q = q_state, a1 = m0,
-                                  P1 = c0 + q_state), H = r_var)
-      f <- KFS(mod, filtering = "state", smoothing = "none")
-      list(mean = as.numeric(f$att), log_lik = as.numeric(logLik(mod)))
-    }),
-    "particle filter, two-component noise" = timed(
-      bootstrap_filter(y, n_particles, m0, c0, q_state, r_sd, r_w)
-    ),
-    "nimble, two-component noise" = timed(run_nimble(nimble_mix, y)),
-    "nimble, Student-t noise" = timed(run_nimble(nimble_t, y))
-  )
-  data.frame(
-    series = r, method = names(fits),
-    rmse = vapply(fits, function(f) sqrt(mean((f$mean - x)^2)), numeric(1L)),
-    log_lik = vapply(fits, function(f) f$log_lik, numeric(1L)),
-    secs = vapply(fits, function(f) f[["secs"]], numeric(1L)),
-    row.names = NULL
-  )
-}
-
-res <- do.call(rbind, lapply(seq_len(n_rep), one_series))
-
-sim_tab <- aggregate(cbind(rmse, log_lik, secs) ~ method, data = res,
-                     FUN = mean)
-sim_tab$rmse_se <- aggregate(rmse ~ method, data = res,
-                             FUN = function(v) sd(v) / sqrt(length(v)))$rmse
-sim_tab
-```
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(``dlm``)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`KFAS`](https://github.com/helske/KFAS)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`nimble`](https://r-nimble.org)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`nimbleSMC`](https://r-nimble.org)`)`\
+\
+`n_t`` ``<-`` ``200L``           ``# steps per series`\
+`n_particles`` ``<-`` ``10000L`\
+`n_rep`` ``<-`` ``300L``         ``# series`\
+\
+`q_state`` ``<-`` ``0.25``       ``# variance of the level increments`\
+`r_sd`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``1``, ``5``)``       ``# noise standard deviations, core and outlier`\
+`r_w`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``0.9``, ``0.1``)``    ``# their weights`\
+`r_var`` ``<-`` `[`sum`](https://rdrr.io/r/base/sum.html)`(``r_w`` ``*`` ``r_sd``^``2``)`\
+`m0`` ``<-`` ``0`\
+`c0`` ``<-`` ``10`\
+\
+`# scale of a Student-t noise with 4 degrees of freedom, fitted by maximum`\
+`# likelihood to the two-component noise`\
+`t_df`` ``<-`` ``4`\
+`neg_ll_t`` ``<-`` ``function``(``s``)`` ``{`\
+`  `[`log`](https://rdrr.io/r/base/Log.html)`(``s``)`` ``-`` `[`integrate`](https://rdrr.io/r/stats/integrate.html)`(``function``(``v``)`` ``{`\
+`    ``(``r_w``[``1L``]`` ``*`` `[`dnorm`](https://rdrr.io/r/stats/Normal.html)`(``v``, ``0``, ``r_sd``[``1L``]``)`` ``+`` ``r_w``[``2L``]`` ``*`` `[`dnorm`](https://rdrr.io/r/stats/Normal.html)`(``v``, ``0``, ``r_sd``[``2L``]``)``)`` ``*`\
+`      `[`dt`](https://rdrr.io/r/stats/TDist.html)`(``v`` ``/`` ``s``, ``t_df``, log ``=`` ``TRUE``)`\
+`  ``}``, ``-``60``, ``60``)``$``value`\
+`}`\
+`t_scale`` ``<-`` `[`optimize`](https://rdrr.io/r/stats/optimize.html)`(``neg_ll_t``, `[`c`](https://rdrr.io/r/base/c.html)`(``0.3``, ``5``)``)``$``minimum`\
+\
+`bootstrap_filter`` ``<-`` ``function``(``y``, ``n_particles``, ``m0``, ``c0``, ``q``, ``r_sd``, ``r_w``)`` ``{`\
+`  ``n`` ``<-`` `[`length`](https://rdrr.io/r/base/length.html)`(``y``)`\
+`  ``particles`` ``<-`` `[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n_particles``, ``m0``, `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(``c0``)``)`\
+`  ``filtered`` ``<-`` `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``n``)`\
+`  ``log_lik`` ``<-`` ``0`\
+`  ``for`` ``(``t`` ``in`` `[`seq_len`](https://rdrr.io/r/base/seq.html)`(``n``)``)`` ``{`\
+`    ``particles`` ``<-`` ``particles`` ``+`` `[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n_particles``, ``0``, `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(``q``)``)`\
+`    ``lik`` ``<-`` ``r_w``[``1L``]`` ``*`` `[`dnorm`](https://rdrr.io/r/stats/Normal.html)`(``y``[``t``]``, ``particles``, ``r_sd``[``1L``]``)`` ``+`\
+`      ``r_w``[``2L``]`` ``*`` `[`dnorm`](https://rdrr.io/r/stats/Normal.html)`(``y``[``t``]``, ``particles``, ``r_sd``[``2L``]``)`\
+`    ``log_lik`` ``<-`` ``log_lik`` ``+`` `[`log`](https://rdrr.io/r/base/Log.html)`(`[`mean`](https://rdrr.io/r/base/mean.html)`(``lik``)``)`\
+`    ``filtered``[``t``]`` ``<-`` `[`sum`](https://rdrr.io/r/base/sum.html)`(``lik`` ``*`` ``particles``)`` ``/`` `[`sum`](https://rdrr.io/r/base/sum.html)`(``lik``)`\
+`    ``particles`` ``<-`` ``particles``[`[`sample.int`](https://rdrr.io/r/base/sample.html)`(``n_particles``, ``n_particles``,`\
+`                                      replace ``=`` ``TRUE``, prob ``=`` ``lik``)``]`\
+`  ``}`\
+`  `[`list`](https://rdrr.io/r/base/list.html)`(``mean ``=`` ``filtered``, log_lik ``=`` ``log_lik``)`\
+`}`\
+\
+`# the two-component noise as a nimble distribution`\
+`dmixnorm`` ``<-`` `[`nimbleFunction`](https://rdrr.io/pkg/nimble/man/nimbleFunction.html)`(`\
+`  run ``=`` ``function``(``x`` ``=`` `[`double`](https://rdrr.io/r/base/double.html)`(``0``)``, ``mean`` ``=`` `[`double`](https://rdrr.io/r/base/double.html)`(``0``)``, ``sd1`` ``=`` `[`double`](https://rdrr.io/r/base/double.html)`(``0``)``,`\
+`                 ``sd2`` ``=`` `[`double`](https://rdrr.io/r/base/double.html)`(``0``)``, ``w`` ``=`` `[`double`](https://rdrr.io/r/base/double.html)`(``0``)``,`\
+`                 ``log`` ``=`` `[`integer`](https://rdrr.io/r/base/integer.html)`(``0``, default ``=`` ``0``)``)`` ``{`\
+`    ``returnType``(`[`double`](https://rdrr.io/r/base/double.html)`(``0``)``)`\
+`    ``d`` ``<-`` ``w`` ``*`` `[`dnorm`](https://rdrr.io/r/stats/Normal.html)`(``x``, ``mean``, ``sd1``)`` ``+`` ``(``1`` ``-`` ``w``)`` ``*`` `[`dnorm`](https://rdrr.io/r/stats/Normal.html)`(``x``, ``mean``, ``sd2``)`\
+`    ``if`` ``(``log``)`` `[`return`](https://rdrr.io/r/base/function.html)`(`[`log`](https://rdrr.io/r/base/Log.html)`(``d``)``)`` ``else`` `[`return`](https://rdrr.io/r/base/function.html)`(``d``)`\
+`  ``}`\
+`)`\
+`rmixnorm`` ``<-`` `[`nimbleFunction`](https://rdrr.io/pkg/nimble/man/nimbleFunction.html)`(`\
+`  run ``=`` ``function``(``n`` ``=`` `[`integer`](https://rdrr.io/r/base/integer.html)`(``0``)``, ``mean`` ``=`` `[`double`](https://rdrr.io/r/base/double.html)`(``0``)``, ``sd1`` ``=`` `[`double`](https://rdrr.io/r/base/double.html)`(``0``)``,`\
+`                 ``sd2`` ``=`` `[`double`](https://rdrr.io/r/base/double.html)`(``0``)``, ``w`` ``=`` `[`double`](https://rdrr.io/r/base/double.html)`(``0``)``)`` ``{`\
+`    ``returnType``(`[`double`](https://rdrr.io/r/base/double.html)`(``0``)``)`\
+`    ``if`` ``(`[`runif`](https://rdrr.io/r/stats/Uniform.html)`(``1``)`` ``<`` ``w``)`` `[`return`](https://rdrr.io/r/base/function.html)`(`[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``1``, ``mean``, ``sd1``)``)`\
+`    `[`return`](https://rdrr.io/r/base/function.html)`(`[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``1``, ``mean``, ``sd2``)``)`\
+`  ``}`\
+`)`\
+[`registerDistributions`](https://rdrr.io/pkg/nimble/man/registerDistributions.html)`(`[`list`](https://rdrr.io/r/base/list.html)`(`\
+`  dmixnorm ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``BUGSdist ``=`` ``"dmixnorm(mean, sd1, sd2, w)"``,`\
+`                  types ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"value = double(0)"``)``)`\
+`)``)`\
+\
+`code_mix`` ``<-`` `[`nimbleCode`](https://rdrr.io/pkg/nimble/man/nimbleCode.html)`(``{`\
+`  ``x``[``1``]`` ``~`` `[`dnorm`](https://rdrr.io/r/stats/Normal.html)`(``m0``, var ``=`` ``c0`` ``+`` ``q_state``)`\
+`  ``y``[``1``]`` ``~`` ``dmixnorm``(``x``[``1``]``, ``sd1``, ``sd2``, ``w1``)`\
+`  ``for`` ``(``t`` ``in`` ``2``:``n_t``)`` ``{`\
+`    ``x``[``t``]`` ``~`` `[`dnorm`](https://rdrr.io/r/stats/Normal.html)`(``x``[``t`` ``-`` ``1``]``, var ``=`` ``q_state``)`\
+`    ``y``[``t``]`` ``~`` ``dmixnorm``(``x``[``t``]``, ``sd1``, ``sd2``, ``w1``)`\
+`  ``}`\
+`}``)`\
+`code_t`` ``<-`` `[`nimbleCode`](https://rdrr.io/pkg/nimble/man/nimbleCode.html)`(``{`\
+`  ``x``[``1``]`` ``~`` `[`dnorm`](https://rdrr.io/r/stats/Normal.html)`(``m0``, var ``=`` ``c0`` ``+`` ``q_state``)`\
+`  ``y``[``1``]`` ``~`` `[`dt`](https://rdrr.io/r/stats/TDist.html)`(``mu ``=`` ``x``[``1``]``, sigma ``=`` ``t_scale``, df ``=`` ``t_df``)`\
+`  ``for`` ``(``t`` ``in`` ``2``:``n_t``)`` ``{`\
+`    ``x``[``t``]`` ``~`` `[`dnorm`](https://rdrr.io/r/stats/Normal.html)`(``x``[``t`` ``-`` ``1``]``, var ``=`` ``q_state``)`\
+`    ``y``[``t``]`` ``~`` `[`dt`](https://rdrr.io/r/stats/TDist.html)`(``mu ``=`` ``x``[``t``]``, sigma ``=`` ``t_scale``, df ``=`` ``t_df``)`\
+`  ``}`\
+`}``)`\
+\
+`# one compiled model and filter per noise model; the data are replaced`\
+`# in the compiled model for each series`\
+`build_filter`` ``<-`` ``function``(``code``)`` ``{`\
+`  ``consts`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(``n_t ``=`` ``n_t``, m0 ``=`` ``m0``, c0 ``=`` ``c0``, q_state ``=`` ``q_state``,`\
+`                 sd1 ``=`` ``r_sd``[``1L``]``, sd2 ``=`` ``r_sd``[``2L``]``, w1 ``=`` ``r_w``[``1L``]``,`\
+`                 t_df ``=`` ``t_df``, t_scale ``=`` ``t_scale``)`\
+`  ``model`` ``<-`` `[`nimbleModel`](https://rdrr.io/pkg/nimble/man/nimbleModel.html)`(``code``, data ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``y ``=`` `[`rep`](https://rdrr.io/r/base/rep.html)`(``0``, ``n_t``)``)``,`\
+`                       constants ``=`` ``consts``, inits ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``x ``=`` `[`rep`](https://rdrr.io/r/base/rep.html)`(``0``, ``n_t``)``)``)`\
+`  ``cmodel`` ``<-`` `[`compileNimble`](https://rdrr.io/pkg/nimble/man/compileNimble.html)`(``model``)`\
+`  ``filt`` ``<-`` `[`buildBootstrapFilter`](https://rdrr.io/pkg/nimble/man/buildBootstrapFilter.html)`(``model``, nodes ``=`` ``"x"``,`\
+`                               control ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``saveAll ``=`` ``TRUE``, thresh ``=`` ``1``)``)`\
+`  `[`list`](https://rdrr.io/r/base/list.html)`(``model ``=`` ``cmodel``, filter ``=`` `[`compileNimble`](https://rdrr.io/pkg/nimble/man/compileNimble.html)`(``filt``, project ``=`` ``model``)``)`\
+`}`\
+`nimble_mix`` ``<-`` ``build_filter``(``code_mix``)`\
+`nimble_t`` ``<-`` ``build_filter``(``code_t``)`\
+\
+`run_nimble`` ``<-`` ``function``(``nb``, ``y``)`` ``{`\
+`  ``nb``$``model``$``y`` ``<-`` ``y`\
+`  ``log_lik`` ``<-`` ``nb``$``filter``$``run``(``n_particles``)`\
+`  `[`list`](https://rdrr.io/r/base/list.html)`(``mean ``=`` `[`colMeans`](https://rdrr.io/r/base/colSums.html)`(`[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(``nb``$``filter``$``mvEWSamples``, ``"x"``)``)``,`\
+`       log_lik ``=`` ``log_lik``)`\
+`}`\
+\
+`prior_sim`` ``<-`` `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(``weights ``=`` ``1``, means ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``m0``)``, covariances ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`matrix`](https://rdrr.io/r/base/matrix.html)`(``c0``)``)``)`\
+`r_mix_sim`` ``<-`` `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(``weights ``=`` ``r_w``, means ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``0``, ``0``)``,`\
+`                 covariances ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`matrix`](https://rdrr.io/r/base/matrix.html)`(``r_sd``[``1L``]``^``2``)``, `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``r_sd``[``2L``]``^``2``)``)``)`\
+`mod_dlm_sim`` ``<-`` `[`dlmModPoly`](https://rdrr.io/pkg/dlm/man/dlmModPoly.html)`(``1L``, dV ``=`` ``r_var``, dW ``=`` ``q_state``, m0 ``=`` ``m0``, C0 ``=`` ``c0``)`\
+\
+`one_series`` ``<-`` ``function``(``r``)`` ``{`\
+`  `[`set.seed`](https://rdrr.io/r/base/Random.html)`(``r``)`\
+`  ``x`` ``<-`` ``m0`` ``+`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(``c0``)`` ``*`` `[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``1L``)`` ``+`` `[`cumsum`](https://rdrr.io/r/base/cumsum.html)`(`[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n_t``, ``0``, `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(``q_state``)``)``)`\
+`  ``outlier`` ``<-`` `[`runif`](https://rdrr.io/r/stats/Uniform.html)`(``n_t``)`` ``<`` ``r_w``[``2L``]`\
+`  ``y`` ``<-`` ``x`` ``+`` `[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n_t``, ``0``, `[`ifelse`](https://rdrr.io/r/base/ifelse.html)`(``outlier``, ``r_sd``[``2L``]``, ``r_sd``[``1L``]``)``)`\
+\
+`  ``timed`` ``<-`` ``function``(``expr``)`` ``{`\
+`    ``secs`` ``<-`` `[`system.time`](https://rdrr.io/r/base/system.time.html)`(``out`` ``<-`` ``expr``)``[[``"elapsed"``]``]`\
+`    `[`c`](https://rdrr.io/r/base/c.html)`(``out``, secs ``=`` ``secs``)`\
+`  ``}`\
+`  ``fits`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(`\
+`    ``"proxymix, two-component noise"`` ``=`` ``timed``(``{`\
+`      ``f`` ``<-`` `[`gmm_filter`](https://max578.github.io/proxymix/reference/gmm_filter.md)`(``prior_sim``,`\
+`                      dynamics ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``A ``=`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``1``)``, Q ``=`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``q_state``)``)``,`\
+`                      measurement ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``C ``=`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``1``)``, R ``=`` ``r_mix_sim``)``,`\
+`                      y ``=`` ``y``, k_max ``=`` ``4L``)`\
+`      `[`list`](https://rdrr.io/r/base/list.html)`(``mean ``=`` ``f``$``mean``[``, ``1L``]``, log_lik ``=`` `[`sum`](https://rdrr.io/r/base/sum.html)`(``f``$``summary``$``log_evidence``)``)`\
+`    ``}``)``,`\
+`    ``"dlm, Gaussian noise"`` ``=`` ``timed``(``{`\
+`      ``f`` ``<-`` `[`dlmFilter`](https://rdrr.io/pkg/dlm/man/dlmFilter.html)`(``y``, ``mod_dlm_sim``)`\
+`      `[`list`](https://rdrr.io/r/base/list.html)`(``mean ``=`` `[`as.numeric`](https://rdrr.io/r/base/numeric.html)`(``f``$``m``[``-``1L``]``)``,`\
+`           log_lik ``=`` ``-`[`dlmLL`](https://rdrr.io/pkg/dlm/man/dlmLL.html)`(``y``, ``mod_dlm_sim``)`` ``-`` ``n_t`` ``/`` ``2`` ``*`` `[`log`](https://rdrr.io/r/base/Log.html)`(``2`` ``*`` ``pi``)``)`\
+`    ``}``)``,`\
+`    ``"KFAS, Gaussian noise"`` ``=`` ``timed``(``{`\
+`      ``mod`` ``<-`` `[`SSModel`](https://rdrr.io/pkg/KFAS/man/SSModel.html)`(``y`` ``~`` `[`SSMtrend`](https://rdrr.io/pkg/KFAS/man/SSModel.html)`(``1L``, Q ``=`` ``q_state``, a1 ``=`` ``m0``,`\
+`                                  P1 ``=`` ``c0`` ``+`` ``q_state``)``, H ``=`` ``r_var``)`\
+`      ``f`` ``<-`` `[`KFS`](https://rdrr.io/pkg/KFAS/man/KFS.html)`(``mod``, filtering ``=`` ``"state"``, smoothing ``=`` ``"none"``)`\
+`      `[`list`](https://rdrr.io/r/base/list.html)`(``mean ``=`` `[`as.numeric`](https://rdrr.io/r/base/numeric.html)`(``f``$``att``)``, log_lik ``=`` `[`as.numeric`](https://rdrr.io/r/base/numeric.html)`(`[`logLik`](https://rdrr.io/r/stats/logLik.html)`(``mod``)``)``)`\
+`    ``}``)``,`\
+`    ``"particle filter, two-component noise"`` ``=`` ``timed``(`\
+`      ``bootstrap_filter``(``y``, ``n_particles``, ``m0``, ``c0``, ``q_state``, ``r_sd``, ``r_w``)`\
+`    ``)``,`\
+`    ``"nimble, two-component noise"`` ``=`` ``timed``(``run_nimble``(``nimble_mix``, ``y``)``)``,`\
+`    ``"nimble, Student-t noise"`` ``=`` ``timed``(``run_nimble``(``nimble_t``, ``y``)``)`\
+`  ``)`\
+`  `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(`\
+`    series ``=`` ``r``, method ``=`` `[`names`](https://rdrr.io/r/base/names.html)`(``fits``)``,`\
+`    rmse ``=`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``fits``, ``function``(``f``)`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(`[`mean`](https://rdrr.io/r/base/mean.html)`(``(``f``$``mean`` ``-`` ``x``)``^``2``)``)``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)``,`\
+`    log_lik ``=`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``fits``, ``function``(``f``)`` ``f``$``log_lik``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)``,`\
+`    secs ``=`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``fits``, ``function``(``f``)`` ``f``[[``"secs"``]``]``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)``,`\
+`    row.names ``=`` ``NULL`\
+`  ``)`\
+`}`\
+\
+`res`` ``<-`` `[`do.call`](https://rdrr.io/r/base/do.call.html)`(``rbind``, `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``n_rep``)``, ``one_series``)``)`\
+\
+`sim_tab`` ``<-`` `[`aggregate`](https://rdrr.io/r/stats/aggregate.html)`(`[`cbind`](https://amices.org/mice/reference/cbind.html)`(``rmse``, ``log_lik``, ``secs``)`` ``~`` ``method``, data ``=`` ``res``,`\
+`                     FUN ``=`` ``mean``)`\
+`sim_tab``$``rmse_se`` ``<-`` `[`aggregate`](https://rdrr.io/r/stats/aggregate.html)`(``rmse`` ``~`` ``method``, data ``=`` ``res``,`\
+`                             FUN ``=`` ``function``(``v``)`` `[`sd`](https://rdrr.io/r/stats/sd.html)`(``v``)`` ``/`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(`[`length`](https://rdrr.io/r/base/length.html)`(``v``)``)``)``$``rmse`\
+`sim_tab`
 
 | Filter | RMSE | SE of mean RMSE | Log-likelihood | Seconds |
 |:---|---:|---:|---:|---:|
@@ -1183,7 +1125,7 @@ Root mean squared error of the filtered mean against the true level,
 computed per series and averaged over the series; the standard error of
 that average; the mean log-likelihood of the series; and the mean
 running time per series, over 300 simulated series of 200 steps. {.table
-style="width:100%;"}
+style="width:99%;"}
 
 Under the two-component noise the particle filter reaches a root mean
 squared error of 0.7056, and the capped Gaussian-sum filter 0.7055, with
@@ -1289,55 +1231,53 @@ stored simulation results come from the code shown, run on 26 September
 2026 with R 4.6.1, proxymix 0.16.0, dlm 1.1-6.1, KFAS 1.6.0, nimble
 1.4.3 and nimbleSMC 0.11.1, and the run raised 0 warnings.
 
-``` r
-
-old_opt <- options(width = 72L)
-si_vec <- trimws(capture.output(sessionInfo()), "right")
-options(old_opt)
-# library paths are single long words, so a long line breaks after a slash
-long_vec <- nchar(si_vec) > 72L
-si_vec[long_vec] <- gsub("(.{1,68}/)(?=.{8,})", "\\1\n        ",
-                         si_vec[long_vec], perl = TRUE)
-writeLines(si_vec)
-#> R version 4.6.1 (2026-06-24)
-#> Platform: aarch64-apple-darwin23
-#> Running under: macOS Tahoe 26.6.2
-#> 
-#> Matrix products: default
-#> BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/
-#>         libRblas.0.dylib
-#> LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/
-#>         libRlapack.dylib;  LAPACK version 3.12.1
-#> 
-#> locale:
-#> [1] en_AU.UTF-8/en_AU.UTF-8/en_AU.UTF-8/C/en_AU.UTF-8/en_AU.UTF-8
-#> 
-#> time zone: Australia/Adelaide
-#> tzcode source: internal
-#> 
-#> attached base packages:
-#> [1] stats     graphics  grDevices utils     datasets  methods
-#> [7] base
-#> 
-#> other attached packages:
-#> [1] KFAS_1.6.0      dlm_1.1-6.1     proxymix_0.16.0
-#> 
-#> loaded via a namespace (and not attached):
-#>  [1] mvnfast_0.2.8      gtable_0.3.6       jsonlite_2.0.0
-#>  [4] dplyr_1.2.1        compiler_4.6.1     Rcpp_1.1.2
-#>  [7] tidyselect_1.2.1   dichromat_2.0-1    jquerylib_0.1.4
-#> [10] systemfonts_1.3.2  scales_1.4.0       textshaping_1.0.5
-#> [13] yaml_2.3.12        fastmap_1.2.0      ggplot2_4.0.3
-#> [16] R6_2.6.1           labeling_0.4.3     generics_0.1.4
-#> [19] isoband_0.3.0      knitr_1.51         htmlwidgets_1.6.4
-#> [22] tibble_3.3.1       desc_1.4.3         bslib_0.12.0
-#> [25] pillar_1.11.1      RColorBrewer_1.1-3 rlang_1.3.0
-#> [28] cachem_1.1.0       xfun_0.60          fs_2.1.0
-#> [31] sass_0.4.10        S7_0.2.2           otel_0.2.0
-#> [34] viridisLite_0.4.3  cli_3.6.6          withr_3.0.3
-#> [37] pkgdown_2.2.1      magrittr_2.0.5     digest_0.6.39
-#> [40] grid_4.6.1         lifecycle_1.0.5    vctrs_0.7.3
-#> [43] evaluate_1.0.5     glue_1.8.1         farver_2.1.2
-#> [46] ragg_1.5.2         rmarkdown_2.32     tools_4.6.1
-#> [49] pkgconfig_2.0.3    htmltools_0.5.9
-```
+\
+`old_opt`` ``<-`` `[`options`](https://rdrr.io/r/base/options.html)`(``width ``=`` ``72L``)`\
+`si_vec`` ``<-`` `[`trimws`](https://rdrr.io/r/base/trimws.html)`(`[`capture.output`](https://rdrr.io/r/utils/capture.output.html)`(`[`sessionInfo`](https://rdrr.io/r/utils/sessionInfo.html)`(``)``)``, ``"right"``)`\
+[`options`](https://rdrr.io/r/base/options.html)`(``old_opt``)`\
+`# library paths are single long words, so a long line breaks after a slash`\
+`long_vec`` ``<-`` `[`nchar`](https://rdrr.io/r/base/nchar.html)`(``si_vec``)`` ``>`` ``72L`\
+`si_vec``[``long_vec``]`` ``<-`` `[`gsub`](https://rdrr.io/r/base/grep.html)`(``"(.{1,68}/)(?=.{8,})"``, ``"\\1\n        "``,`\
+`                         ``si_vec``[``long_vec``]``, perl ``=`` ``TRUE``)`\
+[`writeLines`](https://rdrr.io/r/base/writeLines.html)`(``si_vec``)`\
+`#> R version 4.6.1 (2026-06-24)`\
+`#> Platform: aarch64-apple-darwin23`\
+`#> Running under: macOS Tahoe 26.6.2`\
+`#> `\
+`#> Matrix products: default`\
+`#> BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/`\
+`#>         libRblas.0.dylib`\
+`#> LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/`\
+`#>         libRlapack.dylib;  LAPACK version 3.12.1`\
+`#> `\
+`#> locale:`\
+`#> [1] en_AU.UTF-8/en_AU.UTF-8/en_AU.UTF-8/C/en_AU.UTF-8/en_AU.UTF-8`\
+`#> `\
+`#> time zone: Australia/Adelaide`\
+`#> tzcode source: internal`\
+`#> `\
+`#> attached base packages:`\
+`#> [1] stats     graphics  grDevices utils     datasets  methods`\
+`#> [7] base`\
+`#> `\
+`#> other attached packages:`\
+`#> [1] KFAS_1.6.0      dlm_1.1-6.1     proxymix_0.16.0`\
+`#> `\
+`#> loaded via a namespace (and not attached):`\
+`#>  [1] mvnfast_0.2.8      gtable_0.3.6       jsonlite_2.0.0`\
+`#>  [4] dplyr_1.2.1        compiler_4.6.1     Rcpp_1.1.2`\
+`#>  [7] tidyselect_1.2.1   dichromat_2.0-1    jquerylib_0.1.4`\
+`#> [10] systemfonts_1.3.2  scales_1.4.0       textshaping_1.0.5`\
+`#> [13] yaml_2.3.12        fastmap_1.2.0      ggplot2_4.0.3`\
+`#> [16] R6_2.6.1           labeling_0.4.3     generics_0.1.4`\
+`#> [19] isoband_0.3.0      knitr_1.51         htmlwidgets_1.6.4`\
+`#> [22] tibble_3.3.1       desc_1.4.3         bslib_0.12.0`\
+`#> [25] pillar_1.11.1      RColorBrewer_1.1-3 rlang_1.3.0`\
+`#> [28] cachem_1.1.0       xfun_0.60          fs_2.1.0`\
+`#> [31] sass_0.4.10        S7_0.2.2           otel_0.2.0`\
+`#> [34] viridisLite_0.4.3  cli_3.6.6          withr_3.0.3`\
+`#> [37] pkgdown_2.2.1      magrittr_2.0.5     digest_0.6.39`\
+`#> [40] grid_4.6.1         lifecycle_1.0.5    vctrs_0.7.3`\
+`#> [43] evaluate_1.0.5     glue_1.8.1         farver_2.1.2`\
+`#> [46] ragg_1.5.2         rmarkdown_2.32     tools_4.6.1`\
+`#> [49] pkgconfig_2.0.3    htmltools_0.5.9`

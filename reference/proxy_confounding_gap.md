@@ -82,7 +82,7 @@ m <- fit_uplift(dat, "y", "t", "x", N = 2L, regime = "sample",
 proxy_confounding_gap(m, data.frame(x = c(-1, 0, 1)))
 #>       id  tau_obs    tau_do      gap overlap_flag
 #>    <int>    <num>     <num>    <num>       <lgcl>
-#> 1:     1 2.908359 0.5072123 2.401147        FALSE
-#> 2:     2 2.868482 0.5105251 2.357957        FALSE
-#> 3:     3 2.801414 0.5132769 2.288137        FALSE
+#> 1:     1 2.908393 0.5072191 2.401174        FALSE
+#> 2:     2 2.868516 0.5105320 2.357984        FALSE
+#> 3:     3 2.801447 0.5132839 2.288164        FALSE
 ```

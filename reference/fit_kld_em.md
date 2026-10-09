@@ -83,7 +83,9 @@ fit_kld_em(
 
 - ridge_eps:
 
-  Ridge added to each component covariance at every M-step.
+  Relative ridge. At every M-step, `ridge_eps` times each coordinate's
+  variance under the target is added to that coordinate's diagonal entry
+  of each component covariance.
 
 - min_ess:
 
@@ -272,7 +274,7 @@ fit <- fit_kld_em(tgt, N = 3L, proposal = q,
                   is_size = 1500L, max_iter = 25L, seed = 1L,
                   validation_size = 1500L)
 fit@diagnostics$kld_final
-#> [1] 0.006967304
+#> [1] 0.00696729
 fit@diagnostics$validation_kld
-#> [1] 0.00926966
+#> [1] 0.009269613
 ```

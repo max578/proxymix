@@ -78,7 +78,7 @@ bic_aic(fit)
 #> [1] 727.1539
 #> 
 #> $classification_entropy
-#> [1] 47.80185
+#> [1] 47.80184
 #> 
 #> $n_params
 #> [1] 11

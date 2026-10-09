@@ -1,14 +1,10 @@
 # How well a mixture proxies four awkward shapes
 
-``` r
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`
 
-library(proxymix)
-```
-
-``` r
-
-has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
-```
+\
+`has_ggplot2`` ``<-`` `[`requireNamespace`](https://rdrr.io/r/base/ns-load.html)`(``"ggplot2"``, quietly ``=`` ``TRUE``)`
 
 ## The problem
 
@@ -74,61 +70,55 @@ Each target gets a Student-t proposal wide enough to cover it, and a
 component count chosen for its shape: four along the banana’s ridge, six
 around the donut’s ring, three for the three-mode mixture.
 
-``` r
+\
+`fit_b`` ``<-`` `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(`[`banana_target`](https://max578.github.io/proxymix/reference/banana_target.md)`(``)``, N ``=`` ``4L``, regime ``=`` ``"kld"``,`\
+`                      proposal ``=`` `[`proposal_mvt`](https://max578.github.io/proxymix/reference/proposal_uniform.md)`(``n_dim ``=`` ``2L``,`\
+`                                              sigma ``=`` ``4`` ``*`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``,`\
+`                                              df ``=`` ``5``)``,`\
+`                      is_size ``=`` ``3000L``, max_iter ``=`` ``50L``, seed ``=`` ``1L``)`\
+`fit_d`` ``<-`` `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(`[`donut_target`](https://max578.github.io/proxymix/reference/donut_target.md)`(``)``, N ``=`` ``6L``, regime ``=`` ``"kld"``,`\
+`                      proposal ``=`` `[`proposal_mvt`](https://max578.github.io/proxymix/reference/proposal_uniform.md)`(``n_dim ``=`` ``2L``,`\
+`                                              sigma ``=`` ``9`` ``*`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``,`\
+`                                              df ``=`` ``5``)``,`\
+`                      is_size ``=`` ``3500L``, max_iter ``=`` ``60L``, seed ``=`` ``1L``)`\
+`fit_m`` ``<-`` `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(`[`mixture_target`](https://max578.github.io/proxymix/reference/mixture_target.md)`(``)``, N ``=`` ``3L``, regime ``=`` ``"kld"``,`\
+`                      proposal ``=`` `[`proposal_mvt`](https://max578.github.io/proxymix/reference/proposal_uniform.md)`(``n_dim ``=`` ``2L``,`\
+`                                              sigma ``=`` ``6`` ``*`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``,`\
+`                                              df ``=`` ``5``)``,`\
+`                      is_size ``=`` ``3000L``, max_iter ``=`` ``50L``, seed ``=`` ``1L``)`
 
-fit_b <- fit_proxymix(banana_target(), N = 4L, regime = "kld",
-                      proposal = proposal_mvt(n_dim = 2L,
-                                              sigma = 4 * diag(2),
-                                              df = 5),
-                      is_size = 3000L, max_iter = 50L, seed = 1L)
-fit_d <- fit_proxymix(donut_target(), N = 6L, regime = "kld",
-                      proposal = proposal_mvt(n_dim = 2L,
-                                              sigma = 9 * diag(2),
-                                              df = 5),
-                      is_size = 3500L, max_iter = 60L, seed = 1L)
-fit_m <- fit_proxymix(mixture_target(), N = 3L, regime = "kld",
-                      proposal = proposal_mvt(n_dim = 2L,
-                                              sigma = 6 * diag(2),
-                                              df = 5),
-                      is_size = 3000L, max_iter = 50L, seed = 1L)
-```
+\
+`shape_panel`` ``<-`` ``function``(``target``, ``fit``, ``label``, ``lim``)`` ``{`\
+`  ``gx`` ``<-`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``lim``, ``lim``, length.out ``=`` ``110L``)`\
+`  ``base`` ``<-`` `[`expand.grid`](https://rdrr.io/r/base/expand.grid.html)`(``x1 ``=`` ``gx``, x2 ``=`` ``gx``)`\
+`  ``gm`` ``<-`` `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(``base``)`\
+`  `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(`\
+`    x1 ``=`` ``base``$``x1``, x2 ``=`` ``base``$``x2``,`\
+`    target ``=`` `[`exp`](https://rdrr.io/r/base/Log.html)`(``target``@``log_density``(``gm``)``)``,`\
+`    proxy ``=`` `[`dgmm`](https://max578.github.io/proxymix/reference/dgmm.md)`(``gm``, ``fit``)``,`\
+`    shape ``=`` ``label``,`\
+`    stringsAsFactors ``=`` ``FALSE`\
+`  ``)`\
+`}`\
+`overlay_df`` ``<-`` `[`rbind`](https://rdrr.io/r/base/cbind.html)`(`\
+`  ``shape_panel``(`[`banana_target`](https://max578.github.io/proxymix/reference/banana_target.md)`(``)``, ``fit_b``, ``"banana, N = 4"``, ``4.5``)``,`\
+`  ``shape_panel``(`[`donut_target`](https://max578.github.io/proxymix/reference/donut_target.md)`(``)``, ``fit_d``, ``"donut, N = 6"``, ``4.5``)``,`\
+`  ``shape_panel``(`[`mixture_target`](https://max578.github.io/proxymix/reference/mixture_target.md)`(``)``, ``fit_m``, ``"three-mixture, N = 3"``, ``4.5``)`\
+`)`\
+`overlay_df``$``shape`` ``<-`` `[`factor`](https://rdrr.io/r/base/factor.html)`(``overlay_df``$``shape``,`\
+`                           levels ``=`` `[`unique`](https://rdrr.io/r/base/unique.html)`(``overlay_df``$``shape``)``)`
 
-``` r
-
-shape_panel <- function(target, fit, label, lim) {
-  gx <- seq(-lim, lim, length.out = 110L)
-  base <- expand.grid(x1 = gx, x2 = gx)
-  gm <- as.matrix(base)
-  data.frame(
-    x1 = base$x1, x2 = base$x2,
-    target = exp(target@log_density(gm)),
-    proxy = dgmm(gm, fit),
-    shape = label,
-    stringsAsFactors = FALSE
-  )
-}
-overlay_df <- rbind(
-  shape_panel(banana_target(), fit_b, "banana, N = 4", 4.5),
-  shape_panel(donut_target(), fit_d, "donut, N = 6", 4.5),
-  shape_panel(mixture_target(), fit_m, "three-mixture, N = 3", 4.5)
-)
-overlay_df$shape <- factor(overlay_df$shape,
-                           levels = unique(overlay_df$shape))
-```
-
-``` r
-
-ggplot2::ggplot(overlay_df, ggplot2::aes(x1, x2)) +
-  ggplot2::geom_contour_filled(ggplot2::aes(z = target), bins = 10L,
-                               alpha = 0.85) +
-  ggplot2::geom_contour(ggplot2::aes(z = proxy), colour = "white",
-                        linetype = "dashed", linewidth = 0.4, bins = 8L) +
-  ggplot2::scale_fill_viridis_d(option = "mako", guide = "none") +
-  ggplot2::facet_wrap(~ shape) +
-  ggplot2::coord_equal() +
-  ggplot2::labs(x = expression(x[1]), y = expression(x[2])) +
-  ggplot2::theme_minimal(base_size = 11)
-```
+\
+`ggplot2``::`[`ggplot`](https://ggplot2.tidyverse.org/reference/ggplot.html)`(``overlay_df``, ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``x1``, ``x2``)``)`` ``+`\
+`  ``ggplot2``::`[`geom_contour_filled`](https://ggplot2.tidyverse.org/reference/geom_contour.html)`(``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``z ``=`` ``target``)``, bins ``=`` ``10L``,`\
+`                               alpha ``=`` ``0.85``)`` ``+`\
+`  ``ggplot2``::`[`geom_contour`](https://ggplot2.tidyverse.org/reference/geom_contour.html)`(``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``z ``=`` ``proxy``)``, colour ``=`` ``"white"``,`\
+`                        linetype ``=`` ``"dashed"``, linewidth ``=`` ``0.4``, bins ``=`` ``8L``)`` ``+`\
+`  ``ggplot2``::`[`scale_fill_viridis_d`](https://ggplot2.tidyverse.org/reference/scale_viridis.html)`(``option ``=`` ``"mako"``, guide ``=`` ``"none"``)`` ``+`\
+`  ``ggplot2``::`[`facet_wrap`](https://ggplot2.tidyverse.org/reference/facet_wrap.html)`(``~`` ``shape``)`` ``+`\
+`  ``ggplot2``::`[`coord_equal`](https://ggplot2.tidyverse.org/reference/coord_fixed.html)`(``)`` ``+`\
+`  ``ggplot2``::`[`labs`](https://ggplot2.tidyverse.org/reference/labs.html)`(``x ``=`` `[`expression`](https://rdrr.io/r/base/expression.html)`(``x``[``1``]``)``, y ``=`` `[`expression`](https://rdrr.io/r/base/expression.html)`(``x``[``2``]``)``)`` ``+`\
+`  ``ggplot2``::`[`theme_minimal`](https://ggplot2.tidyverse.org/reference/ggtheme.html)`(``base_size ``=`` ``11``)`
 
 ![Three contour panels showing the banana, donut and three-mixture
 densities, each overlaid with dashed contours of its Gaussian-mixture
@@ -149,26 +139,24 @@ directly on a grid, using nothing the fit produced. The banana’s two
 arms reach far upwards, so its grid runs from -12 to 12 in each
 direction.
 
-``` r
-
-## KL(f || g) by deterministic grid quadrature -- independent of the
-## importance sampler whose estimate it is checking.
-kl_grid <- function(target, fit, lim, n_grid = 300L) {
-  gx <- seq(-lim, lim, length.out = n_grid)
-  gm <- as.matrix(expand.grid(x1 = gx, x2 = gx))
-  cell <- (gx[2L] - gx[1L])^2
-  log_f <- target@log_density(gm)
-  log_g <- dgmm(gm, fit, log = TRUE)
-  dens_f <- exp(log_f)
-  ok <- is.finite(log_f) & is.finite(log_g) & dens_f > 1e-300
-  sum(dens_f[ok] * (log_f[ok] - log_g[ok])) * cell
-}
-kl_quad <- c(
-  banana = kl_grid(banana_target(), fit_b, 12, n_grid = 601L),
-  donut = kl_grid(donut_target(), fit_d, 7),
-  mixture = kl_grid(mixture_target(), fit_m, 8)
-)
-```
+\
+`## KL(f || g) by deterministic grid quadrature -- independent of the`\
+`## importance sampler whose estimate it is checking.`\
+`kl_grid`` ``<-`` ``function``(``target``, ``fit``, ``lim``, ``n_grid`` ``=`` ``300L``)`` ``{`\
+`  ``gx`` ``<-`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``lim``, ``lim``, length.out ``=`` ``n_grid``)`\
+`  ``gm`` ``<-`` `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(`[`expand.grid`](https://rdrr.io/r/base/expand.grid.html)`(``x1 ``=`` ``gx``, x2 ``=`` ``gx``)``)`\
+`  ``cell`` ``<-`` ``(``gx``[``2L``]`` ``-`` ``gx``[``1L``]``)``^``2`\
+`  ``log_f`` ``<-`` ``target``@``log_density``(``gm``)`\
+`  ``log_g`` ``<-`` `[`dgmm`](https://max578.github.io/proxymix/reference/dgmm.md)`(``gm``, ``fit``, log ``=`` ``TRUE``)`\
+`  ``dens_f`` ``<-`` `[`exp`](https://rdrr.io/r/base/Log.html)`(``log_f``)`\
+`  ``ok`` ``<-`` `[`is.finite`](https://rdrr.io/r/base/is.finite.html)`(``log_f``)`` ``&`` `[`is.finite`](https://rdrr.io/r/base/is.finite.html)`(``log_g``)`` ``&`` ``dens_f`` ``>`` ``1e-300`\
+`  `[`sum`](https://rdrr.io/r/base/sum.html)`(``dens_f``[``ok``]`` ``*`` ``(``log_f``[``ok``]`` ``-`` ``log_g``[``ok``]``)``)`` ``*`` ``cell`\
+`}`\
+`kl_quad`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(`\
+`  banana ``=`` ``kl_grid``(`[`banana_target`](https://max578.github.io/proxymix/reference/banana_target.md)`(``)``, ``fit_b``, ``12``, n_grid ``=`` ``601L``)``,`\
+`  donut ``=`` ``kl_grid``(`[`donut_target`](https://max578.github.io/proxymix/reference/donut_target.md)`(``)``, ``fit_d``, ``7``)``,`\
+`  mixture ``=`` ``kl_grid``(`[`mixture_target`](https://max578.github.io/proxymix/reference/mixture_target.md)`(``)``, ``fit_m``, ``8``)`\
+`)`
 
 | Target | N | IS draws | ESS | Iterations | KL (held-out) | SE | KL (quadrature) |   Hellinger | H SE |
 |:---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -191,54 +179,50 @@ the component count shows how much of the residual divergence more
 components remove at a fixed budget of 3,500 importance draws and 60
 rounds.
 
-``` r
-
-donut_n <- c(3L, 4L, 6L, 10L)
-donut_kl <- vapply(donut_n, function(k) {
-  f <- fit_proxymix(donut_target(), N = k, regime = "kld",
-                    proposal = proposal_mvt(n_dim = 2L,
-                                            sigma = 9 * diag(2),
-                                            df = 5),
-                    is_size = 3500L, max_iter = 60L, seed = 1L)
-  kl_grid(donut_target(), f, 7)
-}, numeric(1L))
-```
+\
+`donut_n`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``3L``, ``4L``, ``6L``, ``10L``)`\
+`donut_kl`` ``<-`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``donut_n``, ``function``(``k``)`` ``{`\
+`  ``f`` ``<-`` `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(`[`donut_target`](https://max578.github.io/proxymix/reference/donut_target.md)`(``)``, N ``=`` ``k``, regime ``=`` ``"kld"``,`\
+`                    proposal ``=`` `[`proposal_mvt`](https://max578.github.io/proxymix/reference/proposal_uniform.md)`(``n_dim ``=`` ``2L``,`\
+`                                            sigma ``=`` ``9`` ``*`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``,`\
+`                                            df ``=`` ``5``)``,`\
+`                    is_size ``=`` ``3500L``, max_iter ``=`` ``60L``, seed ``=`` ``1L``)`\
+`  ``kl_grid``(`[`donut_target`](https://max578.github.io/proxymix/reference/donut_target.md)`(``)``, ``f``, ``7``)`\
+`}``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)`
 
 The 10-component fit in this sweep stops at the 60-round cap. Refitting
 the six- and ten-component proxies with 20,000 importance draws, all
 other settings unchanged, tests whether the budget or the mixture sets
 the residual.
 
-``` r
-
-donut_big <- lapply(c(6L, 10L), function(k) {
-  fit_proxymix(donut_target(), N = k, regime = "kld",
-               proposal = proposal_mvt(n_dim = 2L,
-                                       sigma = 9 * diag(2),
-                                       df = 5),
-               is_size = 20000L, max_iter = 60L, seed = 1L)
-})
-donut_kl_big <- vapply(donut_big, function(f) kl_grid(donut_target(), f, 7),
-                       numeric(1L))
-donut_iter_big <- vapply(donut_big, function(f) length(kld_trace(f)),
-                         integer(1L))
-fit_d10 <- fit_proxymix(donut_target(), N = 10L, regime = "kld",
-                        proposal = proposal_mvt(n_dim = 2L,
-                                                sigma = 9 * diag(2),
-                                                df = 5),
-                        is_size = 3500L, max_iter = 60L, seed = 1L)
-donut_iter_small <- length(kld_trace(fit_d10))
-data.frame(
-  Components = c(6L, 10L),
-  `KL, 3,500 draws` = round(donut_kl[3:4], 4L),
-  `KL, 20,000 draws` = round(donut_kl_big, 4L),
-  `Rounds, 20,000 draws` = donut_iter_big,
-  check.names = FALSE
-)
-#>   Components KL, 3,500 draws KL, 20,000 draws Rounds, 20,000 draws
-#> 1          6          0.0189           0.0116                   23
-#> 2         10          0.0169           0.0023                   19
-```
+\
+`donut_big`` ``<-`` `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``6L``, ``10L``)``, ``function``(``k``)`` ``{`\
+`  `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(`[`donut_target`](https://max578.github.io/proxymix/reference/donut_target.md)`(``)``, N ``=`` ``k``, regime ``=`` ``"kld"``,`\
+`               proposal ``=`` `[`proposal_mvt`](https://max578.github.io/proxymix/reference/proposal_uniform.md)`(``n_dim ``=`` ``2L``,`\
+`                                       sigma ``=`` ``9`` ``*`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``,`\
+`                                       df ``=`` ``5``)``,`\
+`               is_size ``=`` ``20000L``, max_iter ``=`` ``60L``, seed ``=`` ``1L``)`\
+`}``)`\
+`donut_kl_big`` ``<-`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``donut_big``, ``function``(``f``)`` ``kl_grid``(`[`donut_target`](https://max578.github.io/proxymix/reference/donut_target.md)`(``)``, ``f``, ``7``)``,`\
+`                       `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)`\
+`donut_iter_big`` ``<-`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``donut_big``, ``function``(``f``)`` `[`length`](https://rdrr.io/r/base/length.html)`(`[`kld_trace`](https://max578.github.io/proxymix/reference/kld_trace.md)`(``f``)``)``,`\
+`                         `[`integer`](https://rdrr.io/r/base/integer.html)`(``1L``)``)`\
+`fit_d10`` ``<-`` `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(`[`donut_target`](https://max578.github.io/proxymix/reference/donut_target.md)`(``)``, N ``=`` ``10L``, regime ``=`` ``"kld"``,`\
+`                        proposal ``=`` `[`proposal_mvt`](https://max578.github.io/proxymix/reference/proposal_uniform.md)`(``n_dim ``=`` ``2L``,`\
+`                                                sigma ``=`` ``9`` ``*`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``,`\
+`                                                df ``=`` ``5``)``,`\
+`                        is_size ``=`` ``3500L``, max_iter ``=`` ``60L``, seed ``=`` ``1L``)`\
+`donut_iter_small`` ``<-`` `[`length`](https://rdrr.io/r/base/length.html)`(`[`kld_trace`](https://max578.github.io/proxymix/reference/kld_trace.md)`(``fit_d10``)``)`\
+[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(`\
+`  Components ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``6L``, ``10L``)``,`\
+``   `KL, 3,500 draws`  ```=`` `[`round`](https://rdrr.io/r/base/Round.html)`(``donut_kl``[``3``:``4``]``, ``4L``)``,`\
+``   `KL, 20,000 draws`  ```=`` `[`round`](https://rdrr.io/r/base/Round.html)`(``donut_kl_big``, ``4L``)``,`\
+``   `Rounds, 20,000 draws`  ```=`` ``donut_iter_big``,`\
+`  check.names ``=`` ``FALSE`\
+`)`\
+`#>   Components KL, 3,500 draws KL, 20,000 draws Rounds, 20,000 draws`\
+`#> 1          6          0.0189           0.0116                   23`\
+`#> 2         10          0.0169           0.0023                   19`
 
 | Components | KL (quadrature) |
 |-----------:|----------------:|
@@ -266,65 +250,57 @@ support-matched
 [`proposal_uniform()`](https://max578.github.io/proxymix/reference/proposal_uniform.md)
 on its own, announced in a message.
 
-``` r
+\
+`epan`` ``<-`` `[`epanechnikov_target`](https://max578.github.io/proxymix/reference/epanechnikov_target.md)`(``n_dim ``=`` ``1L``)`\
+`epan`\
+`#> <gmm_target>: "epanechnikov" in p = 1 dimensions`\
+`#>   log_density : supplied`\
+`#>   samples     : <absent>`\
+`#>   normalised  : TRUE`\
+`#>   log Z(f)    : 0`\
+`#>   support     : [-1, 1]`
 
-epan <- epanechnikov_target(n_dim = 1L)
-epan
-#> <gmm_target>: "epanechnikov" in p = 1 dimensions
-#>   log_density : supplied
-#>   samples     : <absent>
-#>   normalised  : TRUE
-#>   log Z(f)    : 0
-#>   support     : [-1, 1]
-```
+\
+`fit_e`` ``<-`` `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(``epan``, N ``=`` ``3L``, regime ``=`` ``"kld"``,`\
+`                      is_size ``=`` ``4000L``, max_iter ``=`` ``300L``, seed ``=`` ``1L``)`\
+`#> Auto-selected a support-matched proposal (``"is_uniform[support-matched]"``) for`\
+`#> the declared target support.`\
+`#> ``ℹ```  Pass an explicit `proposal` to override. ``\
+[`c`](https://rdrr.io/r/base/c.html)`(``proposal ``=`` ``fit_e``@``diagnostics``$``proposal_name``,`\
+`  support_fraction ``=`` ``fit_e``@``diagnostics``$``support_fraction``,`\
+`  iterations ``=`` `[`length`](https://rdrr.io/r/base/length.html)`(`[`kld_trace`](https://max578.github.io/proxymix/reference/kld_trace.md)`(``fit_e``)``)``,`\
+`  converged ``=`` `[`gmm_fit_quality`](https://max578.github.io/proxymix/reference/gmm_fit_quality.md)`(``fit_e``)``$``converged``)`\
+`#>                      proposal              support_fraction `\
+`#> "is_uniform[support-matched]"                           "1" `\
+`#>                    iterations                     converged `\
+`#>                         "241"                        "TRUE"`
 
-``` r
+\
+`epan_x`` ``<-`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``1.4``, ``1.4``, length.out ``=`` ``400L``)`\
+`epan_df`` ``<-`` `[`rbind`](https://rdrr.io/r/base/cbind.html)`(`\
+`  `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``x ``=`` ``epan_x``,`\
+`             density ``=`` `[`exp`](https://rdrr.io/r/base/Log.html)`(``epan``@``log_density``(`[`matrix`](https://rdrr.io/r/base/matrix.html)`(``epan_x``, ncol ``=`` ``1L``)``)``)``,`\
+`             series ``=`` ``"target"``, stringsAsFactors ``=`` ``FALSE``)``,`\
+`  `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``x ``=`` ``epan_x``, density ``=`` `[`dgmm`](https://max578.github.io/proxymix/reference/dgmm.md)`(`[`matrix`](https://rdrr.io/r/base/matrix.html)`(``epan_x``, ncol ``=`` ``1L``)``, ``fit_e``)``,`\
+`             series ``=`` ``"mixture proxy"``, stringsAsFactors ``=`` ``FALSE``)`\
+`)`
 
-fit_e <- fit_proxymix(epan, N = 3L, regime = "kld",
-                      is_size = 4000L, max_iter = 300L, seed = 1L)
-#> Auto-selected a support-matched proposal ("is_uniform[support-matched]") for
-#> the declared target support.
-#> ℹ Pass an explicit `proposal` to override.
-c(proposal = fit_e@diagnostics$proposal_name,
-  support_fraction = fit_e@diagnostics$support_fraction,
-  iterations = length(kld_trace(fit_e)),
-  converged = gmm_fit_quality(fit_e)$converged)
-#>                      proposal              support_fraction 
-#> "is_uniform[support-matched]"                           "1" 
-#>                    iterations                     converged 
-#>                         "241"                        "TRUE"
-```
-
-``` r
-
-epan_x <- seq(-1.4, 1.4, length.out = 400L)
-epan_df <- rbind(
-  data.frame(x = epan_x,
-             density = exp(epan@log_density(matrix(epan_x, ncol = 1L))),
-             series = "target", stringsAsFactors = FALSE),
-  data.frame(x = epan_x, density = dgmm(matrix(epan_x, ncol = 1L), fit_e),
-             series = "mixture proxy", stringsAsFactors = FALSE)
-)
-```
-
-``` r
-
-ggplot2::ggplot(epan_df, ggplot2::aes(x, density, colour = series,
-                                      linetype = series)) +
-  ggplot2::geom_line(linewidth = 0.8) +
-  ggplot2::geom_vline(xintercept = c(-1, 1), colour = "grey60",
-                      linewidth = 0.3) +
-  ggplot2::scale_colour_manual(
-    name = NULL, values = c("target" = "#0072B2",
-                            "mixture proxy" = "#D55E00")
-  ) +
-  ggplot2::scale_linetype_manual(
-    name = NULL, values = c("target" = "solid", "mixture proxy" = "dashed")
-  ) +
-  ggplot2::labs(x = expression(x), y = "density") +
-  ggplot2::theme_minimal(base_size = 11) +
-  ggplot2::theme(legend.position = "top")
-```
+\
+`ggplot2``::`[`ggplot`](https://ggplot2.tidyverse.org/reference/ggplot.html)`(``epan_df``, ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``x``, ``density``, colour ``=`` ``series``,`\
+`                                      linetype ``=`` ``series``)``)`` ``+`\
+`  ``ggplot2``::`[`geom_line`](https://ggplot2.tidyverse.org/reference/geom_path.html)`(``linewidth ``=`` ``0.8``)`` ``+`\
+`  ``ggplot2``::`[`geom_vline`](https://ggplot2.tidyverse.org/reference/geom_abline.html)`(``xintercept ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``-``1``, ``1``)``, colour ``=`` ``"grey60"``,`\
+`                      linewidth ``=`` ``0.3``)`` ``+`\
+`  ``ggplot2``::`[`scale_colour_manual`](https://ggplot2.tidyverse.org/reference/scale_manual.html)`(`\
+`    name ``=`` ``NULL``, values ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"target"`` ``=`` ``"#0072B2"``,`\
+`                            ``"mixture proxy"`` ``=`` ``"#D55E00"``)`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`scale_linetype_manual`](https://ggplot2.tidyverse.org/reference/scale_manual.html)`(`\
+`    name ``=`` ``NULL``, values ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"target"`` ``=`` ``"solid"``, ``"mixture proxy"`` ``=`` ``"dashed"``)`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`labs`](https://ggplot2.tidyverse.org/reference/labs.html)`(``x ``=`` `[`expression`](https://rdrr.io/r/base/expression.html)`(``x``)``, y ``=`` ``"density"``)`` ``+`\
+`  ``ggplot2``::`[`theme_minimal`](https://ggplot2.tidyverse.org/reference/ggtheme.html)`(``base_size ``=`` ``11``)`` ``+`\
+`  ``ggplot2``::`[`theme`](https://ggplot2.tidyverse.org/reference/theme.html)`(``legend.position ``=`` ``"top"``)`
 
 ![Line plot of the inverted-parabola Epanechnikov density and its dashed
 Gaussian-mixture proxy, which extends slightly beyond the support
@@ -347,24 +323,22 @@ refusal rather than a result: a proposal placed far from the target’s
 mass, with `on_low_ess = "abort"`, raises a typed condition instead of
 returning.
 
-``` r
-
-bad <- tryCatch(
-  fit_kld_em(
-    mixture_target(), N = 3L,
-    proposal = proposal_mvn(n_dim = 2L, mean = c(25, 25), cov = diag(2)),
-    is_size = 2000L, max_iter = 10L, seed = 1L,
-    min_ess = 50, on_low_ess = "abort"
-  ),
-  error = function(e) e
-)
-class(bad)[1L]
-#> [1] "proxymix_degenerate_fit"
-writeLines(strwrap(conditionMessage(bad), width = 70L))
-#> Effective sample size is low: ESS = 1 out of 2000; the fit is
-#> flagged as degenerate. ℹ Consider a heavier-tailed proposal,
-#> more IS draws, or `adapt = "pmc"`.
-```
+\
+`bad`` ``<-`` `[`tryCatch`](https://rdrr.io/r/base/conditions.html)`(`\
+`  `[`fit_kld_em`](https://max578.github.io/proxymix/reference/fit_kld_em.md)`(`\
+`    `[`mixture_target`](https://max578.github.io/proxymix/reference/mixture_target.md)`(``)``, N ``=`` ``3L``,`\
+`    proposal ``=`` `[`proposal_mvn`](https://max578.github.io/proxymix/reference/proposal_uniform.md)`(``n_dim ``=`` ``2L``, mean ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``25``, ``25``)``, cov ``=`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``)``,`\
+`    is_size ``=`` ``2000L``, max_iter ``=`` ``10L``, seed ``=`` ``1L``,`\
+`    min_ess ``=`` ``50``, on_low_ess ``=`` ``"abort"`\
+`  ``)``,`\
+`  error ``=`` ``function``(``e``)`` ``e`\
+`)`\
+[`class`](https://rdrr.io/r/base/class.html)`(``bad``)``[``1L``]`\
+`#> [1] "proxymix_degenerate_fit"`\
+[`writeLines`](https://rdrr.io/r/base/writeLines.html)`(`[`strwrap`](https://rdrr.io/r/base/strwrap.html)`(`[`conditionMessage`](https://rdrr.io/r/base/conditions.html)`(``bad``)``, width ``=`` ``70L``)``)`\
+`#> Effective sample size is low: ESS = 1 out of 2000; the fit is`\
+`#> flagged as degenerate. ``ℹ`` Consider a heavier-tailed proposal,`\
+`` #> more IS draws, or `adapt = "pmc"`. ``
 
 ## Interpretation
 
@@ -491,14 +465,12 @@ It also needs a CmdStan installation, which
 [`cmdstanr::install_cmdstan()`](https://mc-stan.org/cmdstanr/reference/install_cmdstan.html)
 provides:
 
-``` r
-
-install.packages(c("mclust", "BayesianTools"))
-install.packages("cmdstanr",
-                 repos = c("https://stan-dev.r-universe.dev",
-                           getOption("repos")))
-cmdstanr::install_cmdstan()
-```
+\
+[`install.packages`](https://rdrr.io/r/utils/install.packages.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``"mclust"``, ``"BayesianTools"``)``)`\
+[`install.packages`](https://rdrr.io/r/utils/install.packages.html)`(``"cmdstanr"``,`\
+`                 repos ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"https://stan-dev.r-universe.dev"``,`\
+`                           `[`getOption`](https://rdrr.io/r/base/options.html)`(``"repos"``)``)``)`\
+`cmdstanr``::`[`install_cmdstan`](https://mc-stan.org/cmdstanr/reference/install_cmdstan.html)`(``)`
 
 Two scores are taken against references that no method produced. The
 first is $`\mathrm{KL}(f \Vert g) = \int f \log (f / g)`$, with $`f`$
@@ -523,265 +495,263 @@ about 12 minutes of processor time on one core (R 4.6.1, Apple silicon);
 the results below are read from its stored output. A quick reduced run
 needs only the line `n_rep <- 60L` changed to a smaller count.
 
-``` r
-
-library(proxymix)
-library(cmdstanr)
-library(BayesianTools)
-library(mclust)
-
-n_rep <- 60L        # replicates per shape
-budget <- 20000L    # target log-density evaluations per method and replicate
-
-# Each shape: its target, the proposal for the mixture fit, the half-width
-# and cell width of the quadrature grid, and the event whose mass is scored;
-# every event boundary that is a straight line falls on a cell edge, and the
-# grid on the line runs well past the support to count the mass that leaks.
-shapes <- list(
-  banana = list(
-    target = banana_target(), lim = 10, h = 0.025,
-    lower = c(-10, -10), upper = c(10, 10),
-    event = function(x) x[, 1L] > 2, event_name = "P(x1 > 2)",
-    proposal = proposal_mvt(2L, sigma = 4 * diag(2), df = 5)
-  ),
-  donut = list(
-    target = donut_target(), lim = 7, h = 0.025,
-    lower = c(-10, -10), upper = c(10, 10),
-    event = function(x) rowSums(x^2) < 1.5^2, event_name = "P(|x| < 1.5)",
-    proposal = proposal_mvt(2L, sigma = 9 * diag(2), df = 5)
-  ),
-  mixture = list(
-    target = mixture_target(), lim = 8, h = 0.025,
-    lower = c(-10, -10), upper = c(10, 10),
-    event = function(x) x[, 1L] > 2.5, event_name = "P(x1 > 2.5)",
-    proposal = proposal_mvt(2L, sigma = 6 * diag(2), df = 5)
-  ),
-  epanechnikov = list(
-    target = epanechnikov_target(), lim = 6, h = 0.0025,
-    lower = -1, upper = 1,
-    event = function(x) abs(x[, 1L]) > 1, event_name = "P(|x| > 1)",
-    proposal = NULL
-  )
-)
-
-stan_code <- c(
-  banana = "parameters { vector[2] x; }
-model {
-  real z2 = x[2] - 0.5 * (x[1]^2 - 1);
-  target += -0.5 * (x[1]^2 + z2^2);
-}",
-  donut = "parameters { vector[2] x; }
-model { target += -square(sqrt(dot_self(x)) - 2.5) / (2 * 0.25); }",
-  mixture = "parameters { vector[2] x; }
-model {
-  target += log_sum_exp([
-    log(0.3) + multi_normal_lpdf(x | [-2, -2]', [[0.6, 0], [0, 0.6]]),
-    log(0.4) + multi_normal_lpdf(x | [0, 0]', [[0.5, 0.2], [0.2, 0.5]]),
-    log(0.3) + multi_normal_lpdf(x | [2, 2]', [[0.4, -0.1], [-0.1, 0.4]])]');
-}",
-  epanechnikov = "parameters { vector<lower=-1, upper=1>[1] x; }
-model { target += log1m(square(x[1])); }"
-)
-stan_dir <- "density_shapes_stan"
-stan_models <- lapply(names(stan_code), function(s) {
-  cmdstan_model(write_stan_file(stan_code[[s]], dir = stan_dir, basename = s),
-                quiet = TRUE)
-})
-names(stan_models) <- names(stan_code)
-
-# the grid of cell centres carries the target density, the cell area and
-# the event indicator
-make_grid <- function(shape) {
-  p <- shape$target@n_dim
-  gx <- seq(-shape$lim + shape$h / 2, shape$lim - shape$h / 2, by = shape$h)
-  gm <- as.matrix(expand.grid(rep(list(gx), p)))
-  colnames(gm) <- NULL
-  log_f <- shape$target@log_density(gm)
-  list(x = gm, log_f = log_f, f = exp(log_f), cell = shape$h^p,
-       in_event = shape$event(gm))
-}
-
-kl_grid <- function(grid, log_g) {
-  ok <- is.finite(grid$log_f) & grid$f > 1e-300
-  sum(grid$f[ok] * (grid$log_f[ok] - log_g[ok])) * grid$cell
-}
-mass_grid <- function(grid, dens) sum(dens[grid$in_event]) * grid$cell
-
-# a copy of the target whose log-density counts its own calls
-counted_target <- function(shape) {
-  env <- new.env()
-  env$n <- 0L
-  inner <- shape$target@log_density
-  env$target <- gmm_target(
-    n_dim = shape$target@n_dim,
-    log_density = function(x) {
-      if (is.null(dim(x))) x <- matrix(x, nrow = 1L)
-      env$n <- env$n + nrow(x)
-      inner(x)
-    },
-    normalised = TRUE, log_normalizer = 0,
-    support = shape$target@support, name = shape$target@name
-  )
-  env
-}
-
-# Laplace approximation: a Gaussian at the mode found from a random start
-# inside the box; a non-finite log-density is penalised so BFGS stays inside
-laplace_fit <- function(target, shape, seed) {
-  set.seed(seed)
-  start <- runif(length(shape$lower), shape$lower, shape$upper) / 2
-  neg_log_f <- function(v) {
-    out <- -target@log_density(v)
-    if (is.finite(out)) out else 1e10
-  }
-  opt <- optim(start, neg_log_f, method = "BFGS", hessian = TRUE)
-  ev <- eigen(opt$hessian, symmetric = TRUE, only.values = TRUE)$values
-  if (min(ev) <= 1e-6 * max(ev)) return(NULL)
-  list(mean = opt$par, cov = solve(opt$hessian))
-}
-dmvn_log <- function(x, mean, cov) {
-  r <- chol(cov)
-  z <- forwardsolve(t(r), t(x) - mean)
-  -0.5 * colSums(z^2) - sum(log(diag(r))) - 0.5 * ncol(x) * log(2 * pi)
-}
-
-one_replicate <- function(name, r) {
-  shape <- shapes[[name]]
-  p <- shape$target@n_dim
-  grid <- grids[[name]]
-  truth <- mass_grid(grid, grid$f)
-  row <- function(method, n_comp, log_g, draws, evals, secs) {
-    est <- if (is.null(draws)) mass_grid(grid, exp(log_g))
-           else mean(shape$event(draws))
-    data.frame(shape = name, rep = r, method = method, n_comp = n_comp,
-               kl = if (is.null(log_g)) NA_real_ else kl_grid(grid, log_g),
-               mass_error = est - truth, evals = evals, secs = secs,
-               divergent = NA_integer_,
-               captured = if (is.null(log_g)) NA_real_
-                          else sum(exp(log_g)) * grid$cell)
-  }
-
-  # proxymix: component count by select_N, the budget split across candidates
-  ct <- counted_target(shape)
-  # each candidate: is_size fitting draws plus a quarter as many for validation
-  is_size <- as.integer(budget / (8 * 1.25))
-  t0 <- proc.time()[[3L]]
-  sel <- suppressMessages(select_N(
-    ct$target, candidates = 1:8, regime = "kld", proposal = shape$proposal,
-    is_size = is_size, validation_size = is_size %/% 4L, max_iter = if (name == "epanechnikov") 300L else 60L,
-    seed = r
-  ))
-  secs_px <- proc.time()[[3L]] - t0
-  out_px <- row("proxymix", sel$best_n, dgmm(grid$x, sel$best_fit, log = TRUE),
-                NULL, ct$n, secs_px)
-
-  # NUTS: one chain, stopped where the leapfrog steps, one target
-  # evaluation each, reach the budget; warmup draws discarded. A first run
-  # finds that iteration; the second, with the same seed, is timed.
-  nuts_run <- function(n_sampling) {
-    stan_models[[name]]$sample(
-      chains = 1L, iter_warmup = 500L, iter_sampling = n_sampling, seed = r,
-      refresh = 0L, show_messages = FALSE, show_exceptions = FALSE,
-      save_warmup = TRUE, diagnostics = NULL
-    )
-  }
-  pilot <- nuts_run(8000L)$sampler_diagnostics(inc_warmup = TRUE,
-                                                format = "df")
-  n_stop <- sum(cumsum(pilot$n_leapfrog__) <= budget)
-  t0 <- proc.time()[[3L]]
-  fit <- nuts_run(max(n_stop - 500L, 1L))
-  secs_nuts <- proc.time()[[3L]] - t0
-  diag <- fit$sampler_diagnostics(inc_warmup = TRUE, format = "df")
-  keep <- which(cumsum(diag$n_leapfrog__) <= budget)
-  d <- fit$draws("x", inc_warmup = TRUE, format = "df")
-  draws <- do.call(cbind, lapply(seq_len(p), function(j) {
-    d[[paste0("x[", j, "]")]]
-  }))
-  draws_nuts <- draws[keep[keep > 500L], , drop = FALSE]
-  evals_nuts <- sum(diag$n_leapfrog__[keep])
-  out_nuts <- row("NUTS", NA_integer_, NULL, draws_nuts, evals_nuts, secs_nuts)
-  out_nuts$divergent <- sum(diag$divergent__[keep[keep > 500L]])
-
-  # mclust: a mixture fitted to the NUTS draws, full covariances
-  t0 <- proc.time()[[3L]]
-  mc <- Mclust(draws_nuts, G = 1:8, modelNames = if (p == 1L) "V" else "VVV",
-               verbose = FALSE)
-  secs_mc <- proc.time()[[3L]] - t0
-  log_g_mc <- dens(grid$x, mc$modelName, parameters = mc$parameters,
-                   logarithm = TRUE)
-  out_mc <- row("mclust on NUTS", mc$G, log_g_mc, NULL, evals_nuts,
-                secs_nuts + secs_mc)
-
-  # DEzs: three chains sharing the budget, the first half of each discarded
-  ct <- counted_target(shape)
-  setup <- createBayesianSetup(
-    likelihood = function(v) ct$target@log_density(v),
-    lower = shape$lower, upper = shape$upper
-  )
-  t0 <- proc.time()[[3L]]
-  set.seed(r)
-  de <- runMCMC(setup, sampler = "DEzs",
-                settings = list(iterations = budget, message = FALSE))
-  secs_de <- proc.time()[[3L]] - t0
-  draws_de <- getSample(de, start = budget %/% 6L)
-  out_de <- row("DEzs", NA_integer_, NULL, draws_de, ct$n, secs_de)
-
-  # Laplace
-  ct <- counted_target(shape)
-  t0 <- proc.time()[[3L]]
-  lap <- laplace_fit(ct$target, shape, r)
-  secs_lap <- proc.time()[[3L]] - t0
-  out_lap <- if (is.null(lap)) {
-    data.frame(shape = name, rep = r, method = "Laplace", n_comp = 1L,
-               kl = NA_real_, mass_error = NA_real_, evals = ct$n,
-               secs = secs_lap, divergent = NA_integer_,
-               captured = NA_real_)
-  } else {
-    row("Laplace", 1L, dmvn_log(grid$x, lap$mean, lap$cov), NULL, ct$n,
-        secs_lap)
-  }
-
-  rbind(out_px, out_nuts, out_mc, out_de, out_lap)
-}
-
-grids <- lapply(shapes, make_grid)
-res <- do.call(rbind, lapply(names(shapes), function(name) {
-  do.call(rbind, lapply(seq_len(n_rep), function(r) one_replicate(name, r)))
-}))
-
-sim_tab <- aggregate(
-  cbind(kl = kl, abs_mass_error = abs(mass_error), evals = evals, secs = secs,
-        n_comp = n_comp) ~ shape + method,
-  data = res, FUN = mean, na.action = na.pass
-)
-sim_tab$failed <- aggregate(is.na(mass_error) ~ shape + method, data = res,
-                            FUN = sum)[[3L]]
-sim_tab$divergent <- aggregate(divergent ~ shape + method, data = res,
-                               FUN = sum, na.action = na.pass)[[3L]]
-sim_tab
-```
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`cmdstanr`](https://mc-stan.org/cmdstanr/)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`BayesianTools`](https://github.com/florianhartig/BayesianTools)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`mclust`](https://mclust-org.github.io/mclust/)`)`\
+\
+`n_rep`` ``<-`` ``60L``        ``# replicates per shape`\
+`budget`` ``<-`` ``20000L``    ``# target log-density evaluations per method and replicate`\
+\
+`# Each shape: its target, the proposal for the mixture fit, the half-width`\
+`# and cell width of the quadrature grid, and the event whose mass is scored;`\
+`# every event boundary that is a straight line falls on a cell edge, and the`\
+`# grid on the line runs well past the support to count the mass that leaks.`\
+`shapes`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(`\
+`  banana ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`\
+`    target ``=`` `[`banana_target`](https://max578.github.io/proxymix/reference/banana_target.md)`(``)``, lim ``=`` ``10``, h ``=`` ``0.025``,`\
+`    lower ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``-``10``, ``-``10``)``, upper ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``10``, ``10``)``,`\
+`    event ``=`` ``function``(``x``)`` ``x``[``, ``1L``]`` ``>`` ``2``, event_name ``=`` ``"P(x1 > 2)"``,`\
+`    proposal ``=`` `[`proposal_mvt`](https://max578.github.io/proxymix/reference/proposal_uniform.md)`(``2L``, sigma ``=`` ``4`` ``*`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``, df ``=`` ``5``)`\
+`  ``)``,`\
+`  donut ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`\
+`    target ``=`` `[`donut_target`](https://max578.github.io/proxymix/reference/donut_target.md)`(``)``, lim ``=`` ``7``, h ``=`` ``0.025``,`\
+`    lower ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``-``10``, ``-``10``)``, upper ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``10``, ``10``)``,`\
+`    event ``=`` ``function``(``x``)`` `[`rowSums`](https://rdrr.io/r/base/colSums.html)`(``x``^``2``)`` ``<`` ``1.5``^``2``, event_name ``=`` ``"P(|x| < 1.5)"``,`\
+`    proposal ``=`` `[`proposal_mvt`](https://max578.github.io/proxymix/reference/proposal_uniform.md)`(``2L``, sigma ``=`` ``9`` ``*`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``, df ``=`` ``5``)`\
+`  ``)``,`\
+`  mixture ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`\
+`    target ``=`` `[`mixture_target`](https://max578.github.io/proxymix/reference/mixture_target.md)`(``)``, lim ``=`` ``8``, h ``=`` ``0.025``,`\
+`    lower ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``-``10``, ``-``10``)``, upper ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``10``, ``10``)``,`\
+`    event ``=`` ``function``(``x``)`` ``x``[``, ``1L``]`` ``>`` ``2.5``, event_name ``=`` ``"P(x1 > 2.5)"``,`\
+`    proposal ``=`` `[`proposal_mvt`](https://max578.github.io/proxymix/reference/proposal_uniform.md)`(``2L``, sigma ``=`` ``6`` ``*`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``, df ``=`` ``5``)`\
+`  ``)``,`\
+`  epanechnikov ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`\
+`    target ``=`` `[`epanechnikov_target`](https://max578.github.io/proxymix/reference/epanechnikov_target.md)`(``)``, lim ``=`` ``6``, h ``=`` ``0.0025``,`\
+`    lower ``=`` ``-``1``, upper ``=`` ``1``,`\
+`    event ``=`` ``function``(``x``)`` `[`abs`](https://rdrr.io/r/base/MathFun.html)`(``x``[``, ``1L``]``)`` ``>`` ``1``, event_name ``=`` ``"P(|x| > 1)"``,`\
+`    proposal ``=`` ``NULL`\
+`  ``)`\
+`)`\
+\
+`stan_code`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(`\
+`  banana ``=`` ``"parameters { vector[2] x; }`\
+`model {`\
+`  real z2 = x[2] - 0.5 * (x[1]^2 - 1);`\
+`  target += -0.5 * (x[1]^2 + z2^2);`\
+`}"``,`\
+`  donut ``=`` ``"parameters { vector[2] x; }`\
+`model { target += -square(sqrt(dot_self(x)) - 2.5) / (2 * 0.25); }"``,`\
+`  mixture ``=`` ``"parameters { vector[2] x; }`\
+`model {`\
+`  target += log_sum_exp([`\
+`    log(0.3) + multi_normal_lpdf(x | [-2, -2]', [[0.6, 0], [0, 0.6]]),`\
+`    log(0.4) + multi_normal_lpdf(x | [0, 0]', [[0.5, 0.2], [0.2, 0.5]]),`\
+`    log(0.3) + multi_normal_lpdf(x | [2, 2]', [[0.4, -0.1], [-0.1, 0.4]])]');`\
+`}"``,`\
+`  epanechnikov ``=`` ``"parameters { vector<lower=-1, upper=1>[1] x; }`\
+`model { target += log1m(square(x[1])); }"`\
+`)`\
+`stan_dir`` ``<-`` ``"density_shapes_stan"`\
+`stan_models`` ``<-`` `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`names`](https://rdrr.io/r/base/names.html)`(``stan_code``)``, ``function``(``s``)`` ``{`\
+`  `[`cmdstan_model`](https://mc-stan.org/cmdstanr/reference/cmdstan_model.html)`(`[`write_stan_file`](https://mc-stan.org/cmdstanr/reference/write_stan_file.html)`(``stan_code``[[``s``]``]``, dir ``=`` ``stan_dir``, basename ``=`` ``s``)``,`\
+`                quiet ``=`` ``TRUE``)`\
+`}``)`\
+[`names`](https://rdrr.io/r/base/names.html)`(``stan_models``)`` ``<-`` `[`names`](https://rdrr.io/r/base/names.html)`(``stan_code``)`\
+\
+`# the grid of cell centres carries the target density, the cell area and`\
+`# the event indicator`\
+`make_grid`` ``<-`` ``function``(``shape``)`` ``{`\
+`  ``p`` ``<-`` ``shape``$``target``@``n_dim`\
+`  ``gx`` ``<-`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``shape``$``lim`` ``+`` ``shape``$``h`` ``/`` ``2``, ``shape``$``lim`` ``-`` ``shape``$``h`` ``/`` ``2``, by ``=`` ``shape``$``h``)`\
+`  ``gm`` ``<-`` `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(`[`expand.grid`](https://rdrr.io/r/base/expand.grid.html)`(`[`rep`](https://rdrr.io/r/base/rep.html)`(`[`list`](https://rdrr.io/r/base/list.html)`(``gx``)``, ``p``)``)``)`\
+`  `[`colnames`](https://rdrr.io/r/base/colnames.html)`(``gm``)`` ``<-`` ``NULL`\
+`  ``log_f`` ``<-`` ``shape``$``target``@``log_density``(``gm``)`\
+`  `[`list`](https://rdrr.io/r/base/list.html)`(``x ``=`` ``gm``, log_f ``=`` ``log_f``, f ``=`` `[`exp`](https://rdrr.io/r/base/Log.html)`(``log_f``)``, cell ``=`` ``shape``$``h``^``p``,`\
+`       in_event ``=`` ``shape``$``event``(``gm``)``)`\
+`}`\
+\
+`kl_grid`` ``<-`` ``function``(``grid``, ``log_g``)`` ``{`\
+`  ``ok`` ``<-`` `[`is.finite`](https://rdrr.io/r/base/is.finite.html)`(``grid``$``log_f``)`` ``&`` ``grid``$``f`` ``>`` ``1e-300`\
+`  `[`sum`](https://rdrr.io/r/base/sum.html)`(``grid``$``f``[``ok``]`` ``*`` ``(``grid``$``log_f``[``ok``]`` ``-`` ``log_g``[``ok``]``)``)`` ``*`` ``grid``$``cell`\
+`}`\
+`mass_grid`` ``<-`` ``function``(``grid``, ``dens``)`` `[`sum`](https://rdrr.io/r/base/sum.html)`(``dens``[``grid``$``in_event``]``)`` ``*`` ``grid``$``cell`\
+\
+`# a copy of the target whose log-density counts its own calls`\
+`counted_target`` ``<-`` ``function``(``shape``)`` ``{`\
+`  ``env`` ``<-`` `[`new.env`](https://rdrr.io/r/base/environment.html)`(``)`\
+`  ``env``$``n`` ``<-`` ``0L`\
+`  ``inner`` ``<-`` ``shape``$``target``@``log_density`\
+`  ``env``$``target`` ``<-`` `[`gmm_target`](https://max578.github.io/proxymix/reference/gmm_target.md)`(`\
+`    n_dim ``=`` ``shape``$``target``@``n_dim``,`\
+`    log_density ``=`` ``function``(``x``)`` ``{`\
+`      ``if`` ``(`[`is.null`](https://rdrr.io/r/base/NULL.html)`(`[`dim`](https://rdrr.io/r/base/dim.html)`(``x``)``)``)`` ``x`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``x``, nrow ``=`` ``1L``)`\
+`      ``env``$``n`` ``<-`` ``env``$``n`` ``+`` `[`nrow`](https://rdrr.io/r/base/nrow.html)`(``x``)`\
+`      ``inner``(``x``)`\
+`    ``}``,`\
+`    normalised ``=`` ``TRUE``, log_normalizer ``=`` ``0``,`\
+`    support ``=`` ``shape``$``target``@``support``, name ``=`` ``shape``$``target``@``name`\
+`  ``)`\
+`  ``env`\
+`}`\
+\
+`# Laplace approximation: a Gaussian at the mode found from a random start`\
+`# inside the box; a non-finite log-density is penalised so BFGS stays inside`\
+`laplace_fit`` ``<-`` ``function``(``target``, ``shape``, ``seed``)`` ``{`\
+`  `[`set.seed`](https://rdrr.io/r/base/Random.html)`(``seed``)`\
+`  ``start`` ``<-`` `[`runif`](https://rdrr.io/r/stats/Uniform.html)`(`[`length`](https://rdrr.io/r/base/length.html)`(``shape``$``lower``)``, ``shape``$``lower``, ``shape``$``upper``)`` ``/`` ``2`\
+`  ``neg_log_f`` ``<-`` ``function``(``v``)`` ``{`\
+`    ``out`` ``<-`` ``-``target``@``log_density``(``v``)`\
+`    ``if`` ``(`[`is.finite`](https://rdrr.io/r/base/is.finite.html)`(``out``)``)`` ``out`` ``else`` ``1e10`\
+`  ``}`\
+`  ``opt`` ``<-`` `[`optim`](https://rdrr.io/r/stats/optim.html)`(``start``, ``neg_log_f``, method ``=`` ``"BFGS"``, hessian ``=`` ``TRUE``)`\
+`  ``ev`` ``<-`` `[`eigen`](https://rdrr.io/r/base/eigen.html)`(``opt``$``hessian``, symmetric ``=`` ``TRUE``, only.values ``=`` ``TRUE``)``$``values`\
+`  ``if`` ``(`[`min`](https://rdrr.io/r/base/Extremes.html)`(``ev``)`` ``<=`` ``1e-6`` ``*`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(``ev``)``)`` `[`return`](https://rdrr.io/r/base/function.html)`(``NULL``)`\
+`  `[`list`](https://rdrr.io/r/base/list.html)`(``mean ``=`` ``opt``$``par``, cov ``=`` `[`solve`](https://rdrr.io/r/base/solve.html)`(``opt``$``hessian``)``)`\
+`}`\
+`dmvn_log`` ``<-`` ``function``(``x``, ``mean``, ``cov``)`` ``{`\
+`  ``r`` ``<-`` `[`chol`](https://rdrr.io/r/base/chol.html)`(``cov``)`\
+`  ``z`` ``<-`` `[`forwardsolve`](https://rdrr.io/r/base/backsolve.html)`(`[`t`](https://rdrr.io/r/base/t.html)`(``r``)``, `[`t`](https://rdrr.io/r/base/t.html)`(``x``)`` ``-`` ``mean``)`\
+`  ``-``0.5`` ``*`` `[`colSums`](https://rdrr.io/r/base/colSums.html)`(``z``^``2``)`` ``-`` `[`sum`](https://rdrr.io/r/base/sum.html)`(`[`log`](https://rdrr.io/r/base/Log.html)`(`[`diag`](https://rdrr.io/r/base/diag.html)`(``r``)``)``)`` ``-`` ``0.5`` ``*`` `[`ncol`](https://rdrr.io/r/base/nrow.html)`(``x``)`` ``*`` `[`log`](https://rdrr.io/r/base/Log.html)`(``2`` ``*`` ``pi``)`\
+`}`\
+\
+`one_replicate`` ``<-`` ``function``(``name``, ``r``)`` ``{`\
+`  ``shape`` ``<-`` ``shapes``[[``name``]``]`\
+`  ``p`` ``<-`` ``shape``$``target``@``n_dim`\
+`  ``grid`` ``<-`` ``grids``[[``name``]``]`\
+`  ``truth`` ``<-`` ``mass_grid``(``grid``, ``grid``$``f``)`\
+`  ``row`` ``<-`` ``function``(``method``, ``n_comp``, ``log_g``, ``draws``, ``evals``, ``secs``)`` ``{`\
+`    ``est`` ``<-`` ``if`` ``(`[`is.null`](https://rdrr.io/r/base/NULL.html)`(``draws``)``)`` ``mass_grid``(``grid``, `[`exp`](https://rdrr.io/r/base/Log.html)`(``log_g``)``)`\
+`           ``else`` `[`mean`](https://rdrr.io/r/base/mean.html)`(``shape``$``event``(``draws``)``)`\
+`    `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``shape ``=`` ``name``, rep ``=`` ``r``, method ``=`` ``method``, n_comp ``=`` ``n_comp``,`\
+`               kl ``=`` ``if`` ``(`[`is.null`](https://rdrr.io/r/base/NULL.html)`(``log_g``)``)`` ``NA_real_`` ``else`` ``kl_grid``(``grid``, ``log_g``)``,`\
+`               mass_error ``=`` ``est`` ``-`` ``truth``, evals ``=`` ``evals``, secs ``=`` ``secs``,`\
+`               divergent ``=`` ``NA_integer_``,`\
+`               captured ``=`` ``if`` ``(`[`is.null`](https://rdrr.io/r/base/NULL.html)`(``log_g``)``)`` ``NA_real_`\
+`                          ``else`` `[`sum`](https://rdrr.io/r/base/sum.html)`(`[`exp`](https://rdrr.io/r/base/Log.html)`(``log_g``)``)`` ``*`` ``grid``$``cell``)`\
+`  ``}`\
+\
+`  ``# proxymix: component count by select_N, the budget split across candidates`\
+`  ``ct`` ``<-`` ``counted_target``(``shape``)`\
+`  ``# each candidate: is_size fitting draws plus a quarter as many for validation`\
+`  ``is_size`` ``<-`` `[`as.integer`](https://rdrr.io/r/base/integer.html)`(``budget`` ``/`` ``(``8`` ``*`` ``1.25``)``)`\
+`  ``t0`` ``<-`` `[`proc.time`](https://rdrr.io/r/base/proc.time.html)`(``)``[[``3L``]``]`\
+`  ``sel`` ``<-`` `[`suppressMessages`](https://rdrr.io/r/base/message.html)`(`[`select_N`](https://max578.github.io/proxymix/reference/select_N.md)`(`\
+`    ``ct``$``target``, candidates ``=`` ``1``:``8``, regime ``=`` ``"kld"``, proposal ``=`` ``shape``$``proposal``,`\
+`    is_size ``=`` ``is_size``, validation_size ``=`` ``is_size`` `[`%/%`](https://rdrr.io/r/base/Arithmetic.html)` ``4L``, max_iter ``=`` ``if`` ``(``name`` ``==`` ``"epanechnikov"``)`` ``300L`` ``else`` ``60L``,`\
+`    seed ``=`` ``r`\
+`  ``)``)`\
+`  ``secs_px`` ``<-`` `[`proc.time`](https://rdrr.io/r/base/proc.time.html)`(``)``[[``3L``]``]`` ``-`` ``t0`\
+`  ``out_px`` ``<-`` `[`row`](https://rdrr.io/r/base/row.html)`(``"proxymix"``, ``sel``$``best_n``, `[`dgmm`](https://max578.github.io/proxymix/reference/dgmm.md)`(``grid``$``x``, ``sel``$``best_fit``, log ``=`` ``TRUE``)``,`\
+`                ``NULL``, ``ct``$``n``, ``secs_px``)`\
+\
+`  ``# NUTS: one chain, stopped where the leapfrog steps, one target`\
+`  ``# evaluation each, reach the budget; warmup draws discarded. A first run`\
+`  ``# finds that iteration; the second, with the same seed, is timed.`\
+`  ``nuts_run`` ``<-`` ``function``(``n_sampling``)`` ``{`\
+`    ``stan_models``[[``name``]``]``$``sample``(`\
+`      chains ``=`` ``1L``, iter_warmup ``=`` ``500L``, iter_sampling ``=`` ``n_sampling``, seed ``=`` ``r``,`\
+`      refresh ``=`` ``0L``, show_messages ``=`` ``FALSE``, show_exceptions ``=`` ``FALSE``,`\
+`      save_warmup ``=`` ``TRUE``, diagnostics ``=`` ``NULL`\
+`    ``)`\
+`  ``}`\
+`  ``pilot`` ``<-`` ``nuts_run``(``8000L``)``$``sampler_diagnostics``(``inc_warmup ``=`` ``TRUE``,`\
+`                                                format ``=`` ``"df"``)`\
+`  ``n_stop`` ``<-`` `[`sum`](https://rdrr.io/r/base/sum.html)`(`[`cumsum`](https://rdrr.io/r/base/cumsum.html)`(``pilot``$``n_leapfrog__``)`` ``<=`` ``budget``)`\
+`  ``t0`` ``<-`` `[`proc.time`](https://rdrr.io/r/base/proc.time.html)`(``)``[[``3L``]``]`\
+`  ``fit`` ``<-`` ``nuts_run``(`[`max`](https://rdrr.io/r/base/Extremes.html)`(``n_stop`` ``-`` ``500L``, ``1L``)``)`\
+`  ``secs_nuts`` ``<-`` `[`proc.time`](https://rdrr.io/r/base/proc.time.html)`(``)``[[``3L``]``]`` ``-`` ``t0`\
+`  ``diag`` ``<-`` ``fit``$``sampler_diagnostics``(``inc_warmup ``=`` ``TRUE``, format ``=`` ``"df"``)`\
+`  ``keep`` ``<-`` `[`which`](https://rdrr.io/r/base/which.html)`(`[`cumsum`](https://rdrr.io/r/base/cumsum.html)`(``diag``$``n_leapfrog__``)`` ``<=`` ``budget``)`\
+`  ``d`` ``<-`` ``fit``$``draws``(``"x"``, inc_warmup ``=`` ``TRUE``, format ``=`` ``"df"``)`\
+`  ``draws`` ``<-`` `[`do.call`](https://rdrr.io/r/base/do.call.html)`(``cbind``, `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``p``)``, ``function``(``j``)`` ``{`\
+`    ``d``[[`[`paste0`](https://rdrr.io/r/base/paste.html)`(``"x["``, ``j``, ``"]"``)``]``]`\
+`  ``}``)``)`\
+`  ``draws_nuts`` ``<-`` ``draws``[``keep``[``keep`` ``>`` ``500L``]``, , drop ``=`` ``FALSE``]`\
+`  ``evals_nuts`` ``<-`` `[`sum`](https://rdrr.io/r/base/sum.html)`(``diag``$``n_leapfrog__``[``keep``]``)`\
+`  ``out_nuts`` ``<-`` `[`row`](https://rdrr.io/r/base/row.html)`(``"NUTS"``, ``NA_integer_``, ``NULL``, ``draws_nuts``, ``evals_nuts``, ``secs_nuts``)`\
+`  ``out_nuts``$``divergent`` ``<-`` `[`sum`](https://rdrr.io/r/base/sum.html)`(``diag``$``divergent__``[``keep``[``keep`` ``>`` ``500L``]``]``)`\
+\
+`  ``# mclust: a mixture fitted to the NUTS draws, full covariances`\
+`  ``t0`` ``<-`` `[`proc.time`](https://rdrr.io/r/base/proc.time.html)`(``)``[[``3L``]``]`\
+`  ``mc`` ``<-`` `[`Mclust`](https://mclust-org.github.io/mclust/reference/Mclust.html)`(``draws_nuts``, G ``=`` ``1``:``8``, modelNames ``=`` ``if`` ``(``p`` ``==`` ``1L``)`` ``"V"`` ``else`` ``"VVV"``,`\
+`               verbose ``=`` ``FALSE``)`\
+`  ``secs_mc`` ``<-`` `[`proc.time`](https://rdrr.io/r/base/proc.time.html)`(``)``[[``3L``]``]`` ``-`` ``t0`\
+`  ``log_g_mc`` ``<-`` `[`dens`](https://mclust-org.github.io/mclust/reference/dens.html)`(``grid``$``x``, ``mc``$``modelName``, parameters ``=`` ``mc``$``parameters``,`\
+`                   logarithm ``=`` ``TRUE``)`\
+`  ``out_mc`` ``<-`` `[`row`](https://rdrr.io/r/base/row.html)`(``"mclust on NUTS"``, ``mc``$``G``, ``log_g_mc``, ``NULL``, ``evals_nuts``,`\
+`                ``secs_nuts`` ``+`` ``secs_mc``)`\
+\
+`  ``# DEzs: three chains sharing the budget, the first half of each discarded`\
+`  ``ct`` ``<-`` ``counted_target``(``shape``)`\
+`  ``setup`` ``<-`` `[`createBayesianSetup`](https://rdrr.io/pkg/BayesianTools/man/createBayesianSetup.html)`(`\
+`    likelihood ``=`` ``function``(``v``)`` ``ct``$``target``@``log_density``(``v``)``,`\
+`    lower ``=`` ``shape``$``lower``, upper ``=`` ``shape``$``upper`\
+`  ``)`\
+`  ``t0`` ``<-`` `[`proc.time`](https://rdrr.io/r/base/proc.time.html)`(``)``[[``3L``]``]`\
+`  `[`set.seed`](https://rdrr.io/r/base/Random.html)`(``r``)`\
+`  ``de`` ``<-`` `[`runMCMC`](https://rdrr.io/pkg/BayesianTools/man/runMCMC.html)`(``setup``, sampler ``=`` ``"DEzs"``,`\
+`                settings ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``iterations ``=`` ``budget``, message ``=`` ``FALSE``)``)`\
+`  ``secs_de`` ``<-`` `[`proc.time`](https://rdrr.io/r/base/proc.time.html)`(``)``[[``3L``]``]`` ``-`` ``t0`\
+`  ``draws_de`` ``<-`` `[`getSample`](https://rdrr.io/pkg/BayesianTools/man/getSample.html)`(``de``, start ``=`` ``budget`` `[`%/%`](https://rdrr.io/r/base/Arithmetic.html)` ``6L``)`\
+`  ``out_de`` ``<-`` `[`row`](https://rdrr.io/r/base/row.html)`(``"DEzs"``, ``NA_integer_``, ``NULL``, ``draws_de``, ``ct``$``n``, ``secs_de``)`\
+\
+`  ``# Laplace`\
+`  ``ct`` ``<-`` ``counted_target``(``shape``)`\
+`  ``t0`` ``<-`` `[`proc.time`](https://rdrr.io/r/base/proc.time.html)`(``)``[[``3L``]``]`\
+`  ``lap`` ``<-`` ``laplace_fit``(``ct``$``target``, ``shape``, ``r``)`\
+`  ``secs_lap`` ``<-`` `[`proc.time`](https://rdrr.io/r/base/proc.time.html)`(``)``[[``3L``]``]`` ``-`` ``t0`\
+`  ``out_lap`` ``<-`` ``if`` ``(`[`is.null`](https://rdrr.io/r/base/NULL.html)`(``lap``)``)`` ``{`\
+`    `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``shape ``=`` ``name``, rep ``=`` ``r``, method ``=`` ``"Laplace"``, n_comp ``=`` ``1L``,`\
+`               kl ``=`` ``NA_real_``, mass_error ``=`` ``NA_real_``, evals ``=`` ``ct``$``n``,`\
+`               secs ``=`` ``secs_lap``, divergent ``=`` ``NA_integer_``,`\
+`               captured ``=`` ``NA_real_``)`\
+`  ``}`` ``else`` ``{`\
+`    `[`row`](https://rdrr.io/r/base/row.html)`(``"Laplace"``, ``1L``, ``dmvn_log``(``grid``$``x``, ``lap``$``mean``, ``lap``$``cov``)``, ``NULL``, ``ct``$``n``,`\
+`        ``secs_lap``)`\
+`  ``}`\
+\
+`  `[`rbind`](https://rdrr.io/r/base/cbind.html)`(``out_px``, ``out_nuts``, ``out_mc``, ``out_de``, ``out_lap``)`\
+`}`\
+\
+`grids`` ``<-`` `[`lapply`](https://rdrr.io/r/base/lapply.html)`(``shapes``, ``make_grid``)`\
+`res`` ``<-`` `[`do.call`](https://rdrr.io/r/base/do.call.html)`(``rbind``, `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`names`](https://rdrr.io/r/base/names.html)`(``shapes``)``, ``function``(``name``)`` ``{`\
+`  `[`do.call`](https://rdrr.io/r/base/do.call.html)`(``rbind``, `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``n_rep``)``, ``function``(``r``)`` ``one_replicate``(``name``, ``r``)``)``)`\
+`}``)``)`\
+\
+`sim_tab`` ``<-`` `[`aggregate`](https://rdrr.io/r/stats/aggregate.html)`(`\
+`  `[`cbind`](https://rdrr.io/r/base/cbind.html)`(``kl ``=`` ``kl``, abs_mass_error ``=`` `[`abs`](https://rdrr.io/r/base/MathFun.html)`(``mass_error``)``, evals ``=`` ``evals``, secs ``=`` ``secs``,`\
+`        n_comp ``=`` ``n_comp``)`` ``~`` ``shape`` ``+`` ``method``,`\
+`  data ``=`` ``res``, FUN ``=`` ``mean``, na.action ``=`` ``na.pass`\
+`)`\
+`sim_tab``$``failed`` ``<-`` `[`aggregate`](https://rdrr.io/r/stats/aggregate.html)`(`[`is.na`](https://rdrr.io/r/base/NA.html)`(``mass_error``)`` ``~`` ``shape`` ``+`` ``method``, data ``=`` ``res``,`\
+`                            FUN ``=`` ``sum``)``[[``3L``]``]`\
+`sim_tab``$``divergent`` ``<-`` `[`aggregate`](https://rdrr.io/r/stats/aggregate.html)`(``divergent`` ``~`` ``shape`` ``+`` ``method``, data ``=`` ``res``,`\
+`                               FUN ``=`` ``sum``, na.action ``=`` ``na.pass``)``[[``3L``]``]`\
+`sim_tab`
 
 | Shape        | Method         |   N |     KL | Mass error | Evals | Secs | Failed | Div. |
 |:-------------|:---------------|----:|-------:|-----------:|------:|-----:|-------:|-----:|
-| banana       | proxymix       | 3.4 | 0.0140 |     0.0023 | 20000 | 0.41 |      0 |    – |
-| banana       | NUTS           |   – |      – |     0.0038 | 19998 | 0.27 |      0 |  125 |
-| banana       | mclust on NUTS | 3.1 | 0.0148 |     0.0040 | 19998 | 2.11 |      0 |    – |
-| banana       | DEzs           |   – |      – |     0.0038 | 19812 | 1.07 |      0 |    – |
+| banana       | proxymix       | 3.4 | 0.0140 |     0.0023 | 20000 | 0.38 |      0 |    – |
+| banana       | NUTS           |   – |      – |     0.0038 | 19998 | 0.22 |      0 |  125 |
+| banana       | mclust on NUTS | 3.1 | 0.0148 |     0.0040 | 19998 | 1.94 |      0 |    – |
+| banana       | DEzs           |   – |      – |     0.0038 | 19812 | 0.96 |      0 |    – |
 | banana       | Laplace        | 1.0 | 0.3745 |     0.0000 |    69 | 0.00 |      0 |    – |
-| donut        | proxymix       | 5.8 | 0.0373 |     0.0026 | 20000 | 0.25 |      0 |    – |
-| donut        | NUTS           |   – |      – |     0.0029 | 19989 | 0.23 |      0 |    0 |
-| donut        | mclust on NUTS | 5.4 | 0.0489 |     0.0029 | 19989 | 0.53 |      0 |    – |
-| donut        | DEzs           |   – |      – |     0.0019 | 19737 | 1.22 |      0 |    – |
+| donut        | proxymix       | 5.8 | 0.0373 |     0.0026 | 20000 | 0.24 |      0 |    – |
+| donut        | NUTS           |   – |      – |     0.0029 | 19989 | 0.21 |      0 |    0 |
+| donut        | mclust on NUTS | 5.4 | 0.0489 |     0.0029 | 19989 | 0.51 |      0 |    – |
+| donut        | DEzs           |   – |      – |     0.0019 | 19737 | 1.03 |      0 |    – |
 | donut        | Laplace        |   – |      – |          – |    39 | 0.00 |     60 |    – |
-| mixture      | proxymix       | 3.1 | 0.0108 |     0.0077 | 20000 | 0.32 |      0 |    – |
-| mixture      | NUTS           |   – |      – |     0.0071 | 19997 | 0.24 |      0 |    0 |
-| mixture      | mclust on NUTS | 3.0 | 0.0075 |     0.0068 | 19997 | 1.70 |      0 |    – |
-| mixture      | DEzs           |   – |      – |     0.0058 | 19739 | 1.78 |      0 |    – |
+| mixture      | proxymix       | 3.1 | 0.0108 |     0.0077 | 20000 | 0.26 |      0 |    – |
+| mixture      | NUTS           |   – |      – |     0.0071 | 19997 | 0.22 |      0 |    0 |
+| mixture      | mclust on NUTS | 3.0 | 0.0075 |     0.0068 | 19997 | 1.49 |      0 |    – |
+| mixture      | DEzs           |   – |      – |     0.0058 | 19739 | 1.47 |      0 |    – |
 | mixture      | Laplace        | 1.0 | 9.2499 |     0.0786 |    58 | 0.00 |      0 |    – |
-| Epanechnikov | proxymix       | 4.2 | 0.0087 |     0.0035 | 20000 | 0.64 |      0 |    – |
-| Epanechnikov | NUTS           |   – |      – |     0.0000 | 19891 | 0.23 |      0 |    0 |
-| Epanechnikov | mclust on NUTS | 4.3 | 0.0064 |     0.0028 | 19891 | 1.16 |      0 |    – |
-| Epanechnikov | DEzs           |   – |      – |     0.0000 | 12329 | 1.52 |      0 |    – |
+| Epanechnikov | proxymix       | 4.2 | 0.0087 |     0.0035 | 20000 | 0.59 |      0 |    – |
+| Epanechnikov | NUTS           |   – |      – |     0.0000 | 19891 | 0.21 |      0 |    0 |
+| Epanechnikov | mclust on NUTS | 4.3 | 0.0064 |     0.0028 | 19891 | 1.11 |      0 |    – |
+| Epanechnikov | DEzs           |   – |      – |     0.0000 | 12329 | 1.41 |      0 |    – |
 | Epanechnikov | Laplace        | 1.0 | 0.2043 |     0.1573 |    24 | 0.00 |      0 |    – |
 
 Mean number of components, mean KL (the Kullback-Leibler divergence
@@ -796,7 +766,7 @@ that does not apply: samplers return no density and so have no component
 count or KL, only NUTS reports divergent transitions, and a method that
 failed in every replicate has no component count, KL or mass error.
 Mixture is the three-component mixture target. {.table
-style="width:100%;"}
+style="width:99%;"}
 
 On the divergence, neither route to a mixture is lower at every shape.
 proxymix reaches 0.0140 on the banana, 0.0108 on the three-mixture and
@@ -831,10 +801,10 @@ Every budgeted method used close to its 20000 evaluations, apart from
 DEzs on the bounded target, which evaluated the density 12329 times on
 average because BayesianTools 0.1.9 rejects a proposal outside the prior
 box before evaluating it. The Laplace approximation needed 24 to 69
-evaluations. In elapsed time per replicate proxymix took 0.25 to 0.64
-seconds across the shapes, NUTS 0.23 to 0.27, the mclust stage on top of
-NUTS brought the two-stage route to 0.53 to 2.11, and DEzs took 1.07 to
-1.78. The Div. column of the table counts 125 divergent transitions
+evaluations. In elapsed time per replicate proxymix took 0.24 to 0.59
+seconds across the shapes, NUTS 0.21 to 0.22, the mclust stage on top of
+NUTS brought the two-stage route to 0.51 to 1.94, and DEzs took 0.96 to
+1.47. The Div. column of the table counts 125 divergent transitions
 across the retained NUTS iterations, all of them on the banana.
 
 In this run proxymix reached a lower KL than the two-stage mixture on
@@ -846,20 +816,18 @@ and the Epanechnikov target, where the proxymix KL was higher by 43 and
 0.0010) and 0.0024 (paired standard error 0.0004). On the banana the
 paired difference is 1.3 standard errors, which does not resolve which
 of the two is lower at 60 replicates. By mean elapsed time the fastest
-budgeted method was NUTS on the banana, the three-mixture and the
-Epanechnikov target, ahead of the next by more than two paired standard
-errors. The two fastest budgeted methods, NUTS and proxymix on the
-donut, were within two paired standard errors of each other. The NUTS
-times leave out the untimed first run, of 500 warmup and 8000 sampling
-iterations, that finds where to stop. The samplers reproduced the
-bounded support exactly, where every mixture leaked mass past the
-boundary, and their estimate of any event’s mass is consistent as the
-chain lengthens, while a mixture of at most eight components carries a
-residual divergence on the donut at this budget. The comparison covers
-four shapes in one and two dimensions at one budget, with component
-counts capped at eight and hand-set proposals for the mixture fit, and
-says nothing about higher dimensions, other budgets or targets that must
-be sampled rather than evaluated.
+budgeted method was NUTS on the banana, the donut, the three-mixture and
+the Epanechnikov target, ahead of the next by more than two paired
+standard errors. The NUTS times leave out the untimed first run, of 500
+warmup and 8000 sampling iterations, that finds where to stop. The
+samplers reproduced the bounded support exactly, where every mixture
+leaked mass past the boundary, and their estimate of any event’s mass is
+consistent as the chain lengthens, while a mixture of at most eight
+components carries a residual divergence on the donut at this budget.
+The comparison covers four shapes in one and two dimensions at one
+budget, with component counts capped at eight and hand-set proposals for
+the mixture fit, and says nothing about higher dimensions, other budgets
+or targets that must be sampled rather than evaluated.
 
 ## Further reading
 
@@ -916,59 +884,57 @@ In the simulation each replicate passes its own index as the seed to
 to the Stan sampler and to
 [`set.seed()`](https://rdrr.io/r/base/Random.html) before the
 differential-evolution run and the Laplace start point. The stored
-results come from the code shown, run on 27 September 2026 with R 4.6.1,
+results come from the code shown, run on 28 September 2026 with R 4.6.1,
 proxymix 0.16.0, cmdstanr 0.9.0 on CmdStan 2.38.0, BayesianTools 0.1.9
 and mclust 6.1.3, and the run raised 0 warnings.
 
-``` r
-
-old_opt <- options(width = 72L)
-si_vec <- trimws(capture.output(sessionInfo()), "right")
-options(old_opt)
-# library paths are single long words, so a long line breaks after a slash
-long_vec <- nchar(si_vec) > 72L
-si_vec[long_vec] <- gsub("(.{1,68}/)(?=.{8,})", "\\1\n        ",
-                         si_vec[long_vec], perl = TRUE)
-writeLines(si_vec)
-#> R version 4.6.1 (2026-06-24)
-#> Platform: aarch64-apple-darwin23
-#> Running under: macOS Tahoe 26.6.2
-#> 
-#> Matrix products: default
-#> BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/
-#>         libRblas.0.dylib
-#> LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/
-#>         libRlapack.dylib;  LAPACK version 3.12.1
-#> 
-#> locale:
-#> [1] en_AU.UTF-8/en_AU.UTF-8/en_AU.UTF-8/C/en_AU.UTF-8/en_AU.UTF-8
-#> 
-#> time zone: Australia/Adelaide
-#> tzcode source: internal
-#> 
-#> attached base packages:
-#> [1] stats     graphics  grDevices utils     datasets  methods
-#> [7] base
-#> 
-#> other attached packages:
-#> [1] proxymix_0.16.0
-#> 
-#> loaded via a namespace (and not attached):
-#>  [1] mvnfast_0.2.8      gtable_0.3.6       jsonlite_2.0.0
-#>  [4] dplyr_1.2.1        compiler_4.6.1     Rcpp_1.1.2
-#>  [7] tidyselect_1.2.1   dichromat_2.0-1    jquerylib_0.1.4
-#> [10] systemfonts_1.3.2  scales_1.4.0       textshaping_1.0.5
-#> [13] yaml_2.3.12        fastmap_1.2.0      ggplot2_4.0.3
-#> [16] R6_2.6.1           labeling_0.4.3     generics_0.1.4
-#> [19] isoband_0.3.0      knitr_1.51         htmlwidgets_1.6.4
-#> [22] tibble_3.3.1       desc_1.4.3         bslib_0.12.0
-#> [25] pillar_1.11.1      RColorBrewer_1.1-3 rlang_1.3.0
-#> [28] cachem_1.1.0       xfun_0.60          fs_2.1.0
-#> [31] sass_0.4.10        S7_0.2.2           otel_0.2.0
-#> [34] viridisLite_0.4.3  cli_3.6.6          pkgdown_2.2.1
-#> [37] withr_3.0.3        magrittr_2.0.5     digest_0.6.39
-#> [40] grid_4.6.1         lifecycle_1.0.5    vctrs_0.7.3
-#> [43] evaluate_1.0.5     glue_1.8.1         farver_2.1.2
-#> [46] ragg_1.5.2         rmarkdown_2.32     tools_4.6.1
-#> [49] pkgconfig_2.0.3    htmltools_0.5.9
-```
+\
+`old_opt`` ``<-`` `[`options`](https://rdrr.io/r/base/options.html)`(``width ``=`` ``72L``)`\
+`si_vec`` ``<-`` `[`trimws`](https://rdrr.io/r/base/trimws.html)`(`[`capture.output`](https://rdrr.io/r/utils/capture.output.html)`(`[`sessionInfo`](https://rdrr.io/r/utils/sessionInfo.html)`(``)``)``, ``"right"``)`\
+[`options`](https://rdrr.io/r/base/options.html)`(``old_opt``)`\
+`# library paths are single long words, so a long line breaks after a slash`\
+`long_vec`` ``<-`` `[`nchar`](https://rdrr.io/r/base/nchar.html)`(``si_vec``)`` ``>`` ``72L`\
+`si_vec``[``long_vec``]`` ``<-`` `[`gsub`](https://rdrr.io/r/base/grep.html)`(``"(.{1,68}/)(?=.{8,})"``, ``"\\1\n        "``,`\
+`                         ``si_vec``[``long_vec``]``, perl ``=`` ``TRUE``)`\
+[`writeLines`](https://rdrr.io/r/base/writeLines.html)`(``si_vec``)`\
+`#> R version 4.6.1 (2026-06-24)`\
+`#> Platform: aarch64-apple-darwin23`\
+`#> Running under: macOS Tahoe 26.6.2`\
+`#> `\
+`#> Matrix products: default`\
+`#> BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/`\
+`#>         libRblas.0.dylib`\
+`#> LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/`\
+`#>         libRlapack.dylib;  LAPACK version 3.12.1`\
+`#> `\
+`#> locale:`\
+`#> [1] en_AU.UTF-8/en_AU.UTF-8/en_AU.UTF-8/C/en_AU.UTF-8/en_AU.UTF-8`\
+`#> `\
+`#> time zone: Australia/Adelaide`\
+`#> tzcode source: internal`\
+`#> `\
+`#> attached base packages:`\
+`#> [1] stats     graphics  grDevices utils     datasets  methods`\
+`#> [7] base`\
+`#> `\
+`#> other attached packages:`\
+`#> [1] proxymix_0.16.0`\
+`#> `\
+`#> loaded via a namespace (and not attached):`\
+`#>  [1] mvnfast_0.2.8      gtable_0.3.6       jsonlite_2.0.0`\
+`#>  [4] dplyr_1.2.1        compiler_4.6.1     Rcpp_1.1.2`\
+`#>  [7] tidyselect_1.2.1   dichromat_2.0-1    jquerylib_0.1.4`\
+`#> [10] systemfonts_1.3.2  scales_1.4.0       textshaping_1.0.5`\
+`#> [13] yaml_2.3.12        fastmap_1.2.0      ggplot2_4.0.3`\
+`#> [16] R6_2.6.1           labeling_0.4.3     generics_0.1.4`\
+`#> [19] isoband_0.3.0      knitr_1.51         htmlwidgets_1.6.4`\
+`#> [22] tibble_3.3.1       desc_1.4.3         bslib_0.12.0`\
+`#> [25] pillar_1.11.1      RColorBrewer_1.1-3 rlang_1.3.0`\
+`#> [28] cachem_1.1.0       xfun_0.60          fs_2.1.0`\
+`#> [31] sass_0.4.10        S7_0.2.2           otel_0.2.0`\
+`#> [34] viridisLite_0.4.3  cli_3.6.6          pkgdown_2.2.1`\
+`#> [37] withr_3.0.3        magrittr_2.0.5     digest_0.6.39`\
+`#> [40] grid_4.6.1         lifecycle_1.0.5    vctrs_0.7.3`\
+`#> [43] evaluate_1.0.5     glue_1.8.1         farver_2.1.2`\
+`#> [46] ragg_1.5.2         rmarkdown_2.32     tools_4.6.1`\
+`#> [49] pkgconfig_2.0.3    htmltools_0.5.9`

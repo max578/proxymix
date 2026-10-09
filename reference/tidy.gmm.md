@@ -5,20 +5,16 @@ the mean coordinates (`mean_1`, ...), and the marginal variances
 (`var_1`, ...). Available as `generics::tidy(g)` (or `broom::tidy(g)`)
 when the `generics` package is installed.
 
-## Arguments
-
-- x:
-
-  A [gmm](https://max578.github.io/proxymix/reference/gmm.md) (or
-  [gmm_fit](https://max578.github.io/proxymix/reference/gmm_fit.md)).
-
-- ...:
-
-  Ignored, for generic compatibility.
-
 ## Value
 
 A data frame with `K` rows.
+
+## Arguments
+
+Called as `generics::tidy(x, ...)`, where `x` is a
+[gmm](https://max578.github.io/proxymix/reference/gmm.md) (or
+[gmm_fit](https://max578.github.io/proxymix/reference/gmm_fit.md)) and
+`...` is ignored.
 
 ## See also
 

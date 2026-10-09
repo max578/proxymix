@@ -776,7 +776,7 @@ form</td>
 <tr class="odd">
 <td align="left">Two-component effect equals the per-arm least-squares
 contrast</td>
-<td align="left">1.7e-06</td>
+<td align="left">2.6e-06</td>
 </tr>
 </tbody>
 </table>
@@ -847,7 +847,7 @@ returns that arm’s least-squares line, and the estimated effect is the
 difference of the two lines: the two-model learner with a linear model
 in each arm. The estimate and the per-arm least-squares contrast differ
 by at most
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1.7</mn><mo>×</mo><msup><mn>10</mn><mrow><mi>−</mi><mn>6</mn></mrow></msup></mrow><annotation encoding="application/x-tex">1.7 \times 10^{-6}</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>2.6</mn><mo>×</mo><msup><mn>10</mn><mrow><mi>−</mi><mn>6</mn></mrow></msup></mrow><annotation encoding="application/x-tex">2.6 \times 10^{-6}</annotation></semantics></math>
 over the grid, the convergence tolerance of the expectation-maximisation
 fit, and the delta-method standard error is 0.99 to 1.00 times the
 regression’s own. The linear model in each arm is correctly specified
@@ -1129,7 +1129,7 @@ is the standard deviation of body mass with divisor
 <span>  lambda <span class="op">=</span> <span class="va">lambda_pen</span><span class="op">)</span><span class="op">)</span><span class="op">[</span><span class="op">-</span><span class="fl">1L</span><span class="op">]</span></span>
 <span><span class="va">diff_massridge</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="fu">ridge_slopes</span><span class="op">(</span><span class="va">lambda_pen</span> <span class="op">/</span> <span class="op">(</span><span class="va">n_peng</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span> <span class="op">-</span></span>
 <span>                            <span class="va">coef_massridge</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">coef_glmnet</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="fu">glmnet</span><span class="fu">::</span><span class="fu"><a href="https://glmnet.stanford.edu/reference/glmnet.html" class="external-link">glmnet</a></span><span class="op">(</span></span>
+<span><span class="va">coef_glmnet</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="fu">glmnet</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/glmnet/man/glmnet.html" class="external-link">glmnet</a></span><span class="op">(</span></span>
 <span>  <span class="va">X_pred</span>, <span class="va">y_peng</span>, alpha <span class="op">=</span> <span class="fl">0</span>, lambda <span class="op">=</span> <span class="va">lambda_pen</span>,</span>
 <span>  control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>thresh <span class="op">=</span> <span class="fl">1e-20</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">[</span><span class="op">-</span><span class="fl">1L</span><span class="op">]</span></span>
 <span><span class="va">diff_glmnet</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span></span>
@@ -1317,12 +1317,6 @@ mixture under bootstrap reweightings of the rows, and
 percentile interval for the averaged effect.</p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">model_lal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../../reference/fit_uplift.html">fit_uplift</a></span><span class="op">(</span><span class="va">lal</span>, <span class="st">"re78"</span>, <span class="st">"treat"</span>, <span class="va">covs</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: The EM log-likelihood decreased by 0.122 during fitting.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> This usually signals ridge regularisation interacting with a</span></span>
-<span><span class="co">#&gt;   near-singular component.</span></span>
-<span><span class="co">#&gt; Warning: The EM log-likelihood decreased by 0.193 during fitting.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> This usually signals ridge regularisation interacting with a</span></span>
-<span><span class="co">#&gt;   near-singular component.</span></span>
 <span><span class="va">att_of</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">g</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">m</span> <span class="op">&lt;-</span> <span class="fu"><a href="../../reference/uplift_model.html">uplift_model</a></span><span class="op">(</span>fit <span class="op">=</span> <span class="va">g</span>, roles <span class="op">=</span> <span class="va">model_lal</span><span class="op">@</span><span class="va">roles</span>,</span>
 <span>                    assume <span class="op">=</span> <span class="va">model_lal</span><span class="op">@</span><span class="va">assume</span>,</span>
@@ -1338,7 +1332,7 @@ percentile interval for the averaged effect.</p>
 components warned twice that the expectation-maximisation objective
 decreased, in the three-component fit, where the 1974 and 1975 earnings
 are each zero for about 40 per cent of the men and a component can
-collapse onto them; the fit selected by BIC has 1 component, and the
+collapse onto them; the fit selected by BIC has 4 component, and the
 warnings do not concern it.</p>
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cf_lal</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/grf/man/causal_forest.html" class="external-link">causal_forest</a></span><span class="op">(</span><span class="va">lal</span><span class="op">[</span>, <span class="va">covs</span><span class="op">]</span>, <span class="va">lal</span><span class="op">$</span><span class="va">re78</span>, <span class="va">lal</span><span class="op">$</span><span class="va">treat</span>,</span>
@@ -1394,7 +1388,7 @@ line, which fits the linear models alone.</p>
 <span><span class="va">fit_tmle</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/tmle/man/tmle.html" class="external-link">tmle</a></span><span class="op">(</span>Y <span class="op">=</span> <span class="va">lal</span><span class="op">$</span><span class="va">re78</span>, A <span class="op">=</span> <span class="va">lal</span><span class="op">$</span><span class="va">treat</span>, W <span class="op">=</span> <span class="va">lal</span><span class="op">[</span>, <span class="va">covs</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">att_tmle</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">fit_tmle</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">ATT</span><span class="op">$</span><span class="va">psi</span>,</span>
 <span>              <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="va">fit_tmle</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">ATT</span><span class="op">$</span><span class="va">var.psi</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<table style="width:100%;" class="table">
+<table style="width:99%;" class="table">
 <caption>The average effect of the programme on the earnings of the 185
 treated men, with each method’s own standard error: a bootstrap standard
 deviation and percentile interval for proxymix, the methods’ own
@@ -1416,10 +1410,10 @@ standard errors and normal intervals otherwise.</caption>
 <tbody>
 <tr class="odd">
 <td align="left">proxymix 0.16.0, one joint mixture</td>
-<td align="right">1548</td>
-<td align="right">633</td>
-<td align="right">230</td>
-<td align="right">2593</td>
+<td align="right">1282</td>
+<td align="right">741</td>
+<td align="right">-235</td>
+<td align="right">2652</td>
 </tr>
 <tr class="even">
 <td align="left">grf 2.6.1, causal forest</td>
@@ -1452,15 +1446,11 @@ standard errors and normal intervals otherwise.</caption>
 </tbody>
 </table>
 <p>The five point estimates run from 681 to 1812 USD, with standard
-errors from 633 to 977 USD; every interval overlaps every other, and 2
-of the five exclude zero. With one component selected, the proxymix read
-is the linear regression adjustment: the treatment coefficient of a
-least-squares regression of 1978 earnings on the treatment and the
-covariates over all 614 men is 1548.24 USD, against 1548.23 for
-proxymix. The causal forest, which lets the effect vary with every
-covariate, is the lowest. One dataset without a known answer cannot say
-which is right, so the simulation below scores the same methods against
-a known effect.</p>
+errors from 719 to 977 USD; every interval overlaps every other, and 1
+of the five excludes zero. The causal forest, which lets the effect vary
+with every covariate, is the lowest. One dataset without a known answer
+cannot say which is right, so the simulation below scores the same
+methods against a known effect.</p>
 </div>
 <div class="section level3">
 <h3 id="a-simulation-benchmark">A simulation benchmark<a class="anchor" aria-label="anchor" href="#a-simulation-benchmark"></a>
@@ -1501,7 +1491,7 @@ linear model (<code>SL.glmnet</code> at its default
 <code>alpha = 1</code>, with a cross-validated penalty) and a
 generalised additive model, in place of its default library, whose
 regression-tree learner took about two minutes per dataset. This chunk
-is complete and runs as shown, but it took about 23 minutes on one core
+is complete and runs as shown, but it took about 17 minutes on one core
 (R 4.6.1, Apple silicon); the results below are read from its stored
 output. For a quick run, change the line <code>n_rep &lt;- 200L</code>
 to <code>n_rep &lt;- 20L</code>.</p>
@@ -1651,11 +1641,11 @@ per-unit effect, so its per-unit RMSE is empty.</caption>
 <tr class="odd">
 <td align="left">proxymix</td>
 <td align="left">ATE</td>
-<td align="right">0.496</td>
-<td align="right">0.005</td>
+<td align="right">0.517</td>
+<td align="right">0.006</td>
 <td align="right">0.076</td>
-<td align="right">0.945</td>
-<td align="right">0.282</td>
+<td align="right">0.935</td>
+<td align="right">0.284</td>
 </tr>
 <tr class="even">
 <td align="left">grf</td>
@@ -1697,7 +1687,7 @@ per-unit effect, so its per-unit RMSE is empty.</caption>
 </table>
 <p>On the average effect the five methods are close. Four intervals
 cover their target within 1.0 Monte Carlo standard errors of the nominal
-rate: proxymix in 0.945 of datasets, the causal forest and tmle in 0.965
+rate: proxymix in 0.935 of datasets, the causal forest and tmle in 0.965
 and 0.965, and the matched regression in 0.960. That standard error is
 about 0.015 at a true rate of 0.95. The T-learner’s interval covers in
 0.920 of datasets, 1.9 of those standard errors below 0.95, or 1.6 of
@@ -1705,14 +1695,14 @@ its own standard error of 0.019. The largest absolute bias is 0.013, for
 the causal forest, and the root mean squared errors run from 0.072 for
 the T-learner to 0.091 for the matched regression, whose estimand is the
 effect on the treated. The proxymix interval is the second narrowest, at
-0.282 against 0.264 for the T-learner, whose model-based standard error
+0.284 against 0.264 for the T-learner, whose model-based standard error
 leaves its coverage the lowest of the five.</p>
 <p>The per-unit effect separates the methods. The T-learner and the
 interacted matched regression, whose effect models are both correctly
 specified for
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>τ</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mn>1</mn><mo>+</mo><msub><mi>x</mi><mn>1</mn></msub></mrow><annotation encoding="application/x-tex">\tau(x) = 1 + x_1</annotation></semantics></math>,
 have root mean squared errors of 0.186 and 0.167; the causal forest has
-0.312; proxymix has 0.496, the largest, on an effect whose standard
+0.312; proxymix has 0.517, the largest, on an effect whose standard
 deviation across units is 1. On the first dataset, regenerated from the
 stored code, BIC chose 3 components: 1 in the treated arm and 2 in the
 control arm. Within an arm with several components the gate bends that
@@ -1724,13 +1714,13 @@ dataset is 0.706. Averaged over the units, much of that error cancels,
 and the average-effect error of proxymix sits among the other
 methods’.</p>
 <p>In this run the average-effect intervals ranked by width as the
-T-learner (0.264), proxymix (0.282), tmle (0.317), the causal forest
+T-learner (0.264), proxymix (0.284), tmle (0.317), the causal forest
 (0.321) and the matched regression (0.346); each paired difference in
-width between proxymix and another method is at least 8 standard errors,
+width between proxymix and another method is at least 9 standard errors,
 so the ranking is resolved, although the matched regression targets the
 effect on the treated. On the squared error of the average effect, the
 paired differences between proxymix and the causal forest, tmle and the
-T-learner are at most 2.1 standard errors, so this run does not clearly
+T-learner are at most 2.0 standard errors, so this run does not clearly
 separate the four. The T-learner and the matched regression came out
 ahead of every other method on the per-unit effect, and proxymix had the
 largest per-unit error. The comparison covers one design, one sample
@@ -1856,7 +1846,7 @@ with R 4.6.1, tmle 2.1.1 and SuperLearner 2.0-41, in about 2.5 minutes,
 and the run raised 0 warnings. In the simulation each dataset is
 generated after <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> with its own index, which also
 seeds the mixture fit, its ensemble and the forest. The stored
-simulation results come from the code shown, run on 26 September 2026
+simulation results come from the code shown, run on 28 September 2026
 with R 4.6.1, proxymix 0.16.0, grf 2.6.1, tmle 2.1.1, SuperLearner
 2.0-41, MatchIt 4.7.2, mgcv 1.9-4 and sandwich 3.1-3, and the run raised
 0 warnings.</p>

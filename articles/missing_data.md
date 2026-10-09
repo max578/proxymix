@@ -1,15 +1,11 @@
 # Imputing missing data with a mixture
 
-``` r
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`
 
-library(proxymix)
-```
-
-``` r
-
-has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
-has_mice <- requireNamespace("mice", quietly = TRUE)
-```
+\
+`has_ggplot2`` ``<-`` `[`requireNamespace`](https://rdrr.io/r/base/ns-load.html)`(``"ggplot2"``, quietly ``=`` ``TRUE``)`\
+`has_mice`` ``<-`` `[`requireNamespace`](https://rdrr.io/r/base/ns-load.html)`(``"mice"``, quietly ``=`` ``TRUE``)`
 
 ## The problem
 
@@ -80,64 +76,54 @@ About half of the `x2` values are then deleted. The chance of deletion
 rises with the observed `x1` and does not depend on the deleted `x2`
 itself. This setting is called missing at random.
 
-``` r
-
-set.seed(20260620)
-n <- 600L
-lab <- sample(c(-1, 1), n, replace = TRUE)
-x1 <- 2 * lab + rnorm(n, 0, 0.6)
-x2 <- 2 * lab + 0.5 * (x1 - 2 * lab) + rnorm(n, 0, 0.6)
-truth <- cbind(x1 = x1, x2 = x2)
-
-x_holes <- truth
-missing <- runif(n) < plogis(0.6 * x1)
-x_holes[missing, "x2"] <- NA
-frac_missing <- mean(missing)
-```
+\
+[`set.seed`](https://rdrr.io/r/base/Random.html)`(``20260620``)`\
+`n`` ``<-`` ``600L`\
+`lab`` ``<-`` `[`sample`](https://rdrr.io/r/base/sample.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``-``1``, ``1``)``, ``n``, replace ``=`` ``TRUE``)`\
+`x1`` ``<-`` ``2`` ``*`` ``lab`` ``+`` `[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n``, ``0``, ``0.6``)`\
+`x2`` ``<-`` ``2`` ``*`` ``lab`` ``+`` ``0.5`` ``*`` ``(``x1`` ``-`` ``2`` ``*`` ``lab``)`` ``+`` `[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n``, ``0``, ``0.6``)`\
+`truth`` ``<-`` `[`cbind`](https://amices.org/mice/reference/cbind.html)`(``x1 ``=`` ``x1``, x2 ``=`` ``x2``)`\
+\
+`x_holes`` ``<-`` ``truth`\
+`missing`` ``<-`` `[`runif`](https://rdrr.io/r/stats/Uniform.html)`(``n``)`` ``<`` `[`plogis`](https://rdrr.io/r/stats/Logistic.html)`(``0.6`` ``*`` ``x1``)`\
+`x_holes``[``missing``, ``"x2"``]`` ``<-`` ``NA`\
+`frac_missing`` ``<-`` `[`mean`](https://rdrr.io/r/base/mean.html)`(``missing``)`
 
 The values of `x2` cluster near $`-2`$ and near $`+2`$, with few values
 in between. The band $`|x_2| < 1`$ marks this empty middle. The function
 `in_gap()` returns the share of values that fall in the band.
 
-``` r
-
-in_gap <- function(v) mean(abs(v) < 1)
-gap_truth <- in_gap(truth[missing, "x2"])
-```
+\
+`in_gap`` ``<-`` ``function``(``v``)`` `[`mean`](https://rdrr.io/r/base/mean.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``v``)`` ``<`` ``1``)`\
+`gap_truth`` ``<-`` ``in_gap``(``truth``[``missing``, ``"x2"``]``)`
 
 ### Impute with a mixture and with a single normal distribution
 
 The first imputation uses a mixture of two normal distributions and
 makes 20 completed datasets.
 
-``` r
-
-imp <- gmm_impute(x_holes, N = 2L, m = 20L, seed = 1L)
-imp
-#> <gmm_imputation>: m = 20 completions, K = 2 components, p = 2
-#>   mechanism  : missing at random
-#>   missing    : x1 0%, x2 53%
-```
+\
+`imp`` ``<-`` `[`gmm_impute`](https://max578.github.io/proxymix/reference/gmm_impute.md)`(``x_holes``, N ``=`` ``2L``, m ``=`` ``20L``, seed ``=`` ``1L``)`\
+`imp`\
+`#> <gmm_imputation>: m = 20 completions, K = 2 components, p = 2`\
+`#>   mechanism  : missing at random`\
+`#>   missing    : x1 0%, x2 53%`
 
 A completed dataset has no holes left.
 
-``` r
-
-done <- gmm_complete(imp, 1L)
-anyNA(done)
-#> [1] FALSE
-```
+\
+`done`` ``<-`` `[`gmm_complete`](https://max578.github.io/proxymix/reference/gmm_complete.md)`(``imp``, ``1L``)`\
+[`anyNA`](https://rdrr.io/r/base/NA.html)`(``done``)`\
+`#> [1] FALSE`
 
 With `N = 1L`, the mixture has one component, so the imputation model is
 a single multivariate normal distribution. Many standard imputation
 methods make this assumption. It is the point of comparison in this
 section.
 
-``` r
-
-imp1 <- gmm_impute(x_holes, N = 1L, m = 20L, seed = 1L)
-done1 <- gmm_complete(imp1, 1L)
-```
+\
+`imp1`` ``<-`` `[`gmm_impute`](https://max578.github.io/proxymix/reference/gmm_impute.md)`(``x_holes``, N ``=`` ``1L``, m ``=`` ``20L``, seed ``=`` ``1L``)`\
+`done1`` ``<-`` `[`gmm_complete`](https://max578.github.io/proxymix/reference/gmm_complete.md)`(``imp1``, ``1L``)`
 
 | Values                           | Share with $`\lvert x_2 \rvert < 1`$ |
 |:---------------------------------|-------------------------------------:|
@@ -151,42 +137,40 @@ imputation rows use the first completed dataset of each imputation.
 
 ### Where the imputed values fall
 
-``` r
-
-dens_df <- function(v, label) {
-  d <- density(v)
-  data.frame(x2 = d$x, density = d$y, source = label,
-             stringsAsFactors = FALSE)
-}
-plot_df <- rbind(
-  dens_df(truth[missing, "x2"], "deleted values (truth)"),
-  dens_df(done[missing, "x2"], "mixture (N = 2)"),
-  dens_df(done1[missing, "x2"], "single normal (N = 1)")
-)
-plot_df$source <- factor(
-  plot_df$source,
-  levels = c("deleted values (truth)", "mixture (N = 2)",
-             "single normal (N = 1)")
-)
-ggplot2::ggplot(plot_df, ggplot2::aes(x2, density, colour = source)) +
-  ggplot2::geom_line(linewidth = 0.9) +
-  ggplot2::annotate("rect", xmin = -1, xmax = 1, ymin = -Inf, ymax = Inf,
-                    fill = "grey60", alpha = 0.18) +
-  ggplot2::scale_colour_manual(
-    name = NULL,
-    values = c("deleted values (truth)" = "#000000",
-               "mixture (N = 2)" = "#009E73",
-               "single normal (N = 1)" = "#D55E00")
-  ) +
-  ggplot2::labs(
-    x = expression(x[2]), y = "density",
-    title = "Deleted values and the values imputed in their place",
-    subtitle = expression("Shaded band: the empty middle, " *
-                            group("|", x[2], "|") < 1)
-  ) +
-  ggplot2::theme_minimal(base_size = 11) +
-  ggplot2::theme(legend.position = "top")
-```
+\
+`dens_df`` ``<-`` ``function``(``v``, ``label``)`` ``{`\
+`  ``d`` ``<-`` `[`density`](https://rdrr.io/r/stats/density.html)`(``v``)`\
+`  `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``x2 ``=`` ``d``$``x``, density ``=`` ``d``$``y``, source ``=`` ``label``,`\
+`             stringsAsFactors ``=`` ``FALSE``)`\
+`}`\
+`plot_df`` ``<-`` `[`rbind`](https://amices.org/mice/reference/cbind.html)`(`\
+`  ``dens_df``(``truth``[``missing``, ``"x2"``]``, ``"deleted values (truth)"``)``,`\
+`  ``dens_df``(``done``[``missing``, ``"x2"``]``, ``"mixture (N = 2)"``)``,`\
+`  ``dens_df``(``done1``[``missing``, ``"x2"``]``, ``"single normal (N = 1)"``)`\
+`)`\
+`plot_df``$``source`` ``<-`` `[`factor`](https://rdrr.io/r/base/factor.html)`(`\
+`  ``plot_df``$``source``,`\
+`  levels ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"deleted values (truth)"``, ``"mixture (N = 2)"``,`\
+`             ``"single normal (N = 1)"``)`\
+`)`\
+`ggplot2``::`[`ggplot`](https://ggplot2.tidyverse.org/reference/ggplot.html)`(``plot_df``, ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``x2``, ``density``, colour ``=`` ``source``)``)`` ``+`\
+`  ``ggplot2``::`[`geom_line`](https://ggplot2.tidyverse.org/reference/geom_path.html)`(``linewidth ``=`` ``0.9``)`` ``+`\
+`  ``ggplot2``::`[`annotate`](https://ggplot2.tidyverse.org/reference/annotate.html)`(``"rect"``, xmin ``=`` ``-``1``, xmax ``=`` ``1``, ymin ``=`` ``-``Inf``, ymax ``=`` ``Inf``,`\
+`                    fill ``=`` ``"grey60"``, alpha ``=`` ``0.18``)`` ``+`\
+`  ``ggplot2``::`[`scale_colour_manual`](https://ggplot2.tidyverse.org/reference/scale_manual.html)`(`\
+`    name ``=`` ``NULL``,`\
+`    values ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"deleted values (truth)"`` ``=`` ``"#000000"``,`\
+`               ``"mixture (N = 2)"`` ``=`` ``"#009E73"``,`\
+`               ``"single normal (N = 1)"`` ``=`` ``"#D55E00"``)`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`labs`](https://ggplot2.tidyverse.org/reference/labs.html)`(`\
+`    x ``=`` `[`expression`](https://rdrr.io/r/base/expression.html)`(``x``[``2``]``)``, y ``=`` ``"density"``,`\
+`    title ``=`` ``"Deleted values and the values imputed in their place"``,`\
+`    subtitle ``=`` `[`expression`](https://rdrr.io/r/base/expression.html)`(``"Shaded band: the empty middle, "`` ``*`\
+`                            ``group``(``"|"``, ``x``[``2``]``, ``"|"``)`` ``<`` ``1``)`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`theme_minimal`](https://ggplot2.tidyverse.org/reference/ggtheme.html)`(``base_size ``=`` ``11``)`` ``+`\
+`  ``ggplot2``::`[`theme`](https://ggplot2.tidyverse.org/reference/theme.html)`(``legend.position ``=`` ``"top"``)`
 
 ![Three density curves over x2: the deleted values, the mixture
 imputation and the single-normal imputation. All three have two peaks.
@@ -204,15 +188,13 @@ The shaded band is the empty middle, $`|x_2| < 1`$.
 combines the 20 estimates of the mean of `x2` into one estimate with a
 standard error (SE) and a 95% confidence interval (CI).
 
-``` r
-
-pooled <- proxy_pool(imp, "x2")
-pooled1 <- proxy_pool(imp1, "x2")
-fmi_mix <- proxy_fmi(imp, "x2")
-mean_truth <- mean(truth[, "x2"])
-err_mix <- abs(pooled$estimate - mean_truth)
-err_one <- abs(pooled1$estimate - mean_truth)
-```
+\
+`pooled`` ``<-`` `[`proxy_pool`](https://max578.github.io/proxymix/reference/proxy_pool.md)`(``imp``, ``"x2"``)`\
+`pooled1`` ``<-`` `[`proxy_pool`](https://max578.github.io/proxymix/reference/proxy_pool.md)`(``imp1``, ``"x2"``)`\
+`fmi_mix`` ``<-`` `[`proxy_fmi`](https://max578.github.io/proxymix/reference/proxy_fmi.md)`(``imp``, ``"x2"``)`\
+`mean_truth`` ``<-`` `[`mean`](https://rdrr.io/r/base/mean.html)`(``truth``[``, ``"x2"``]``)`\
+`err_mix`` ``<-`` `[`abs`](https://rdrr.io/r/base/MathFun.html)`(``pooled``$``estimate`` ``-`` ``mean_truth``)`\
+`err_one`` ``<-`` `[`abs`](https://rdrr.io/r/base/MathFun.html)`(``pooled1``$``estimate`` ``-`` ``mean_truth``)`
 
 | Data used | Mean of $`x_2`$ | SE | CI lower | CI upper | Distance from complete data |
 |:---|---:|---:|---:|---:|---:|
@@ -234,10 +216,8 @@ converts the completed datasets into a `mice` object. The regression of
 the results by Rubin’s rules. These rules average the estimates and add
 their spread across the completed datasets to the average variance.
 
-``` r
-
-mice_fit <- mice::pool(with(as_mids(imp), lm(x2 ~ x1)))
-```
+\
+`mice_fit`` ``<-`` ``mice``::`[`pool`](https://amices.org/mice/reference/pool.html)`(`[`with`](https://rdrr.io/r/base/with.html)`(`[`as_mids`](https://max578.github.io/proxymix/reference/as_mids.md)`(``imp``)``, `[`lm`](https://rdrr.io/r/stats/lm.html)`(``x2`` ``~`` ``x1``)``)``)`
 
 | term        | estimate | std.error | statistic |     df |  p.value |
 |:------------|---------:|----------:|----------:|-------:|---------:|
@@ -297,40 +277,38 @@ three packages and pools the slope with
 It repeats the simulation code for a single dataset. It needs `mice` and
 `Amelia`, both on CRAN, and it is not run when this vignette is built.
 
-``` r
-
-library(proxymix)
-library(mice)
-library(Amelia)
-
-# one dataset of 500 rows with two groups
-set.seed(1L)
-n <- 500L
-grp <- runif(n) < 0.5
-rho <- ifelse(grp, -0.3, 0.6)
-z1 <- rnorm(n)
-full <- data.frame(
-  x1 = ifelse(grp, 1.5, -1.5) + z1,
-  x2 = ifelse(grp, 2, -1.5) + rho * z1 + sqrt(1 - rho^2) * rnorm(n)
-)
-
-# delete x2 with a probability that rises with x1
-obs <- full
-obs$x2[runif(n) < plogis(0.4 + 0.6 * full$x1)] <- NA
-
-# 20 completed datasets from each package
-sets <- list(
-  proxymix = complete(as_mids(gmm_impute(obs, m = 20L, seed = 1L)), "all"),
-  mice = complete(mice(obs, m = 20L, seed = 1L, printFlag = FALSE), "all"),
-  Amelia = amelia(obs, m = 20L, p2s = 0L)$imputations
-)
-
-# the same regression in every completed dataset, pooled by mice::pool()
-lapply(sets, function(s) {
-  fits <- lapply(s, function(d) lm(x2 ~ x1, data = d))
-  summary(pool(fits), conf.int = TRUE)
-})
-```
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`mice`](https://github.com/amices/mice)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`Amelia`](https://gking.harvard.edu/amelia)`)`\
+\
+`# one dataset of 500 rows with two groups`\
+[`set.seed`](https://rdrr.io/r/base/Random.html)`(``1L``)`\
+`n`` ``<-`` ``500L`\
+`grp`` ``<-`` `[`runif`](https://rdrr.io/r/stats/Uniform.html)`(``n``)`` ``<`` ``0.5`\
+`rho`` ``<-`` `[`ifelse`](https://rdrr.io/r/base/ifelse.html)`(``grp``, ``-``0.3``, ``0.6``)`\
+`z1`` ``<-`` `[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n``)`\
+`full`` ``<-`` `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(`\
+`  x1 ``=`` `[`ifelse`](https://rdrr.io/r/base/ifelse.html)`(``grp``, ``1.5``, ``-``1.5``)`` ``+`` ``z1``,`\
+`  x2 ``=`` `[`ifelse`](https://rdrr.io/r/base/ifelse.html)`(``grp``, ``2``, ``-``1.5``)`` ``+`` ``rho`` ``*`` ``z1`` ``+`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(``1`` ``-`` ``rho``^``2``)`` ``*`` `[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n``)`\
+`)`\
+\
+`# delete x2 with a probability that rises with x1`\
+`obs`` ``<-`` ``full`\
+`obs``$``x2``[`[`runif`](https://rdrr.io/r/stats/Uniform.html)`(``n``)`` ``<`` `[`plogis`](https://rdrr.io/r/stats/Logistic.html)`(``0.4`` ``+`` ``0.6`` ``*`` ``full``$``x1``)``]`` ``<-`` ``NA`\
+\
+`# 20 completed datasets from each package`\
+`sets`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(`\
+`  proxymix ``=`` `[`complete`](https://tidyr.tidyverse.org/reference/complete.html)`(`[`as_mids`](https://max578.github.io/proxymix/reference/as_mids.md)`(`[`gmm_impute`](https://max578.github.io/proxymix/reference/gmm_impute.md)`(``obs``, m ``=`` ``20L``, seed ``=`` ``1L``)``)``, ``"all"``)``,`\
+`  mice ``=`` `[`complete`](https://tidyr.tidyverse.org/reference/complete.html)`(`[`mice`](https://amices.org/mice/reference/mice.html)`(``obs``, m ``=`` ``20L``, seed ``=`` ``1L``, printFlag ``=`` ``FALSE``)``, ``"all"``)``,`\
+`  Amelia ``=`` `[`amelia`](https://rdrr.io/pkg/Amelia/man/amelia.html)`(``obs``, m ``=`` ``20L``, p2s ``=`` ``0L``)``$``imputations`\
+`)`\
+\
+`# the same regression in every completed dataset, pooled by mice::pool()`\
+[`lapply`](https://rdrr.io/r/base/lapply.html)`(``sets``, ``function``(``s``)`` ``{`\
+`  ``fits`` ``<-`` `[`lapply`](https://rdrr.io/r/base/lapply.html)`(``s``, ``function``(``d``)`` `[`lm`](https://rdrr.io/r/stats/lm.html)`(``x2`` ``~`` ``x1``, data ``=`` ``d``)``)`\
+`  `[`summary`](https://rdrr.io/r/base/summary.html)`(`[`pool`](https://amices.org/mice/reference/pool.html)`(``fits``)``, conf.int ``=`` ``TRUE``)`\
+`}``)`
 
 The [extended version of this
 article](https://max578.github.io/proxymix/articles/extended/missing_data.html)
@@ -453,12 +431,10 @@ The comparison with `mice` and `Amelia` is read from stored results of a
 simulation run under proxymix 0.16.0, `mice` 3.19.0 and `Amelia` 1.8.3,
 which took about 27 minutes on one core.
 
-``` r
+\
+[`sessionInfo`](https://rdrr.io/r/utils/sessionInfo.html)`(``)`
 
-sessionInfo()
 ```
-
-``` session-info
 #> R version 4.6.1 (2026-06-24)
 #> Platform: aarch64-apple-darwin23
 #> Running under: macOS Tahoe 26.6.2

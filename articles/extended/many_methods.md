@@ -1,14 +1,10 @@
 # One mixture, many methods
 
-``` r
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`
 
-library(proxymix)
-```
-
-``` r
-
-has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
-```
+\
+`has_ggplot2`` ``<-`` `[`requireNamespace`](https://rdrr.io/r/base/ns-load.html)`(``"ggplot2"``, quietly ``=`` ``TRUE``)`
 
 ## The problem
 
@@ -75,18 +71,16 @@ Each section below keeps the same shape: the **problem**, the **usual
 tool**, the **proxymix route**, the code, and the **idea** behind the
 substitution. The trade-offs are gathered in *Interpretation*.
 
-``` r
-
-## The conditional mean of the outcome coordinate, gated across components:
-## sum_k pi_k(x) mu_k^{y|x}. This one helper serves the regression, the
-## kernel-regression and the ridge sections.
-cond_mean <- function(fit, xv) {
-  vapply(xv, function(xx) {
-    g <- gmm_conditionalise(fit, given = c(NA, xx))
-    sum(g@weights * vapply(g@means, function(m) m[1L], numeric(1L)))
-  }, numeric(1L))
-}
-```
+\
+`## The conditional mean of the outcome coordinate, gated across components:`\
+`## sum_k pi_k(x) mu_k^{y|x}. This one helper serves the regression, the`\
+`## kernel-regression and the ridge sections.`\
+`cond_mean`` ``<-`` ``function``(``fit``, ``xv``)`` ``{`\
+`  `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``xv``, ``function``(``xx``)`` ``{`\
+`    ``g`` ``<-`` `[`gmm_conditionalise`](https://max578.github.io/proxymix/reference/gmm_conditionalise.md)`(``fit``, given ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``NA``, ``xx``)``)`\
+`    `[`sum`](https://rdrr.io/r/base/sum.html)`(``g``@``weights`` ``*`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``g``@``means``, ``function``(``m``)`` ``m``[``1L``]``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)``)`\
+`  ``}``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)`\
+`}`
 
 ### Regression: from `lm()` to a conditioned mixture
 
@@ -97,50 +91,46 @@ route.** Fit a mixture over the joint $`(y, x)`$, then read
 $`E[y \mid x]`$ by conditioning. At $`K = 1`$ this *is* least squares;
 at $`K > 1`$ the gate bends the line.
 
-``` r
+\
+[`set.seed`](https://rdrr.io/r/base/Random.html)`(``20260617``)`\
+`n`` ``<-`` ``400L`\
+`x`` ``<-`` `[`runif`](https://rdrr.io/r/stats/Uniform.html)`(``n``, ``-``3``, ``3``)`\
+`y`` ``<-`` ``0.3`` ``*`` ``x`` ``+`` ``1.2`` ``*`` `[`pmax`](https://rdrr.io/r/base/Extremes.html)`(``x``, ``0``)`` ``+`` `[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n``, sd ``=`` ``0.4``)``  ``# a bent relationship`\
+`dat`` ``<-`` `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``y ``=`` ``y``, x ``=`` ``x``)`\
+\
+`joint`` ``<-`` `[`gmm_target_from_samples`](https://max578.github.io/proxymix/reference/gmm_target_from_samples.md)`(`[`cbind`](https://rdrr.io/r/base/cbind.html)`(``y``, ``x``)``)`\
+`fit1`` ``<-`` `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(``joint``, N ``=`` ``1L``, regime ``=`` ``"moment"``, ridge_eps ``=`` ``0``)`\
+`fit3`` ``<-`` `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(``joint``, N ``=`` ``3L``, regime ``=`` ``"sample"``, max_iter ``=`` ``150L``)`\
+\
+`## At K = 1 the conditional slope should equal the lm coefficient exactly.`\
+`slope_mix`` ``<-`` `[`gmm_conditionalise`](https://max578.github.io/proxymix/reference/gmm_conditionalise.md)`(``fit1``, given ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``NA``, ``1``)``)``@``means``[[``1L``]``]`` ``-`\
+`  `[`gmm_conditionalise`](https://max578.github.io/proxymix/reference/gmm_conditionalise.md)`(``fit1``, given ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``NA``, ``0``)``)``@``means``[[``1L``]``]`\
+`slope_lm`` ``<-`` `[`unname`](https://rdrr.io/r/base/unname.html)`(`[`coef`](https://rdrr.io/r/stats/coef.html)`(`[`lm`](https://rdrr.io/r/stats/lm.html)`(``y`` ``~`` ``x``, ``dat``)``)``[``"x"``]``)`\
+`diff_reg`` ``<-`` `[`abs`](https://rdrr.io/r/base/MathFun.html)`(``slope_mix`` ``-`` ``slope_lm``)`
 
-set.seed(20260617)
-n <- 400L
-x <- runif(n, -3, 3)
-y <- 0.3 * x + 1.2 * pmax(x, 0) + rnorm(n, sd = 0.4)  # a bent relationship
-dat <- data.frame(y = y, x = x)
-
-joint <- gmm_target_from_samples(cbind(y, x))
-fit1 <- fit_proxymix(joint, N = 1L, regime = "moment", ridge_eps = 0)
-fit3 <- fit_proxymix(joint, N = 3L, regime = "sample", max_iter = 150L)
-
-## At K = 1 the conditional slope should equal the lm coefficient exactly.
-slope_mix <- gmm_conditionalise(fit1, given = c(NA, 1))@means[[1L]] -
-  gmm_conditionalise(fit1, given = c(NA, 0))@means[[1L]]
-slope_lm <- unname(coef(lm(y ~ x, dat))["x"])
-diff_reg <- abs(slope_mix - slope_lm)
-```
-
-``` r
-
-grid_reg <- data.frame(x = seq(-3, 3, length.out = 200L))
-grid_reg$ols <- as.numeric(predict(lm(y ~ x, dat), newdata = grid_reg))
-grid_reg$mix <- cond_mean(fit3, grid_reg$x)
-ggplot2::ggplot() +
-  ggplot2::geom_point(data = dat, ggplot2::aes(x, y), colour = "grey60",
-                      alpha = 0.4, size = 0.7) +
-  ggplot2::geom_line(data = grid_reg,
-                     ggplot2::aes(x, ols, colour = "OLS (K = 1)"),
-                     linewidth = 0.9) +
-  ggplot2::geom_line(data = grid_reg,
-                     ggplot2::aes(x, mix, colour = "mixture (K = 3)"),
-                     linewidth = 0.9) +
-  ggplot2::scale_colour_manual(
-    name = NULL,
-    values = c("OLS (K = 1)" = "#0072B2", "mixture (K = 3)" = "#D55E00")
-  ) +
-  ggplot2::labs(
-    x = "x", y = "y",
-    title = "Regression: a global line against a conditioned mixture"
-  ) +
-  ggplot2::theme_minimal(base_size = 11) +
-  ggplot2::theme(legend.position = "top")
-```
+\
+`grid_reg`` ``<-`` `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``x ``=`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``3``, ``3``, length.out ``=`` ``200L``)``)`\
+`grid_reg``$``ols`` ``<-`` `[`as.numeric`](https://rdrr.io/r/base/numeric.html)`(`[`predict`](https://rdrr.io/r/stats/predict.html)`(`[`lm`](https://rdrr.io/r/stats/lm.html)`(``y`` ``~`` ``x``, ``dat``)``, newdata ``=`` ``grid_reg``)``)`\
+`grid_reg``$``mix`` ``<-`` ``cond_mean``(``fit3``, ``grid_reg``$``x``)`\
+`ggplot2``::`[`ggplot`](https://ggplot2.tidyverse.org/reference/ggplot.html)`(``)`` ``+`\
+`  ``ggplot2``::`[`geom_point`](https://ggplot2.tidyverse.org/reference/geom_point.html)`(``data ``=`` ``dat``, ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``x``, ``y``)``, colour ``=`` ``"grey60"``,`\
+`                      alpha ``=`` ``0.4``, size ``=`` ``0.7``)`` ``+`\
+`  ``ggplot2``::`[`geom_line`](https://ggplot2.tidyverse.org/reference/geom_path.html)`(``data ``=`` ``grid_reg``,`\
+`                     ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``x``, ``ols``, colour ``=`` ``"OLS (K = 1)"``)``,`\
+`                     linewidth ``=`` ``0.9``)`` ``+`\
+`  ``ggplot2``::`[`geom_line`](https://ggplot2.tidyverse.org/reference/geom_path.html)`(``data ``=`` ``grid_reg``,`\
+`                     ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``x``, ``mix``, colour ``=`` ``"mixture (K = 3)"``)``,`\
+`                     linewidth ``=`` ``0.9``)`` ``+`\
+`  ``ggplot2``::`[`scale_colour_manual`](https://ggplot2.tidyverse.org/reference/scale_manual.html)`(`\
+`    name ``=`` ``NULL``,`\
+`    values ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"OLS (K = 1)"`` ``=`` ``"#0072B2"``, ``"mixture (K = 3)"`` ``=`` ``"#D55E00"``)`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`labs`](https://ggplot2.tidyverse.org/reference/labs.html)`(`\
+`    x ``=`` ``"x"``, y ``=`` ``"y"``,`\
+`    title ``=`` ``"Regression: a global line against a conditioned mixture"`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`theme_minimal`](https://ggplot2.tidyverse.org/reference/ggtheme.html)`(``base_size ``=`` ``11``)`` ``+`\
+`  ``ggplot2``::`[`theme`](https://ggplot2.tidyverse.org/reference/theme.html)`(``legend.position ``=`` ``"top"``)`
 
 ![Scatter of y against x with a straight ordinary-least-squares line and
 a curved mixture conditional mean that follows a bend in the
@@ -176,50 +166,46 @@ fully local, and
 lands anywhere in between: a single axis with least squares at one end
 and kernel smoothing at the other.
 
-``` r
+\
+`h`` ``<-`` ``0.4``                                     ``# kernel bandwidth`\
+`nw`` ``<-`` ``function``(``xq``)`` ``{`\
+`  `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``xq``, ``function``(``q``)`` ``{`\
+`    ``w`` ``<-`` `[`dnorm`](https://rdrr.io/r/stats/Normal.html)`(``q``, ``x``, ``h``)``                      ``# Gaussian kernel weights`\
+`    `[`sum`](https://rdrr.io/r/base/sum.html)`(``w`` ``*`` ``y``)`` ``/`` `[`sum`](https://rdrr.io/r/base/sum.html)`(``w``)`\
+`  ``}``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)`\
+`}`\
+\
+`## One Gaussian per datum, a kernel density estimate of the joint (y, x);`\
+`## then condition on x and read the conditional mean.`\
+`kde`` ``<-`` `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(``weights ``=`` `[`rep`](https://rdrr.io/r/base/rep.html)`(``1`` ``/`` ``n``, ``n``)``,`\
+`           means ``=`` `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``n``)``, ``function``(``i``)`` `[`c`](https://rdrr.io/r/base/c.html)`(``y``[``i``]``, ``x``[``i``]``)``)``,`\
+`           covariances ``=`` `[`rep`](https://rdrr.io/r/base/rep.html)`(`[`list`](https://rdrr.io/r/base/list.html)`(`[`diag`](https://rdrr.io/r/base/diag.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``h``^``2``, ``h``^``2``)``)``)``, ``n``)``)`\
+`xq`` ``<-`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``2.5``, ``2.5``, length.out ``=`` ``21L``)`\
+`diff_nw`` ``<-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``nw``(``xq``)`` ``-`` ``cond_mean``(``kde``, ``xq``)``)``)`
 
-h <- 0.4                                     # kernel bandwidth
-nw <- function(xq) {
-  vapply(xq, function(q) {
-    w <- dnorm(q, x, h)                      # Gaussian kernel weights
-    sum(w * y) / sum(w)
-  }, numeric(1L))
-}
-
-## One Gaussian per datum, a kernel density estimate of the joint (y, x);
-## then condition on x and read the conditional mean.
-kde <- gmm(weights = rep(1 / n, n),
-           means = lapply(seq_len(n), function(i) c(y[i], x[i])),
-           covariances = rep(list(diag(c(h^2, h^2))), n))
-xq <- seq(-2.5, 2.5, length.out = 21L)
-diff_nw <- max(abs(nw(xq) - cond_mean(kde, xq)))
-```
-
-``` r
-
-grid_nw <- data.frame(x = seq(-3, 3, length.out = 200L))
-grid_nw$ols <- as.numeric(predict(lm(y ~ x, dat), newdata = grid_nw))
-grid_nw$nw <- nw(grid_nw$x)
-ggplot2::ggplot() +
-  ggplot2::geom_point(data = dat, ggplot2::aes(x, y), colour = "grey60",
-                      alpha = 0.4, size = 0.7) +
-  ggplot2::geom_line(data = grid_nw,
-                     ggplot2::aes(x, ols, colour = "OLS (K = 1)"),
-                     linewidth = 0.9) +
-  ggplot2::geom_line(data = grid_nw,
-                     ggplot2::aes(x, nw, colour = "kernel (K = n)"),
-                     linewidth = 0.9) +
-  ggplot2::scale_colour_manual(
-    name = NULL,
-    values = c("OLS (K = 1)" = "#0072B2", "kernel (K = n)" = "#D55E00")
-  ) +
-  ggplot2::labs(
-    x = "x", y = "y",
-    title = "From global line to local kernel, one conditioning step"
-  ) +
-  ggplot2::theme_minimal(base_size = 11) +
-  ggplot2::theme(legend.position = "top")
-```
+\
+`grid_nw`` ``<-`` `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``x ``=`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``3``, ``3``, length.out ``=`` ``200L``)``)`\
+`grid_nw``$``ols`` ``<-`` `[`as.numeric`](https://rdrr.io/r/base/numeric.html)`(`[`predict`](https://rdrr.io/r/stats/predict.html)`(`[`lm`](https://rdrr.io/r/stats/lm.html)`(``y`` ``~`` ``x``, ``dat``)``, newdata ``=`` ``grid_nw``)``)`\
+`grid_nw``$``nw`` ``<-`` ``nw``(``grid_nw``$``x``)`\
+`ggplot2``::`[`ggplot`](https://ggplot2.tidyverse.org/reference/ggplot.html)`(``)`` ``+`\
+`  ``ggplot2``::`[`geom_point`](https://ggplot2.tidyverse.org/reference/geom_point.html)`(``data ``=`` ``dat``, ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``x``, ``y``)``, colour ``=`` ``"grey60"``,`\
+`                      alpha ``=`` ``0.4``, size ``=`` ``0.7``)`` ``+`\
+`  ``ggplot2``::`[`geom_line`](https://ggplot2.tidyverse.org/reference/geom_path.html)`(``data ``=`` ``grid_nw``,`\
+`                     ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``x``, ``ols``, colour ``=`` ``"OLS (K = 1)"``)``,`\
+`                     linewidth ``=`` ``0.9``)`` ``+`\
+`  ``ggplot2``::`[`geom_line`](https://ggplot2.tidyverse.org/reference/geom_path.html)`(``data ``=`` ``grid_nw``,`\
+`                     ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``x``, ``nw``, colour ``=`` ``"kernel (K = n)"``)``,`\
+`                     linewidth ``=`` ``0.9``)`` ``+`\
+`  ``ggplot2``::`[`scale_colour_manual`](https://ggplot2.tidyverse.org/reference/scale_manual.html)`(`\
+`    name ``=`` ``NULL``,`\
+`    values ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"OLS (K = 1)"`` ``=`` ``"#0072B2"``, ``"kernel (K = n)"`` ``=`` ``"#D55E00"``)`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`labs`](https://ggplot2.tidyverse.org/reference/labs.html)`(`\
+`    x ``=`` ``"x"``, y ``=`` ``"y"``,`\
+`    title ``=`` ``"From global line to local kernel, one conditioning step"`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`theme_minimal`](https://ggplot2.tidyverse.org/reference/ggtheme.html)`(``base_size ``=`` ``11``)`` ``+`\
+`  ``ggplot2``::`[`theme`](https://ggplot2.tidyverse.org/reference/theme.html)`(``legend.position ``=`` ``"top"``)`
 
 ![Scatter of y against x with the straight ordinary-least-squares line
 and the curved Nadaraya-Watson kernel-regression
@@ -245,30 +231,28 @@ fits exactly this model (Fraley and Raftery, 2002). **proxymix route.**
 `fit_proxymix(N = K, regime = "sample")`: the components *are* the
 clusters and the responsibilities are soft assignments.
 
-``` r
-
-set.seed(20260617)
-x_clust <- rbind(
-  mvnfast::rmvn(150L, c(-2, -1), 0.5 * diag(2)),
-  mvnfast::rmvn(150L, c(2, 0), matrix(c(0.6, 0.3, 0.3, 0.4), 2L)),
-  mvnfast::rmvn(150L, c(0, 2.5), 0.3 * diag(2))
-)
-colnames(x_clust) <- c("V1", "V2")
-target_clust <- gmm_target_from_samples(x_clust)
-fitc <- fit_proxymix(target_clust, N = 3L, regime = "sample",
-                     max_iter = 150L)
-
-## Soft assignment = posterior responsibility of each component.
-responsibilities <- function(fit, xx) {
-  comp <- vapply(seq_len(gmm_n_components(fit)), function(k) {
-    fit@weights[k] *
-      mvnfast::dmvn(xx, mu = fit@means[[k]], sigma = fit@covariances[[k]])
-  }, numeric(nrow(xx)))
-  comp / rowSums(comp)
-}
-resp <- responsibilities(fitc, x_clust)
-mean_confidence <- mean(apply(resp, 1L, max))
-```
+\
+[`set.seed`](https://rdrr.io/r/base/Random.html)`(``20260617``)`\
+`x_clust`` ``<-`` `[`rbind`](https://rdrr.io/r/base/cbind.html)`(`\
+`  ``mvnfast``::`[`rmvn`](https://rdrr.io/pkg/mvnfast/man/rmvn.html)`(``150L``, `[`c`](https://rdrr.io/r/base/c.html)`(``-``2``, ``-``1``)``, ``0.5`` ``*`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``)``,`\
+`  ``mvnfast``::`[`rmvn`](https://rdrr.io/pkg/mvnfast/man/rmvn.html)`(``150L``, `[`c`](https://rdrr.io/r/base/c.html)`(``2``, ``0``)``, `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0.6``, ``0.3``, ``0.3``, ``0.4``)``, ``2L``)``)``,`\
+`  ``mvnfast``::`[`rmvn`](https://rdrr.io/pkg/mvnfast/man/rmvn.html)`(``150L``, `[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``2.5``)``, ``0.3`` ``*`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``)`\
+`)`\
+[`colnames`](https://rdrr.io/r/base/colnames.html)`(``x_clust``)`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``"V1"``, ``"V2"``)`\
+`target_clust`` ``<-`` `[`gmm_target_from_samples`](https://max578.github.io/proxymix/reference/gmm_target_from_samples.md)`(``x_clust``)`\
+`fitc`` ``<-`` `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(``target_clust``, N ``=`` ``3L``, regime ``=`` ``"sample"``,`\
+`                     max_iter ``=`` ``150L``)`\
+\
+`## Soft assignment = posterior responsibility of each component.`\
+`responsibilities`` ``<-`` ``function``(``fit``, ``xx``)`` ``{`\
+`  ``comp`` ``<-`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(`[`seq_len`](https://rdrr.io/r/base/seq.html)`(`[`gmm_n_components`](https://max578.github.io/proxymix/reference/gmm_n_components.md)`(``fit``)``)``, ``function``(``k``)`` ``{`\
+`    ``fit``@``weights``[``k``]`` ``*`\
+`      ``mvnfast``::`[`dmvn`](https://rdrr.io/pkg/mvnfast/man/dmvn.html)`(``xx``, mu ``=`` ``fit``@``means``[[``k``]``]``, sigma ``=`` ``fit``@``covariances``[[``k``]``]``)`\
+`  ``}``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(`[`nrow`](https://rdrr.io/r/base/nrow.html)`(``xx``)``)``)`\
+`  ``comp`` ``/`` `[`rowSums`](https://rdrr.io/r/base/colSums.html)`(``comp``)`\
+`}`\
+`resp`` ``<-`` ``responsibilities``(``fitc``, ``x_clust``)`\
+`mean_confidence`` ``<-`` `[`mean`](https://rdrr.io/r/base/mean.html)`(`[`apply`](https://rdrr.io/r/base/apply.html)`(``resp``, ``1L``, ``max``)``)`
 
 | component 1 | component 2 | component 3 |
 |------------:|------------:|------------:|
@@ -293,40 +277,36 @@ $`\pi_k\,\mathcal{N}(x \mid \mu_k, \Sigma_k) /
 Fit a single Gaussian (`N = 1`, `regime = "moment"`) and eigendecompose
 its covariance.
 
-``` r
+\
+`fit_pca`` ``<-`` `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(``target_clust``, N ``=`` ``1L``, regime ``=`` ``"moment"``,`\
+`                        ridge_eps ``=`` ``0``)`\
+`ev`` ``<-`` `[`eigen`](https://rdrr.io/r/base/eigen.html)`(``fit_pca``@``covariances``[[``1L``]``]``)``$``vectors`\
+`pr`` ``<-`` `[`prcomp`](https://rdrr.io/r/stats/prcomp.html)`(``x_clust``)``$``rotation`\
+`## Identical to the prcomp rotation, up to the sign convention of each axis.`\
+`diff_pca`` ``<-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``ev``)`` ``-`` `[`abs`](https://rdrr.io/r/base/MathFun.html)`(`[`unname`](https://rdrr.io/r/base/unname.html)`(``pr``)``)``)``)`
 
-fit_pca <- fit_proxymix(target_clust, N = 1L, regime = "moment",
-                        ridge_eps = 0)
-ev <- eigen(fit_pca@covariances[[1L]])$vectors
-pr <- prcomp(x_clust)$rotation
-## Identical to the prcomp rotation, up to the sign convention of each axis.
-diff_pca <- max(abs(abs(ev) - abs(unname(pr))))
-```
-
-``` r
-
-vals <- eigen(fit_pca@covariances[[1L]])$values
-mu_pca <- unname(fit_pca@means[[1L]])
-axes <- data.frame(
-  x = mu_pca[1L], y = mu_pca[2L],
-  xend = mu_pca[1L] + 2 * sqrt(vals) * ev[1L, ],
-  yend = mu_pca[2L] + 2 * sqrt(vals) * ev[2L, ]
-)
-pts <- data.frame(x_clust, cluster = factor(max.col(resp)))
-ggplot2::ggplot() +
-  ggplot2::geom_point(data = pts,
-                      ggplot2::aes(V1, V2, colour = cluster),
-                      alpha = 0.6, size = 0.9) +
-  ggplot2::geom_segment(
-    data = axes, ggplot2::aes(x = x, y = y, xend = xend, yend = yend),
-    arrow = grid::arrow(length = grid::unit(0.2, "cm")), linewidth = 0.8
-  ) +
-  ggplot2::scale_colour_viridis_d(name = "cluster", end = 0.85) +
-  ggplot2::coord_equal() +
-  ggplot2::labs(x = expression(x[1]), y = expression(x[2]),
-                title = "Clustering and principal axes from two fits") +
-  ggplot2::theme_minimal(base_size = 11)
-```
+\
+`vals`` ``<-`` `[`eigen`](https://rdrr.io/r/base/eigen.html)`(``fit_pca``@``covariances``[[``1L``]``]``)``$``values`\
+`mu_pca`` ``<-`` `[`unname`](https://rdrr.io/r/base/unname.html)`(``fit_pca``@``means``[[``1L``]``]``)`\
+`axes`` ``<-`` `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(`\
+`  x ``=`` ``mu_pca``[``1L``]``, y ``=`` ``mu_pca``[``2L``]``,`\
+`  xend ``=`` ``mu_pca``[``1L``]`` ``+`` ``2`` ``*`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(``vals``)`` ``*`` ``ev``[``1L``, ``]``,`\
+`  yend ``=`` ``mu_pca``[``2L``]`` ``+`` ``2`` ``*`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(``vals``)`` ``*`` ``ev``[``2L``, ``]`\
+`)`\
+`pts`` ``<-`` `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``x_clust``, cluster ``=`` `[`factor`](https://rdrr.io/r/base/factor.html)`(`[`max.col`](https://rdrr.io/r/base/maxCol.html)`(``resp``)``)``)`\
+`ggplot2``::`[`ggplot`](https://ggplot2.tidyverse.org/reference/ggplot.html)`(``)`` ``+`\
+`  ``ggplot2``::`[`geom_point`](https://ggplot2.tidyverse.org/reference/geom_point.html)`(``data ``=`` ``pts``,`\
+`                      ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``V1``, ``V2``, colour ``=`` ``cluster``)``,`\
+`                      alpha ``=`` ``0.6``, size ``=`` ``0.9``)`` ``+`\
+`  ``ggplot2``::`[`geom_segment`](https://ggplot2.tidyverse.org/reference/geom_segment.html)`(`\
+`    data ``=`` ``axes``, ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``x ``=`` ``x``, y ``=`` ``y``, xend ``=`` ``xend``, yend ``=`` ``yend``)``,`\
+`    arrow ``=`` ``grid``::`[`arrow`](https://rdrr.io/r/grid/arrow.html)`(``length ``=`` ``grid``::`[`unit`](https://rdrr.io/r/grid/unit.html)`(``0.2``, ``"cm"``)``)``, linewidth ``=`` ``0.8`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`scale_colour_viridis_d`](https://ggplot2.tidyverse.org/reference/scale_viridis.html)`(``name ``=`` ``"cluster"``, end ``=`` ``0.85``)`` ``+`\
+`  ``ggplot2``::`[`coord_equal`](https://ggplot2.tidyverse.org/reference/coord_fixed.html)`(``)`` ``+`\
+`  ``ggplot2``::`[`labs`](https://ggplot2.tidyverse.org/reference/labs.html)`(``x ``=`` `[`expression`](https://rdrr.io/r/base/expression.html)`(``x``[``1``]``)``, y ``=`` `[`expression`](https://rdrr.io/r/base/expression.html)`(``x``[``2``]``)``,`\
+`                title ``=`` ``"Clustering and principal axes from two fits"``)`` ``+`\
+`  ``ggplot2``::`[`theme_minimal`](https://ggplot2.tidyverse.org/reference/ggtheme.html)`(``base_size ``=`` ``11``)`
 
 ![Three coloured point clusters with two principal-axis arrows drawn
 from the overall
@@ -355,17 +335,15 @@ result is exactly the ridge estimator of Hoerl and Kennard (1970), an
 $`L_2`$ penalty, with penalty $`(n - 1)\lambda`$ on the centred
 cross-products, because the covariance divides them by $`n - 1`$.
 
-``` r
-
-lambda <- c(0, 0.5, 2, 8)
-slope_pm <- vapply(lambda, function(lam) {
-  f <- fit_proxymix(joint, N = 1L, regime = "moment", ridge_eps = lam)
-  gmm_conditionalise(f, given = c(NA, 1))@means[[1L]] -
-    gmm_conditionalise(f, given = c(NA, 0))@means[[1L]]
-}, numeric(1L))
-slope_formula <- cov(x, y) / (var(x) + lambda)
-diff_ridge <- max(abs(slope_pm - slope_formula))
-```
+\
+`lambda`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0.5``, ``2``, ``8``)`\
+`slope_pm`` ``<-`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``lambda``, ``function``(``lam``)`` ``{`\
+`  ``f`` ``<-`` `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(``joint``, N ``=`` ``1L``, regime ``=`` ``"moment"``, ridge_eps ``=`` ``lam``)`\
+`  `[`gmm_conditionalise`](https://max578.github.io/proxymix/reference/gmm_conditionalise.md)`(``f``, given ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``NA``, ``1``)``)``@``means``[[``1L``]``]`` ``-`\
+`    `[`gmm_conditionalise`](https://max578.github.io/proxymix/reference/gmm_conditionalise.md)`(``f``, given ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``NA``, ``0``)``)``@``means``[[``1L``]``]`\
+`}``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)`\
+`slope_formula`` ``<-`` `[`cov`](https://rdrr.io/r/stats/cor.html)`(``x``, ``y``)`` ``/`` ``(`[`var`](https://rdrr.io/r/stats/cor.html)`(``x``)`` ``+`` ``lambda``)`\
+`diff_ridge`` ``<-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``slope_pm`` ``-`` ``slope_formula``)``)`
 
 | Penalty $`\lambda`$ | proxymix slope | Ridge closed form |
 |--------------------:|---------------:|------------------:|
@@ -399,77 +377,71 @@ The design below is synthetic, chosen so that the true effect is known:
 the treatment effect is the linear function $`\tau(x) = 0.5 + x`$, so
 the estimate can be scored against it.
 
-``` r
-
-set.seed(20260902)
-n_up <- 600L
-x_up <- rnorm(n_up)
-t_up <- rbinom(n_up, 1L, 0.5)
-tau_true <- function(v) 0.5 + v
-y_up <- 1 + tau_true(x_up) * t_up + rnorm(n_up, sd = 0.5)
-dat_up <- data.frame(y = y_up, t = t_up, x = x_up)
-
-model <- fit_uplift(dat_up, "y", "t", "x", N = 2L, regime = "sample",
-                    max_iter = 80L, seed = 1L)
-model
-#> <uplift_model>: K = 2 regimes, assume = "ignorability"
-#>   outcome   : y (continuous)
-#>   treatment : t  (arms 0 vs 1)
-#>   covariates: x
-#>   trained on: 600 units
-```
+\
+[`set.seed`](https://rdrr.io/r/base/Random.html)`(``20260902``)`\
+`n_up`` ``<-`` ``600L`\
+`x_up`` ``<-`` `[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n_up``)`\
+`t_up`` ``<-`` `[`rbinom`](https://rdrr.io/r/stats/Binomial.html)`(``n_up``, ``1L``, ``0.5``)`\
+`tau_true`` ``<-`` ``function``(``v``)`` ``0.5`` ``+`` ``v`\
+`y_up`` ``<-`` ``1`` ``+`` ``tau_true``(``x_up``)`` ``*`` ``t_up`` ``+`` `[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n_up``, sd ``=`` ``0.5``)`\
+`dat_up`` ``<-`` `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``y ``=`` ``y_up``, t ``=`` ``t_up``, x ``=`` ``x_up``)`\
+\
+`model`` ``<-`` `[`fit_uplift`](https://max578.github.io/proxymix/reference/fit_uplift.md)`(``dat_up``, ``"y"``, ``"t"``, ``"x"``, N ``=`` ``2L``, regime ``=`` ``"sample"``,`\
+`                    max_iter ``=`` ``80L``, seed ``=`` ``1L``)`\
+`model`\
+`#> <uplift_model>: K = 2 regimes, assume = "ignorability"`\
+`#>   outcome   : y (continuous)`\
+`#>   treatment : t  (arms 0 vs 1)`\
+`#>   covariates: x`\
+`#>   trained on: 600 units`
 
 [`proxy_cate()`](https://max578.github.io/proxymix/reference/proxy_cate.md)
 reads the conditional average treatment effect, with a standard error
 and an interval, at whatever units are handed to it.
 
-``` r
+\
+`grid_up`` ``<-`` `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``x ``=`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``2``, ``2``, length.out ``=`` ``41L``)``)`\
+`cate`` ``<-`` `[`proxy_cate`](https://max578.github.io/proxymix/reference/proxy_cate.md)`(``model``, ``grid_up``)`\
+`err_cate`` ``<-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``cate``$``tau`` ``-`` ``tau_true``(``grid_up``$``x``)``)``)`\
+\
+`## The two-model learner: one least-squares line per arm, as one`\
+`## interacted regression whose t and t:x terms are the per-arm differences.`\
+`fit_arms`` ``<-`` `[`lm`](https://rdrr.io/r/stats/lm.html)`(``y`` ``~`` ``t`` ``*`` ``x``, data ``=`` ``dat_up``)`\
+`b_arms`` ``<-`` `[`coef`](https://rdrr.io/r/stats/coef.html)`(``fit_arms``)``[`[`c`](https://rdrr.io/r/base/c.html)`(``"t"``, ``"t:x"``)``]`\
+`diff_arms`` ``<-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``cate``$``tau`` ``-`` ``(``b_arms``[[``1L``]``]`` ``+`` ``b_arms``[[``2L``]``]`` ``*`` ``grid_up``$``x``)``)``)`\
+`A_arms`` ``<-`` `[`cbind`](https://rdrr.io/r/base/cbind.html)`(``0``, ``1``, ``0``, ``grid_up``$``x``)`\
+`se_arms`` ``<-`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(`[`rowSums`](https://rdrr.io/r/base/colSums.html)`(``(``A_arms`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` `[`vcov`](https://rdrr.io/r/stats/vcov.html)`(``fit_arms``)``)`` ``*`` ``A_arms``)``)`\
+`se_ratio`` ``<-`` `[`range`](https://rdrr.io/r/base/range.html)`(``cate``$``se`` ``/`` ``se_arms``)`\
+`## departure of intercept and slope from the truth, in standard errors`\
+`z_arms`` ``<-`` ``(``b_arms`` ``-`` `[`c`](https://rdrr.io/r/base/c.html)`(``0.5``, ``1``)``)`` ``/`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(`[`diag`](https://rdrr.io/r/base/diag.html)`(`[`vcov`](https://rdrr.io/r/stats/vcov.html)`(``fit_arms``)``)``)``[`[`c`](https://rdrr.io/r/base/c.html)`(``"t"``, ``"t:x"``)``]`\
+`arm_of_component`` ``<-`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``model``@``fit``@``means``, ``function``(``m``)`` ``{`\
+`  ``m``[``model``@``roles``$``treatment``]`\
+`}``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)`
 
-grid_up <- data.frame(x = seq(-2, 2, length.out = 41L))
-cate <- proxy_cate(model, grid_up)
-err_cate <- max(abs(cate$tau - tau_true(grid_up$x)))
-
-## The two-model learner: one least-squares line per arm, as one
-## interacted regression whose t and t:x terms are the per-arm differences.
-fit_arms <- lm(y ~ t * x, data = dat_up)
-b_arms <- coef(fit_arms)[c("t", "t:x")]
-diff_arms <- max(abs(cate$tau - (b_arms[[1L]] + b_arms[[2L]] * grid_up$x)))
-A_arms <- cbind(0, 1, 0, grid_up$x)
-se_arms <- sqrt(rowSums((A_arms %*% vcov(fit_arms)) * A_arms))
-se_ratio <- range(cate$se / se_arms)
-## departure of intercept and slope from the truth, in standard errors
-z_arms <- (b_arms - c(0.5, 1)) / sqrt(diag(vcov(fit_arms)))[c("t", "t:x")]
-arm_of_component <- vapply(model@fit@means, function(m) {
-  m[model@roles$treatment]
-}, numeric(1L))
-```
-
-``` r
-
-cate_df <- as.data.frame(cate)
-cate_df$x <- grid_up$x
-cate_df$truth <- tau_true(grid_up$x)
-ggplot2::ggplot(cate_df, ggplot2::aes(x)) +
-  ggplot2::geom_ribbon(ggplot2::aes(ymin = ci_lo, ymax = ci_hi),
-                       fill = "#56B4E9", alpha = 0.35) +
-  ggplot2::geom_line(ggplot2::aes(y = tau, colour = "proxymix estimate"),
-                     linewidth = 0.9) +
-  ggplot2::geom_line(ggplot2::aes(y = truth, colour = "analytic truth"),
-                     linewidth = 0.9, linetype = "dashed") +
-  ggplot2::geom_hline(yintercept = 0, colour = "grey60",
-                      linewidth = 0.3) +
-  ggplot2::scale_colour_manual(
-    name = NULL,
-    values = c("proxymix estimate" = "#0072B2",
-               "analytic truth" = "#D55E00")
-  ) +
-  ggplot2::labs(
-    x = "covariate x", y = "treatment effect on y",
-    title = "A conditional treatment-effect surface from one joint fit"
-  ) +
-  ggplot2::theme_minimal(base_size = 11) +
-  ggplot2::theme(legend.position = "top")
-```
+\
+`cate_df`` ``<-`` `[`as.data.frame`](https://rdrr.io/r/base/as.data.frame.html)`(``cate``)`\
+`cate_df``$``x`` ``<-`` ``grid_up``$``x`\
+`cate_df``$``truth`` ``<-`` ``tau_true``(``grid_up``$``x``)`\
+`ggplot2``::`[`ggplot`](https://ggplot2.tidyverse.org/reference/ggplot.html)`(``cate_df``, ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``x``)``)`` ``+`\
+`  ``ggplot2``::`[`geom_ribbon`](https://ggplot2.tidyverse.org/reference/geom_ribbon.html)`(``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``ymin ``=`` ``ci_lo``, ymax ``=`` ``ci_hi``)``,`\
+`                       fill ``=`` ``"#56B4E9"``, alpha ``=`` ``0.35``)`` ``+`\
+`  ``ggplot2``::`[`geom_line`](https://ggplot2.tidyverse.org/reference/geom_path.html)`(``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``y ``=`` ``tau``, colour ``=`` ``"proxymix estimate"``)``,`\
+`                     linewidth ``=`` ``0.9``)`` ``+`\
+`  ``ggplot2``::`[`geom_line`](https://ggplot2.tidyverse.org/reference/geom_path.html)`(``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``y ``=`` ``truth``, colour ``=`` ``"analytic truth"``)``,`\
+`                     linewidth ``=`` ``0.9``, linetype ``=`` ``"dashed"``)`` ``+`\
+`  ``ggplot2``::`[`geom_hline`](https://ggplot2.tidyverse.org/reference/geom_abline.html)`(``yintercept ``=`` ``0``, colour ``=`` ``"grey60"``,`\
+`                      linewidth ``=`` ``0.3``)`` ``+`\
+`  ``ggplot2``::`[`scale_colour_manual`](https://ggplot2.tidyverse.org/reference/scale_manual.html)`(`\
+`    name ``=`` ``NULL``,`\
+`    values ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"proxymix estimate"`` ``=`` ``"#0072B2"``,`\
+`               ``"analytic truth"`` ``=`` ``"#D55E00"``)`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`labs`](https://ggplot2.tidyverse.org/reference/labs.html)`(`\
+`    x ``=`` ``"covariate x"``, y ``=`` ``"treatment effect on y"``,`\
+`    title ``=`` ``"A conditional treatment-effect surface from one joint fit"`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`theme_minimal`](https://ggplot2.tidyverse.org/reference/ggtheme.html)`(``base_size ``=`` ``11``)`` ``+`\
+`  ``ggplot2``::`[`theme`](https://ggplot2.tidyverse.org/reference/theme.html)`(``legend.position ``=`` ``"top"``)`
 
 ![Estimated conditional average treatment effect against the covariate,
 shown as a straight line with a shaded confidence band, overlaid with a
@@ -488,11 +460,9 @@ Acting on the estimate is
 which turns an effect into a recommended arm under a value per unit of
 outcome and a cost of treating.
 
-``` r
-
-decision <- proxy_decide(model, grid_up, value = 1, cost = 0.5)
-switch_x <- grid_up$x[min(which(decision$action == 1L))]
-```
+\
+`decision`` ``<-`` `[`proxy_decide`](https://max578.github.io/proxymix/reference/proxy_decide.md)`(``model``, ``grid_up``, value ``=`` ``1``, cost ``=`` ``0.5``)`\
+`switch_x`` ``<-`` ``grid_up``$``x``[`[`min`](https://rdrr.io/r/base/Extremes.html)`(`[`which`](https://rdrr.io/r/base/which.html)`(``decision``$``action`` ``==`` ``1L``)``)``]`
 
 | Covariate x | Estimated effect | True effect | Recommended arm | Net value |
 |------------:|-----------------:|------------:|----------------:|----------:|
@@ -512,50 +482,46 @@ treatment arms it actually saw. Asking for a contrast between arms the
 data never contained is refused, with a typed condition, instead of
 being answered on a silently rescaled axis.
 
-``` r
-
-refusal <- tryCatch(
-  proxy_cate(model, grid_up, t1 = 100, t0 = 0),
-  error = function(e) e
-)
-class(refusal)
-#> [1] "proxymix_treatment_scale_error" "orchestra_refusal"             
-#> [3] "rlang_error"                    "error"                         
-#> [5] "condition"
-msg_lines <- strsplit(conditionMessage(refusal), "\n")[[1L]]
-writeLines(strwrap(msg_lines, width = 70L, exdent = 2L))
-#> `t1`/`t0` do not match the treatment levels observed at fit
-#>   time.
-#> ℹ Observed treatment levels: 0 and 1.
-#> ℹ Supplied: t1 = 100, t0 = 0.
-#> ℹ Omit `t1`/`t0` to use the observed arms, or pass one of the
-#>   observed levels.
-```
+\
+`refusal`` ``<-`` `[`tryCatch`](https://rdrr.io/r/base/conditions.html)`(`\
+`  `[`proxy_cate`](https://max578.github.io/proxymix/reference/proxy_cate.md)`(``model``, ``grid_up``, t1 ``=`` ``100``, t0 ``=`` ``0``)``,`\
+`  error ``=`` ``function``(``e``)`` ``e`\
+`)`\
+[`class`](https://rdrr.io/r/base/class.html)`(``refusal``)`\
+`#> [1] "proxymix_treatment_scale_error" "orchestra_refusal"             `\
+`#> [3] "rlang_error"                    "error"                         `\
+`#> [5] "condition"`\
+`msg_lines`` ``<-`` `[`strsplit`](https://rdrr.io/r/base/strsplit.html)`(`[`conditionMessage`](https://rdrr.io/r/base/conditions.html)`(``refusal``)``, ``"\n"``)``[[``1L``]``]`\
+[`writeLines`](https://rdrr.io/r/base/writeLines.html)`(`[`strwrap`](https://rdrr.io/r/base/strwrap.html)`(``msg_lines``, width ``=`` ``70L``, exdent ``=`` ``2L``)``)`\
+`` #> `t1`/`t0` do not match the treatment levels observed at fit ``\
+`#>   time.`\
+`#> ``ℹ`` Observed treatment levels: 0 and 1.`\
+`#> ``ℹ`` Supplied: t1 = 100, t0 = 0.`\
+`#> ``ℹ```  Omit `t1`/`t0` to use the observed arms, or pass one of the ``\
+`#>   observed levels.`
 
 The identification report is the artefact that travels with a decision:
 it names the estimand, the assumption it rests on, the overlap of the
 units supplied, the magnitude at risk if a latent regime confounds the
 effect, and what the model explicitly does not identify.
 
-``` r
-
-proxy_identification_report(model, grid_up)
-#> Warning: The treatment is almost constant within every regime, so the within-regime
-#> effect is zero and the gap equals the whole estimated effect.
-#> ℹ The gap carries no information about confounding for this model.
-#> == Identification report ==================================
-#>   Estimand   : CATE / uplift: E[Y | do(T=t1), X] - E[Y | do(T=t0), X]
-#>   Assumption : ignorability
-#>                requires (Y(0), Y(1)) independent of T given X.
-#>   Regimes    : K = 2   Outcome scale: continuous
-#>   Units      : 41
-#>   Overlap    : 100.0% of units adequately supported
-#>   Confounding gap (value at risk if a latent regime confounds):
-#>                mean |Delta| = 1.12, max |Delta| = 2.534
-#>   NOT identified : the individual counterfactual law
-#>                    (its variance and tail probabilities).
-#> ===========================================================
-```
+\
+[`proxy_identification_report`](https://max578.github.io/proxymix/reference/proxy_identification_report.md)`(``model``, ``grid_up``)`\
+`#> Warning: The treatment is almost constant within every regime, so the within-regime`\
+`#> effect is zero and the gap equals the whole estimated effect.`\
+`#> ``ℹ`` The gap carries no information about confounding for this model.`\
+`#> == Identification report ==================================`\
+`#>   Estimand   : CATE / uplift: E[Y | do(T=t1), X] - E[Y | do(T=t0), X]`\
+`#>   Assumption : ignorability`\
+`#>                requires (Y(0), Y(1)) independent of T given X.`\
+`#>   Regimes    : K = 2   Outcome scale: continuous`\
+`#>   Units      : 41`\
+`#>   Overlap    : 100.0% of units adequately supported`\
+`#>   Confounding gap (value at risk if a latent regime confounds):`\
+`#>                mean |Delta| = 1.12, max |Delta| = 2.534`\
+`#>   NOT identified : the individual counterfactual law`\
+`#>                    (its variance and tail probabilities).`\
+`#> ===========================================================`
 
 On these data the confounding gap in the report equals the whole
 estimated effect and is not a separate check on it. Each of the two
@@ -595,7 +561,7 @@ assuming.
 | Per-point KDE conditional mean equals Nadaraya-Watson | 3.1e-15 |
 | $`N = 1`$ eigenvectors equal the prcomp rotation | 1.0e-15 |
 | Ridged conditional slope equals the ridge closed form | 2.2e-16 |
-| Two-component effect equals the per-arm least-squares contrast | 1.7e-06 |
+| Two-component effect equals the per-arm least-squares contrast | 2.6e-06 |
 
 Each equality claim checked against the tool it stands in for, on the
 data fitted above. {.table}
@@ -657,7 +623,7 @@ and covariance of $`(y, x)`$, so conditioning on an arm and on $`x`$
 returns that arm’s least-squares line, and the estimated effect is the
 difference of the two lines: the two-model learner with a linear model
 in each arm. The estimate and the per-arm least-squares contrast differ
-by at most $`1.7 \times 10^{-6}`$ over the grid, the convergence
+by at most $`2.6 \times 10^{-6}`$ over the grid, the convergence
 tolerance of the expectation-maximisation fit, and the delta-method
 standard error is 0.99 to 1.00 times the regression’s own. The linear
 model in each arm is correctly specified for this design. The estimated
@@ -789,18 +755,14 @@ and not a ranking.
 
 The two contributed packages install from CRAN once:
 
-``` r
+\
+[`install.packages`](https://rdrr.io/r/utils/install.packages.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``"MASS"``, ``"glmnet"``)``)`
 
-install.packages(c("MASS", "glmnet"))
-```
-
-``` r
-
-cols <- c("bill_len", "bill_dep", "flipper_len", "body_mass")
-peng <- na.omit(penguins[, c(cols, "species")])
-X_peng <- as.matrix(peng[, cols])
-n_peng <- nrow(X_peng)
-```
+\
+`cols`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``"bill_len"``, ``"bill_dep"``, ``"flipper_len"``, ``"body_mass"``)`\
+`peng`` ``<-`` `[`na.omit`](https://rdrr.io/r/stats/na.fail.html)`(``penguins``[``, `[`c`](https://rdrr.io/r/base/c.html)`(``cols``, ``"species"``)``]``)`\
+`X_peng`` ``<-`` `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(``peng``[``, ``cols``]``)`\
+`n_peng`` ``<-`` `[`nrow`](https://rdrr.io/r/base/nrow.html)`(``X_peng``)`
 
 The four body measurements of the 342 birds measured in full are used,
 in their own units of millimetres and grams.
@@ -814,54 +776,52 @@ $`\lambda`$ is $`\lambda / (n - 1)`$ for `lm.ridge()` and
 $`\lambda n / ((n - 1) s_y)`$ for `glmnet`, where $`s_y`$ is the
 standard deviation of body mass with divisor $`n`$.
 
-``` r
-
-cond_slopes <- function(fit, at) {
-  base <- cond_mean_p(fit, at)
-  vapply(seq_along(at), function(j) {
-    step <- at
-    step[j] <- step[j] + 1
-    cond_mean_p(fit, step) - base
-  }, numeric(1L))
-}
-## The conditional mean of the first coordinate given all the others.
-cond_mean_p <- function(fit, xv) {
-  g <- gmm_conditionalise(fit, given = c(NA, xv))
-  sum(g@weights * vapply(g@means, function(m) m[1L], numeric(1L)))
-}
-
-y_peng <- X_peng[, "body_mass"]
-X_pred <- X_peng[, c("bill_len", "bill_dep", "flipper_len")]
-joint_peng <- gmm_target_from_samples(cbind(y_peng, X_pred))
-fit_ols <- fit_proxymix(joint_peng, N = 1L, regime = "moment",
-                        ridge_eps = 0)
-slope_ols <- cond_slopes(fit_ols, colMeans(X_pred))
-coef_lm <- coef(lm(body_mass ~ bill_len + bill_dep + flipper_len,
-                   data = peng))[-1L]
-diff_lm <- max(abs(slope_ols - coef_lm))
-
-## Standardised predictors, so the two ridge penalties can be matched.
-X_std <- scale(X_pred, center = TRUE, scale = FALSE)
-scale_x <- sqrt(colSums(X_std^2) / n_peng)
-X_std <- sweep(X_std, 2L, scale_x, "/")
-s_y <- sqrt(mean((y_peng - mean(y_peng))^2))
-joint_std <- gmm_target_from_samples(cbind(y_peng, X_std))
-lambda_pen <- 5
-ridge_slopes <- function(eps) {
-  f <- fit_proxymix(joint_std, N = 1L, regime = "moment", ridge_eps = eps)
-  cond_slopes(f, colMeans(X_std)) / scale_x
-}
-coef_massridge <- coef(MASS::lm.ridge(
-  body_mass ~ bill_len + bill_dep + flipper_len, data = peng,
-  lambda = lambda_pen))[-1L]
-diff_massridge <- max(abs(ridge_slopes(lambda_pen / (n_peng - 1)) -
-                            coef_massridge))
-coef_glmnet <- as.numeric(coef(glmnet::glmnet(
-  X_pred, y_peng, alpha = 0, lambda = lambda_pen,
-  control = list(thresh = 1e-20))))[-1L]
-diff_glmnet <- max(abs(
-  ridge_slopes(lambda_pen * n_peng / ((n_peng - 1) * s_y)) - coef_glmnet))
-```
+\
+`cond_slopes`` ``<-`` ``function``(``fit``, ``at``)`` ``{`\
+`  ``base`` ``<-`` ``cond_mean_p``(``fit``, ``at``)`\
+`  `[`vapply`](https://rdrr.io/r/base/lapply.html)`(`[`seq_along`](https://rdrr.io/r/base/seq.html)`(``at``)``, ``function``(``j``)`` ``{`\
+`    ``step`` ``<-`` ``at`\
+`    ``step``[``j``]`` ``<-`` ``step``[``j``]`` ``+`` ``1`\
+`    ``cond_mean_p``(``fit``, ``step``)`` ``-`` ``base`\
+`  ``}``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)`\
+`}`\
+`## The conditional mean of the first coordinate given all the others.`\
+`cond_mean_p`` ``<-`` ``function``(``fit``, ``xv``)`` ``{`\
+`  ``g`` ``<-`` `[`gmm_conditionalise`](https://max578.github.io/proxymix/reference/gmm_conditionalise.md)`(``fit``, given ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``NA``, ``xv``)``)`\
+`  `[`sum`](https://rdrr.io/r/base/sum.html)`(``g``@``weights`` ``*`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``g``@``means``, ``function``(``m``)`` ``m``[``1L``]``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)``)`\
+`}`\
+\
+`y_peng`` ``<-`` ``X_peng``[``, ``"body_mass"``]`\
+`X_pred`` ``<-`` ``X_peng``[``, `[`c`](https://rdrr.io/r/base/c.html)`(``"bill_len"``, ``"bill_dep"``, ``"flipper_len"``)``]`\
+`joint_peng`` ``<-`` `[`gmm_target_from_samples`](https://max578.github.io/proxymix/reference/gmm_target_from_samples.md)`(`[`cbind`](https://rdrr.io/r/base/cbind.html)`(``y_peng``, ``X_pred``)``)`\
+`fit_ols`` ``<-`` `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(``joint_peng``, N ``=`` ``1L``, regime ``=`` ``"moment"``,`\
+`                        ridge_eps ``=`` ``0``)`\
+`slope_ols`` ``<-`` ``cond_slopes``(``fit_ols``, `[`colMeans`](https://rdrr.io/r/base/colSums.html)`(``X_pred``)``)`\
+`coef_lm`` ``<-`` `[`coef`](https://rdrr.io/r/stats/coef.html)`(`[`lm`](https://rdrr.io/r/stats/lm.html)`(``body_mass`` ``~`` ``bill_len`` ``+`` ``bill_dep`` ``+`` ``flipper_len``,`\
+`                   data ``=`` ``peng``)``)``[``-``1L``]`\
+`diff_lm`` ``<-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``slope_ols`` ``-`` ``coef_lm``)``)`\
+\
+`## Standardised predictors, so the two ridge penalties can be matched.`\
+`X_std`` ``<-`` `[`scale`](https://rdrr.io/r/base/scale.html)`(``X_pred``, center ``=`` ``TRUE``, scale ``=`` ``FALSE``)`\
+`scale_x`` ``<-`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(`[`colSums`](https://rdrr.io/r/base/colSums.html)`(``X_std``^``2``)`` ``/`` ``n_peng``)`\
+`X_std`` ``<-`` `[`sweep`](https://rdrr.io/r/base/sweep.html)`(``X_std``, ``2L``, ``scale_x``, ``"/"``)`\
+`s_y`` ``<-`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(`[`mean`](https://rdrr.io/r/base/mean.html)`(``(``y_peng`` ``-`` `[`mean`](https://rdrr.io/r/base/mean.html)`(``y_peng``)``)``^``2``)``)`\
+`joint_std`` ``<-`` `[`gmm_target_from_samples`](https://max578.github.io/proxymix/reference/gmm_target_from_samples.md)`(`[`cbind`](https://rdrr.io/r/base/cbind.html)`(``y_peng``, ``X_std``)``)`\
+`lambda_pen`` ``<-`` ``5`\
+`ridge_slopes`` ``<-`` ``function``(``eps``)`` ``{`\
+`  ``f`` ``<-`` `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(``joint_std``, N ``=`` ``1L``, regime ``=`` ``"moment"``, ridge_eps ``=`` ``eps``)`\
+`  ``cond_slopes``(``f``, `[`colMeans`](https://rdrr.io/r/base/colSums.html)`(``X_std``)``)`` ``/`` ``scale_x`\
+`}`\
+`coef_massridge`` ``<-`` `[`coef`](https://rdrr.io/r/stats/coef.html)`(``MASS``::`[`lm.ridge`](https://rdrr.io/pkg/MASS/man/lm.ridge.html)`(`\
+`  ``body_mass`` ``~`` ``bill_len`` ``+`` ``bill_dep`` ``+`` ``flipper_len``, data ``=`` ``peng``,`\
+`  lambda ``=`` ``lambda_pen``)``)``[``-``1L``]`\
+`diff_massridge`` ``<-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``ridge_slopes``(``lambda_pen`` ``/`` ``(``n_peng`` ``-`` ``1``)``)`` ``-`\
+`                            ``coef_massridge``)``)`\
+`coef_glmnet`` ``<-`` `[`as.numeric`](https://rdrr.io/r/base/numeric.html)`(`[`coef`](https://rdrr.io/r/stats/coef.html)`(``glmnet``::`[`glmnet`](https://rdrr.io/pkg/glmnet/man/glmnet.html)`(`\
+`  ``X_pred``, ``y_peng``, alpha ``=`` ``0``, lambda ``=`` ``lambda_pen``,`\
+`  control ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``thresh ``=`` ``1e-20``)``)``)``)``[``-``1L``]`\
+`diff_glmnet`` ``<-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(`\
+`  ``ridge_slopes``(``lambda_pen`` ``*`` ``n_peng`` ``/`` ``(``(``n_peng`` ``-`` ``1``)`` ``*`` ``s_y``)``)`` ``-`` ``coef_glmnet``)``)`
 
 Body mass smoothed on flipper length is the kernel case.
 [`ksmooth()`](https://rdrr.io/r/stats/ksmooth.html) with its `"normal"`
@@ -870,27 +830,25 @@ deviation $`0.25 \times 10 / \Phi^{-1}(0.75)`$ mm, cut off at four
 standard deviations from the query point, so the untruncated
 Nadaraya-Watson estimator with the same kernel is also compared.
 
-``` r
-
-x_fl <- X_peng[, "flipper_len"]
-bw_fl <- 10
-h_fl <- 0.25 * bw_fl / qnorm(0.75)
-kde_peng <- gmm(
-  weights = rep(1 / n_peng, n_peng),
-  means = lapply(seq_len(n_peng), function(i) c(y_peng[i], x_fl[i])),
-  covariances = rep(list(diag(c(h_fl^2, h_fl^2))), n_peng)
-)
-xq_fl <- seq(180, 225, by = 5)
-mix_fl <- vapply(xq_fl, function(q) cond_mean_p(kde_peng, q), numeric(1L))
-ks_fl <- ksmooth(x_fl, y_peng, kernel = "normal", bandwidth = bw_fl,
-                 x.points = xq_fl)$y
-nw_fl <- vapply(xq_fl, function(q) {
-  w <- dnorm(q, x_fl, h_fl)
-  sum(w * y_peng) / sum(w)
-}, numeric(1L))
-diff_ksmooth <- max(abs(ks_fl - mix_fl))
-diff_nw_peng <- max(abs(nw_fl - mix_fl))
-```
+\
+`x_fl`` ``<-`` ``X_peng``[``, ``"flipper_len"``]`\
+`bw_fl`` ``<-`` ``10`\
+`h_fl`` ``<-`` ``0.25`` ``*`` ``bw_fl`` ``/`` `[`qnorm`](https://rdrr.io/r/stats/Normal.html)`(``0.75``)`\
+`kde_peng`` ``<-`` `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(`\
+`  weights ``=`` `[`rep`](https://rdrr.io/r/base/rep.html)`(``1`` ``/`` ``n_peng``, ``n_peng``)``,`\
+`  means ``=`` `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``n_peng``)``, ``function``(``i``)`` `[`c`](https://rdrr.io/r/base/c.html)`(``y_peng``[``i``]``, ``x_fl``[``i``]``)``)``,`\
+`  covariances ``=`` `[`rep`](https://rdrr.io/r/base/rep.html)`(`[`list`](https://rdrr.io/r/base/list.html)`(`[`diag`](https://rdrr.io/r/base/diag.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``h_fl``^``2``, ``h_fl``^``2``)``)``)``, ``n_peng``)`\
+`)`\
+`xq_fl`` ``<-`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``180``, ``225``, by ``=`` ``5``)`\
+`mix_fl`` ``<-`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``xq_fl``, ``function``(``q``)`` ``cond_mean_p``(``kde_peng``, ``q``)``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)`\
+`ks_fl`` ``<-`` `[`ksmooth`](https://rdrr.io/r/stats/ksmooth.html)`(``x_fl``, ``y_peng``, kernel ``=`` ``"normal"``, bandwidth ``=`` ``bw_fl``,`\
+`                 x.points ``=`` ``xq_fl``)``$``y`\
+`nw_fl`` ``<-`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``xq_fl``, ``function``(``q``)`` ``{`\
+`  ``w`` ``<-`` `[`dnorm`](https://rdrr.io/r/stats/Normal.html)`(``q``, ``x_fl``, ``h_fl``)`\
+`  `[`sum`](https://rdrr.io/r/base/sum.html)`(``w`` ``*`` ``y_peng``)`` ``/`` `[`sum`](https://rdrr.io/r/base/sum.html)`(``w``)`\
+`}``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)`\
+`diff_ksmooth`` ``<-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``ks_fl`` ``-`` ``mix_fl``)``)`\
+`diff_nw_peng`` ``<-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``nw_fl`` ``-`` ``mix_fl``)``)`
 
 Three clusters and the principal axes come from the four measurements
 together. [`kmeans()`](https://rdrr.io/r/stats/kmeans.html) is run with
@@ -898,35 +856,33 @@ together. [`kmeans()`](https://rdrr.io/r/stats/kmeans.html) is run with
 labels are matched by the permutation that agrees on most birds before
 the centres are compared.
 
-``` r
-
-set.seed(20260925)
-km_peng <- kmeans(X_peng, centers = 3L, nstart = 20L)
-target_peng <- gmm_target_from_samples(X_peng)
-fit_peng3 <- fit_proxymix(target_peng, N = 3L, regime = "sample",
-                          max_iter = 200L, seed = 1L)
-resp_peng <- responsibilities(fit_peng3, X_peng)
-lab_mix <- max.col(resp_peng)
-perms <- list(c(1L, 2L, 3L), c(1L, 3L, 2L), c(2L, 1L, 3L),
-              c(2L, 3L, 1L), c(3L, 1L, 2L), c(3L, 2L, 1L))
-agree_lab <- function(a, b) {
-  vapply(perms, function(p) mean(p[a] == b), numeric(1L))
-}
-agree_km <- agree_lab(km_peng$cluster, lab_mix)
-best <- perms[[which.max(agree_km)]]
-centres_km <- km_peng$centers[order(best), ]
-centres_mix <- do.call(rbind, fit_peng3@means)
-diff_kmeans <- max(abs(centres_km - centres_mix))
-agree_species_mix <- max(agree_lab(as.integer(peng$species), lab_mix))
-agree_species_km <- max(agree_lab(as.integer(peng$species),
-                                  km_peng$cluster))
-
-fit_peng1 <- fit_proxymix(target_peng, N = 1L, regime = "moment",
-                          ridge_eps = 0)
-ev_peng <- eigen(fit_peng1@covariances[[1L]])$vectors
-pr_peng <- unname(prcomp(X_peng)$rotation)
-diff_prcomp <- max(abs(abs(ev_peng) - abs(pr_peng)))
-```
+\
+[`set.seed`](https://rdrr.io/r/base/Random.html)`(``20260925``)`\
+`km_peng`` ``<-`` `[`kmeans`](https://rdrr.io/r/stats/kmeans.html)`(``X_peng``, centers ``=`` ``3L``, nstart ``=`` ``20L``)`\
+`target_peng`` ``<-`` `[`gmm_target_from_samples`](https://max578.github.io/proxymix/reference/gmm_target_from_samples.md)`(``X_peng``)`\
+`fit_peng3`` ``<-`` `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(``target_peng``, N ``=`` ``3L``, regime ``=`` ``"sample"``,`\
+`                          max_iter ``=`` ``200L``, seed ``=`` ``1L``)`\
+`resp_peng`` ``<-`` ``responsibilities``(``fit_peng3``, ``X_peng``)`\
+`lab_mix`` ``<-`` `[`max.col`](https://rdrr.io/r/base/maxCol.html)`(``resp_peng``)`\
+`perms`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``1L``, ``2L``, ``3L``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``1L``, ``3L``, ``2L``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``2L``, ``1L``, ``3L``)``,`\
+`              `[`c`](https://rdrr.io/r/base/c.html)`(``2L``, ``3L``, ``1L``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``3L``, ``1L``, ``2L``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``3L``, ``2L``, ``1L``)``)`\
+`agree_lab`` ``<-`` ``function``(``a``, ``b``)`` ``{`\
+`  `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``perms``, ``function``(``p``)`` `[`mean`](https://rdrr.io/r/base/mean.html)`(``p``[``a``]`` ``==`` ``b``)``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)`\
+`}`\
+`agree_km`` ``<-`` ``agree_lab``(``km_peng``$``cluster``, ``lab_mix``)`\
+`best`` ``<-`` ``perms``[[`[`which.max`](https://rdrr.io/r/base/which.min.html)`(``agree_km``)``]``]`\
+`centres_km`` ``<-`` ``km_peng``$``centers``[`[`order`](https://rdrr.io/r/base/order.html)`(``best``)``, ``]`\
+`centres_mix`` ``<-`` `[`do.call`](https://rdrr.io/r/base/do.call.html)`(``rbind``, ``fit_peng3``@``means``)`\
+`diff_kmeans`` ``<-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``centres_km`` ``-`` ``centres_mix``)``)`\
+`agree_species_mix`` ``<-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(``agree_lab``(`[`as.integer`](https://rdrr.io/r/base/integer.html)`(``peng``$``species``)``, ``lab_mix``)``)`\
+`agree_species_km`` ``<-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(``agree_lab``(`[`as.integer`](https://rdrr.io/r/base/integer.html)`(``peng``$``species``)``,`\
+`                                  ``km_peng``$``cluster``)``)`\
+\
+`fit_peng1`` ``<-`` `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(``target_peng``, N ``=`` ``1L``, regime ``=`` ``"moment"``,`\
+`                          ridge_eps ``=`` ``0``)`\
+`ev_peng`` ``<-`` `[`eigen`](https://rdrr.io/r/base/eigen.html)`(``fit_peng1``@``covariances``[[``1L``]``]``)``$``vectors`\
+`pr_peng`` ``<-`` `[`unname`](https://rdrr.io/r/base/unname.html)`(`[`prcomp`](https://rdrr.io/r/stats/prcomp.html)`(``X_peng``)``$``rotation``)`\
+`diff_prcomp`` ``<-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``ev_peng``)`` ``-`` `[`abs`](https://rdrr.io/r/base/MathFun.html)`(``pr_peng``)``)``)`
 
 | Usual tool | What is compared | Maximum absolute difference |
 |:---|:---|---:|
@@ -986,31 +942,25 @@ over the treated men and a standard error from the two fitted models.
 They install from CRAN once, with gam and dbarts for the learners in
 tmle’s SuperLearner library:
 
-``` r
+\
+[`install.packages`](https://rdrr.io/r/utils/install.packages.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``"grf"``, ``"tmle"``, ``"gam"``, ``"dbarts"``, ``"MatchIt"``, ``"mgcv"``,`\
+`                   ``"sandwich"``)``)`
 
-install.packages(c("grf", "tmle", "gam", "dbarts", "MatchIt", "mgcv",
-                   "sandwich"))
-```
-
-``` r
-
-library(grf)
-library(tmle)
-library(MatchIt)
-library(mgcv)
-```
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`grf`](https://github.com/grf-labs/grf)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`tmle`](https://CRAN.R-project.org/package=tmle)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`MatchIt`](https://kosukeimai.github.io/MatchIt/)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(``mgcv``)`
 
 Race is a three-level factor and enters the mixture as two indicators.
 
-``` r
-
-lal <- MatchIt::lalonde
-lal$black <- as.integer(lal$race == "black")
-lal$hispan <- as.integer(lal$race == "hispan")
-covs <- c("age", "educ", "black", "hispan", "married", "nodegree",
-          "re74", "re75")
-treated <- lal[lal$treat == 1L, ]
-```
+\
+`lal`` ``<-`` ``MatchIt``::`[`lalonde`](https://kosukeimai.github.io/MatchIt/reference/lalonde.html)\
+`lal``$``black`` ``<-`` `[`as.integer`](https://rdrr.io/r/base/integer.html)`(``lal``$``race`` ``==`` ``"black"``)`\
+`lal``$``hispan`` ``<-`` `[`as.integer`](https://rdrr.io/r/base/integer.html)`(``lal``$``race`` ``==`` ``"hispan"``)`\
+`covs`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``"age"``, ``"educ"``, ``"black"``, ``"hispan"``, ``"married"``, ``"nodegree"``,`\
+`          ``"re74"``, ``"re75"``)`\
+`treated`` ``<-`` ``lal``[``lal``$``treat`` ``==`` ``1L``, ``]`
 
 proxymix fits one joint mixture with the component count chosen by BIC,
 reads the effect for every treated man and averages. Its standard error
@@ -1021,67 +971,57 @@ which refits the mixture under bootstrap reweightings of the rows, and
 which turns the ensemble into a percentile interval for the averaged
 effect.
 
-``` r
-
-model_lal <- fit_uplift(lal, "re78", "treat", covs, seed = 1L)
-#> Warning: The EM log-likelihood decreased by 0.122 during fitting.
-#> ℹ This usually signals ridge regularisation interacting with a
-#>   near-singular component.
-#> Warning: The EM log-likelihood decreased by 0.193 during fitting.
-#> ℹ This usually signals ridge regularisation interacting with a
-#>   near-singular component.
-att_of <- function(g) {
-  m <- uplift_model(fit = g, roles = model_lal@roles,
-                    assume = model_lal@assume,
-                    outcome_type = model_lal@outcome_type,
-                    data = model_lal@data, n_train = model_lal@n_train,
-                    treatment_levels = model_lal@treatment_levels)
-  c(att = mean(proxy_cate(m, treated, se = FALSE)$tau))
-}
-ens_lal <- gmm_fit_ensemble(model_lal@fit, B = 200L, seed = 2L)
-ci_lal <- proxy_functional_ci(ens_lal, att_of, level = 0.95)
-se_lal <- sd(vapply(ens_lal$members, att_of, numeric(1L)))
-```
+\
+`model_lal`` ``<-`` `[`fit_uplift`](https://max578.github.io/proxymix/reference/fit_uplift.md)`(``lal``, ``"re78"``, ``"treat"``, ``covs``, seed ``=`` ``1L``)`\
+`att_of`` ``<-`` ``function``(``g``)`` ``{`\
+`  ``m`` ``<-`` `[`uplift_model`](https://max578.github.io/proxymix/reference/uplift_model.md)`(``fit ``=`` ``g``, roles ``=`` ``model_lal``@``roles``,`\
+`                    assume ``=`` ``model_lal``@``assume``,`\
+`                    outcome_type ``=`` ``model_lal``@``outcome_type``,`\
+`                    data ``=`` ``model_lal``@``data``, n_train ``=`` ``model_lal``@``n_train``,`\
+`                    treatment_levels ``=`` ``model_lal``@``treatment_levels``)`\
+`  `[`c`](https://rdrr.io/r/base/c.html)`(``att ``=`` `[`mean`](https://rdrr.io/r/base/mean.html)`(`[`proxy_cate`](https://max578.github.io/proxymix/reference/proxy_cate.md)`(``m``, ``treated``, se ``=`` ``FALSE``)``$``tau``)``)`\
+`}`\
+`ens_lal`` ``<-`` `[`gmm_fit_ensemble`](https://max578.github.io/proxymix/reference/gmm_fit_ensemble.md)`(``model_lal``@``fit``, B ``=`` ``200L``, seed ``=`` ``2L``)`\
+`ci_lal`` ``<-`` `[`proxy_functional_ci`](https://max578.github.io/proxymix/reference/proxy_functional_ci.md)`(``ens_lal``, ``att_of``, level ``=`` ``0.95``)`\
+`se_lal`` ``<-`` `[`sd`](https://rdrr.io/r/stats/sd.html)`(`[`vapply`](https://rdrr.io/r/base/lapply.html)`(``ens_lal``$``members``, ``att_of``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)``)`
 
 The ensemble holds 200 bootstrap refits. The sweep over one to four
 components warned twice that the expectation-maximisation objective
 decreased, in the three-component fit, where the 1974 and 1975 earnings
 are each zero for about 40 per cent of the men and a component can
-collapse onto them; the fit selected by BIC has 1 component, and the
+collapse onto them; the fit selected by BIC has 4 component, and the
 warnings do not concern it.
 
-``` r
-
-cf_lal <- causal_forest(lal[, covs], lal$re78, lal$treat,
-                        num.threads = 1L, seed = 1L)
-att_grf <- average_treatment_effect(cf_lal, target.sample = "treated")
-#> Warning in average_treatment_effect(cf_lal, target.sample =
-#> "treated"): Estimated treatment propensities take values between
-#> 0.027 and 0.959 and in particular get very close to 0 and 1. In this
-#> case, using `target.sample=overlap`, or filtering data as in Crump,
-#> Hotz, Imbens, and Mitnik (Biometrika, 2009) may be helpful.
-
-match_lal <- matchit(treat ~ age + educ + race + married + nodegree +
-                       re74 + re75, data = lal, method = "nearest")
-matched <- match.data(match_lal)
-fit_matched <- lm(re78 ~ treat + age + educ + race + married + nodegree +
-                    re74 + re75, data = matched, weights = weights)
-v_matched <- sandwich::vcovCL(fit_matched, cluster = ~subclass)
-att_match <- c(coef(fit_matched)[["treat"]],
-               sqrt(v_matched["treat", "treat"]))
-
-f_gam <- re78 ~ s(age) + s(educ) + black + hispan + married + nodegree +
-  s(re74) + s(re75)
-gam1 <- gam(f_gam, data = lal[lal$treat == 1L, ])
-gam0 <- gam(f_gam, data = lal[lal$treat == 0L, ])
-L1 <- predict(gam1, treated, type = "lpmatrix")
-L0 <- predict(gam0, treated, type = "lpmatrix")
-a1 <- colMeans(L1)
-a0 <- colMeans(L0)
-att_gam <- c(sum(a1 * coef(gam1)) - sum(a0 * coef(gam0)),
-             sqrt(drop(t(a1) %*% vcov(gam1) %*% a1 +
-                         t(a0) %*% vcov(gam0) %*% a0)))
-```
+\
+`cf_lal`` ``<-`` `[`causal_forest`](https://rdrr.io/pkg/grf/man/causal_forest.html)`(``lal``[``, ``covs``]``, ``lal``$``re78``, ``lal``$``treat``,`\
+`                        num.threads ``=`` ``1L``, seed ``=`` ``1L``)`\
+`att_grf`` ``<-`` `[`average_treatment_effect`](https://rdrr.io/pkg/grf/man/average_treatment_effect.html)`(``cf_lal``, target.sample ``=`` ``"treated"``)`\
+`#> Warning in average_treatment_effect(cf_lal, target.sample =`\
+`#> "treated"): Estimated treatment propensities take values between`\
+`#> 0.027 and 0.959 and in particular get very close to 0 and 1. In this`\
+`` #> case, using `target.sample=overlap`, or filtering data as in Crump, ``\
+`#> Hotz, Imbens, and Mitnik (Biometrika, 2009) may be helpful.`\
+\
+`match_lal`` ``<-`` `[`matchit`](https://kosukeimai.github.io/MatchIt/reference/matchit.html)`(``treat`` ``~`` ``age`` ``+`` ``educ`` ``+`` ``race`` ``+`` ``married`` ``+`` ``nodegree`` ``+`\
+`                       ``re74`` ``+`` ``re75``, data ``=`` ``lal``, method ``=`` ``"nearest"``)`\
+`matched`` ``<-`` `[`match.data`](https://kosukeimai.github.io/MatchIt/reference/match_data.html)`(``match_lal``)`\
+`fit_matched`` ``<-`` `[`lm`](https://rdrr.io/r/stats/lm.html)`(``re78`` ``~`` ``treat`` ``+`` ``age`` ``+`` ``educ`` ``+`` ``race`` ``+`` ``married`` ``+`` ``nodegree`` ``+`\
+`                    ``re74`` ``+`` ``re75``, data ``=`` ``matched``, weights ``=`` ``weights``)`\
+`v_matched`` ``<-`` ``sandwich``::`[`vcovCL`](https://zeileis.codeberg.page/sandwich/reference/vcovCL.html)`(``fit_matched``, cluster ``=`` ``~``subclass``)`\
+`att_match`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(`[`coef`](https://rdrr.io/r/stats/coef.html)`(``fit_matched``)``[[``"treat"``]``]``,`\
+`               `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(``v_matched``[``"treat"``, ``"treat"``]``)``)`\
+\
+`f_gam`` ``<-`` ``re78`` ``~`` `[`s`](https://rdrr.io/pkg/mgcv/man/s.html)`(``age``)`` ``+`` `[`s`](https://rdrr.io/pkg/mgcv/man/s.html)`(``educ``)`` ``+`` ``black`` ``+`` ``hispan`` ``+`` ``married`` ``+`` ``nodegree`` ``+`\
+`  `[`s`](https://rdrr.io/pkg/mgcv/man/s.html)`(``re74``)`` ``+`` `[`s`](https://rdrr.io/pkg/mgcv/man/s.html)`(``re75``)`\
+`gam1`` ``<-`` `[`gam`](https://rdrr.io/pkg/mgcv/man/gam.html)`(``f_gam``, data ``=`` ``lal``[``lal``$``treat`` ``==`` ``1L``, ``]``)`\
+`gam0`` ``<-`` `[`gam`](https://rdrr.io/pkg/mgcv/man/gam.html)`(``f_gam``, data ``=`` ``lal``[``lal``$``treat`` ``==`` ``0L``, ``]``)`\
+`L1`` ``<-`` `[`predict`](https://rdrr.io/r/stats/predict.html)`(``gam1``, ``treated``, type ``=`` ``"lpmatrix"``)`\
+`L0`` ``<-`` `[`predict`](https://rdrr.io/r/stats/predict.html)`(``gam0``, ``treated``, type ``=`` ``"lpmatrix"``)`\
+`a1`` ``<-`` `[`colMeans`](https://rdrr.io/r/base/colSums.html)`(``L1``)`\
+`a0`` ``<-`` `[`colMeans`](https://rdrr.io/r/base/colSums.html)`(``L0``)`\
+`att_gam`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(`[`sum`](https://rdrr.io/r/base/sum.html)`(``a1`` ``*`` `[`coef`](https://rdrr.io/r/stats/coef.html)`(``gam1``)``)`` ``-`` `[`sum`](https://rdrr.io/r/base/sum.html)`(``a0`` ``*`` `[`coef`](https://rdrr.io/r/stats/coef.html)`(``gam0``)``)``,`\
+`             `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(`[`drop`](https://rdrr.io/r/base/drop.html)`(`[`t`](https://rdrr.io/r/base/t.html)`(``a1``)`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` `[`vcov`](https://rdrr.io/r/stats/vcov.html)`(``gam1``)`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``a1`` ``+`\
+`                         `[`t`](https://rdrr.io/r/base/t.html)`(``a0``)`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` `[`vcov`](https://rdrr.io/r/stats/vcov.html)`(``gam0``)`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``a0``)``)``)`
 
 The causal forest warns that its estimated propensities come close to 0
 and 1, which the matching and the mixture also face on these data, and
@@ -1097,23 +1037,21 @@ run, give [`tmle()`](https://rdrr.io/pkg/tmle/man/tmle.html) the
 arguments `Q.SL.library = "SL.glm", g.SL.library = "SL.glm"` on its
 line, which fits the linear models alone.
 
-``` r
-
-library(tmle)
-lal <- MatchIt::lalonde
-lal$black <- as.integer(lal$race == "black")
-lal$hispan <- as.integer(lal$race == "hispan")
-covs <- c("age", "educ", "black", "hispan", "married", "nodegree",
-          "re74", "re75")
-set.seed(20260925)
-fit_tmle <- tmle(Y = lal$re78, A = lal$treat, W = lal[, covs])
-att_tmle <- c(fit_tmle$estimates$ATT$psi,
-              sqrt(fit_tmle$estimates$ATT$var.psi))
-```
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`tmle`](https://CRAN.R-project.org/package=tmle)`)`\
+`lal`` ``<-`` ``MatchIt``::`[`lalonde`](https://kosukeimai.github.io/MatchIt/reference/lalonde.html)\
+`lal``$``black`` ``<-`` `[`as.integer`](https://rdrr.io/r/base/integer.html)`(``lal``$``race`` ``==`` ``"black"``)`\
+`lal``$``hispan`` ``<-`` `[`as.integer`](https://rdrr.io/r/base/integer.html)`(``lal``$``race`` ``==`` ``"hispan"``)`\
+`covs`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``"age"``, ``"educ"``, ``"black"``, ``"hispan"``, ``"married"``, ``"nodegree"``,`\
+`          ``"re74"``, ``"re75"``)`\
+[`set.seed`](https://rdrr.io/r/base/Random.html)`(``20260925``)`\
+`fit_tmle`` ``<-`` `[`tmle`](https://rdrr.io/pkg/tmle/man/tmle.html)`(``Y ``=`` ``lal``$``re78``, A ``=`` ``lal``$``treat``, W ``=`` ``lal``[``, ``covs``]``)`\
+`att_tmle`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``fit_tmle``$``estimates``$``ATT``$``psi``,`\
+`              `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(``fit_tmle``$``estimates``$``ATT``$``var.psi``)``)`
 
 | Method | Effect on the treated, USD | SE | 95% lower | 95% upper |
 |:---|---:|---:|---:|---:|
-| proxymix 0.16.0, one joint mixture | 1548 | 633 | 230 | 2593 |
+| proxymix 0.16.0, one joint mixture | 1282 | 741 | -235 | 2652 |
 | grf 2.6.1, causal forest | 681 | 977 | -1233 | 2595 |
 | tmle 2.1.1, default libraries | 1149 | 932 | -677 | 2975 |
 | MatchIt 4.7.2, matching then lm() | 1345 | 719 | -64 | 2754 |
@@ -1123,18 +1061,14 @@ The average effect of the programme on the earnings of the 185 treated
 men, with each method’s own standard error: a bootstrap standard
 deviation and percentile interval for proxymix, the methods’ own
 standard errors and normal intervals otherwise. {.table
-style="width:100%;"}
+style="width:99%;"}
 
 The five point estimates run from 681 to 1812 USD, with standard errors
-from 633 to 977 USD; every interval overlaps every other, and 2 of the
-five exclude zero. With one component selected, the proxymix read is the
-linear regression adjustment: the treatment coefficient of a
-least-squares regression of 1978 earnings on the treatment and the
-covariates over all 614 men is 1548.24 USD, against 1548.23 for
-proxymix. The causal forest, which lets the effect vary with every
-covariate, is the lowest. One dataset without a known answer cannot say
-which is right, so the simulation below scores the same methods against
-a known effect.
+from 719 to 977 USD; every interval overlaps every other, and 1 of the
+five excludes zero. The causal forest, which lets the effect vary with
+every covariate, is the lowest. One dataset without a known answer
+cannot say which is right, so the simulation below scores the same
+methods against a known effect.
 
 ### A simulation benchmark
 
@@ -1164,134 +1098,132 @@ a SuperLearner library of a linear model, a lasso-penalised linear model
 (`SL.glmnet` at its default `alpha = 1`, with a cross-validated penalty)
 and a generalised additive model, in place of its default library, whose
 regression-tree learner took about two minutes per dataset. This chunk
-is complete and runs as shown, but it took about 23 minutes on one core
+is complete and runs as shown, but it took about 17 minutes on one core
 (R 4.6.1, Apple silicon); the results below are read from its stored
 output. For a quick run, change the line `n_rep <- 200L` to
 `n_rep <- 20L`.
 
-``` r
-
-library(proxymix)
-library(grf)
-library(tmle)
-library(MatchIt)
-library(mgcv)
-
-n <- 1000L     # units in each dataset
-n_rep <- 200L
-B <- 100L      # bootstrap members behind the proxymix interval
-
-# y = x1 + 0.5 x2^2 + tau(x) t + e, tau(x) = 1 + x1, P(t = 1) = logit^-1(-0.5 + 0.5 x1)
-make_data <- function(n) {
-  x1 <- rnorm(n)
-  x2 <- rnorm(n)
-  t <- rbinom(n, 1L, plogis(-0.5 + 0.5 * x1))
-  tau <- 1 + x1
-  data.frame(y = x1 + 0.5 * x2^2 + tau * t + rnorm(n),
-             t = t, x1 = x1, x2 = x2, tau = tau)
-}
-
-sl_lib <- c("SL.glm", "SL.glmnet", "SL.gam")
-rmse <- function(est, truth) sqrt(mean((est - truth)^2))
-row_out <- function(method, estimand, cate, est, se, lower, upper, truth) {
-  data.frame(method = method, estimand = estimand, cate_rmse = cate,
-             estimate = est, lower = lower, upper = upper, truth = truth)
-}
-
-one_dataset <- function(r) {
-  set.seed(r)
-  d <- make_data(n)
-  X <- d[, c("x1", "x2")]
-  is_treated <- d$t == 1L
-  ate_true <- mean(d$tau)
-  att_true <- mean(d$tau[is_treated])
-  z <- qnorm(0.975)
-
-  # proxymix: one joint fit, effects by conditioning, percentile bootstrap
-  m <- fit_uplift(d, "y", "t", c("x1", "x2"), seed = r)
-  ate_of <- function(g) {
-    mg <- uplift_model(fit = g, roles = m@roles, assume = m@assume,
-                       outcome_type = m@outcome_type, data = m@data,
-                       n_train = m@n_train,
-                       treatment_levels = m@treatment_levels)
-    c(ate = mean(proxy_cate(mg, X, se = FALSE)$tau))
-  }
-  ens <- gmm_fit_ensemble(m@fit, B = B, seed = r)
-  ci <- proxy_functional_ci(ens, ate_of, level = 0.95)
-  out_pm <- row_out("proxymix", "ATE",
-                    rmse(proxy_cate(m, X, se = FALSE)$tau, d$tau),
-                    ci$estimate, NA, ci$conf.low, ci$conf.high, ate_true)
-
-  # causal forest
-  cf <- causal_forest(X, d$y, d$t, num.threads = 1L, seed = r)
-  ate_cf <- average_treatment_effect(cf)
-  out_cf <- row_out("grf", "ATE", rmse(predict(cf)$predictions, d$tau),
-                    ate_cf[["estimate"]], ate_cf[["std.err"]],
-                    ate_cf[["estimate"]] - z * ate_cf[["std.err"]],
-                    ate_cf[["estimate"]] + z * ate_cf[["std.err"]],
-                    ate_true)
-
-  # tmle, no per-unit effect
-  fit_tmle <- tmle(Y = d$y, A = d$t, W = X, Q.SL.library = sl_lib,
-                   g.SL.library = sl_lib)
-  est_tmle <- fit_tmle$estimates$ATE
-  out_tmle <- row_out("tmle", "ATE", NA, est_tmle$psi, sqrt(est_tmle$var.psi),
-                      est_tmle$CI[1L], est_tmle$CI[2L], ate_true)
-
-  # nearest-neighbour matching, then an interacted outcome regression
-  mm <- matchit(t ~ x1 + x2, data = d, method = "nearest")
-  md <- match.data(mm)
-  fit_lm <- lm(y ~ t * (x1 + x2), data = md, weights = weights)
-  V <- sandwich::vcovCL(fit_lm, cluster = ~subclass)
-  d1 <- d
-  d1$t <- 1L
-  d0 <- d
-  d0$t <- 0L
-  M1 <- model.matrix(formula(fit_lm)[-2L], d1)
-  M0 <- model.matrix(formula(fit_lm)[-2L], d0)
-  cate_lm <- drop((M1 - M0) %*% coef(fit_lm))
-  a <- colMeans((M1 - M0)[is_treated, ])
-  se_lm <- sqrt(drop(t(a) %*% V %*% a))
-  att_lm <- sum(a * coef(fit_lm))
-  out_lm <- row_out("MatchIt + lm", "ATT", rmse(cate_lm, d$tau), att_lm,
-                    se_lm, att_lm - z * se_lm, att_lm + z * se_lm, att_true)
-
-  # T-learner of two generalised additive models
-  g1 <- gam(y ~ s(x1) + s(x2), data = d[is_treated, ])
-  g0 <- gam(y ~ s(x1) + s(x2), data = d[!is_treated, ])
-  L1 <- predict(g1, X, type = "lpmatrix")
-  L0 <- predict(g0, X, type = "lpmatrix")
-  cate_gam <- drop(L1 %*% coef(g1) - L0 %*% coef(g0))
-  a1 <- colMeans(L1)
-  a0 <- colMeans(L0)
-  se_gam <- sqrt(drop(t(a1) %*% vcov(g1) %*% a1 + t(a0) %*% vcov(g0) %*% a0))
-  ate_gam <- mean(cate_gam)
-  out_gam <- row_out("mgcv T-learner", "ATE", rmse(cate_gam, d$tau), ate_gam,
-                     se_gam, ate_gam - z * se_gam, ate_gam + z * se_gam,
-                     ate_true)
-
-  rbind(out_pm, out_cf, out_tmle, out_lm, out_gam)
-}
-
-res <- do.call(rbind, lapply(seq_len(n_rep), one_dataset))
-
-sim_tab <- aggregate(
-  cbind(bias = estimate - truth, rmse = (estimate - truth)^2,
-        coverage = lower <= truth & truth <= upper,
-        width = upper - lower) ~ method + estimand,
-  data = res, FUN = mean
-)
-sim_tab$rmse <- sqrt(sim_tab$rmse)
-cate_tab <- aggregate(cate_rmse ~ method, data = res, FUN = mean,
-                      na.action = na.pass)
-sim_tab$cate_rmse <- cate_tab$cate_rmse[match(sim_tab$method,
-                                              cate_tab$method)]
-sim_tab
-```
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`grf`](https://github.com/grf-labs/grf)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`tmle`](https://CRAN.R-project.org/package=tmle)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`MatchIt`](https://kosukeimai.github.io/MatchIt/)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(``mgcv``)`\
+\
+`n`` ``<-`` ``1000L``     ``# units in each dataset`\
+`n_rep`` ``<-`` ``200L`\
+`B`` ``<-`` ``100L``      ``# bootstrap members behind the proxymix interval`\
+\
+`# y = x1 + 0.5 x2^2 + tau(x) t + e, tau(x) = 1 + x1, P(t = 1) = logit^-1(-0.5 + 0.5 x1)`\
+`make_data`` ``<-`` ``function``(``n``)`` ``{`\
+`  ``x1`` ``<-`` `[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n``)`\
+`  ``x2`` ``<-`` `[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n``)`\
+`  ``t`` ``<-`` `[`rbinom`](https://rdrr.io/r/stats/Binomial.html)`(``n``, ``1L``, `[`plogis`](https://rdrr.io/r/stats/Logistic.html)`(``-``0.5`` ``+`` ``0.5`` ``*`` ``x1``)``)`\
+`  ``tau`` ``<-`` ``1`` ``+`` ``x1`\
+`  `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``y ``=`` ``x1`` ``+`` ``0.5`` ``*`` ``x2``^``2`` ``+`` ``tau`` ``*`` ``t`` ``+`` `[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n``)``,`\
+`             t ``=`` ``t``, x1 ``=`` ``x1``, x2 ``=`` ``x2``, tau ``=`` ``tau``)`\
+`}`\
+\
+`sl_lib`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``"SL.glm"``, ``"SL.glmnet"``, ``"SL.gam"``)`\
+`rmse`` ``<-`` ``function``(``est``, ``truth``)`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(`[`mean`](https://rdrr.io/r/base/mean.html)`(``(``est`` ``-`` ``truth``)``^``2``)``)`\
+`row_out`` ``<-`` ``function``(``method``, ``estimand``, ``cate``, ``est``, ``se``, ``lower``, ``upper``, ``truth``)`` ``{`\
+`  `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``method ``=`` ``method``, estimand ``=`` ``estimand``, cate_rmse ``=`` ``cate``,`\
+`             estimate ``=`` ``est``, lower ``=`` ``lower``, upper ``=`` ``upper``, truth ``=`` ``truth``)`\
+`}`\
+\
+`one_dataset`` ``<-`` ``function``(``r``)`` ``{`\
+`  `[`set.seed`](https://rdrr.io/r/base/Random.html)`(``r``)`\
+`  ``d`` ``<-`` ``make_data``(``n``)`\
+`  ``X`` ``<-`` ``d``[``, `[`c`](https://rdrr.io/r/base/c.html)`(``"x1"``, ``"x2"``)``]`\
+`  ``is_treated`` ``<-`` ``d``$``t`` ``==`` ``1L`\
+`  ``ate_true`` ``<-`` `[`mean`](https://rdrr.io/r/base/mean.html)`(``d``$``tau``)`\
+`  ``att_true`` ``<-`` `[`mean`](https://rdrr.io/r/base/mean.html)`(``d``$``tau``[``is_treated``]``)`\
+`  ``z`` ``<-`` `[`qnorm`](https://rdrr.io/r/stats/Normal.html)`(``0.975``)`\
+\
+`  ``# proxymix: one joint fit, effects by conditioning, percentile bootstrap`\
+`  ``m`` ``<-`` `[`fit_uplift`](https://max578.github.io/proxymix/reference/fit_uplift.md)`(``d``, ``"y"``, ``"t"``, `[`c`](https://rdrr.io/r/base/c.html)`(``"x1"``, ``"x2"``)``, seed ``=`` ``r``)`\
+`  ``ate_of`` ``<-`` ``function``(``g``)`` ``{`\
+`    ``mg`` ``<-`` `[`uplift_model`](https://max578.github.io/proxymix/reference/uplift_model.md)`(``fit ``=`` ``g``, roles ``=`` ``m``@``roles``, assume ``=`` ``m``@``assume``,`\
+`                       outcome_type ``=`` ``m``@``outcome_type``, data ``=`` ``m``@``data``,`\
+`                       n_train ``=`` ``m``@``n_train``,`\
+`                       treatment_levels ``=`` ``m``@``treatment_levels``)`\
+`    `[`c`](https://rdrr.io/r/base/c.html)`(``ate ``=`` `[`mean`](https://rdrr.io/r/base/mean.html)`(`[`proxy_cate`](https://max578.github.io/proxymix/reference/proxy_cate.md)`(``mg``, ``X``, se ``=`` ``FALSE``)``$``tau``)``)`\
+`  ``}`\
+`  ``ens`` ``<-`` `[`gmm_fit_ensemble`](https://max578.github.io/proxymix/reference/gmm_fit_ensemble.md)`(``m``@``fit``, B ``=`` ``B``, seed ``=`` ``r``)`\
+`  ``ci`` ``<-`` `[`proxy_functional_ci`](https://max578.github.io/proxymix/reference/proxy_functional_ci.md)`(``ens``, ``ate_of``, level ``=`` ``0.95``)`\
+`  ``out_pm`` ``<-`` ``row_out``(``"proxymix"``, ``"ATE"``,`\
+`                    ``rmse``(`[`proxy_cate`](https://max578.github.io/proxymix/reference/proxy_cate.md)`(``m``, ``X``, se ``=`` ``FALSE``)``$``tau``, ``d``$``tau``)``,`\
+`                    ``ci``$``estimate``, ``NA``, ``ci``$``conf.low``, ``ci``$``conf.high``, ``ate_true``)`\
+\
+`  ``# causal forest`\
+`  ``cf`` ``<-`` `[`causal_forest`](https://rdrr.io/pkg/grf/man/causal_forest.html)`(``X``, ``d``$``y``, ``d``$``t``, num.threads ``=`` ``1L``, seed ``=`` ``r``)`\
+`  ``ate_cf`` ``<-`` `[`average_treatment_effect`](https://rdrr.io/pkg/grf/man/average_treatment_effect.html)`(``cf``)`\
+`  ``out_cf`` ``<-`` ``row_out``(``"grf"``, ``"ATE"``, ``rmse``(`[`predict`](https://rdrr.io/r/stats/predict.html)`(``cf``)``$``predictions``, ``d``$``tau``)``,`\
+`                    ``ate_cf``[[``"estimate"``]``]``, ``ate_cf``[[``"std.err"``]``]``,`\
+`                    ``ate_cf``[[``"estimate"``]``]`` ``-`` ``z`` ``*`` ``ate_cf``[[``"std.err"``]``]``,`\
+`                    ``ate_cf``[[``"estimate"``]``]`` ``+`` ``z`` ``*`` ``ate_cf``[[``"std.err"``]``]``,`\
+`                    ``ate_true``)`\
+\
+`  ``# tmle, no per-unit effect`\
+`  ``fit_tmle`` ``<-`` `[`tmle`](https://rdrr.io/pkg/tmle/man/tmle.html)`(``Y ``=`` ``d``$``y``, A ``=`` ``d``$``t``, W ``=`` ``X``, Q.SL.library ``=`` ``sl_lib``,`\
+`                   g.SL.library ``=`` ``sl_lib``)`\
+`  ``est_tmle`` ``<-`` ``fit_tmle``$``estimates``$``ATE`\
+`  ``out_tmle`` ``<-`` ``row_out``(``"tmle"``, ``"ATE"``, ``NA``, ``est_tmle``$``psi``, `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(``est_tmle``$``var.psi``)``,`\
+`                      ``est_tmle``$``CI``[``1L``]``, ``est_tmle``$``CI``[``2L``]``, ``ate_true``)`\
+\
+`  ``# nearest-neighbour matching, then an interacted outcome regression`\
+`  ``mm`` ``<-`` `[`matchit`](https://kosukeimai.github.io/MatchIt/reference/matchit.html)`(``t`` ``~`` ``x1`` ``+`` ``x2``, data ``=`` ``d``, method ``=`` ``"nearest"``)`\
+`  ``md`` ``<-`` `[`match.data`](https://kosukeimai.github.io/MatchIt/reference/match_data.html)`(``mm``)`\
+`  ``fit_lm`` ``<-`` `[`lm`](https://rdrr.io/r/stats/lm.html)`(``y`` ``~`` ``t`` ``*`` ``(``x1`` ``+`` ``x2``)``, data ``=`` ``md``, weights ``=`` ``weights``)`\
+`  ``V`` ``<-`` ``sandwich``::`[`vcovCL`](https://zeileis.codeberg.page/sandwich/reference/vcovCL.html)`(``fit_lm``, cluster ``=`` ``~``subclass``)`\
+`  ``d1`` ``<-`` ``d`\
+`  ``d1``$``t`` ``<-`` ``1L`\
+`  ``d0`` ``<-`` ``d`\
+`  ``d0``$``t`` ``<-`` ``0L`\
+`  ``M1`` ``<-`` `[`model.matrix`](https://rdrr.io/r/stats/model.matrix.html)`(`[`formula`](https://rdrr.io/r/stats/formula.html)`(``fit_lm``)``[``-``2L``]``, ``d1``)`\
+`  ``M0`` ``<-`` `[`model.matrix`](https://rdrr.io/r/stats/model.matrix.html)`(`[`formula`](https://rdrr.io/r/stats/formula.html)`(``fit_lm``)``[``-``2L``]``, ``d0``)`\
+`  ``cate_lm`` ``<-`` `[`drop`](https://rdrr.io/r/base/drop.html)`(``(``M1`` ``-`` ``M0``)`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` `[`coef`](https://rdrr.io/r/stats/coef.html)`(``fit_lm``)``)`\
+`  ``a`` ``<-`` `[`colMeans`](https://rdrr.io/r/base/colSums.html)`(``(``M1`` ``-`` ``M0``)``[``is_treated``, ``]``)`\
+`  ``se_lm`` ``<-`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(`[`drop`](https://rdrr.io/r/base/drop.html)`(`[`t`](https://rdrr.io/r/base/t.html)`(``a``)`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``V`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``a``)``)`\
+`  ``att_lm`` ``<-`` `[`sum`](https://rdrr.io/r/base/sum.html)`(``a`` ``*`` `[`coef`](https://rdrr.io/r/stats/coef.html)`(``fit_lm``)``)`\
+`  ``out_lm`` ``<-`` ``row_out``(``"MatchIt + lm"``, ``"ATT"``, ``rmse``(``cate_lm``, ``d``$``tau``)``, ``att_lm``,`\
+`                    ``se_lm``, ``att_lm`` ``-`` ``z`` ``*`` ``se_lm``, ``att_lm`` ``+`` ``z`` ``*`` ``se_lm``, ``att_true``)`\
+\
+`  ``# T-learner of two generalised additive models`\
+`  ``g1`` ``<-`` `[`gam`](https://rdrr.io/pkg/mgcv/man/gam.html)`(``y`` ``~`` `[`s`](https://rdrr.io/pkg/mgcv/man/s.html)`(``x1``)`` ``+`` `[`s`](https://rdrr.io/pkg/mgcv/man/s.html)`(``x2``)``, data ``=`` ``d``[``is_treated``, ``]``)`\
+`  ``g0`` ``<-`` `[`gam`](https://rdrr.io/pkg/mgcv/man/gam.html)`(``y`` ``~`` `[`s`](https://rdrr.io/pkg/mgcv/man/s.html)`(``x1``)`` ``+`` `[`s`](https://rdrr.io/pkg/mgcv/man/s.html)`(``x2``)``, data ``=`` ``d``[``!``is_treated``, ``]``)`\
+`  ``L1`` ``<-`` `[`predict`](https://rdrr.io/r/stats/predict.html)`(``g1``, ``X``, type ``=`` ``"lpmatrix"``)`\
+`  ``L0`` ``<-`` `[`predict`](https://rdrr.io/r/stats/predict.html)`(``g0``, ``X``, type ``=`` ``"lpmatrix"``)`\
+`  ``cate_gam`` ``<-`` `[`drop`](https://rdrr.io/r/base/drop.html)`(``L1`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` `[`coef`](https://rdrr.io/r/stats/coef.html)`(``g1``)`` ``-`` ``L0`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` `[`coef`](https://rdrr.io/r/stats/coef.html)`(``g0``)``)`\
+`  ``a1`` ``<-`` `[`colMeans`](https://rdrr.io/r/base/colSums.html)`(``L1``)`\
+`  ``a0`` ``<-`` `[`colMeans`](https://rdrr.io/r/base/colSums.html)`(``L0``)`\
+`  ``se_gam`` ``<-`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(`[`drop`](https://rdrr.io/r/base/drop.html)`(`[`t`](https://rdrr.io/r/base/t.html)`(``a1``)`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` `[`vcov`](https://rdrr.io/r/stats/vcov.html)`(``g1``)`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``a1`` ``+`` `[`t`](https://rdrr.io/r/base/t.html)`(``a0``)`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` `[`vcov`](https://rdrr.io/r/stats/vcov.html)`(``g0``)`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``a0``)``)`\
+`  ``ate_gam`` ``<-`` `[`mean`](https://rdrr.io/r/base/mean.html)`(``cate_gam``)`\
+`  ``out_gam`` ``<-`` ``row_out``(``"mgcv T-learner"``, ``"ATE"``, ``rmse``(``cate_gam``, ``d``$``tau``)``, ``ate_gam``,`\
+`                     ``se_gam``, ``ate_gam`` ``-`` ``z`` ``*`` ``se_gam``, ``ate_gam`` ``+`` ``z`` ``*`` ``se_gam``,`\
+`                     ``ate_true``)`\
+\
+`  `[`rbind`](https://rdrr.io/r/base/cbind.html)`(``out_pm``, ``out_cf``, ``out_tmle``, ``out_lm``, ``out_gam``)`\
+`}`\
+\
+`res`` ``<-`` `[`do.call`](https://rdrr.io/r/base/do.call.html)`(``rbind``, `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``n_rep``)``, ``one_dataset``)``)`\
+\
+`sim_tab`` ``<-`` `[`aggregate`](https://rdrr.io/r/stats/aggregate.html)`(`\
+`  `[`cbind`](https://rdrr.io/r/base/cbind.html)`(``bias ``=`` ``estimate`` ``-`` ``truth``, rmse ``=`` ``(``estimate`` ``-`` ``truth``)``^``2``,`\
+`        coverage ``=`` ``lower`` ``<=`` ``truth`` ``&`` ``truth`` ``<=`` ``upper``,`\
+`        width ``=`` ``upper`` ``-`` ``lower``)`` ``~`` ``method`` ``+`` ``estimand``,`\
+`  data ``=`` ``res``, FUN ``=`` ``mean`\
+`)`\
+`sim_tab``$``rmse`` ``<-`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(``sim_tab``$``rmse``)`\
+`cate_tab`` ``<-`` `[`aggregate`](https://rdrr.io/r/stats/aggregate.html)`(``cate_rmse`` ``~`` ``method``, data ``=`` ``res``, FUN ``=`` ``mean``,`\
+`                      na.action ``=`` ``na.pass``)`\
+`sim_tab``$``cate_rmse`` ``<-`` ``cate_tab``$``cate_rmse``[`[`match`](https://rdrr.io/r/base/match.html)`(``sim_tab``$``method``,`\
+`                                              ``cate_tab``$``method``)``]`\
+`sim_tab`
 
 | Method         | Estimand | Per-unit RMSE |   Bias |  RMSE | Coverage | Width |
 |:---------------|:---------|--------------:|-------:|------:|---------:|------:|
-| proxymix       | ATE      |         0.496 |  0.005 | 0.076 |    0.945 | 0.282 |
+| proxymix       | ATE      |         0.517 |  0.006 | 0.076 |    0.935 | 0.284 |
 | grf            | ATE      |         0.312 |  0.013 | 0.080 |    0.965 | 0.321 |
 | tmle           | ATE      |             – |  0.004 | 0.074 |    0.965 | 0.317 |
 | MatchIt + lm   | ATT      |         0.167 |  0.002 | 0.091 |    0.960 | 0.346 |
@@ -1306,7 +1238,7 @@ its per-unit RMSE is empty. {.table}
 
 On the average effect the five methods are close. Four intervals cover
 their target within 1.0 Monte Carlo standard errors of the nominal rate:
-proxymix in 0.945 of datasets, the causal forest and tmle in 0.965 and
+proxymix in 0.935 of datasets, the causal forest and tmle in 0.965 and
 0.965, and the matched regression in 0.960. That standard error is about
 0.015 at a true rate of 0.95. The T-learner’s interval covers in 0.920
 of datasets, 1.9 of those standard errors below 0.95, or 1.6 of its own
@@ -1314,13 +1246,13 @@ standard error of 0.019. The largest absolute bias is 0.013, for the
 causal forest, and the root mean squared errors run from 0.072 for the
 T-learner to 0.091 for the matched regression, whose estimand is the
 effect on the treated. The proxymix interval is the second narrowest, at
-0.282 against 0.264 for the T-learner, whose model-based standard error
+0.284 against 0.264 for the T-learner, whose model-based standard error
 leaves its coverage the lowest of the five.
 
 The per-unit effect separates the methods. The T-learner and the
 interacted matched regression, whose effect models are both correctly
 specified for $`\tau(x) = 1 + x_1`$, have root mean squared errors of
-0.186 and 0.167; the causal forest has 0.312; proxymix has 0.496, the
+0.186 and 0.167; the causal forest has 0.312; proxymix has 0.517, the
 largest, on an effect whose standard deviation across units is 1. On the
 first dataset, regenerated from the stored code, BIC chose 3 components:
 1 in the treated arm and 2 in the control arm. Within an arm with
@@ -1332,13 +1264,13 @@ units, much of that error cancels, and the average-effect error of
 proxymix sits among the other methods’.
 
 In this run the average-effect intervals ranked by width as the
-T-learner (0.264), proxymix (0.282), tmle (0.317), the causal forest
+T-learner (0.264), proxymix (0.284), tmle (0.317), the causal forest
 (0.321) and the matched regression (0.346); each paired difference in
-width between proxymix and another method is at least 8 standard errors,
+width between proxymix and another method is at least 9 standard errors,
 so the ranking is resolved, although the matched regression targets the
 effect on the treated. On the squared error of the average effect, the
 paired differences between proxymix and the causal forest, tmle and the
-T-learner are at most 2.1 standard errors, so this run does not clearly
+T-learner are at most 2.0 standard errors, so this run does not clearly
 separate the four. The T-learner and the matched regression came out
 ahead of every other method on the per-unit effect, and proxymix had the
 largest per-unit error. The comparison covers one design, one sample
@@ -1469,66 +1401,64 @@ about 2.5 minutes, and the run raised 0 warnings. In the simulation each
 dataset is generated after
 [`set.seed()`](https://rdrr.io/r/base/Random.html) with its own index,
 which also seeds the mixture fit, its ensemble and the forest. The
-stored simulation results come from the code shown, run on 26 September
+stored simulation results come from the code shown, run on 28 September
 2026 with R 4.6.1, proxymix 0.16.0, grf 2.6.1, tmle 2.1.1, SuperLearner
 2.0-41, MatchIt 4.7.2, mgcv 1.9-4 and sandwich 3.1-3, and the run raised
 0 warnings.
 
-``` r
-
-old_opt <- options(width = 72L)
-si_vec <- trimws(capture.output(sessionInfo()), "right")
-options(old_opt)
-# library paths are single long words, so a long line breaks after a slash
-long_vec <- nchar(si_vec) > 72L
-si_vec[long_vec] <- gsub("(.{1,68}/)(?=.{8,})", "\\1\n        ",
-                         si_vec[long_vec], perl = TRUE)
-writeLines(si_vec)
-#> R version 4.6.1 (2026-06-24)
-#> Platform: aarch64-apple-darwin23
-#> Running under: macOS Tahoe 26.6.2
-#> 
-#> Matrix products: default
-#> BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/
-#>         libRblas.0.dylib
-#> LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/
-#>         libRlapack.dylib;  LAPACK version 3.12.1
-#> 
-#> locale:
-#> [1] en_AU.UTF-8/en_AU.UTF-8/en_AU.UTF-8/C/en_AU.UTF-8/en_AU.UTF-8
-#> 
-#> time zone: Australia/Adelaide
-#> tzcode source: internal
-#> 
-#> attached base packages:
-#> [1] splines   stats     graphics  grDevices utils     datasets
-#> [7] methods   base
-#> 
-#> other attached packages:
-#>  [1] mgcv_1.9-4          nlme_3.1-171        MatchIt_4.7.2
-#>  [4] tmle_2.1.1          SuperLearner_2.0-41 gam_1.22-7
-#>  [7] foreach_1.5.2       nnls_1.6            glmnet_5.0
-#> [10] Matrix_1.7-6        grf_2.6.1           proxymix_0.16.0
-#> 
-#> loaded via a namespace (and not attached):
-#>  [1] sandwich_3.1-3      sass_0.4.10         generics_0.1.4
-#>  [4] shape_1.4.6.1       lattice_0.23-1      digest_0.6.39
-#>  [7] magrittr_2.0.5      evaluate_1.0.5      grid_4.6.1
-#> [10] RColorBrewer_1.1-3  iterators_1.0.14    fastmap_1.2.0
-#> [13] jsonlite_2.0.0      backports_1.5.1     survival_3.8-11
-#> [16] viridisLite_0.4.3   scales_1.4.0        codetools_0.2-20
-#> [19] textshaping_1.0.5   jquerylib_0.1.4     cli_3.6.6
-#> [22] chk_0.10.0          rlang_1.3.0         withr_3.0.3
-#> [25] cachem_1.1.0        yaml_2.3.12         otel_0.2.0
-#> [28] tools_4.6.1         dplyr_1.2.1         ggplot2_4.0.3
-#> [31] vctrs_0.7.3         R6_2.6.1            zoo_1.9-0
-#> [34] lifecycle_1.0.5     fs_2.1.0            htmlwidgets_1.6.4
-#> [37] MASS_7.3-66         ragg_1.5.2          pkgconfig_2.0.3
-#> [40] desc_1.4.3          pkgdown_2.2.1       pillar_1.11.1
-#> [43] bslib_0.12.0        gtable_0.3.6        glue_1.8.1
-#> [46] data.table_1.18.6.1 Rcpp_1.1.2          systemfonts_1.3.2
-#> [49] xfun_0.60           tibble_3.3.1        tidyselect_1.2.1
-#> [52] knitr_1.51          dichromat_2.0-1     farver_2.1.2
-#> [55] htmltools_0.5.9     rmarkdown_2.32      labeling_0.4.3
-#> [58] compiler_4.6.1      S7_0.2.2            mvnfast_0.2.8
-```
+\
+`old_opt`` ``<-`` `[`options`](https://rdrr.io/r/base/options.html)`(``width ``=`` ``72L``)`\
+`si_vec`` ``<-`` `[`trimws`](https://rdrr.io/r/base/trimws.html)`(`[`capture.output`](https://rdrr.io/r/utils/capture.output.html)`(`[`sessionInfo`](https://rdrr.io/r/utils/sessionInfo.html)`(``)``)``, ``"right"``)`\
+[`options`](https://rdrr.io/r/base/options.html)`(``old_opt``)`\
+`# library paths are single long words, so a long line breaks after a slash`\
+`long_vec`` ``<-`` `[`nchar`](https://rdrr.io/r/base/nchar.html)`(``si_vec``)`` ``>`` ``72L`\
+`si_vec``[``long_vec``]`` ``<-`` `[`gsub`](https://rdrr.io/r/base/grep.html)`(``"(.{1,68}/)(?=.{8,})"``, ``"\\1\n        "``,`\
+`                         ``si_vec``[``long_vec``]``, perl ``=`` ``TRUE``)`\
+[`writeLines`](https://rdrr.io/r/base/writeLines.html)`(``si_vec``)`\
+`#> R version 4.6.1 (2026-06-24)`\
+`#> Platform: aarch64-apple-darwin23`\
+`#> Running under: macOS Tahoe 26.6.2`\
+`#> `\
+`#> Matrix products: default`\
+`#> BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/`\
+`#>         libRblas.0.dylib`\
+`#> LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/`\
+`#>         libRlapack.dylib;  LAPACK version 3.12.1`\
+`#> `\
+`#> locale:`\
+`#> [1] en_AU.UTF-8/en_AU.UTF-8/en_AU.UTF-8/C/en_AU.UTF-8/en_AU.UTF-8`\
+`#> `\
+`#> time zone: Australia/Adelaide`\
+`#> tzcode source: internal`\
+`#> `\
+`#> attached base packages:`\
+`#> [1] splines   stats     graphics  grDevices utils     datasets`\
+`#> [7] methods   base`\
+`#> `\
+`#> other attached packages:`\
+`#>  [1] mgcv_1.9-4          nlme_3.1-171        MatchIt_4.7.2`\
+`#>  [4] tmle_2.1.1          SuperLearner_2.0-41 gam_1.22-7`\
+`#>  [7] foreach_1.5.2       nnls_1.6            glmnet_5.0`\
+`#> [10] Matrix_1.7-6        grf_2.6.1           proxymix_0.16.0`\
+`#> `\
+`#> loaded via a namespace (and not attached):`\
+`#>  [1] sandwich_3.1-3      sass_0.4.10         generics_0.1.4`\
+`#>  [4] shape_1.4.6.1       lattice_0.23-1      digest_0.6.39`\
+`#>  [7] magrittr_2.0.5      evaluate_1.0.5      grid_4.6.1`\
+`#> [10] RColorBrewer_1.1-3  iterators_1.0.14    fastmap_1.2.0`\
+`#> [13] jsonlite_2.0.0      backports_1.5.1     survival_3.8-11`\
+`#> [16] viridisLite_0.4.3   scales_1.4.0        codetools_0.2-20`\
+`#> [19] textshaping_1.0.5   jquerylib_0.1.4     cli_3.6.6`\
+`#> [22] chk_0.10.0          rlang_1.3.0         withr_3.0.3`\
+`#> [25] cachem_1.1.0        yaml_2.3.12         otel_0.2.0`\
+`#> [28] tools_4.6.1         dplyr_1.2.1         ggplot2_4.0.3`\
+`#> [31] vctrs_0.7.3         R6_2.6.1            zoo_1.9-0`\
+`#> [34] lifecycle_1.0.5     fs_2.1.0            htmlwidgets_1.6.4`\
+`#> [37] MASS_7.3-66         ragg_1.5.2          pkgconfig_2.0.3`\
+`#> [40] desc_1.4.3          pkgdown_2.2.1       pillar_1.11.1`\
+`#> [43] bslib_0.12.0        gtable_0.3.6        glue_1.8.1`\
+`#> [46] data.table_1.18.6.1 Rcpp_1.1.2          systemfonts_1.3.2`\
+`#> [49] xfun_0.60           tibble_3.3.1        tidyselect_1.2.1`\
+`#> [52] knitr_1.51          dichromat_2.0-1     farver_2.1.2`\
+`#> [55] htmltools_0.5.9     rmarkdown_2.32      labeling_0.4.3`\
+`#> [58] compiler_4.6.1      S7_0.2.2            mvnfast_0.2.8`

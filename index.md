@@ -56,39 +56,37 @@ Documentation site: <https://max578.github.io/proxymix/>.
 
 ## Quick start
 
-``` r
-
-library(proxymix)
-
-## A target you can evaluate but not sample from -- a 2D "banana".
-banana <- banana_target()
-
-## Fit a 3-component Gaussian mixture proxy via KLD-EM with importance sampling.
-fit <- fit_proxymix(banana, N = 3L, regime = "kld",
-                    proposal = proposal_mvt(n_dim = 2L, df = 5),
-                    is_size = 2000L, max_iter = 60L, seed = 1L)
-
-print(fit)
-#> <gmm_fit>: regime = "kld", K = 3, p = 2
-#>   target     : banana
-#>   iterations : 37
-#>   converged  : TRUE
-#>   [1] w = 0.6456, |mu| = 0.3299, tr(Sigma) = 1.3601
-#>   [2] w = 0.2473, |mu| = 1.2996, tr(Sigma) = 2.2312
-#>   [3] w = 0.1071, |mu| = 1.8882, tr(Sigma) = 4.9044
-
-## Closed-form operations on the fitted mixture.
-gmm_marginalise(fit, keep = 1L)
-#> <marginalise(kld_em[N=3] on banana)>: K = 3 components in p = 1 dimensions
-#>   [1] w = 0.6456, |mu| = 0.1818, tr(Sigma) = 0.4620
-#>   [2] w = 0.2473, |mu| = 1.1518, tr(Sigma) = 0.4846
-#>   [3] w = 0.1071, |mu| = 1.5954, tr(Sigma) = 0.6321
-gmm_conditionalise(fit, given = c(NA, 0.5))
-#> <conditionalise(kld_em[N=3] on banana)>: K = 3 components in p = 1 dimensions
-#>   [1] w = 0.6730, |mu| = 0.2620, tr(Sigma) = 0.4524
-#>   [2] w = 0.2576, |mu| = 1.1133, tr(Sigma) = 0.2352
-#>   [3] w = 0.0694, |mu| = 1.4188, tr(Sigma) = 0.1199
-```
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`\
+\
+`## A target you can evaluate but not sample from -- a 2D "banana".`\
+`banana`` ``<-`` `[`banana_target`](https://max578.github.io/proxymix/reference/banana_target.md)`(``)`\
+\
+`## Fit a 3-component Gaussian mixture proxy via KLD-EM with importance sampling.`\
+`fit`` ``<-`` `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(``banana``, N ``=`` ``3L``, regime ``=`` ``"kld"``,`\
+`                    proposal ``=`` `[`proposal_mvt`](https://max578.github.io/proxymix/reference/proposal_uniform.md)`(``n_dim ``=`` ``2L``, df ``=`` ``5``)``,`\
+`                    is_size ``=`` ``2000L``, max_iter ``=`` ``60L``, seed ``=`` ``1L``)`\
+\
+[`print`](https://rdrr.io/r/base/print.html)`(``fit``)`\
+`#> <gmm_fit>: regime = "kld", K = 3, p = 2`\
+`#>   target     : banana`\
+`#>   iterations : 37`\
+`#>   converged  : TRUE`\
+`#>   [1] w = 0.6456, |mu| = 0.3299, tr(Sigma) = 1.3601`\
+`#>   [2] w = 0.2473, |mu| = 1.2996, tr(Sigma) = 2.2312`\
+`#>   [3] w = 0.1071, |mu| = 1.8882, tr(Sigma) = 4.9044`\
+\
+`## Closed-form operations on the fitted mixture.`\
+[`gmm_marginalise`](https://max578.github.io/proxymix/reference/gmm_marginalise.md)`(``fit``, keep ``=`` ``1L``)`\
+`#> <marginalise(kld_em[N=3] on banana)>: K = 3 components in p = 1 dimensions`\
+`#>   [1] w = 0.6456, |mu| = 0.1818, tr(Sigma) = 0.4620`\
+`#>   [2] w = 0.2473, |mu| = 1.1518, tr(Sigma) = 0.4846`\
+`#>   [3] w = 0.1071, |mu| = 1.5954, tr(Sigma) = 0.6321`\
+[`gmm_conditionalise`](https://max578.github.io/proxymix/reference/gmm_conditionalise.md)`(``fit``, given ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``NA``, ``0.5``)``)`\
+`#> <conditionalise(kld_em[N=3] on banana)>: K = 3 components in p = 1 dimensions`\
+`#>   [1] w = 0.6730, |mu| = 0.2620, tr(Sigma) = 0.4524`\
+`#>   [2] w = 0.2576, |mu| = 1.1133, tr(Sigma) = 0.2352`\
+`#>   [3] w = 0.0694, |mu| = 1.4188, tr(Sigma) = 0.1199`
 
 ## The unified fitting verb
 
@@ -210,10 +208,8 @@ issues](https://github.com/max578/proxymix/issues).
 
 ## Citation
 
-``` r
-
-citation("proxymix")
-```
+\
+[`citation`](https://rdrr.io/r/utils/citation.html)`(``"proxymix"``)`
 
 ## Licence
 

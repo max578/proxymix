@@ -186,7 +186,7 @@ ess_summary(fit)
 #> [1] FALSE
 #> 
 #> $mc_se_kld
-#> [1] 0.005537856
+#> [1] 0.005537868
 #> 
 #> $validation_size
 #> [1] 12000

@@ -1,14 +1,10 @@
 # How well a mixture proxies four awkward shapes
 
-``` r
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`
 
-library(proxymix)
-```
-
-``` r
-
-has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
-```
+\
+`has_ggplot2`` ``<-`` `[`requireNamespace`](https://rdrr.io/r/base/ns-load.html)`(``"ggplot2"``, quietly ``=`` ``TRUE``)`
 
 ## The problem
 
@@ -70,63 +66,57 @@ plane. Each gets a Student-t distribution wide enough to cover it, and a
 number of components chosen for its shape: four along the banana, six
 around the ring, and three for the three peaks.
 
-``` r
-
-fit_b <- fit_proxymix(banana_target(), N = 4L, regime = "kld",
-                      proposal = proposal_mvt(n_dim = 2L,
-                                              sigma = 4 * diag(2),
-                                              df = 5),
-                      is_size = 3000L, max_iter = 50L, seed = 1L)
-fit_d <- fit_proxymix(donut_target(), N = 6L, regime = "kld",
-                      proposal = proposal_mvt(n_dim = 2L,
-                                              sigma = 9 * diag(2),
-                                              df = 5),
-                      is_size = 3500L, max_iter = 60L, seed = 1L)
-fit_m <- fit_proxymix(mixture_target(), N = 3L, regime = "kld",
-                      proposal = proposal_mvt(n_dim = 2L,
-                                              sigma = 6 * diag(2),
-                                              df = 5),
-                      is_size = 3000L, max_iter = 50L, seed = 1L)
-```
+\
+`fit_b`` ``<-`` `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(`[`banana_target`](https://max578.github.io/proxymix/reference/banana_target.md)`(``)``, N ``=`` ``4L``, regime ``=`` ``"kld"``,`\
+`                      proposal ``=`` `[`proposal_mvt`](https://max578.github.io/proxymix/reference/proposal_uniform.md)`(``n_dim ``=`` ``2L``,`\
+`                                              sigma ``=`` ``4`` ``*`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``,`\
+`                                              df ``=`` ``5``)``,`\
+`                      is_size ``=`` ``3000L``, max_iter ``=`` ``50L``, seed ``=`` ``1L``)`\
+`fit_d`` ``<-`` `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(`[`donut_target`](https://max578.github.io/proxymix/reference/donut_target.md)`(``)``, N ``=`` ``6L``, regime ``=`` ``"kld"``,`\
+`                      proposal ``=`` `[`proposal_mvt`](https://max578.github.io/proxymix/reference/proposal_uniform.md)`(``n_dim ``=`` ``2L``,`\
+`                                              sigma ``=`` ``9`` ``*`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``,`\
+`                                              df ``=`` ``5``)``,`\
+`                      is_size ``=`` ``3500L``, max_iter ``=`` ``60L``, seed ``=`` ``1L``)`\
+`fit_m`` ``<-`` `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(`[`mixture_target`](https://max578.github.io/proxymix/reference/mixture_target.md)`(``)``, N ``=`` ``3L``, regime ``=`` ``"kld"``,`\
+`                      proposal ``=`` `[`proposal_mvt`](https://max578.github.io/proxymix/reference/proposal_uniform.md)`(``n_dim ``=`` ``2L``,`\
+`                                              sigma ``=`` ``6`` ``*`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``,`\
+`                                              df ``=`` ``5``)``,`\
+`                      is_size ``=`` ``3000L``, max_iter ``=`` ``50L``, seed ``=`` ``1L``)`
 
 ### Compare each proxy with its target
 
-``` r
+\
+`shape_panel`` ``<-`` ``function``(``target``, ``fit``, ``label``, ``lim``)`` ``{`\
+`  ``gx`` ``<-`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``lim``, ``lim``, length.out ``=`` ``110L``)`\
+`  ``base`` ``<-`` `[`expand.grid`](https://rdrr.io/r/base/expand.grid.html)`(``x1 ``=`` ``gx``, x2 ``=`` ``gx``)`\
+`  ``gm`` ``<-`` `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(``base``)`\
+`  `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(`\
+`    x1 ``=`` ``base``$``x1``, x2 ``=`` ``base``$``x2``,`\
+`    target ``=`` `[`exp`](https://rdrr.io/r/base/Log.html)`(``target``@``log_density``(``gm``)``)``,`\
+`    proxy ``=`` `[`dgmm`](https://max578.github.io/proxymix/reference/dgmm.md)`(``gm``, ``fit``)``,`\
+`    shape ``=`` ``label``,`\
+`    stringsAsFactors ``=`` ``FALSE`\
+`  ``)`\
+`}`\
+`overlay_df`` ``<-`` `[`rbind`](https://rdrr.io/r/base/cbind.html)`(`\
+`  ``shape_panel``(`[`banana_target`](https://max578.github.io/proxymix/reference/banana_target.md)`(``)``, ``fit_b``, ``"banana, N = 4"``, ``4.5``)``,`\
+`  ``shape_panel``(`[`donut_target`](https://max578.github.io/proxymix/reference/donut_target.md)`(``)``, ``fit_d``, ``"donut, N = 6"``, ``4.5``)``,`\
+`  ``shape_panel``(`[`mixture_target`](https://max578.github.io/proxymix/reference/mixture_target.md)`(``)``, ``fit_m``, ``"three peaks, N = 3"``, ``4.5``)`\
+`)`\
+`overlay_df``$``shape`` ``<-`` `[`factor`](https://rdrr.io/r/base/factor.html)`(``overlay_df``$``shape``,`\
+`                           levels ``=`` `[`unique`](https://rdrr.io/r/base/unique.html)`(``overlay_df``$``shape``)``)`
 
-shape_panel <- function(target, fit, label, lim) {
-  gx <- seq(-lim, lim, length.out = 110L)
-  base <- expand.grid(x1 = gx, x2 = gx)
-  gm <- as.matrix(base)
-  data.frame(
-    x1 = base$x1, x2 = base$x2,
-    target = exp(target@log_density(gm)),
-    proxy = dgmm(gm, fit),
-    shape = label,
-    stringsAsFactors = FALSE
-  )
-}
-overlay_df <- rbind(
-  shape_panel(banana_target(), fit_b, "banana, N = 4", 4.5),
-  shape_panel(donut_target(), fit_d, "donut, N = 6", 4.5),
-  shape_panel(mixture_target(), fit_m, "three peaks, N = 3", 4.5)
-)
-overlay_df$shape <- factor(overlay_df$shape,
-                           levels = unique(overlay_df$shape))
-```
-
-``` r
-
-ggplot2::ggplot(overlay_df, ggplot2::aes(x1, x2)) +
-  ggplot2::geom_contour_filled(ggplot2::aes(z = target), bins = 10L,
-                               alpha = 0.85) +
-  ggplot2::geom_contour(ggplot2::aes(z = proxy), colour = "white",
-                        linetype = "dashed", linewidth = 0.4, bins = 8L) +
-  ggplot2::scale_fill_viridis_d(option = "mako", guide = "none") +
-  ggplot2::facet_wrap(~ shape) +
-  ggplot2::coord_equal() +
-  ggplot2::labs(x = expression(x[1]), y = expression(x[2])) +
-  ggplot2::theme_minimal(base_size = 11)
-```
+\
+`ggplot2``::`[`ggplot`](https://ggplot2.tidyverse.org/reference/ggplot.html)`(``overlay_df``, ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``x1``, ``x2``)``)`` ``+`\
+`  ``ggplot2``::`[`geom_contour_filled`](https://ggplot2.tidyverse.org/reference/geom_contour.html)`(``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``z ``=`` ``target``)``, bins ``=`` ``10L``,`\
+`                               alpha ``=`` ``0.85``)`` ``+`\
+`  ``ggplot2``::`[`geom_contour`](https://ggplot2.tidyverse.org/reference/geom_contour.html)`(``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``z ``=`` ``proxy``)``, colour ``=`` ``"white"``,`\
+`                        linetype ``=`` ``"dashed"``, linewidth ``=`` ``0.4``, bins ``=`` ``8L``)`` ``+`\
+`  ``ggplot2``::`[`scale_fill_viridis_d`](https://ggplot2.tidyverse.org/reference/scale_viridis.html)`(``option ``=`` ``"mako"``, guide ``=`` ``"none"``)`` ``+`\
+`  ``ggplot2``::`[`facet_wrap`](https://ggplot2.tidyverse.org/reference/facet_wrap.html)`(``~`` ``shape``)`` ``+`\
+`  ``ggplot2``::`[`coord_equal`](https://ggplot2.tidyverse.org/reference/coord_fixed.html)`(``)`` ``+`\
+`  ``ggplot2``::`[`labs`](https://ggplot2.tidyverse.org/reference/labs.html)`(``x ``=`` `[`expression`](https://rdrr.io/r/base/expression.html)`(``x``[``1``]``)``, y ``=`` `[`expression`](https://rdrr.io/r/base/expression.html)`(``x``[``2``]``)``)`` ``+`\
+`  ``ggplot2``::`[`theme_minimal`](https://ggplot2.tidyverse.org/reference/ggtheme.html)`(``base_size ``=`` ``11``)`
 
 ![Three contour panels showing the banana, donut and three-peak
 densities, each overlaid with dashed contours of its Gaussian-mixture
@@ -153,38 +143,36 @@ from -12 to 12 in each direction. The code below also prints the share
 of each target’s probability that falls on its grid, to six decimal
 places.
 
-``` r
-
-grid_points <- function(lim, step = 0.04) {
-  gx <- seq(-lim, lim, by = step)
-  list(x = as.matrix(expand.grid(x1 = gx, x2 = gx)), cell = step^2)
-}
-grid_mass <- function(target, lim) {
-  g <- grid_points(lim)
-  sum(exp(target@log_density(g$x))) * g$cell
-}
-kl_grid <- function(target, fit, lim) {
-  g <- grid_points(lim)
-  log_f <- target@log_density(g$x)
-  log_g <- dgmm(g$x, fit, log = TRUE)
-  dens_f <- exp(log_f)
-  ok <- is.finite(log_f) & is.finite(log_g) & dens_f > 1e-300
-  sum(dens_f[ok] * (log_f[ok] - log_g[ok])) * g$cell
-}
-grid_lim <- c(banana = 12, donut = 7, mixture = 8)
-format(round(c(
-  banana = grid_mass(banana_target(), grid_lim[["banana"]]),
-  donut = grid_mass(donut_target(), grid_lim[["donut"]]),
-  mixture = grid_mass(mixture_target(), grid_lim[["mixture"]])
-), 6L), nsmall = 6L)
-#>     banana      donut    mixture 
-#> "0.999999" "1.000000" "1.000000"
-kl_quad <- c(
-  banana = kl_grid(banana_target(), fit_b, grid_lim[["banana"]]),
-  donut = kl_grid(donut_target(), fit_d, grid_lim[["donut"]]),
-  mixture = kl_grid(mixture_target(), fit_m, grid_lim[["mixture"]])
-)
-```
+\
+`grid_points`` ``<-`` ``function``(``lim``, ``step`` ``=`` ``0.04``)`` ``{`\
+`  ``gx`` ``<-`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``lim``, ``lim``, by ``=`` ``step``)`\
+`  `[`list`](https://rdrr.io/r/base/list.html)`(``x ``=`` `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(`[`expand.grid`](https://rdrr.io/r/base/expand.grid.html)`(``x1 ``=`` ``gx``, x2 ``=`` ``gx``)``)``, cell ``=`` ``step``^``2``)`\
+`}`\
+`grid_mass`` ``<-`` ``function``(``target``, ``lim``)`` ``{`\
+`  ``g`` ``<-`` ``grid_points``(``lim``)`\
+`  `[`sum`](https://rdrr.io/r/base/sum.html)`(`[`exp`](https://rdrr.io/r/base/Log.html)`(``target``@``log_density``(``g``$``x``)``)``)`` ``*`` ``g``$``cell`\
+`}`\
+`kl_grid`` ``<-`` ``function``(``target``, ``fit``, ``lim``)`` ``{`\
+`  ``g`` ``<-`` ``grid_points``(``lim``)`\
+`  ``log_f`` ``<-`` ``target``@``log_density``(``g``$``x``)`\
+`  ``log_g`` ``<-`` `[`dgmm`](https://max578.github.io/proxymix/reference/dgmm.md)`(``g``$``x``, ``fit``, log ``=`` ``TRUE``)`\
+`  ``dens_f`` ``<-`` `[`exp`](https://rdrr.io/r/base/Log.html)`(``log_f``)`\
+`  ``ok`` ``<-`` `[`is.finite`](https://rdrr.io/r/base/is.finite.html)`(``log_f``)`` ``&`` `[`is.finite`](https://rdrr.io/r/base/is.finite.html)`(``log_g``)`` ``&`` ``dens_f`` ``>`` ``1e-300`\
+`  `[`sum`](https://rdrr.io/r/base/sum.html)`(``dens_f``[``ok``]`` ``*`` ``(``log_f``[``ok``]`` ``-`` ``log_g``[``ok``]``)``)`` ``*`` ``g``$``cell`\
+`}`\
+`grid_lim`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``banana ``=`` ``12``, donut ``=`` ``7``, mixture ``=`` ``8``)`\
+[`format`](https://rdrr.io/r/base/format.html)`(`[`round`](https://rdrr.io/r/base/Round.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(`\
+`  banana ``=`` ``grid_mass``(`[`banana_target`](https://max578.github.io/proxymix/reference/banana_target.md)`(``)``, ``grid_lim``[[``"banana"``]``]``)``,`\
+`  donut ``=`` ``grid_mass``(`[`donut_target`](https://max578.github.io/proxymix/reference/donut_target.md)`(``)``, ``grid_lim``[[``"donut"``]``]``)``,`\
+`  mixture ``=`` ``grid_mass``(`[`mixture_target`](https://max578.github.io/proxymix/reference/mixture_target.md)`(``)``, ``grid_lim``[[``"mixture"``]``]``)`\
+`)``, ``6L``)``, nsmall ``=`` ``6L``)`\
+`#>     banana      donut    mixture `\
+`#> "0.999999" "1.000000" "1.000000"`\
+`kl_quad`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(`\
+`  banana ``=`` ``kl_grid``(`[`banana_target`](https://max578.github.io/proxymix/reference/banana_target.md)`(``)``, ``fit_b``, ``grid_lim``[[``"banana"``]``]``)``,`\
+`  donut ``=`` ``kl_grid``(`[`donut_target`](https://max578.github.io/proxymix/reference/donut_target.md)`(``)``, ``fit_d``, ``grid_lim``[[``"donut"``]``]``)``,`\
+`  mixture ``=`` ``kl_grid``(`[`mixture_target`](https://max578.github.io/proxymix/reference/mixture_target.md)`(``)``, ``fit_m``, ``grid_lim``[[``"mixture"``]``]``)`\
+`)`
 
 A narrower grid for the banana, from -6 to 6, misses 0.05 per cent of
 its probability. That small share lies in the far tails, where the proxy
@@ -209,21 +197,19 @@ how far more components lower the remaining divergence, the donut is
 refitted with different numbers of components. Each count is fitted
 twice, once with 3,500 trial points and once with 20,000.
 
-``` r
-
-donut_n <- c(3L, 4L, 6L, 10L)
-donut_draws <- c(3500L, 20000L)
-donut_kl <- sapply(donut_draws, function(m) {
-  vapply(donut_n, function(k) {
-    f <- fit_proxymix(donut_target(), N = k, regime = "kld",
-                      proposal = proposal_mvt(n_dim = 2L,
-                                              sigma = 9 * diag(2),
-                                              df = 5),
-                      is_size = m, max_iter = 60L, seed = 1L)
-    kl_grid(donut_target(), f, grid_lim[["donut"]])
-  }, numeric(1L))
-})
-```
+\
+`donut_n`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``3L``, ``4L``, ``6L``, ``10L``)`\
+`donut_draws`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``3500L``, ``20000L``)`\
+`donut_kl`` ``<-`` `[`sapply`](https://rdrr.io/r/base/lapply.html)`(``donut_draws``, ``function``(``m``)`` ``{`\
+`  `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``donut_n``, ``function``(``k``)`` ``{`\
+`    ``f`` ``<-`` `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(`[`donut_target`](https://max578.github.io/proxymix/reference/donut_target.md)`(``)``, N ``=`` ``k``, regime ``=`` ``"kld"``,`\
+`                      proposal ``=`` `[`proposal_mvt`](https://max578.github.io/proxymix/reference/proposal_uniform.md)`(``n_dim ``=`` ``2L``,`\
+`                                              sigma ``=`` ``9`` ``*`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``,`\
+`                                              df ``=`` ``5``)``,`\
+`                      is_size ``=`` ``m``, max_iter ``=`` ``60L``, seed ``=`` ``1L``)`\
+`    ``kl_grid``(`[`donut_target`](https://max578.github.io/proxymix/reference/donut_target.md)`(``)``, ``f``, ``grid_lim``[[``"donut"``]``]``)`\
+`  ``}``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)`\
+`}``)`
 
 | Components | KL, 3,500 trial points | KL, 20,000 trial points |
 |-----------:|-----------------------:|------------------------:|
@@ -247,70 +233,62 @@ third of the points fall outside. The target declares its support, so
 the fit switches to a uniform proposal over the interval and prints a
 message saying so.
 
-``` r
+\
+`epan`` ``<-`` `[`epanechnikov_target`](https://max578.github.io/proxymix/reference/epanechnikov_target.md)`(``n_dim ``=`` ``1L``)`\
+`epan`\
+`#> <gmm_target>: "epanechnikov" in p = 1 dimensions`\
+`#>   log_density : supplied`\
+`#>   samples     : <absent>`\
+`#>   normalised  : TRUE`\
+`#>   log Z(f)    : 0`\
+`#>   support     : [-1, 1]`
 
-epan <- epanechnikov_target(n_dim = 1L)
-epan
-#> <gmm_target>: "epanechnikov" in p = 1 dimensions
-#>   log_density : supplied
-#>   samples     : <absent>
-#>   normalised  : TRUE
-#>   log Z(f)    : 0
-#>   support     : [-1, 1]
-```
-
-``` r
-
-fit_e <- fit_proxymix(epan, N = 3L, regime = "kld",
-                      is_size = 4000L, max_iter = 300L, seed = 1L)
-#> Auto-selected a support-matched proposal ("is_uniform[support-matched]") for
-#> the declared target support.
-#> ℹ Pass an explicit `proposal` to override.
-c(proposal = fit_e@diagnostics$proposal_name,
-  support_fraction = fit_e@diagnostics$support_fraction,
-  iterations = length(kld_trace(fit_e)),
-  converged = gmm_fit_quality(fit_e)$converged)
-#>                      proposal              support_fraction 
-#> "is_uniform[support-matched]"                           "1" 
-#>                    iterations                     converged 
-#>                         "241"                        "TRUE"
-```
+\
+`fit_e`` ``<-`` `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(``epan``, N ``=`` ``3L``, regime ``=`` ``"kld"``,`\
+`                      is_size ``=`` ``4000L``, max_iter ``=`` ``300L``, seed ``=`` ``1L``)`\
+`#> Auto-selected a support-matched proposal (``"is_uniform[support-matched]"``) for`\
+`#> the declared target support.`\
+`#> ``ℹ```  Pass an explicit `proposal` to override. ``\
+[`c`](https://rdrr.io/r/base/c.html)`(``proposal ``=`` ``fit_e``@``diagnostics``$``proposal_name``,`\
+`  support_fraction ``=`` ``fit_e``@``diagnostics``$``support_fraction``,`\
+`  iterations ``=`` `[`length`](https://rdrr.io/r/base/length.html)`(`[`kld_trace`](https://max578.github.io/proxymix/reference/kld_trace.md)`(``fit_e``)``)``,`\
+`  converged ``=`` `[`gmm_fit_quality`](https://max578.github.io/proxymix/reference/gmm_fit_quality.md)`(``fit_e``)``$``converged``)`\
+`#>                      proposal              support_fraction `\
+`#> "is_uniform[support-matched]"                           "1" `\
+`#>                    iterations                     converged `\
+`#>                         "241"                        "TRUE"`
 
 The `support_fraction` is the share of trial points that fell inside the
 support.
 
-``` r
+\
+`epan_x`` ``<-`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``1.4``, ``1.4``, length.out ``=`` ``400L``)`\
+`epan_df`` ``<-`` `[`rbind`](https://rdrr.io/r/base/cbind.html)`(`\
+`  `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``x ``=`` ``epan_x``, density ``=`` `[`exp`](https://rdrr.io/r/base/Log.html)`(``epan``@``log_density``(`\
+`    `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``epan_x``, ncol ``=`` ``1L``)``)``)``, series ``=`` ``"target"``, stringsAsFactors ``=`` ``FALSE``)``,`\
+`  `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``x ``=`` ``epan_x``, density ``=`` `[`dgmm`](https://max578.github.io/proxymix/reference/dgmm.md)`(`[`matrix`](https://rdrr.io/r/base/matrix.html)`(``epan_x``, ncol ``=`` ``1L``)``, ``fit_e``)``,`\
+`             series ``=`` ``"mixture proxy"``, stringsAsFactors ``=`` ``FALSE``)`\
+`)`\
+`## probability the proxy places outside [-1, 1]`\
+`leak_x`` ``<-`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``6``, ``6``, by ``=`` ``0.001``)`\
+`leak`` ``<-`` `[`sum`](https://rdrr.io/r/base/sum.html)`(`[`dgmm`](https://max578.github.io/proxymix/reference/dgmm.md)`(`[`matrix`](https://rdrr.io/r/base/matrix.html)`(``leak_x``, ncol ``=`` ``1L``)``, ``fit_e``)``[`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``leak_x``)`` ``>`` ``1``]``)`` ``*`` ``0.001`
 
-epan_x <- seq(-1.4, 1.4, length.out = 400L)
-epan_df <- rbind(
-  data.frame(x = epan_x, density = exp(epan@log_density(
-    matrix(epan_x, ncol = 1L))), series = "target", stringsAsFactors = FALSE),
-  data.frame(x = epan_x, density = dgmm(matrix(epan_x, ncol = 1L), fit_e),
-             series = "mixture proxy", stringsAsFactors = FALSE)
-)
-## probability the proxy places outside [-1, 1]
-leak_x <- seq(-6, 6, by = 0.001)
-leak <- sum(dgmm(matrix(leak_x, ncol = 1L), fit_e)[abs(leak_x) > 1]) * 0.001
-```
-
-``` r
-
-ggplot2::ggplot(epan_df, ggplot2::aes(x, density, colour = series,
-                                      linetype = series)) +
-  ggplot2::geom_line(linewidth = 0.8) +
-  ggplot2::geom_vline(xintercept = c(-1, 1), colour = "grey60",
-                      linewidth = 0.3) +
-  ggplot2::scale_colour_manual(
-    name = NULL, values = c("target" = "#0072B2",
-                            "mixture proxy" = "#D55E00")
-  ) +
-  ggplot2::scale_linetype_manual(
-    name = NULL, values = c("target" = "solid", "mixture proxy" = "dashed")
-  ) +
-  ggplot2::labs(x = expression(x), y = "density") +
-  ggplot2::theme_minimal(base_size = 11) +
-  ggplot2::theme(legend.position = "top")
-```
+\
+`ggplot2``::`[`ggplot`](https://ggplot2.tidyverse.org/reference/ggplot.html)`(``epan_df``, ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``x``, ``density``, colour ``=`` ``series``,`\
+`                                      linetype ``=`` ``series``)``)`` ``+`\
+`  ``ggplot2``::`[`geom_line`](https://ggplot2.tidyverse.org/reference/geom_path.html)`(``linewidth ``=`` ``0.8``)`` ``+`\
+`  ``ggplot2``::`[`geom_vline`](https://ggplot2.tidyverse.org/reference/geom_abline.html)`(``xintercept ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``-``1``, ``1``)``, colour ``=`` ``"grey60"``,`\
+`                      linewidth ``=`` ``0.3``)`` ``+`\
+`  ``ggplot2``::`[`scale_colour_manual`](https://ggplot2.tidyverse.org/reference/scale_manual.html)`(`\
+`    name ``=`` ``NULL``, values ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"target"`` ``=`` ``"#0072B2"``,`\
+`                            ``"mixture proxy"`` ``=`` ``"#D55E00"``)`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`scale_linetype_manual`](https://ggplot2.tidyverse.org/reference/scale_manual.html)`(`\
+`    name ``=`` ``NULL``, values ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"target"`` ``=`` ``"solid"``, ``"mixture proxy"`` ``=`` ``"dashed"``)`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`labs`](https://ggplot2.tidyverse.org/reference/labs.html)`(``x ``=`` `[`expression`](https://rdrr.io/r/base/expression.html)`(``x``)``, y ``=`` ``"density"``)`` ``+`\
+`  ``ggplot2``::`[`theme_minimal`](https://ggplot2.tidyverse.org/reference/ggtheme.html)`(``base_size ``=`` ``11``)`` ``+`\
+`  ``ggplot2``::`[`theme`](https://ggplot2.tidyverse.org/reference/theme.html)`(``legend.position ``=`` ``"top"``)`
 
 ![Line plot of the upside-down parabola of the Epanechnikov density and
 its dashed Gaussian-mixture proxy, which extends slightly beyond the
@@ -334,24 +312,22 @@ terms. “IS draws” are the trial points, IS standing for importance
 sampling, the name of this weighting method. The option `adapt = "pmc"`
 moves the proposal towards the target between rounds.
 
-``` r
-
-bad <- tryCatch(
-  fit_kld_em(
-    mixture_target(), N = 3L,
-    proposal = proposal_mvn(n_dim = 2L, mean = c(25, 25), cov = diag(2)),
-    is_size = 2000L, max_iter = 10L, seed = 1L,
-    min_ess = 50, on_low_ess = "abort"
-  ),
-  error = function(e) e
-)
-class(bad)[1L]
-#> [1] "proxymix_degenerate_fit"
-cat(conditionMessage(bad))
-#> Effective sample size is low: ESS = 1 out of 2000; the fit is flagged as
-#> degenerate.
-#> ℹ Consider a heavier-tailed proposal, more IS draws, or `adapt = "pmc"`.
-```
+\
+`bad`` ``<-`` `[`tryCatch`](https://rdrr.io/r/base/conditions.html)`(`\
+`  `[`fit_kld_em`](https://max578.github.io/proxymix/reference/fit_kld_em.md)`(`\
+`    `[`mixture_target`](https://max578.github.io/proxymix/reference/mixture_target.md)`(``)``, N ``=`` ``3L``,`\
+`    proposal ``=`` `[`proposal_mvn`](https://max578.github.io/proxymix/reference/proposal_uniform.md)`(``n_dim ``=`` ``2L``, mean ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``25``, ``25``)``, cov ``=`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``)``,`\
+`    is_size ``=`` ``2000L``, max_iter ``=`` ``10L``, seed ``=`` ``1L``,`\
+`    min_ess ``=`` ``50``, on_low_ess ``=`` ``"abort"`\
+`  ``)``,`\
+`  error ``=`` ``function``(``e``)`` ``e`\
+`)`\
+[`class`](https://rdrr.io/r/base/class.html)`(``bad``)``[``1L``]`\
+`#> [1] "proxymix_degenerate_fit"`\
+[`cat`](https://rdrr.io/r/base/cat.html)`(`[`conditionMessage`](https://rdrr.io/r/base/conditions.html)`(``bad``)``)`\
+`#> Effective sample size is low: ESS = 1 out of 2000; the fit is flagged as`\
+`#> degenerate.`\
+`#> ``ℹ```  Consider a heavier-tailed proposal, more IS draws, or `adapt = "pmc"`. ``
 
 ## Interpretation
 
@@ -448,12 +424,10 @@ Every fit and every Hellinger estimate is seeded with `seed = 1L`. The
 grid sums involve no random draws. Re-running this vignette therefore
 reproduces the same numbers.
 
-``` r
+\
+[`sessionInfo`](https://rdrr.io/r/utils/sessionInfo.html)`(``)`
 
-sessionInfo()
 ```
-
-``` session-info
 #> R version 4.6.1 (2026-06-24)
 #> Platform: aarch64-apple-darwin23
 #> Running under: macOS Tahoe 26.6.2

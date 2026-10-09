@@ -254,7 +254,7 @@ unstable.</p>
 </tr>
 <tr class="even">
 <td align="left">effective sample size</td>
-<td align="left">2427.3</td>
+<td align="left">2427.8</td>
 </tr>
 <tr class="odd">
 <td align="left">effective sample size as a share of all draws</td>
@@ -262,11 +262,11 @@ unstable.</p>
 </tr>
 <tr class="even">
 <td align="left">smallest effective sample size of any component</td>
-<td align="left">1728.4</td>
+<td align="left">1728.8</td>
 </tr>
 <tr class="odd">
 <td align="left">largest share of the weight held by one draw</td>
-<td align="left">0.000538</td>
+<td align="left">0.000537</td>
 </tr>
 <tr class="even">
 <td align="left">share of draws where the posterior could be
@@ -416,7 +416,7 @@ the probability that the slope is positive, far out in the tail.</p>
 <span><span class="va">p_positive</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pgmm.html">pgmm</a></span><span class="op">(</span><span class="fl">0</span>, <span class="va">slope</span>, lower.tail <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>grid <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">signif</a></span><span class="op">(</span><span class="va">p_positive_quad</span>, <span class="fl">2</span><span class="op">)</span>, proxy <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">signif</a></span><span class="op">(</span><span class="va">p_positive</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    grid   proxy </span></span>
-<span><span class="co">#&gt; 8.5e-08 8.3e-05</span></span></code></pre></div>
+<span><span class="co">#&gt; 8.5e-08 8.4e-05</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="error-bars-on-the-proxy-itself">Error bars on the proxy itself<a class="anchor" aria-label="anchor" href="#error-bars-on-the-proxy-itself"></a>
@@ -450,7 +450,7 @@ covers only the variation between refits.</p>
 <tr class="odd">
 <td align="left">posterior mean of the intercept</td>
 <td align="right">14.808</td>
-<td align="right">14.647</td>
+<td align="right">14.646</td>
 <td align="right">14.972</td>
 </tr>
 <tr class="even">
@@ -488,7 +488,7 @@ needs no derivatives (ter Braak and Vrugt, 2008). The reference for each
 dataset was a NUTS run of 40,000 draws. Errors in the posterior mean and
 in the ends of the 95 per cent interval are in units of the posterior
 standard deviation. Smaller is better in every column.</p>
-<table style="width:100%;" class="table">
+<table style="width:99%;" class="table">
 <caption>Mean error against a 40,000-draw NUTS reference over 50
 simulated datasets for each number of coefficients
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>p</mi><annotation encoding="application/x-tex">p</annotation></semantics></math>.
@@ -749,7 +749,7 @@ five-parameter example on survey data.</p>
 </h2>
 <p>The certificate is consistent with a good fit. The rounds settled
 before the limit, and the weights did not collapse. The 3,000 weighted
-draws of the last round were worth 2427 equally weighted draws, 81 per
+draws of the last round were worth 2428 equally weighted draws, 81 per
 cent of the total. The broad distribution was replaced 5 times during
 the fit. The KL divergence on fresh draws is 0.017, with a simulation
 standard error of 0.003, most of it from the estimate of the log

@@ -253,35 +253,35 @@ mode.</caption>
 <tbody>
 <tr class="odd">
 <td align="right">2.977</td>
-<td align="right">1.886</td>
+<td align="right">1.885</td>
 <td align="right">3.000</td>
 <td align="right">2.000</td>
 <td align="right">0.117</td>
 <td align="right">0.255</td>
 </tr>
 <tr class="even">
-<td align="right">-2.738</td>
-<td align="right">3.093</td>
-<td align="right">-2.805</td>
-<td align="right">3.131</td>
-<td align="right">0.077</td>
-<td align="right">0.254</td>
-</tr>
-<tr class="odd">
-<td align="right">3.512</td>
-<td align="right">-1.829</td>
+<td align="right">3.513</td>
+<td align="right">-1.821</td>
 <td align="right">3.584</td>
 <td align="right">-1.848</td>
-<td align="right">0.075</td>
-<td align="right">0.253</td>
+<td align="right">0.076</td>
+<td align="right">0.251</td>
+</tr>
+<tr class="odd">
+<td align="right">-2.733</td>
+<td align="right">3.097</td>
+<td align="right">-2.805</td>
+<td align="right">3.131</td>
+<td align="right">0.080</td>
+<td align="right">0.248</td>
 </tr>
 <tr class="even">
-<td align="right">-3.747</td>
-<td align="right">-3.287</td>
+<td align="right">-3.745</td>
+<td align="right">-3.281</td>
 <td align="right">-3.779</td>
 <td align="right">-3.283</td>
-<td align="right">0.033</td>
-<td align="right">0.205</td>
+<td align="right">0.034</td>
+<td align="right">0.212</td>
 </tr>
 </tbody>
 </table>
@@ -346,9 +346,9 @@ healthy, carrying an effective sample size of 1565 out of 3000 draws, or
 to a <em>different</em> analytic optimum, so no optimum is claimed twice
 and none is missed. The largest distance between a recovered mode and
 the optimum it sits on is 0.12, on a search box ten units wide, so each
-mode lies within about 1/86 of the box width of its optimum. The map’s
-height over the four basins runs from 0.205 to 0.255, a spread of about
-24 per cent between the lowest and the highest peak. Himmelblau’s four
+mode lies within about 1/85 of the box width of its optimum. The map’s
+height over the four basins runs from 0.212 to 0.255, a spread of about
+20 per cent between the lowest and the highest peak. Himmelblau’s four
 optima are equal in objective value, so a perfectly resolved map would
 put the same height on each; the spread here is what a finite importance
 sample and ten components covering four basins leave behind, and it is
@@ -654,19 +654,19 @@ shown beside the equal-budget rows.</caption>
 <tbody>
 <tr class="odd">
 <td align="left">proxymix</td>
-<td align="right">4176</td>
+<td align="right">4170</td>
 <td align="right">6</td>
-<td align="right">34.06</td>
+<td align="right">23.67</td>
 <td align="left">M1, M2</td>
 <td align="right">0.29</td>
 </tr>
 <tr class="even">
 <td align="left">proxymix, 26 000</td>
-<td align="right">20582</td>
+<td align="right">20903</td>
 <td align="right">9</td>
-<td align="right">1.01</td>
+<td align="right">5.09</td>
 <td align="left">M1, M2</td>
-<td align="right">2.04</td>
+<td align="right">2.25</td>
 </tr>
 <tr class="odd">
 <td align="left">GenSA</td>
@@ -682,7 +682,7 @@ shown beside the equal-budget rows.</caption>
 <td align="right">1</td>
 <td align="right">1.02</td>
 <td align="left">M1</td>
-<td align="right">0.09</td>
+<td align="right">0.07</td>
 </tr>
 <tr class="odd">
 <td align="left">cmaes</td>
@@ -690,7 +690,7 @@ shown beside the equal-budget rows.</caption>
 <td align="right">1</td>
 <td align="right">-0.01</td>
 <td align="left">M1</td>
-<td align="right">0.16</td>
+<td align="right">0.14</td>
 </tr>
 <tr class="even">
 <td align="left">nloptr</td>
@@ -698,7 +698,7 @@ shown beside the equal-budget rows.</caption>
 <td align="right">20</td>
 <td align="right">-0.01</td>
 <td align="left">M1, M2</td>
-<td align="right">0.11</td>
+<td align="right">0.07</td>
 </tr>
 <tr class="odd">
 <td align="left">optimx</td>
@@ -706,7 +706,7 @@ shown beside the equal-budget rows.</caption>
 <td align="right">20</td>
 <td align="right">-0.01</td>
 <td align="left">M1, M2</td>
-<td align="right">0.14</td>
+<td align="right">0.09</td>
 </tr>
 </tbody>
 </table>
@@ -716,17 +716,17 @@ basin. The two multi-start methods report both label-switched twins.
 They used 5636 and 7161 evaluations, more than the budget of 5000,
 although each start was capped at 22 evaluations (nloptr) or iterations
 (optimx). The map at the shared budget reports 6 modes whose best value
-is 34.1 above the mclust fit. At the last cooling step the effective
-sample size is 1.0 of 1000 draws for the fit at the shared budget and
-6.4 of 4000 for the fit at a nominal 26 000 evaluations, which used
-20582. Both proxymix fits carry a degenerate quality certificate, and
+is 23.7 above the mclust fit. At the last cooling step the effective
+sample size is 1.4 of 1000 draws for the fit at the shared budget and
+6.5 of 4000 for the fit at a nominal 26 000 evaluations, which used
+20903. Both proxymix fits carry a degenerate quality certificate, and
 both fits raised the low effective-sample-size warning.</p>
 <p>A map whose last update rests on so few draws does not describe the
 likelihood surface, so its modes are to be trusted only as far as an
 independent check confirms them. Here the check is a local descent, and
 from the modes at the shared budget it reaches M1, M2. On this surface
 the check separates little: 397 of the 400 random starts above also
-descend to M1 or M2. At 26 000 evaluations the best mode is 1.0 above
+descend to M1 or M2. At 26 000 evaluations the best mode is 5.1 above
 the fit and the modes descend to M1, M2. The objective returns
 <code>Inf</code> outside the box for every method, because the
 likelihood grows without bound as a standard deviation shrinks towards
@@ -772,9 +772,9 @@ optimisers return one point, and proxymix returns the modes of its map.
 A row at 26 000 evaluations, the settings of the Himmelblau example
 earlier in this vignette, is shown beside the equal-budget proxymix row.
 The label 26 000 is the nominal budget of those settings, and the median
-run used 24635 evaluations on Himmelblau’s function and 24602 on the
+run used 24632 evaluations on Himmelblau’s function and 24605 on the
 Rastrigin function. This chunk is complete and runs as shown, but it
-took about 11 minutes on one core (R 4.6.1, Apple silicon); the tables
+took about 7 minutes on one core (R 4.6.1, Apple silicon); the tables
 below are read from its stored output. For a quick reduced run, change
 the line <code>n_rep &lt;- 100L</code> to
 <code>n_rep &lt;- 5L</code>.</p>
@@ -968,10 +968,10 @@ so its Basin 5 cells are empty.</caption>
 <tr class="odd">
 <td align="left">Himmelblau</td>
 <td align="left">proxymix</td>
-<td align="right">0.77</td>
+<td align="right">0.75</td>
+<td align="right">0.95</td>
 <td align="right">0.94</td>
-<td align="right">0.92</td>
-<td align="right">0.77</td>
+<td align="right">0.74</td>
 <td align="right">–</td>
 <td align="right">0.55</td>
 </tr>
@@ -1038,22 +1038,22 @@ so its Basin 5 cells are empty.</caption>
 <tr class="even">
 <td align="left">Rastrigin</td>
 <td align="left">proxymix</td>
-<td align="right">0.36</td>
-<td align="right">0.32</td>
-<td align="right">0.41</td>
-<td align="right">0.23</td>
+<td align="right">0.38</td>
 <td align="right">0.33</td>
+<td align="right">0.37</td>
+<td align="right">0.25</td>
+<td align="right">0.31</td>
 <td align="right">0.00</td>
 </tr>
 <tr class="odd">
 <td align="left">Rastrigin</td>
 <td align="left">proxymix, 26 000</td>
-<td align="right">0.86</td>
+<td align="right">0.82</td>
 <td align="right">0.41</td>
-<td align="right">0.30</td>
-<td align="right">0.57</td>
-<td align="right">0.76</td>
-<td align="right">0.02</td>
+<td align="right">0.24</td>
+<td align="right">0.60</td>
+<td align="right">0.80</td>
+<td align="right">0.00</td>
 </tr>
 <tr class="even">
 <td align="left">Rastrigin</td>
@@ -1128,20 +1128,20 @@ half or more of the runs never did.</caption>
 <tr class="odd">
 <td align="left">Himmelblau</td>
 <td align="left">proxymix</td>
-<td align="right">4733</td>
-<td align="right">0.175</td>
+<td align="right">4734</td>
+<td align="right">0.181</td>
 <td align="right">1.00</td>
 <td align="right">623</td>
-<td align="right">0.376</td>
+<td align="right">0.229</td>
 </tr>
 <tr class="even">
 <td align="left">Himmelblau</td>
 <td align="left">proxymix, 26 000</td>
-<td align="right">24635</td>
-<td align="right">0.041</td>
+<td align="right">24632</td>
+<td align="right">0.045</td>
 <td align="right">1.00</td>
 <td align="right">623</td>
-<td align="right">1.987</td>
+<td align="right">1.308</td>
 </tr>
 <tr class="odd">
 <td align="left">Himmelblau</td>
@@ -1150,7 +1150,7 @@ half or more of the runs never did.</caption>
 <td align="right">0.000</td>
 <td align="right">0.76</td>
 <td align="right">1948</td>
-<td align="right">0.022</td>
+<td align="right">0.015</td>
 </tr>
 <tr class="even">
 <td align="left">Himmelblau</td>
@@ -1159,7 +1159,7 @@ half or more of the runs never did.</caption>
 <td align="right">0.000</td>
 <td align="right">0.71</td>
 <td align="right">1710</td>
-<td align="right">0.022</td>
+<td align="right">0.017</td>
 </tr>
 <tr class="odd">
 <td align="left">Himmelblau</td>
@@ -1168,7 +1168,7 @@ half or more of the runs never did.</caption>
 <td align="right">0.000</td>
 <td align="right">0.00</td>
 <td align="right">–</td>
-<td align="right">0.157</td>
+<td align="right">0.084</td>
 </tr>
 <tr class="even">
 <td align="left">Himmelblau</td>
@@ -1177,7 +1177,7 @@ half or more of the runs never did.</caption>
 <td align="right">0.000</td>
 <td align="right">0.99</td>
 <td align="right">572</td>
-<td align="right">0.036</td>
+<td align="right">0.016</td>
 </tr>
 <tr class="odd">
 <td align="left">Himmelblau</td>
@@ -1186,25 +1186,25 @@ half or more of the runs never did.</caption>
 <td align="right">0.000</td>
 <td align="right">0.98</td>
 <td align="right">604</td>
-<td align="right">0.014</td>
+<td align="right">0.009</td>
 </tr>
 <tr class="even">
 <td align="left">Rastrigin</td>
 <td align="left">proxymix</td>
 <td align="right">4730</td>
-<td align="right">2.109</td>
+<td align="right">2.067</td>
 <td align="right">1.00</td>
 <td align="right">751</td>
-<td align="right">0.286</td>
+<td align="right">0.213</td>
 </tr>
 <tr class="odd">
 <td align="left">Rastrigin</td>
 <td align="left">proxymix, 26 000</td>
-<td align="right">24602</td>
-<td align="right">1.008</td>
+<td align="right">24605</td>
+<td align="right">1.000</td>
 <td align="right">1.00</td>
 <td align="right">751</td>
-<td align="right">1.495</td>
+<td align="right">1.245</td>
 </tr>
 <tr class="even">
 <td align="left">Rastrigin</td>
@@ -1213,7 +1213,7 @@ half or more of the runs never did.</caption>
 <td align="right">0.000</td>
 <td align="right">1.00</td>
 <td align="right">408</td>
-<td align="right">0.018</td>
+<td align="right">0.014</td>
 </tr>
 <tr class="odd">
 <td align="left">Rastrigin</td>
@@ -1222,7 +1222,7 @@ half or more of the runs never did.</caption>
 <td align="right">0.000</td>
 <td align="right">1.00</td>
 <td align="right">299</td>
-<td align="right">0.018</td>
+<td align="right">0.014</td>
 </tr>
 <tr class="even">
 <td align="left">Rastrigin</td>
@@ -1231,7 +1231,7 @@ half or more of the runs never did.</caption>
 <td align="right">4.975</td>
 <td align="right">0.08</td>
 <td align="right">–</td>
-<td align="right">0.094</td>
+<td align="right">0.072</td>
 </tr>
 <tr class="odd">
 <td align="left">Rastrigin</td>
@@ -1240,7 +1240,7 @@ half or more of the runs never did.</caption>
 <td align="right">0.995</td>
 <td align="right">0.00</td>
 <td align="right">–</td>
-<td align="right">0.019</td>
+<td align="right">0.015</td>
 </tr>
 <tr class="even">
 <td align="left">Rastrigin</td>
@@ -1249,7 +1249,7 @@ half or more of the runs never did.</caption>
 <td align="right">0.995</td>
 <td align="right">0.00</td>
 <td align="right">–</td>
-<td align="right">0.011</td>
+<td align="right">0.008</td>
 </tr>
 </tbody>
 </table>
@@ -1260,7 +1260,7 @@ cmaes each return one point, so they report one basin per run, and all
 three reach a median best value below
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>4</mn><mo>×</mo><msup><mn>10</mn><mrow><mi>−</mi><mn>8</mn></mrow></msup></mrow><annotation encoding="application/x-tex">4 \times 10^{-8}</annotation></semantics></math>.
 The worst single run, of DEoptim, ended at 0.010. The map at 5000
-evaluations reports all four basins in 0.55 of runs and 3.40 of the four
+evaluations reports all four basins in 0.55 of runs and 3.38 of the four
 on average, and its best mode sits at a value of 0.18, because three
 cooling steps of 1000 draws place the components near the basins without
 resolving their floors. At 26 000 evaluations the map reports all four
@@ -1276,15 +1276,15 @@ default step size, in 0.08, with a best value of 5.0. The multi-start
 methods find it in 0.23 and 0.21 of runs: their 20 descents end in
 whichever local basin they started in, so they report 1.08 and 1.31 of
 the five target basins on average and a best value near 0.995, the floor
-of the neighbouring basins. The map finds the global basin in 0.36 of
-runs at 5000 evaluations and 0.86 at 26 000, reports 1.65 and 2.90 of
-the five basins, and all five in 2 of its 200 Rastrigin runs at the two
+of the neighbouring basins. The map finds the global basin in 0.38 of
+runs at 5000 evaluations and 0.82 at 26 000, reports 1.64 and 2.87 of
+the five basins, and all five in 0 of its 200 Rastrigin runs at the two
 settings. The low effective-sample-size warning was raised in all 100
 Rastrigin runs of the map at 5000 evaluations and in none of its other
-runs. Each of those fits ended with an effective sample size of 5.1 to
+runs. Each of those fits ended with an effective sample size of 6.0 to
 27.3 of 1000 draws and was flagged as degenerate, so the map’s Rastrigin
 scores at the shared budget describe degenerate fits. A warning of a
-small decrease of the EM objective was raised in 9 runs. A rate
+small decrease of the EM objective was raised in 10 runs. A rate
 estimated from 100 runs carries a Monte Carlo standard error of up to
 0.05. proxymix was the slowest method per run at either budget.</p>
 <p>In this run the map reported more Himmelblau basins per run than the
@@ -1294,8 +1294,8 @@ cent of its evaluations. At the shared budget GenSA and DEoptim reached
 a median best value below
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>2</mn><mo>×</mo><msup><mn>10</mn><mrow><mi>−</mi><mn>4</mn></mrow></msup></mrow><annotation encoding="application/x-tex">2 \times 10^{-4}</annotation></semantics></math>
 on both functions and cmaes on Himmelblau’s function only, while the
-map’s best mode stayed at 0.18 and 2.11, and the map found the Rastrigin
-global basin in 0.36 of runs. The comparison covers two functions of two
+map’s best mode stayed at 0.18 and 2.07, and the map found the Rastrigin
+global basin in 0.38 of runs. The comparison covers two functions of two
 variables and one likelihood of five, one budget, one radius for basin
 membership, and default settings for the competitors, and it does not
 cover higher dimensions, noisy objectives or budgets between 5000 and 26
@@ -1363,11 +1363,11 @@ their importance draws.</p>
 <code>set.seed(1L)</code>, with <code>seed = 1L</code> passed to
 <code><a href="../../reference/from_objective.html">from_objective()</a></code> and to GenSA. Each simulation run is
 seeded by its own index. The stored results come from the code shown,
-run on 26 September 2026 with R 4.6.1, proxymix 0.16.0, GenSA 1.1.15,
+run on 28 September 2026 with R 4.6.1, proxymix 0.16.0, GenSA 1.1.15,
 DEoptim 2.2-8, cmaes 1.0-12, nloptr 2.2.1 and optimx 2025-4.9, and
-raised 109 warnings: 100 of low effective sample size, 9 of the EM
+raised 110 warnings: 100 of low effective sample size, 10 of the EM
 objective falling by at most
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>2</mn><mo>×</mo><msup><mn>10</mn><mrow><mi>−</mi><mn>4</mn></mrow></msup></mrow><annotation encoding="application/x-tex">2 \times 10^{-4}</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>6</mn><mo>×</mo><msup><mn>10</mn><mrow><mi>−</mi><mn>5</mn></mrow></msup></mrow><annotation encoding="application/x-tex">6 \times 10^{-5}</annotation></semantics></math>
 in a cooling step, and 0 others.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>

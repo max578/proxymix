@@ -104,7 +104,7 @@ gmm_fit_quality(fit)
 #> [1] 0.6987454
 #> 
 #> $min_component_ess
-#> [1] 165.318
+#> [1] 165.3181
 #> 
 #> $max_weight
 #> [1] 0.005472202
@@ -119,7 +119,7 @@ gmm_fit_quality(fit)
 #> [1] 0.1029181
 #> 
 #> $validation_gap
-#> [1] -0.008892188
+#> [1] -0.008892184
 #> 
 #> $heldout_kld
 #> [1] 0.1351208
@@ -142,7 +142,7 @@ gmm_fit_quality(gmm_marginalise(fit, keep = 1L))
 #> [1] 0.6987454
 #> 
 #> $min_component_ess
-#> [1] 165.318
+#> [1] 165.3181
 #> 
 #> $max_weight
 #> [1] 0.005472202
@@ -157,7 +157,7 @@ gmm_fit_quality(gmm_marginalise(fit, keep = 1L))
 #> [1] 0.1029181
 #> 
 #> $validation_gap
-#> [1] -0.008892188
+#> [1] -0.008892184
 #> 
 #> $heldout_kld
 #> [1] 0.1351208

@@ -67,10 +67,10 @@ fit <- fit_proxymix(banana_target(), N = 3L, regime = "kld",
                     is_size = 2000L, max_iter = 25L, seed = 1L)
 hellinger_mc(fit, n_mc = 1000L, seed = 1L)
 #> $h2
-#> [1] 0.00506444
+#> [1] 0.005064436
 #> 
 #> $se
-#> [1] 0.003431508
+#> [1] 0.003431512
 #> 
 #> $n_mc
 #> [1] 1000

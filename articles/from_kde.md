@@ -1,14 +1,10 @@
 # Compressing a kernel density estimate into a mixture
 
-``` r
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`
 
-library(proxymix)
-```
-
-``` r
-
-has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
-```
+\
+`has_ggplot2`` ``<-`` `[`requireNamespace`](https://rdrr.io/r/base/ns-load.html)`(``"ggplot2"``, quietly ``=`` ``TRUE``)`
 
 ## The problem
 
@@ -85,46 +81,42 @@ correlation. The call fits a proxy with two components and uses
 Silverman’s rule for the bandwidth. It sets `is_size` and
 `validation_size` below their defaults to keep the vignette fast.
 
-``` r
-
-set.seed(20260601)
-
-n_each <- 150L
-true_means <- cbind(c(-2, 0), c(2, 0))
-true_cov <- diag(2)
-x <- rbind(
-  mvnfast::rmvn(n_each, mu = true_means[, 1L], sigma = true_cov),
-  mvnfast::rmvn(n_each, mu = true_means[, 2L], sigma = true_cov)
-)
-
-fit <- from_kde(
-  x, N = 2L,
-  bandwidth = "silverman",
-  is_size = 2000L, max_iter = 60L, seed = 1L,
-  validation_size = 2000L
-)
-fit
-#> <gmm_fit>: regime = "kld", K = 2, p = 2
-#>   target     : from_kde
-#>   iterations : 10
-#>   converged  : TRUE
-#>   [1] w = 0.5225, |mu| = 2.0526, tr(Sigma) = 2.7785
-#>   [2] w = 0.4775, |mu| = 1.9564, tr(Sigma) = 2.6586
-```
+\
+[`set.seed`](https://rdrr.io/r/base/Random.html)`(``20260601``)`\
+\
+`n_each`` ``<-`` ``150L`\
+`true_means`` ``<-`` `[`cbind`](https://rdrr.io/r/base/cbind.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``-``2``, ``0``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``2``, ``0``)``)`\
+`true_cov`` ``<-`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)`\
+`x`` ``<-`` `[`rbind`](https://rdrr.io/r/base/cbind.html)`(`\
+`  ``mvnfast``::`[`rmvn`](https://rdrr.io/pkg/mvnfast/man/rmvn.html)`(``n_each``, mu ``=`` ``true_means``[``, ``1L``]``, sigma ``=`` ``true_cov``)``,`\
+`  ``mvnfast``::`[`rmvn`](https://rdrr.io/pkg/mvnfast/man/rmvn.html)`(``n_each``, mu ``=`` ``true_means``[``, ``2L``]``, sigma ``=`` ``true_cov``)`\
+`)`\
+\
+`fit`` ``<-`` `[`from_kde`](https://max578.github.io/proxymix/reference/from_kde.md)`(`\
+`  ``x``, N ``=`` ``2L``,`\
+`  bandwidth ``=`` ``"silverman"``,`\
+`  is_size ``=`` ``2000L``, max_iter ``=`` ``60L``, seed ``=`` ``1L``,`\
+`  validation_size ``=`` ``2000L`\
+`)`\
+`fit`\
+`#> <gmm_fit>: regime = "kld", K = 2, p = 2`\
+`#>   target     : from_kde`\
+`#>   iterations : 10`\
+`#>   converged  : TRUE`\
+`#>   [1] w = 0.5225, |mu| = 2.0526, tr(Sigma) = 2.7785`\
+`#>   [2] w = 0.4775, |mu| = 1.9564, tr(Sigma) = 2.6586`
 
 ### The recovered groups
 
 Sorting the two fitted components by their first coordinate puts them in
 the same order as the true groups.
 
-``` r
-
-mu_hat <- vapply(fit@means, function(mu) mu, numeric(2L))
-comp_order <- order(mu_hat[1L, ])
-mu_hat <- mu_hat[, comp_order, drop = FALSE]
-weight_hat <- fit@weights[comp_order]
-mean_error <- max(abs(mu_hat - true_means))
-```
+\
+`mu_hat`` ``<-`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``fit``@``means``, ``function``(``mu``)`` ``mu``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``2L``)``)`\
+`comp_order`` ``<-`` `[`order`](https://rdrr.io/r/base/order.html)`(``mu_hat``[``1L``, ``]``)`\
+`mu_hat`` ``<-`` ``mu_hat``[``, ``comp_order``, drop ``=`` ``FALSE``]`\
+`weight_hat`` ``<-`` ``fit``@``weights``[``comp_order``]`\
+`mean_error`` ``<-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``mu_hat`` ``-`` ``true_means``)``)`
 
 | Component | Fitted $`x_1`$ | Fitted $`x_2`$ | True $`x_1`$ | True $`x_2`$ | Weight |
 |----------:|---------------:|---------------:|-------------:|-------------:|-------:|
@@ -144,22 +136,20 @@ random error due to the finite number of draws. The KL divergence on the
 draws used for fitting reads too low, because the fit was tuned to those
 draws.
 
-``` r
-
-es <- ess_summary(fit)
-print(data.frame(is_size = es$is_size, ess = round(es$ess, 1),
-                 ess_relative = round(es$ess_relative, 3),
-                 max_weight = signif(es$max_weight, 3)),
-      row.names = FALSE)
-#>  is_size  ess ess_relative max_weight
-#>     2000 1538        0.769    0.00116
-print(data.frame(validation_size = es$validation_size,
-                 validation_kld = signif(es$validation_kld, 3),
-                 validation_se = signif(fit@diagnostics$validation_mc_se, 3)),
-      row.names = FALSE)
-#>  validation_size validation_kld validation_se
-#>             2000          0.016       0.00449
-```
+\
+`es`` ``<-`` `[`ess_summary`](https://max578.github.io/proxymix/reference/ess_summary.md)`(``fit``)`\
+[`print`](https://rdrr.io/r/base/print.html)`(`[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``is_size ``=`` ``es``$``is_size``, ess ``=`` `[`round`](https://rdrr.io/r/base/Round.html)`(``es``$``ess``, ``1``)``,`\
+`                 ess_relative ``=`` `[`round`](https://rdrr.io/r/base/Round.html)`(``es``$``ess_relative``, ``3``)``,`\
+`                 max_weight ``=`` `[`signif`](https://rdrr.io/r/base/Round.html)`(``es``$``max_weight``, ``3``)``)``,`\
+`      row.names ``=`` ``FALSE``)`\
+`#>  is_size  ess ess_relative max_weight`\
+`#>     2000 1538        0.769    0.00116`\
+[`print`](https://rdrr.io/r/base/print.html)`(`[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``validation_size ``=`` ``es``$``validation_size``,`\
+`                 validation_kld ``=`` `[`signif`](https://rdrr.io/r/base/Round.html)`(``es``$``validation_kld``, ``3``)``,`\
+`                 validation_se ``=`` `[`signif`](https://rdrr.io/r/base/Round.html)`(``fit``@``diagnostics``$``validation_mc_se``, ``3``)``)``,`\
+`      row.names ``=`` ``FALSE``)`\
+`#>  validation_size validation_kld validation_se`\
+`#>             2000          0.016       0.00449`
 
 ### What the compression loses
 
@@ -170,76 +160,72 @@ difference between the probabilities that the two densities give to any
 region. The squared Hellinger distance comes from 10,000 fresh draws
 from the proxy.
 
-``` r
-
-g1 <- seq(-6, 6, length.out = 160L)
-g2 <- seq(-5, 5, length.out = 140L)
-grid <- expand.grid(x1 = g1, x2 = g2)
-gm <- as.matrix(grid)
-cell <- (g1[2L] - g1[1L]) * (g2[2L] - g2[1L])
-
-grid$kde <- exp(fit@target@log_density(gm))
-grid$proxy <- dgmm(gm, fit)
-
-total_variation <- 0.5 * sum(abs(grid$kde - grid$proxy)) * cell
-hell <- hellinger_mc(fit, n_mc = 10000L, seed = 1L)
-c(total_variation = signif(total_variation, 3),
-  hellinger_sq = signif(hell$h2, 3), hellinger_se = signif(hell$se, 3))
-#> total_variation    hellinger_sq    hellinger_se 
-#>         0.06250         0.00373         0.00090
-```
+\
+`g1`` ``<-`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``6``, ``6``, length.out ``=`` ``160L``)`\
+`g2`` ``<-`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``5``, ``5``, length.out ``=`` ``140L``)`\
+`grid`` ``<-`` `[`expand.grid`](https://rdrr.io/r/base/expand.grid.html)`(``x1 ``=`` ``g1``, x2 ``=`` ``g2``)`\
+`gm`` ``<-`` `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(``grid``)`\
+`cell`` ``<-`` ``(``g1``[``2L``]`` ``-`` ``g1``[``1L``]``)`` ``*`` ``(``g2``[``2L``]`` ``-`` ``g2``[``1L``]``)`\
+\
+`grid``$``kde`` ``<-`` `[`exp`](https://rdrr.io/r/base/Log.html)`(``fit``@``target``@``log_density``(``gm``)``)`\
+`grid``$``proxy`` ``<-`` `[`dgmm`](https://max578.github.io/proxymix/reference/dgmm.md)`(``gm``, ``fit``)`\
+\
+`total_variation`` ``<-`` ``0.5`` ``*`` `[`sum`](https://rdrr.io/r/base/sum.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``grid``$``kde`` ``-`` ``grid``$``proxy``)``)`` ``*`` ``cell`\
+`hell`` ``<-`` `[`hellinger_mc`](https://max578.github.io/proxymix/reference/hellinger_mc.md)`(``fit``, n_mc ``=`` ``10000L``, seed ``=`` ``1L``)`\
+[`c`](https://rdrr.io/r/base/c.html)`(``total_variation ``=`` `[`signif`](https://rdrr.io/r/base/Round.html)`(``total_variation``, ``3``)``,`\
+`  hellinger_sq ``=`` `[`signif`](https://rdrr.io/r/base/Round.html)`(``hell``$``h2``, ``3``)``, hellinger_se ``=`` `[`signif`](https://rdrr.io/r/base/Round.html)`(``hell``$``se``, ``3``)``)`\
+`#> total_variation    hellinger_sq    hellinger_se `\
+`#>         0.06250         0.00373         0.00090`
 
 The figure shows where the two densities differ. Both are drawn on the
 log scale with the same contour levels.
 
-``` r
-
-plot_grid <- expand.grid(
-  x1 = seq(-5, 5, length.out = 80L),
-  x2 = seq(-4, 4, length.out = 60L)
-)
-pm <- as.matrix(plot_grid)
-plot_grid$kde <- fit@target@log_density(pm)
-plot_grid$proxy <- log(dgmm(pm, fit))
-
-## Shared contour levels so the two log-densities are directly comparable.
-brks <- pretty(range(c(plot_grid$kde, plot_grid$proxy), finite = TRUE), 9L)
-sample_df <- data.frame(x1 = x[, 1L], x2 = x[, 2L])
-
-ggplot2::ggplot() +
-  ggplot2::geom_point(data = sample_df, ggplot2::aes(x1, x2),
-                      colour = "grey60", alpha = 0.25, size = 0.5) +
-  ggplot2::geom_contour(
-    data = plot_grid,
-    ggplot2::aes(x1, x2, z = kde, colour = "Kernel estimate",
-                 linetype = "Kernel estimate"),
-    breaks = brks, linewidth = 0.45
-  ) +
-  ggplot2::geom_contour(
-    data = plot_grid,
-    ggplot2::aes(x1, x2, z = proxy, colour = "Mixture proxy",
-                 linetype = "Mixture proxy"),
-    breaks = brks, linewidth = 0.55
-  ) +
-  ggplot2::scale_colour_manual(
-    name = NULL,
-    values = c("Kernel estimate" = "#0072B2", "Mixture proxy" = "#D55E00")
-  ) +
-  ggplot2::scale_linetype_manual(
-    name = NULL,
-    values = c("Kernel estimate" = "solid", "Mixture proxy" = "dashed")
-  ) +
-  ggplot2::coord_equal(expand = FALSE) +
-  ggplot2::labs(
-    title = "Kernel estimate and two-component proxy",
-    subtitle = "log-density contours on shared levels",
-    x = expression(x[1]), y = expression(x[2])
-  ) +
-  ggplot2::theme_minimal(base_size = 11) +
-  ggplot2::theme(plot.title = ggplot2::element_text(face = "bold"),
-                 legend.position = "top",
-                 panel.grid.minor = ggplot2::element_blank())
-```
+\
+`plot_grid`` ``<-`` `[`expand.grid`](https://rdrr.io/r/base/expand.grid.html)`(`\
+`  x1 ``=`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``5``, ``5``, length.out ``=`` ``80L``)``,`\
+`  x2 ``=`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``4``, ``4``, length.out ``=`` ``60L``)`\
+`)`\
+`pm`` ``<-`` `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(``plot_grid``)`\
+`plot_grid``$``kde`` ``<-`` ``fit``@``target``@``log_density``(``pm``)`\
+`plot_grid``$``proxy`` ``<-`` `[`log`](https://rdrr.io/r/base/Log.html)`(`[`dgmm`](https://max578.github.io/proxymix/reference/dgmm.md)`(``pm``, ``fit``)``)`\
+\
+`## Shared contour levels so the two log-densities are directly comparable.`\
+`brks`` ``<-`` `[`pretty`](https://rdrr.io/r/base/pretty.html)`(`[`range`](https://rdrr.io/r/base/range.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``plot_grid``$``kde``, ``plot_grid``$``proxy``)``, finite ``=`` ``TRUE``)``, ``9L``)`\
+`sample_df`` ``<-`` `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``x1 ``=`` ``x``[``, ``1L``]``, x2 ``=`` ``x``[``, ``2L``]``)`\
+\
+`ggplot2``::`[`ggplot`](https://ggplot2.tidyverse.org/reference/ggplot.html)`(``)`` ``+`\
+`  ``ggplot2``::`[`geom_point`](https://ggplot2.tidyverse.org/reference/geom_point.html)`(``data ``=`` ``sample_df``, ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``x1``, ``x2``)``,`\
+`                      colour ``=`` ``"grey60"``, alpha ``=`` ``0.25``, size ``=`` ``0.5``)`` ``+`\
+`  ``ggplot2``::`[`geom_contour`](https://ggplot2.tidyverse.org/reference/geom_contour.html)`(`\
+`    data ``=`` ``plot_grid``,`\
+`    ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``x1``, ``x2``, z ``=`` ``kde``, colour ``=`` ``"Kernel estimate"``,`\
+`                 linetype ``=`` ``"Kernel estimate"``)``,`\
+`    breaks ``=`` ``brks``, linewidth ``=`` ``0.45`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`geom_contour`](https://ggplot2.tidyverse.org/reference/geom_contour.html)`(`\
+`    data ``=`` ``plot_grid``,`\
+`    ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``x1``, ``x2``, z ``=`` ``proxy``, colour ``=`` ``"Mixture proxy"``,`\
+`                 linetype ``=`` ``"Mixture proxy"``)``,`\
+`    breaks ``=`` ``brks``, linewidth ``=`` ``0.55`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`scale_colour_manual`](https://ggplot2.tidyverse.org/reference/scale_manual.html)`(`\
+`    name ``=`` ``NULL``,`\
+`    values ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"Kernel estimate"`` ``=`` ``"#0072B2"``, ``"Mixture proxy"`` ``=`` ``"#D55E00"``)`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`scale_linetype_manual`](https://ggplot2.tidyverse.org/reference/scale_manual.html)`(`\
+`    name ``=`` ``NULL``,`\
+`    values ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"Kernel estimate"`` ``=`` ``"solid"``, ``"Mixture proxy"`` ``=`` ``"dashed"``)`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`coord_equal`](https://ggplot2.tidyverse.org/reference/coord_fixed.html)`(``expand ``=`` ``FALSE``)`` ``+`\
+`  ``ggplot2``::`[`labs`](https://ggplot2.tidyverse.org/reference/labs.html)`(`\
+`    title ``=`` ``"Kernel estimate and two-component proxy"``,`\
+`    subtitle ``=`` ``"log-density contours on shared levels"``,`\
+`    x ``=`` `[`expression`](https://rdrr.io/r/base/expression.html)`(``x``[``1``]``)``, y ``=`` `[`expression`](https://rdrr.io/r/base/expression.html)`(``x``[``2``]``)`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`theme_minimal`](https://ggplot2.tidyverse.org/reference/ggtheme.html)`(``base_size ``=`` ``11``)`` ``+`\
+`  ``ggplot2``::`[`theme`](https://ggplot2.tidyverse.org/reference/theme.html)`(``plot.title ``=`` ``ggplot2``::`[`element_text`](https://ggplot2.tidyverse.org/reference/element.html)`(``face ``=`` ``"bold"``)``,`\
+`                 legend.position ``=`` ``"top"``,`\
+`                 panel.grid.minor ``=`` ``ggplot2``::`[`element_blank`](https://ggplot2.tidyverse.org/reference/element.html)`(``)``)`
 
 ![Contour plot of the kernel-density log-density and the
 Gaussian-mixture proxy log-density on a planar grid, with sample points
@@ -262,15 +248,13 @@ result is a mixture with the proxy’s two components, and
 [`rgmm()`](https://max578.github.io/proxymix/reference/rgmm.md) draws
 from it in one call.
 
-``` r
-
-slice <- gmm_conditionalise(fit, given = c(NA, 0))
-draws <- rgmm(200L, slice)
-c(components = gmm_n_components(slice), dimension = gmm_dim(slice),
-  draws = nrow(draws))
-#> components  dimension      draws 
-#>          2          1        200
-```
+\
+`slice`` ``<-`` `[`gmm_conditionalise`](https://max578.github.io/proxymix/reference/gmm_conditionalise.md)`(``fit``, given ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``NA``, ``0``)``)`\
+`draws`` ``<-`` `[`rgmm`](https://max578.github.io/proxymix/reference/rgmm.md)`(``200L``, ``slice``)`\
+[`c`](https://rdrr.io/r/base/c.html)`(``components ``=`` `[`gmm_n_components`](https://max578.github.io/proxymix/reference/gmm_n_components.md)`(``slice``)``, dimension ``=`` `[`gmm_dim`](https://max578.github.io/proxymix/reference/gmm_dim.md)`(``slice``)``,`\
+`  draws ``=`` `[`nrow`](https://rdrr.io/r/base/nrow.html)`(``draws``)``)`\
+`#> components  dimension      draws `\
+`#>          2          1        200`
 
 ### The effect of the bandwidth
 
@@ -281,21 +265,19 @@ the standard error of the KL divergence is at most a tenth of the
 estimate, or at most 0.001 when the estimate is below 0.01, up to ten
 times `is_size` draws.
 
-``` r
-
-bandwidth_grid <- c(0.2, 0.5, 1.0)
-fits <- lapply(bandwidth_grid, function(h) {
-  from_kde(x, N = 2L, bandwidth = h,
-           is_size = 1500L, max_iter = 40L, seed = 1L)
-})
-sweep_is <- fits[[1L]]@diagnostics$is_size
-sweep_vs <- vapply(fits, function(f) f@diagnostics$validation_size,
-                   numeric(1L))
-sweep_val <- vapply(fits, function(f) f@diagnostics$validation_kld,
-                    numeric(1L))
-sweep_se <- vapply(fits, function(f) f@diagnostics$validation_mc_se,
-                   numeric(1L))
-```
+\
+`bandwidth_grid`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``0.2``, ``0.5``, ``1.0``)`\
+`fits`` ``<-`` `[`lapply`](https://rdrr.io/r/base/lapply.html)`(``bandwidth_grid``, ``function``(``h``)`` ``{`\
+`  `[`from_kde`](https://max578.github.io/proxymix/reference/from_kde.md)`(``x``, N ``=`` ``2L``, bandwidth ``=`` ``h``,`\
+`           is_size ``=`` ``1500L``, max_iter ``=`` ``40L``, seed ``=`` ``1L``)`\
+`}``)`\
+`sweep_is`` ``<-`` ``fits``[[``1L``]``]``@``diagnostics``$``is_size`\
+`sweep_vs`` ``<-`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``fits``, ``function``(``f``)`` ``f``@``diagnostics``$``validation_size``,`\
+`                   `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)`\
+`sweep_val`` ``<-`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``fits``, ``function``(``f``)`` ``f``@``diagnostics``$``validation_kld``,`\
+`                    `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)`\
+`sweep_se`` ``<-`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``fits``, ``function``(``f``)`` ``f``@``diagnostics``$``validation_mc_se``,`\
+`                   `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)`
 
 | Bandwidth | Effective sample size | Largest weight | Spread of left component | Fresh draws | KL, fresh draws | Standard error |
 |---:|---:|---:|---:|---:|---:|---:|
@@ -305,7 +287,7 @@ sweep_se <- vapply(fits, function(f) f@diagnostics$validation_mc_se,
 
 The same sample compressed with three bandwidths, at 1500 weighted
 draws. The spread of the left-hand component is the sum of its two
-variances. {.table style="width:100%;"}
+variances. {.table style="width:99%;"}
 
 ### Comparison with ks, np, KernSmooth, mclust and mixtools
 
@@ -378,66 +360,64 @@ code for a single dataset. It needs ks, np, mclust and mixtools from
 CRAN (KernSmooth ships with R), and it is not run when this vignette is
 built.
 
-``` r
-
-library(proxymix)
-library(mclust)
-library(mixtools)
-library(np)
-options(np.messages = FALSE)
-
-# one dataset of 500 points from a mixture of three normal distributions
-truth <- list(
-  weights = c(0.35, 0.35, 0.30),
-  means = list(c(-2, 0), c(2, 1), c(0, 4)),
-  covs = list(diag(2), matrix(c(1, 0.5, 0.5, 1), 2L), 0.6 * diag(2))
-)
-set.seed(1L)
-n <- 500L
-k <- sample.int(3L, n, replace = TRUE, prob = truth$weights)
-x <- matrix(NA_real_, n, 2L)
-for (j in seq_len(3L)) {
-  s <- k == j
-  x[s, ] <- mvnfast::rmvn(sum(s), truth$means[[j]], truth$covs[[j]])
-}
-
-# integrated squared error against the true density, on a grid
-g1 <- seq(-6, 6, length.out = 121L)
-g2 <- seq(-4, 8, length.out = 121L)
-grid <- as.matrix(expand.grid(x1 = g1, x2 = g2))
-cell <- (g1[2L] - g1[1L]) * (g2[2L] - g2[1L])
-f_true <- Reduce(`+`, lapply(seq_len(3L), function(j) {
-  truth$weights[j] * mvnfast::dmvn(grid, truth$means[[j]], truth$covs[[j]])
-}))
-ise <- function(f_hat) sum((f_hat - f_true)^2) * cell
-as_gmm <- function(w, mu, sigma) {
-  gmm(weights = w, means = mu, covariances = sigma)
-}
-
-# ks with its diagonal plug-in bandwidth, and proxymix compressing the same estimate
-h <- sqrt(diag(ks::Hpi.diag(x)))
-kd <- ks::kde(x, H = diag(h^2), eval.points = grid)
-f <- from_kde(x, N = 3L, bandwidth = h, is_size = 20000L, seed = 1L)
-
-mc <- Mclust(x, verbose = FALSE)
-g_mc <- as_gmm(
-  mc$parameters$pro,
-  lapply(seq_len(mc$G), function(j) mc$parameters$mean[, j]),
-  lapply(seq_len(mc$G), function(j) mc$parameters$variance$sigma[, , j])
-)
-mt <- mvnormalmixEM(x, k = 3L)
-nd <- npudens(npudensbw(x))
-f_np <- predict(nd, newdata = data.frame(grid))
-bk <- KernSmooth::bkde2D(x, bandwidth = h, gridsize = c(121L, 121L),
-                         range.x = list(range(g1), range(g2)))
-
-1000 * c(ks = ise(kd$estimate),
-         proxymix = ise(dgmm(grid, f)),
-         mclust = ise(dgmm(grid, g_mc)),
-         mixtools = ise(dgmm(grid, as_gmm(mt$lambda, mt$mu, mt$sigma))),
-         np = ise(f_np),
-         KernSmooth = ise(as.vector(bk$fhat)))
-```
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`mclust`](https://mclust-org.github.io/mclust/)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`mixtools`](https://github.com/dsy109/mixtools)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`np`](https://github.com/JeffreyRacine/R-Package-np)`)`\
+[`options`](https://rdrr.io/r/base/options.html)`(``np.messages ``=`` ``FALSE``)`\
+\
+`# one dataset of 500 points from a mixture of three normal distributions`\
+`truth`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(`\
+`  weights ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``0.35``, ``0.35``, ``0.30``)``,`\
+`  means ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``-``2``, ``0``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``2``, ``1``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``4``)``)``,`\
+`  covs ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``, `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``1``, ``0.5``, ``0.5``, ``1``)``, ``2L``)``, ``0.6`` ``*`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``)`\
+`)`\
+[`set.seed`](https://rdrr.io/r/base/Random.html)`(``1L``)`\
+`n`` ``<-`` ``500L`\
+`k`` ``<-`` `[`sample.int`](https://rdrr.io/r/base/sample.html)`(``3L``, ``n``, replace ``=`` ``TRUE``, prob ``=`` ``truth``$``weights``)`\
+`x`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``NA_real_``, ``n``, ``2L``)`\
+`for`` ``(``j`` ``in`` `[`seq_len`](https://rdrr.io/r/base/seq.html)`(``3L``)``)`` ``{`\
+`  ``s`` ``<-`` ``k`` ``==`` ``j`\
+`  ``x``[``s``, ``]`` ``<-`` ``mvnfast``::`[`rmvn`](https://rdrr.io/pkg/mvnfast/man/rmvn.html)`(`[`sum`](https://rdrr.io/r/base/sum.html)`(``s``)``, ``truth``$``means``[[``j``]``]``, ``truth``$``covs``[[``j``]``]``)`\
+`}`\
+\
+`# integrated squared error against the true density, on a grid`\
+`g1`` ``<-`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``6``, ``6``, length.out ``=`` ``121L``)`\
+`g2`` ``<-`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``4``, ``8``, length.out ``=`` ``121L``)`\
+`grid`` ``<-`` `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(`[`expand.grid`](https://rdrr.io/r/base/expand.grid.html)`(``x1 ``=`` ``g1``, x2 ``=`` ``g2``)``)`\
+`cell`` ``<-`` ``(``g1``[``2L``]`` ``-`` ``g1``[``1L``]``)`` ``*`` ``(``g2``[``2L``]`` ``-`` ``g2``[``1L``]``)`\
+`f_true`` ``<-`` `[`Reduce`](https://rdrr.io/r/base/funprog.html)`(``` `+` ```, `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``3L``)``, ``function``(``j``)`` ``{`\
+`  ``truth``$``weights``[``j``]`` ``*`` ``mvnfast``::`[`dmvn`](https://rdrr.io/pkg/mvnfast/man/dmvn.html)`(``grid``, ``truth``$``means``[[``j``]``]``, ``truth``$``covs``[[``j``]``]``)`\
+`}``)``)`\
+`ise`` ``<-`` ``function``(``f_hat``)`` `[`sum`](https://rdrr.io/r/base/sum.html)`(``(``f_hat`` ``-`` ``f_true``)``^``2``)`` ``*`` ``cell`\
+`as_gmm`` ``<-`` ``function``(``w``, ``mu``, ``sigma``)`` ``{`\
+`  `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(``weights ``=`` ``w``, means ``=`` ``mu``, covariances ``=`` ``sigma``)`\
+`}`\
+\
+`# ks with its diagonal plug-in bandwidth, and proxymix compressing the same estimate`\
+`h`` ``<-`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(`[`diag`](https://rdrr.io/r/base/diag.html)`(``ks``::`[`Hpi.diag`](https://mvstat.net/ks/reference/Hpi.html)`(``x``)``)``)`\
+`kd`` ``<-`` ``ks``::`[`kde`](https://mvstat.net/ks/reference/kde.html)`(``x``, H ``=`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``h``^``2``)``, eval.points ``=`` ``grid``)`\
+`f`` ``<-`` `[`from_kde`](https://max578.github.io/proxymix/reference/from_kde.md)`(``x``, N ``=`` ``3L``, bandwidth ``=`` ``h``, is_size ``=`` ``20000L``, seed ``=`` ``1L``)`\
+\
+`mc`` ``<-`` `[`Mclust`](https://mclust-org.github.io/mclust/reference/Mclust.html)`(``x``, verbose ``=`` ``FALSE``)`\
+`g_mc`` ``<-`` ``as_gmm``(`\
+`  ``mc``$``parameters``$``pro``,`\
+`  `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``mc``$``G``)``, ``function``(``j``)`` ``mc``$``parameters``$``mean``[``, ``j``]``)``,`\
+`  `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``mc``$``G``)``, ``function``(``j``)`` ``mc``$``parameters``$``variance``$``sigma``[``, , ``j``]``)`\
+`)`\
+`mt`` ``<-`` `[`mvnormalmixEM`](https://rdrr.io/pkg/mixtools/man/mvnormalmixEM.html)`(``x``, k ``=`` ``3L``)`\
+`nd`` ``<-`` `[`npudens`](https://rdrr.io/pkg/np/man/np.density.html)`(`[`npudensbw`](https://rdrr.io/pkg/np/man/np.density.bw.html)`(``x``)``)`\
+`f_np`` ``<-`` `[`predict`](https://rdrr.io/r/stats/predict.html)`(``nd``, newdata ``=`` `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``grid``)``)`\
+`bk`` ``<-`` ``KernSmooth``::`[`bkde2D`](https://rdrr.io/pkg/KernSmooth/man/bkde2D.html)`(``x``, bandwidth ``=`` ``h``, gridsize ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``121L``, ``121L``)``,`\
+`                         range.x ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`range`](https://rdrr.io/r/base/range.html)`(``g1``)``, `[`range`](https://rdrr.io/r/base/range.html)`(``g2``)``)``)`\
+\
+`1000`` ``*`` `[`c`](https://rdrr.io/r/base/c.html)`(``ks ``=`` ``ise``(``kd``$``estimate``)``,`\
+`         proxymix ``=`` ``ise``(`[`dgmm`](https://max578.github.io/proxymix/reference/dgmm.md)`(``grid``, ``f``)``)``,`\
+`         mclust ``=`` ``ise``(`[`dgmm`](https://max578.github.io/proxymix/reference/dgmm.md)`(``grid``, ``g_mc``)``)``,`\
+`         mixtools ``=`` ``ise``(`[`dgmm`](https://max578.github.io/proxymix/reference/dgmm.md)`(``grid``, ``as_gmm``(``mt``$``lambda``, ``mt``$``mu``, ``mt``$``sigma``)``)``)``,`\
+`         np ``=`` ``ise``(``f_np``)``,`\
+`         KernSmooth ``=`` ``ise``(`[`as.vector`](https://rdrr.io/r/base/vector.html)`(``bk``$``fhat``)``)``)`
 
 The [extended version of this
 article](https://max578.github.io/proxymix/articles/extended/from_kde.html)
@@ -592,12 +572,10 @@ a simulation run under proxymix 0.16.0, ks 1.15.3, np 0.70-5, KernSmooth
 2.23-27, mclust 6.1.3 and mixtools 2.0.0.1, which took about 26 minutes
 on one core.
 
-``` r
+\
+[`sessionInfo`](https://rdrr.io/r/utils/sessionInfo.html)`(``)`
 
-sessionInfo()
 ```
-
-``` session-info
 #> R version 4.6.1 (2026-06-24)
 #> Platform: aarch64-apple-darwin23
 #> Running under: macOS Tahoe 26.6.2

@@ -102,6 +102,6 @@ m <- fit_uplift(dat, "y", "t", "x", N = 2L, regime = "sample",
 proxy_decide(m, data.frame(x = c(-1, 1)), value = 1, cost = 0.2)
 #>       id action expected_value        tau         se    flip_prob overlap_flag
 #>    <int>  <int>          <num>      <num>      <num>        <num>       <lgcl>
-#> 1:     1      0     -0.1090610 0.09093897 0.08741388 1.060815e-01        FALSE
-#> 2:     2      1      0.7190012 0.91900122 0.08274963 1.830228e-18        FALSE
+#> 1:     1      0     -0.1090608 0.09093917 0.08741386 1.060819e-01        FALSE
+#> 2:     2      1      0.7190010 0.91900105 0.08274962 1.830241e-18        FALSE
 ```

@@ -740,8 +740,8 @@ reference, and is not timed.</caption>
 <tr class="even">
 <td align="left">proxymix, regime (ii)</td>
 <td align="left">the training half</td>
-<td align="right">-4.311</td>
-<td align="right">0.01</td>
+<td align="right">-4.312</td>
+<td align="right">0.00</td>
 </tr>
 <tr class="odd">
 <td align="left">mclust</td>
@@ -753,19 +753,19 @@ reference, and is not timed.</caption>
 <td align="left">mixtools</td>
 <td align="left">the training half</td>
 <td align="right">-4.312</td>
-<td align="right">0.19</td>
+<td align="right">0.17</td>
 </tr>
 <tr class="odd">
 <td align="left">flexmix</td>
 <td align="left">the training half</td>
 <td align="right">-4.308</td>
-<td align="right">0.09</td>
+<td align="right">0.07</td>
 </tr>
 <tr class="even">
 <td align="left">proxymix, regime (iii), on the KDE</td>
 <td align="left">the KDE as a density</td>
 <td align="right">-4.277</td>
-<td align="right">0.07</td>
+<td align="right">0.06</td>
 </tr>
 <tr class="odd">
 <td align="left">NUTS draws from the KDE, then mclust</td>
@@ -821,13 +821,13 @@ the upper levels.
 </p>
 </div>
 <p>The four regime-(ii) fits are within 0.011 of one another on the
-held-out half: proxymix gives -4.311, mclust -4.318 with its VVE
+held-out half: proxymix gives -4.312, mclust -4.318 with its VVE
 covariance structure, mixtools -4.312 and flexmix -4.308. The fits took
-0.01, 0.01, 0.19 and 0.09 s in that order. The single Gaussian of regime
+0.00, 0.01, 0.17 and 0.07 s in that order. The single Gaussian of regime
 (i) scores -4.697, the cost of one component for two clusters.</p>
 <p>Regime (iii) never saw the training points directly. From the kernel
 density estimate alone it reaches -4.277, beside the estimate’s own
--4.280, in 0.07 s with an effective sample size of 1725 of 4,000
+-4.280, in 0.06 s with an effective sample size of 1725 of 4,000
 importance draws. Its larger component carries weight 0.617, against
 0.610 for the regime-(ii) fit to the same half. The sampling route
 reaches -4.281 from 100,000 draws in 151 s for the whole reference

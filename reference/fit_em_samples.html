@@ -105,7 +105,9 @@ optional multi-start, and monotone-log-likelihood checking.</p>
 
 
 <dt id="arg-ridge-eps">ridge_eps<a class="anchor" aria-label="anchor" href="#arg-ridge-eps"></a></dt>
-<dd><p>Ridge added to each component covariance at every M-step.</p></dd>
+<dd><p>Relative ridge. At every M-step, <code>ridge_eps</code> times
+each coordinate's sample variance is added to that coordinate's
+diagonal entry of each component covariance.</p></dd>
 
 
 <dt id="arg-n-starts">n_starts<a class="anchor" aria-label="anchor" href="#arg-n-starts"></a></dt>

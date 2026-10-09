@@ -220,7 +220,7 @@ every operation below.</caption>
 </tr>
 <tr class="even">
 <td align="left">effective sample size</td>
-<td align="left">2427.3</td>
+<td align="left">2427.8</td>
 </tr>
 <tr class="odd">
 <td align="left">effective sample size, relative</td>
@@ -228,11 +228,11 @@ every operation below.</caption>
 </tr>
 <tr class="even">
 <td align="left">smallest per-component effective size</td>
-<td align="left">1728.4</td>
+<td align="left">1728.8</td>
 </tr>
 <tr class="odd">
 <td align="left">largest weight</td>
-<td align="left">0.000538</td>
+<td align="left">0.000537</td>
 </tr>
 <tr class="even">
 <td align="left">support fraction</td>
@@ -244,7 +244,7 @@ every operation below.</caption>
 </tr>
 <tr class="even">
 <td align="left">held-out validation gap</td>
-<td align="left">0.00344</td>
+<td align="left">0.00342</td>
 </tr>
 </tbody>
 </table>
@@ -289,7 +289,7 @@ interval.</p>
 <span>  p_slope_positive <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">signif</a></span><span class="op">(</span><span class="va">p_positive</span>, <span class="fl">2</span><span class="op">)</span>,</span>
 <span>  lower <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">interval</span><span class="op">[</span><span class="fl">1L</span><span class="op">]</span>, <span class="fl">3</span><span class="op">)</span>, upper <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">interval</span><span class="op">[</span><span class="fl">2L</span><span class="op">]</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; p_slope_negative p_slope_positive            lower            upper </span></span>
-<span><span class="co">#&gt;         0.999920         0.000083        -8.073000        -2.534000</span></span></code></pre></div>
+<span><span class="co">#&gt;         0.999920         0.000084        -8.072000        -2.533000</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="an-independent-reference-for-the-marginal">An independent reference for the marginal<a class="anchor" aria-label="anchor" href="#an-independent-reference-for-the-marginal"></a>
@@ -399,7 +399,7 @@ the same normalising constant.</p>
 <span>  proxy <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">signif</a></span><span class="op">(</span><span class="va">p_positive</span>, <span class="fl">2</span><span class="op">)</span>,</span>
 <span>  ratio <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">signif</a></span><span class="op">(</span><span class="va">p_positive</span> <span class="op">/</span> <span class="va">p_positive_quad</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; quadrature      proxy      ratio </span></span>
-<span><span class="co">#&gt;    8.5e-08    8.3e-05    9.8e+02</span></span></code></pre></div>
+<span><span class="co">#&gt;    8.5e-08    8.4e-05    9.8e+02</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="error-bars-on-the-proxy-itself">Error bars on the proxy itself<a class="anchor" aria-label="anchor" href="#error-bars-on-the-proxy-itself"></a>
@@ -448,7 +448,7 @@ of one.</p>
 <tr class="odd">
 <td align="left">posterior mean, intercept</td>
 <td align="right">14.808</td>
-<td align="right">14.647</td>
+<td align="right">14.646</td>
 <td align="right">14.972</td>
 </tr>
 <tr class="even">
@@ -471,8 +471,8 @@ of one.</p>
 <h2 id="interpretation">Interpretation<a class="anchor" aria-label="anchor" href="#interpretation"></a>
 </h2>
 <p>The certificate is the first thing to read, and it clears the fit.
-The effective sample size is 2427 out of 3000 importance draws, or 81
-per cent, with the leanest single component still carrying 1728
+The effective sample size is 2428 out of 3000 importance draws, or 81
+per cent, with the leanest single component still carrying 1729
 effective draws and no single weight above 0.00054. The fit is not
 flagged degenerate. The held-out validation gap of 0.0034 is about 3
 Monte Carlo standard errors, detectable but small next to the divergence
@@ -496,7 +496,7 @@ probability that the slope is negative is 99.992 per cent, and the
 central 90 per cent interval for the slope runs from -8.07 to -2.53
 log-odds per 1000 lb: heavier cars are almost certainly less likely to
 be manual, and the effect size is not small. The proxy puts
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>8.3</mn><mo>×</mo><msup><mn>10</mn><mrow><mi>−</mi><mn>5</mn></mrow></msup></mrow><annotation encoding="application/x-tex">8.3 \times 10^{-5}</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>8.4</mn><mo>×</mo><msup><mn>10</mn><mrow><mi>−</mi><mn>5</mn></mrow></msup></mrow><annotation encoding="application/x-tex">8.4 \times 10^{-5}</annotation></semantics></math>
 on a positive slope, and quadrature of the exact posterior gives
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>8.5</mn><mo>×</mo><msup><mn>10</mn><mrow><mi>−</mi><mn>8</mn></mrow></msup></mrow><annotation encoding="application/x-tex">8.5 \times 10^{-8}</annotation></semantics></math>,
 so the proxy’s value is too large by a factor of about 1000. On the
@@ -817,7 +817,7 @@ mixture and off a normal approximation.</p>
 <span>                    settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>iterations <span class="op">=</span> <span class="fl">15000L</span>, message <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">[[</span><span class="st">"elapsed"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">summ_bt</span> <span class="op">&lt;-</span> <span class="fu">summarise_draws</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/BayesianTools/man/getSample.html" class="external-link">getSample</a></span><span class="op">(</span><span class="va">bt_aff</span>, start <span class="op">=</span> <span class="fl">1000L</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<table style="width:100%;" class="table">
+<table style="width:99%;" class="table">
 <caption>Error of each method against the 40 000-draw NUTS reference on
 the Affairs probit posterior: mean, SD and interval endpoints in units
 of the reference posterior SD, averaged over the five coefficients;
@@ -861,11 +861,11 @@ estimate, so its log-evidence cell is empty.</caption>
 <tr class="even">
 <td align="left">proxymix</td>
 <td align="right">0.020</td>
-<td align="right">0.007</td>
-<td align="right">0.030</td>
-<td align="right">0.0002</td>
-<td align="right">0.0009</td>
-<td align="right">2.52</td>
+<td align="right">0.006</td>
+<td align="right">0.029</td>
+<td align="right">0.0001</td>
+<td align="right">0.0008</td>
+<td align="right">2.00</td>
 <td align="right">5</td>
 </tr>
 <tr class="odd">
@@ -885,7 +885,7 @@ estimate, so its log-evidence cell is empty.</caption>
 <td align="right">0.015</td>
 <td align="right">0.0004</td>
 <td align="right">0.0035</td>
-<td align="right">2.47</td>
+<td align="right">1.90</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
@@ -895,7 +895,7 @@ estimate, so its log-evidence cell is empty.</caption>
 <td align="right">2.296</td>
 <td align="right">0.0378</td>
 <td align="right">–</td>
-<td align="right">1.28</td>
+<td align="right">1.14</td>
 <td align="right">2</td>
 </tr>
 </tbody>
@@ -918,9 +918,9 @@ two runs has a standard error of about 0.027 reference standard
 deviations. Its means differ from the reference by 0.017 on average, and
 bridge sampling on its draws is 0.0003 off the reference evidence.
 proxymix’s means are 0.020 reference standard deviations from the
-reference and its endpoints 0.030, its evidence is 0.0009 off the
+reference and its endpoints 0.029, its evidence is 0.0008 off the
 bridge-sampling value, and its certificate reports a relative effective
-sample size of 0.63 with 1 monotonicity notice over the run. INLA’s
+sample size of 0.64 with 1 monotonicity notice over the run. INLA’s
 means are 0.008 off and its endpoints 0.015, the closest of the
 approximations. The Laplace approximation is 0.032 off on the means,
 because it reports the mode, and 0.0035 off on the evidence. DEzs
@@ -928,10 +928,10 @@ because it reports the mode, and 0.0035 off on the evidence. DEzs
 the first 1000 per chain discarded, returns standard deviations 1.228
 reference standard deviations off on this posterior, whose covariates
 are on their raw scales. proxymix’s 95 per cent ensemble intervals on
-the posterior means contain the reference mean for three of the five
-coefficients, at a further 0.6 s. On wall time the order, fastest first,
-is the Laplace approximation (0.01 s), DEzs (1.28 s), INLA (2.47 s),
-proxymix (2.52 s) and the 4000-draw NUTS run (26.94 s).</p>
+the posterior means contain the reference mean for five of the five
+coefficients, at a further 0.5 s. On wall time the order, fastest first,
+is the Laplace approximation (0.01 s), DEzs (1.14 s), INLA (1.90 s),
+proxymix (2.00 s) and the 4000-draw NUTS run (26.94 s).</p>
 </div>
 <div class="section level3">
 <h3 id="a-simulation-benchmark">A simulation benchmark<a class="anchor" aria-label="anchor" href="#a-simulation-benchmark"></a>

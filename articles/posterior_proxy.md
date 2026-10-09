@@ -1,14 +1,10 @@
 # Compressing a Bayesian posterior you can evaluate but not sample
 
-``` r
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`
 
-library(proxymix)
-```
-
-``` r
-
-has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
-```
+\
+`has_ggplot2`` ``<-`` `[`requireNamespace`](https://rdrr.io/r/base/ns-load.html)`(``"ggplot2"``, quietly ``=`` ``TRUE``)`
 
 ## The problem
 
@@ -88,26 +84,24 @@ $`\beta`$. Here the prior is flat: it gives the same weight to every
 value of the parameters. The log-posterior then equals the
 log-likelihood up to a constant.
 
-``` r
-
-set.seed(20260705)
-
-y <- mtcars$am
-w <- mtcars$wt
-
-log_post <- function(theta) {
-  if (is.null(dim(theta))) theta <- matrix(theta, ncol = 2L)
-  eta <- outer(rep(1, length(y)), theta[, 1L]) + outer(w, theta[, 2L])
-  colSums(y * eta - log1p(exp(eta)))
-}
-
-tgt <- gmm_target(
-  n_dim = 2L,
-  log_density = log_post,
-  normalised = FALSE,
-  name = "logistic(am ~ wt)"
-)
-```
+\
+[`set.seed`](https://rdrr.io/r/base/Random.html)`(``20260705``)`\
+\
+`y`` ``<-`` ``mtcars``$``am`\
+`w`` ``<-`` ``mtcars``$``wt`\
+\
+`log_post`` ``<-`` ``function``(``theta``)`` ``{`\
+`  ``if`` ``(`[`is.null`](https://rdrr.io/r/base/NULL.html)`(`[`dim`](https://rdrr.io/r/base/dim.html)`(``theta``)``)``)`` ``theta`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``theta``, ncol ``=`` ``2L``)`\
+`  ``eta`` ``<-`` `[`outer`](https://rdrr.io/r/base/outer.html)`(`[`rep`](https://rdrr.io/r/base/rep.html)`(``1``, `[`length`](https://rdrr.io/r/base/length.html)`(``y``)``)``, ``theta``[``, ``1L``]``)`` ``+`` `[`outer`](https://rdrr.io/r/base/outer.html)`(``w``, ``theta``[``, ``2L``]``)`\
+`  `[`colSums`](https://rdrr.io/pkg/Matrix/man/colSums-methods.html)`(``y`` ``*`` ``eta`` ``-`` `[`log1p`](https://rdrr.io/r/base/Log.html)`(`[`exp`](https://rdrr.io/r/base/Log.html)`(``eta``)``)``)`\
+`}`\
+\
+`tgt`` ``<-`` `[`gmm_target`](https://max578.github.io/proxymix/reference/gmm_target.md)`(`\
+`  n_dim ``=`` ``2L``,`\
+`  log_density ``=`` ``log_post``,`\
+`  normalised ``=`` ``FALSE``,`\
+`  name ``=`` ``"logistic(am ~ wt)"`\
+`)`
 
 ### Fit the proxy
 
@@ -124,45 +118,41 @@ The fitting criterion can then drop from one round to the next, and the
 package reports this in a warning. The handler below collects the
 warning and prints its first line.
 
-``` r
-
-mle <- stats::glm(am ~ wt, data = mtcars, family = stats::binomial())
-q0 <- proposal_mvt(2L, mean = stats::coef(mle),
-                   sigma = 9 * stats::vcov(mle), df = 5)
-
-fit_notes <- character(0)
-fit <- withCallingHandlers(
-  fit_proxymix(tgt, N = 2L, regime = "kld", proposal = q0,
-               is_size = 3000L, max_iter = 60L, seed = 1L,
-               adapt = "pmc"),
-  proxymix_nonmonotone = function(cond) {
-    fit_notes <<- c(fit_notes, conditionMessage(cond))
-    invokeRestart("muffleWarning")
-  }
-)
-cat(sub("\n.*", "", fit_notes), sep = "\n")
-#> The importance-weighted EM objective decreased by 0.0716 during fitting.
-```
+\
+`mle`` ``<-`` ``stats``::`[`glm`](https://rdrr.io/r/stats/glm.html)`(``am`` ``~`` ``wt``, data ``=`` ``mtcars``, family ``=`` ``stats``::`[`binomial`](https://rdrr.io/r/stats/family.html)`(``)``)`\
+`q0`` ``<-`` `[`proposal_mvt`](https://max578.github.io/proxymix/reference/proposal_uniform.md)`(``2L``, mean ``=`` ``stats``::`[`coef`](https://rdrr.io/r/stats/coef.html)`(``mle``)``,`\
+`                   sigma ``=`` ``9`` ``*`` ``stats``::`[`vcov`](https://rdrr.io/r/stats/vcov.html)`(``mle``)``, df ``=`` ``5``)`\
+\
+`fit_notes`` ``<-`` `[`character`](https://rdrr.io/r/base/character.html)`(``0``)`\
+`fit`` ``<-`` `[`withCallingHandlers`](https://rdrr.io/r/base/conditions.html)`(`\
+`  `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(``tgt``, N ``=`` ``2L``, regime ``=`` ``"kld"``, proposal ``=`` ``q0``,`\
+`               is_size ``=`` ``3000L``, max_iter ``=`` ``60L``, seed ``=`` ``1L``,`\
+`               adapt ``=`` ``"pmc"``)``,`\
+`  proxymix_nonmonotone ``=`` ``function``(``cond``)`` ``{`\
+`    ``fit_notes`` ``<<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``fit_notes``, `[`conditionMessage`](https://rdrr.io/r/base/conditions.html)`(``cond``)``)`\
+`    `[`invokeRestart`](https://rdrr.io/r/base/conditions.html)`(``"muffleWarning"``)`\
+`  ``}`\
+`)`\
+[`cat`](https://rdrr.io/r/base/cat.html)`(`[`sub`](https://rdrr.io/r/base/grep.html)`(``"\n.*"``, ``""``, ``fit_notes``)``, sep ``=`` ``"\n"``)`\
+`#> The importance-weighted EM objective decreased by 0.0716 during fitting.`
 
 ### Check the fit before using it
 
 The certificate shows whether a few trial points carry most of the
 weight. If they do, the fit rests on those few points and is unstable.
 
-``` r
-
-cert <- gmm_fit_quality(fit)
-```
+\
+`cert`` ``<-`` `[`gmm_fit_quality`](https://max578.github.io/proxymix/reference/gmm_fit_quality.md)`(``fit``)`
 
 | Check                                                 | Value    |
 |:------------------------------------------------------|:---------|
 | fitting method                                        | kld      |
 | rounds settled before the limit                       | TRUE     |
 | weights collapsed onto a few draws                    | FALSE    |
-| effective sample size                                 | 2427.3   |
+| effective sample size                                 | 2427.8   |
 | effective sample size as a share of all draws         | 0.809    |
-| smallest effective sample size of any component       | 1728.4   |
-| largest share of the weight held by one draw          | 0.000538 |
+| smallest effective sample size of any component       | 1728.8   |
+| largest share of the weight held by one draw          | 0.000537 |
 | share of draws where the posterior could be evaluated | 1        |
 
 The fit certificate returned by
@@ -182,22 +172,20 @@ Laplace approximation (Tierney and Kadane, 1986) gives a check that does
 not use the proxy. It replaces the posterior by one normal distribution
 centred at its peak, with a spread set by the curvature there.
 
-``` r
-
-ev <- gmm_evidence(fit, n = 4000L, seed = 2L)
-
-## Laplace approximation: log f(theta_hat) + (d/2) log(2 pi)
-## - (1/2) log det(-Hessian).
-H <- -solve(stats::vcov(mle))
-log_z_laplace <- log_post(matrix(stats::coef(mle), nrow = 1L)) +
-  log(2 * pi) -
-  0.5 * as.numeric(determinant(-H, logarithm = TRUE)$modulus)
-
-c(proxymix = round(ev$log_z, 3), se = signif(ev$se_log_z, 2),
-  laplace = round(log_z_laplace, 3))
-#> proxymix       se  laplace 
-#>  -7.8360   0.0024  -7.9270
-```
+\
+`ev`` ``<-`` `[`gmm_evidence`](https://max578.github.io/proxymix/reference/gmm_evidence.md)`(``fit``, n ``=`` ``4000L``, seed ``=`` ``2L``)`\
+\
+`## Laplace approximation: log f(theta_hat) + (d/2) log(2 pi)`\
+`## - (1/2) log det(-Hessian).`\
+`H`` ``<-`` ``-`[`solve`](https://rdrr.io/pkg/Matrix/man/solve-methods.html)`(``stats``::`[`vcov`](https://rdrr.io/r/stats/vcov.html)`(``mle``)``)`\
+`log_z_laplace`` ``<-`` ``log_post``(`[`matrix`](https://rdrr.io/r/base/matrix.html)`(``stats``::`[`coef`](https://rdrr.io/r/stats/coef.html)`(``mle``)``, nrow ``=`` ``1L``)``)`` ``+`\
+`  `[`log`](https://rdrr.io/r/base/Log.html)`(``2`` ``*`` ``pi``)`` ``-`\
+`  ``0.5`` ``*`` `[`as.numeric`](https://rdrr.io/r/base/numeric.html)`(`[`determinant`](https://rdrr.io/r/base/det.html)`(``-``H``, logarithm ``=`` ``TRUE``)``$``modulus``)`\
+\
+[`c`](https://rdrr.io/r/base/c.html)`(``proxymix ``=`` `[`round`](https://rdrr.io/r/base/Round.html)`(``ev``$``log_z``, ``3``)``, se ``=`` `[`signif`](https://rdrr.io/r/base/Round.html)`(``ev``$``se_log_z``, ``2``)``,`\
+`  laplace ``=`` `[`round`](https://rdrr.io/r/base/Round.html)`(``log_z_laplace``, ``3``)``)`\
+`#> proxymix       se  laplace `\
+`#>  -7.8360   0.0024  -7.9270`
 
 The closeness of the proxy to the posterior is measured by the
 Kullback-Leibler (KL) divergence, which is zero when the two
@@ -208,15 +196,13 @@ Subtracting the log normalising constant from
 [`gmm_evidence()`](https://max578.github.io/proxymix/reference/gmm_evidence.md)
 leaves the KL divergence itself.
 
-``` r
-
-kl_fresh <- fit@diagnostics$validation_kld - ev$log_z
-# the held-out estimate and log Z come from separate sets of draws
-kl_fresh_se <- sqrt(fit@diagnostics$validation_mc_se^2 + ev$se_log_z^2)
-c(kl = signif(kl_fresh, 2), se = signif(kl_fresh_se, 1))
-#>    kl    se 
-#> 0.017 0.003
-```
+\
+`kl_fresh`` ``<-`` ``fit``@``diagnostics``$``validation_kld`` ``-`` ``ev``$``log_z`\
+`# the held-out estimate and log Z come from separate sets of draws`\
+`kl_fresh_se`` ``<-`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(``fit``@``diagnostics``$``validation_mc_se``^``2`` ``+`` ``ev``$``se_log_z``^``2``)`\
+[`c`](https://rdrr.io/r/base/c.html)`(``kl ``=`` `[`signif`](https://rdrr.io/r/base/Round.html)`(``kl_fresh``, ``2``)``, se ``=`` `[`signif`](https://rdrr.io/r/base/Round.html)`(``kl_fresh_se``, ``1``)``)`\
+`#>    kl    se `\
+`#> 0.017 0.003`
 
 ### Read the answers off the proxy
 
@@ -224,16 +210,14 @@ The distribution of the slope on its own, the probability that the slope
 is negative, and a central 90 per cent interval for the slope all come
 from exact formulas for the mixture.
 
-``` r
-
-slope <- gmm_marginalise(fit, keep = 2L)
-p_negative <- pgmm(0, slope)
-interval <- qgmm(c(0.05, 0.95), slope)
-c(p_slope_negative = round(p_negative, 5),
-  lower = round(interval[1L], 2), upper = round(interval[2L], 2))
-#> p_slope_negative            lower            upper 
-#>          0.99992         -8.07000         -2.53000
-```
+\
+`slope`` ``<-`` `[`gmm_marginalise`](https://max578.github.io/proxymix/reference/gmm_marginalise.md)`(``fit``, keep ``=`` ``2L``)`\
+`p_negative`` ``<-`` `[`pgmm`](https://max578.github.io/proxymix/reference/pgmm.md)`(``0``, ``slope``)`\
+`interval`` ``<-`` `[`qgmm`](https://max578.github.io/proxymix/reference/pgmm.md)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0.05``, ``0.95``)``, ``slope``)`\
+[`c`](https://rdrr.io/r/base/c.html)`(``p_slope_negative ``=`` `[`round`](https://rdrr.io/r/base/Round.html)`(``p_negative``, ``5``)``,`\
+`  lower ``=`` `[`round`](https://rdrr.io/r/base/Round.html)`(``interval``[``1L``]``, ``2``)``, upper ``=`` `[`round`](https://rdrr.io/r/base/Round.html)`(``interval``[``2L``]``, ``2``)``)`\
+`#> p_slope_negative            lower            upper `\
+`#>          0.99992         -8.07000         -2.53000`
 
 ### Check the answers against exact integration
 
@@ -245,66 +229,62 @@ has to be wide. Subtracting the largest log-density before
 exponentiating keeps the numbers within range. Summing over the
 intercept gives the distribution of the slope.
 
-``` r
+\
+`a_grid`` ``<-`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``2``, ``70``, length.out ``=`` ``600L``)``     ``# intercept`\
+`b_grid`` ``<-`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``21``, ``0``, length.out ``=`` ``400L``)``     ``# slope`\
+`quad`` ``<-`` `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(`[`expand.grid`](https://rdrr.io/r/base/expand.grid.html)`(``a ``=`` ``a_grid``, b ``=`` ``b_grid``)``)`\
+\
+`log_dens`` ``<-`` ``log_post``(``quad``)`\
+`dens`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`exp`](https://rdrr.io/r/base/Log.html)`(``log_dens`` ``-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(``log_dens``)``)``, nrow ``=`` `[`length`](https://rdrr.io/r/base/length.html)`(``a_grid``)``)`\
+`da`` ``<-`` ``a_grid``[``2L``]`` ``-`` ``a_grid``[``1L``]`\
+`db`` ``<-`` ``b_grid``[``2L``]`` ``-`` ``b_grid``[``1L``]`\
+`log_z_grid`` ``<-`` `[`log`](https://rdrr.io/r/base/Log.html)`(`[`sum`](https://rdrr.io/r/base/sum.html)`(``dens``)`` ``*`` ``da`` ``*`` ``db``)`` ``+`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(``log_dens``)`\
+\
+`marg_quad`` ``<-`` `[`colSums`](https://rdrr.io/pkg/Matrix/man/colSums-methods.html)`(``dens``)`` ``*`` ``da`\
+`marg_quad`` ``<-`` ``marg_quad`` ``/`` ``(`[`sum`](https://rdrr.io/r/base/sum.html)`(``marg_quad``)`` ``*`` ``db``)`\
+`marg_proxy`` ``<-`` `[`dgmm`](https://max578.github.io/proxymix/reference/dgmm.md)`(`[`matrix`](https://rdrr.io/r/base/matrix.html)`(``b_grid``, ncol ``=`` ``1L``)``, ``slope``)`\
+\
+`cdf_quad`` ``<-`` `[`cumsum`](https://rdrr.io/r/base/cumsum.html)`(``marg_quad``)`` ``*`` ``db`\
+`interval_quad`` ``<-`` ``stats``::`[`approx`](https://rdrr.io/r/stats/approxfun.html)`(``cdf_quad``, ``b_grid`` ``+`` ``db`` ``/`` ``2``,`\
+`                               xout ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``0.05``, ``0.95``)``, ties ``=`` ``mean``)``$``y`\
+`curve_gap`` ``<-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``marg_quad`` ``-`` ``marg_proxy``)``)`\
+[`c`](https://rdrr.io/r/base/c.html)`(``log_z ``=`` `[`round`](https://rdrr.io/r/base/Round.html)`(``log_z_grid``, ``3``)``, lower ``=`` `[`round`](https://rdrr.io/r/base/Round.html)`(``interval_quad``[``1L``]``, ``2``)``,`\
+`  upper ``=`` `[`round`](https://rdrr.io/r/base/Round.html)`(``interval_quad``[``2L``]``, ``2``)``,`\
+`  gap_pct_of_peak ``=`` `[`round`](https://rdrr.io/r/base/Round.html)`(``100`` ``*`` ``curve_gap`` ``/`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(``marg_quad``)``, ``1``)``)`\
+`#>           log_z           lower           upper gap_pct_of_peak `\
+`#>          -7.834          -7.950          -2.520           6.200`
 
-a_grid <- seq(-2, 70, length.out = 600L)     # intercept
-b_grid <- seq(-21, 0, length.out = 400L)     # slope
-quad <- as.matrix(expand.grid(a = a_grid, b = b_grid))
-
-log_dens <- log_post(quad)
-dens <- matrix(exp(log_dens - max(log_dens)), nrow = length(a_grid))
-da <- a_grid[2L] - a_grid[1L]
-db <- b_grid[2L] - b_grid[1L]
-log_z_grid <- log(sum(dens) * da * db) + max(log_dens)
-
-marg_quad <- colSums(dens) * da
-marg_quad <- marg_quad / (sum(marg_quad) * db)
-marg_proxy <- dgmm(matrix(b_grid, ncol = 1L), slope)
-
-cdf_quad <- cumsum(marg_quad) * db
-interval_quad <- stats::approx(cdf_quad, b_grid + db / 2,
-                               xout = c(0.05, 0.95), ties = mean)$y
-curve_gap <- max(abs(marg_quad - marg_proxy))
-c(log_z = round(log_z_grid, 3), lower = round(interval_quad[1L], 2),
-  upper = round(interval_quad[2L], 2),
-  gap_pct_of_peak = round(100 * curve_gap / max(marg_quad), 1))
-#>           log_z           lower           upper gap_pct_of_peak 
-#>          -7.834          -7.950          -2.520           6.200
-```
-
-``` r
-
-shown <- marg_quad > 1e-3 * max(marg_quad)
-marg_df <- rbind(
-  data.frame(slope = b_grid[shown], density = marg_quad[shown],
-             source = "Grid integration of the posterior"),
-  data.frame(slope = b_grid[shown], density = marg_proxy[shown],
-             source = "Mixture proxy")
-)
-
-ggplot2::ggplot(marg_df,
-                ggplot2::aes(slope, density, colour = source,
-                             linetype = source)) +
-  ggplot2::geom_line(linewidth = 0.8) +
-  ggplot2::scale_colour_manual(
-    name = NULL,
-    values = c("Grid integration of the posterior" = "#0072B2",
-               "Mixture proxy" = "#D55E00")
-  ) +
-  ggplot2::scale_linetype_manual(
-    name = NULL,
-    values = c("Grid integration of the posterior" = "solid",
-               "Mixture proxy" = "dashed")
-  ) +
-  ggplot2::labs(
-    title = "Posterior of the slope, two ways",
-    x = expression(paste("slope ", beta, " (log-odds per 1000 lb)")),
-    y = "posterior density"
-  ) +
-  ggplot2::theme_minimal(base_size = 11) +
-  ggplot2::theme(plot.title = ggplot2::element_text(face = "bold"),
-                 legend.position = "top")
-```
+\
+`shown`` ``<-`` ``marg_quad`` ``>`` ``1e-3`` ``*`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(``marg_quad``)`\
+`marg_df`` ``<-`` `[`rbind`](https://amices.org/mice/reference/cbind.html)`(`\
+`  `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``slope ``=`` ``b_grid``[``shown``]``, density ``=`` ``marg_quad``[``shown``]``,`\
+`             source ``=`` ``"Grid integration of the posterior"``)``,`\
+`  `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``slope ``=`` ``b_grid``[``shown``]``, density ``=`` ``marg_proxy``[``shown``]``,`\
+`             source ``=`` ``"Mixture proxy"``)`\
+`)`\
+\
+`ggplot2``::`[`ggplot`](https://ggplot2.tidyverse.org/reference/ggplot.html)`(``marg_df``,`\
+`                ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``slope``, ``density``, colour ``=`` ``source``,`\
+`                             linetype ``=`` ``source``)``)`` ``+`\
+`  ``ggplot2``::`[`geom_line`](https://ggplot2.tidyverse.org/reference/geom_path.html)`(``linewidth ``=`` ``0.8``)`` ``+`\
+`  ``ggplot2``::`[`scale_colour_manual`](https://ggplot2.tidyverse.org/reference/scale_manual.html)`(`\
+`    name ``=`` ``NULL``,`\
+`    values ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"Grid integration of the posterior"`` ``=`` ``"#0072B2"``,`\
+`               ``"Mixture proxy"`` ``=`` ``"#D55E00"``)`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`scale_linetype_manual`](https://ggplot2.tidyverse.org/reference/scale_manual.html)`(`\
+`    name ``=`` ``NULL``,`\
+`    values ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"Grid integration of the posterior"`` ``=`` ``"solid"``,`\
+`               ``"Mixture proxy"`` ``=`` ``"dashed"``)`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`labs`](https://ggplot2.tidyverse.org/reference/labs.html)`(`\
+`    title ``=`` ``"Posterior of the slope, two ways"``,`\
+`    x ``=`` `[`expression`](https://rdrr.io/r/base/expression.html)`(`[`paste`](https://rdrr.io/r/base/paste.html)`(``"slope "``, ``beta``, ``" (log-odds per 1000 lb)"``)``)``,`\
+`    y ``=`` ``"posterior density"`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`theme_minimal`](https://ggplot2.tidyverse.org/reference/ggtheme.html)`(``base_size ``=`` ``11``)`` ``+`\
+`  ``ggplot2``::`[`theme`](https://ggplot2.tidyverse.org/reference/theme.html)`(``plot.title ``=`` ``ggplot2``::`[`element_text`](https://ggplot2.tidyverse.org/reference/element.html)`(``face ``=`` ``"bold"``)``,`\
+`                 legend.position ``=`` ``"top"``)`
 
 ![Two close density curves for the slope, one from the fitted
 Gaussian-mixture proxy and one from grid integration of the exact
@@ -318,18 +298,16 @@ density exceeds a thousandth of its peak.
 The grid above stops at a slope of zero. A second, finer grid gives the
 probability that the slope is positive, far out in the tail.
 
-``` r
-
-a_tail <- seq(-10 + 0.01, 10, by = 0.02)     # cell centres, intercept
-b_tail <- seq(0.005, 3, by = 0.01)           # cell centres, slope > 0
-log_tail <- vapply(b_tail, function(b) log_post(cbind(a_tail, b)),
-                   numeric(length(a_tail)))
-p_positive_quad <- sum(exp(log_tail - log_z_grid)) * 0.02 * 0.01
-p_positive <- pgmm(0, slope, lower.tail = FALSE)
-c(grid = signif(p_positive_quad, 2), proxy = signif(p_positive, 2))
-#>    grid   proxy 
-#> 8.5e-08 8.3e-05
-```
+\
+`a_tail`` ``<-`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``10`` ``+`` ``0.01``, ``10``, by ``=`` ``0.02``)``     ``# cell centres, intercept`\
+`b_tail`` ``<-`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``0.005``, ``3``, by ``=`` ``0.01``)``           ``# cell centres, slope > 0`\
+`log_tail`` ``<-`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``b_tail``, ``function``(``b``)`` ``log_post``(`[`cbind`](https://amices.org/mice/reference/cbind.html)`(``a_tail``, ``b``)``)``,`\
+`                   `[`numeric`](https://rdrr.io/r/base/numeric.html)`(`[`length`](https://rdrr.io/r/base/length.html)`(``a_tail``)``)``)`\
+`p_positive_quad`` ``<-`` `[`sum`](https://rdrr.io/r/base/sum.html)`(`[`exp`](https://rdrr.io/r/base/Log.html)`(``log_tail`` ``-`` ``log_z_grid``)``)`` ``*`` ``0.02`` ``*`` ``0.01`\
+`p_positive`` ``<-`` `[`pgmm`](https://max578.github.io/proxymix/reference/pgmm.md)`(``0``, ``slope``, lower.tail ``=`` ``FALSE``)`\
+[`c`](https://rdrr.io/r/base/c.html)`(``grid ``=`` `[`signif`](https://rdrr.io/r/base/Round.html)`(``p_positive_quad``, ``2``)``, proxy ``=`` `[`signif`](https://rdrr.io/r/base/Round.html)`(``p_positive``, ``2``)``)`\
+`#>    grid   proxy `\
+`#> 8.5e-08 8.4e-05`
 
 ### Error bars on the proxy itself
 
@@ -340,23 +318,21 @@ cent intervals for the posterior means and for the probability of a
 negative slope. For the probability, the package warns that the interval
 covers only the variation between refits.
 
-``` r
-
-ens <- gmm_fit_ensemble(fit, B = 80L, seed = 3L)
-ci_mean <- proxy_functional_ci(ens, gmm_mean, level = 0.9)
-ci_tail <- proxy_functional_ci(
-  ens, function(g) pgmm(0, gmm_marginalise(g, keep = 2L)), level = 0.9
-)
-#> Warning: The interval reflects refit variability only.
-#> ! Gaussian-mixture tails can misstate probabilities below 0.001 by orders of
-#>   magnitude.
-#> ℹ Check the value against numerical integration of the target or a
-#>   tail-specific method; set `tail_warn = NULL` to silence.
-```
+\
+`ens`` ``<-`` `[`gmm_fit_ensemble`](https://max578.github.io/proxymix/reference/gmm_fit_ensemble.md)`(``fit``, B ``=`` ``80L``, seed ``=`` ``3L``)`\
+`ci_mean`` ``<-`` `[`proxy_functional_ci`](https://max578.github.io/proxymix/reference/proxy_functional_ci.md)`(``ens``, ``gmm_mean``, level ``=`` ``0.9``)`\
+`ci_tail`` ``<-`` `[`proxy_functional_ci`](https://max578.github.io/proxymix/reference/proxy_functional_ci.md)`(`\
+`  ``ens``, ``function``(``g``)`` `[`pgmm`](https://max578.github.io/proxymix/reference/pgmm.md)`(``0``, `[`gmm_marginalise`](https://max578.github.io/proxymix/reference/gmm_marginalise.md)`(``g``, keep ``=`` ``2L``)``)``, level ``=`` ``0.9`\
+`)`\
+`#> Warning: The interval reflects refit variability only.`\
+`#> ``!`` Gaussian-mixture tails can misstate probabilities below 0.001 by orders of`\
+`#>   magnitude.`\
+`#> ``ℹ`` Check the value against numerical integration of the target or a`\
+`` #>   tail-specific method; set `tail_warn = NULL` to silence. ``
 
 | Quantity                               | Estimate | Lower 5% | Upper 95% |
 |:---------------------------------------|---------:|---------:|----------:|
-| posterior mean of the intercept        |   14.808 |   14.647 |    14.972 |
+| posterior mean of the intercept        |   14.808 |   14.646 |    14.972 |
 | posterior mean of the slope            |   -4.914 |   -4.968 |    -4.862 |
 | probability that the slope is negative |  0.99992 |  0.99990 |   0.99995 |
 
@@ -400,7 +376,7 @@ coefficients. $`P(\beta_j > 0)`$: error in the probability that a
 coefficient is positive. $`\log Z`$: error in the log normalising
 constant. Seconds: time per dataset on one core. The NUTS time includes
 bridge sampling. DEzs gives no normalising constant. {.table
-style="width:100%;"}
+style="width:99%;"}
 
 proxymix placed the ends of the 95 per cent intervals closest to the
 reference, at 0.027 and 0.028 standard deviations against 0.042 and
@@ -432,105 +408,103 @@ The code below runs every method on one simulated dataset with two
 coefficients. It is the simulation code for a single dataset, without
 the timing and scoring.
 
-``` r
-
-library(proxymix)
-library(cmdstanr)
-library(bridgesampling)
-library(LearnBayes)
-library(INLA)
-library(BayesianTools)
-
-# one simulated dataset: 200 observations, an intercept and one covariate
-n <- 200L
-p <- 2L
-prior_sd <- 10
-beta_pop <- c(0.5, 1.5, -1, 0.75, 0)   # the first p entries are used
-r <- 1L
-set.seed(r)
-X <- cbind(1, matrix(rnorm(n * (p - 1L)), n))
-y <- rbinom(n, 1L, plogis(X %*% beta_pop[seq_len(p)]))
-data <- list(n = n, p = p, X = X, y = y, prior_sd = prior_sd)
-
-log_lik_one <- function(theta, data) {
-  eta <- data$X %*% theta
-  sum(data$y * eta - log1p(exp(eta)))
-}
-log_post_one <- function(theta, data) {
-  log_lik_one(theta, data) + sum(dnorm(theta, 0, data$prior_sd, log = TRUE))
-}
-log_post_rows <- function(theta, data) {
-  if (is.null(dim(theta))) theta <- matrix(theta, ncol = data$p)
-  apply(theta, 1L, log_post_one, data = data)
-}
-mle <- glm(y ~ X - 1, family = binomial())
-
-# proxymix: fit, log normalising constant, bootstrap intervals
-tgt <- gmm_target(n_dim = p,
-                  log_density = function(theta) log_post_rows(theta, data),
-                  normalised = FALSE)
-q0 <- proposal_mvt(p, mean = coef(mle), sigma = 9 * vcov(mle), df = 5)
-fit <- fit_proxymix(tgt, N = 2L, regime = "kld", proposal = q0,
-                    is_size = 3000L, max_iter = 60L, seed = r, adapt = "pmc")
-ev <- gmm_evidence(fit, n = 4000L, seed = r)
-ens <- gmm_fit_ensemble(fit, B = 80L, seed = r)
-ci <- proxy_functional_ci(ens, gmm_mean, level = 0.95)
-
-# Stan NUTS: four chains of 1000 warm-up and 1000 kept draws, then bridge
-# sampling on the draws for the log normalising constant
-stan_file <- file.path(tempdir(), "logistic.stan")
-writeLines(c(
-  "data {",
-  "  int<lower=1> n;",
-  "  int<lower=1> p;",
-  "  matrix[n, p] X;",
-  "  array[n] int<lower=0, upper=1> y;",
-  "  real<lower=0> prior_sd;",
-  "}",
-  "parameters {",
-  "  vector[p] beta;",
-  "}",
-  "model {",
-  "  beta ~ normal(0, prior_sd);",
-  "  y ~ bernoulli_logit(X * beta);",
-  "}"
-), stan_file)
-model <- cmdstan_model(stan_file)
-fit_nuts <- model$sample(data, chains = 4L, parallel_chains = 1L,
-                         iter_warmup = 1000L, iter_sampling = 1000L,
-                         seed = r + 100000L, refresh = 0L,
-                         show_messages = FALSE, show_exceptions = FALSE)
-draws <- fit_nuts$draws("beta", format = "matrix")
-draws <- matrix(draws, ncol = data$p, dimnames = list(NULL, colnames(draws)))
-bounds <- setNames(rep(-Inf, data$p), colnames(draws))
-bridge <- bridge_sampler(draws, log_posterior = log_post_one, data = data,
-                         lb = bounds, ub = -bounds, silent = TRUE)
-
-# Laplace approximation
-lap <- laplace(log_post_one, coef(mle), data)
-
-# INLA
-df <- data.frame(y = y, X[, -1L, drop = FALSE])
-names(df) <- c("y", paste0("x", seq_len(p - 1L)))
-fi <- inla(reformulate(names(df)[-1L], "y"), family = "binomial",
-           Ntrials = 1, data = df,
-           control.fixed = list(prec = 1 / prior_sd^2,
-                                prec.intercept = 1 / prior_sd^2),
-           num.threads = "1:1")
-
-# BayesianTools, differential-evolution sampler DEzs
-setup <- createBayesianSetup(
-  likelihood = function(theta) log_lik_one(theta, data),
-  prior = createPrior(
-    density = function(theta) sum(dnorm(theta, 0, prior_sd, log = TRUE)),
-    sampler = function(n = 1L) matrix(rnorm(n * p, 0, prior_sd), n)
-  )
-)
-set.seed(r)
-bt <- runMCMC(setup, sampler = "DEzs",
-              settings = list(iterations = 15000L, message = FALSE))
-draws_bt <- getSample(bt, start = 1000L)
-```
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`cmdstanr`](https://mc-stan.org/cmdstanr/)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`bridgesampling`](https://github.com/quentingronau/bridgesampling)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(``LearnBayes``)`\
+[`library`](https://rdrr.io/r/base/library.html)`(``INLA``)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`BayesianTools`](https://github.com/florianhartig/BayesianTools)`)`\
+\
+`# one simulated dataset: 200 observations, an intercept and one covariate`\
+`n`` ``<-`` ``200L`\
+`p`` ``<-`` ``2L`\
+`prior_sd`` ``<-`` ``10`\
+`beta_pop`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``0.5``, ``1.5``, ``-``1``, ``0.75``, ``0``)``   ``# the first p entries are used`\
+`r`` ``<-`` ``1L`\
+[`set.seed`](https://rdrr.io/r/base/Random.html)`(``r``)`\
+`X`` ``<-`` `[`cbind`](https://amices.org/mice/reference/cbind.html)`(``1``, `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n`` ``*`` ``(``p`` ``-`` ``1L``)``)``, ``n``)``)`\
+`y`` ``<-`` `[`rbinom`](https://rdrr.io/r/stats/Binomial.html)`(``n``, ``1L``, `[`plogis`](https://rdrr.io/r/stats/Logistic.html)`(``X`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``beta_pop``[`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``p``)``]``)``)`\
+`data`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(``n ``=`` ``n``, p ``=`` ``p``, X ``=`` ``X``, y ``=`` ``y``, prior_sd ``=`` ``prior_sd``)`\
+\
+`log_lik_one`` ``<-`` ``function``(``theta``, ``data``)`` ``{`\
+`  ``eta`` ``<-`` ``data``$``X`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``theta`\
+`  `[`sum`](https://rdrr.io/r/base/sum.html)`(``data``$``y`` ``*`` ``eta`` ``-`` `[`log1p`](https://rdrr.io/r/base/Log.html)`(`[`exp`](https://rdrr.io/r/base/Log.html)`(``eta``)``)``)`\
+`}`\
+`log_post_one`` ``<-`` ``function``(``theta``, ``data``)`` ``{`\
+`  ``log_lik_one``(``theta``, ``data``)`` ``+`` `[`sum`](https://rdrr.io/r/base/sum.html)`(`[`dnorm`](https://rdrr.io/r/stats/Normal.html)`(``theta``, ``0``, ``data``$``prior_sd``, log ``=`` ``TRUE``)``)`\
+`}`\
+`log_post_rows`` ``<-`` ``function``(``theta``, ``data``)`` ``{`\
+`  ``if`` ``(`[`is.null`](https://rdrr.io/r/base/NULL.html)`(`[`dim`](https://rdrr.io/r/base/dim.html)`(``theta``)``)``)`` ``theta`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``theta``, ncol ``=`` ``data``$``p``)`\
+`  `[`apply`](https://rdrr.io/r/base/apply.html)`(``theta``, ``1L``, ``log_post_one``, data ``=`` ``data``)`\
+`}`\
+`mle`` ``<-`` `[`glm`](https://rdrr.io/r/stats/glm.html)`(``y`` ``~`` ``X`` ``-`` ``1``, family ``=`` `[`binomial`](https://rdrr.io/r/stats/family.html)`(``)``)`\
+\
+`# proxymix: fit, log normalising constant, bootstrap intervals`\
+`tgt`` ``<-`` `[`gmm_target`](https://max578.github.io/proxymix/reference/gmm_target.md)`(``n_dim ``=`` ``p``,`\
+`                  log_density ``=`` ``function``(``theta``)`` ``log_post_rows``(``theta``, ``data``)``,`\
+`                  normalised ``=`` ``FALSE``)`\
+`q0`` ``<-`` `[`proposal_mvt`](https://max578.github.io/proxymix/reference/proposal_uniform.md)`(``p``, mean ``=`` `[`coef`](https://rdrr.io/r/stats/coef.html)`(``mle``)``, sigma ``=`` ``9`` ``*`` `[`vcov`](https://rdrr.io/r/stats/vcov.html)`(``mle``)``, df ``=`` ``5``)`\
+`fit`` ``<-`` `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(``tgt``, N ``=`` ``2L``, regime ``=`` ``"kld"``, proposal ``=`` ``q0``,`\
+`                    is_size ``=`` ``3000L``, max_iter ``=`` ``60L``, seed ``=`` ``r``, adapt ``=`` ``"pmc"``)`\
+`ev`` ``<-`` `[`gmm_evidence`](https://max578.github.io/proxymix/reference/gmm_evidence.md)`(``fit``, n ``=`` ``4000L``, seed ``=`` ``r``)`\
+`ens`` ``<-`` `[`gmm_fit_ensemble`](https://max578.github.io/proxymix/reference/gmm_fit_ensemble.md)`(``fit``, B ``=`` ``80L``, seed ``=`` ``r``)`\
+`ci`` ``<-`` `[`proxy_functional_ci`](https://max578.github.io/proxymix/reference/proxy_functional_ci.md)`(``ens``, ``gmm_mean``, level ``=`` ``0.95``)`\
+\
+`# Stan NUTS: four chains of 1000 warm-up and 1000 kept draws, then bridge`\
+`# sampling on the draws for the log normalising constant`\
+`stan_file`` ``<-`` `[`file.path`](https://rdrr.io/r/base/file.path.html)`(`[`tempdir`](https://rdrr.io/r/base/tempfile.html)`(``)``, ``"logistic.stan"``)`\
+[`writeLines`](https://rdrr.io/r/base/writeLines.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(`\
+`  ``"data {"``,`\
+`  ``"  int<lower=1> n;"``,`\
+`  ``"  int<lower=1> p;"``,`\
+`  ``"  matrix[n, p] X;"``,`\
+`  ``"  array[n] int<lower=0, upper=1> y;"``,`\
+`  ``"  real<lower=0> prior_sd;"``,`\
+`  ``"}"``,`\
+`  ``"parameters {"``,`\
+`  ``"  vector[p] beta;"``,`\
+`  ``"}"``,`\
+`  ``"model {"``,`\
+`  ``"  beta ~ normal(0, prior_sd);"``,`\
+`  ``"  y ~ bernoulli_logit(X * beta);"``,`\
+`  ``"}"`\
+`)``, ``stan_file``)`\
+`model`` ``<-`` `[`cmdstan_model`](https://mc-stan.org/cmdstanr/reference/cmdstan_model.html)`(``stan_file``)`\
+`fit_nuts`` ``<-`` ``model``$``sample``(``data``, chains ``=`` ``4L``, parallel_chains ``=`` ``1L``,`\
+`                         iter_warmup ``=`` ``1000L``, iter_sampling ``=`` ``1000L``,`\
+`                         seed ``=`` ``r`` ``+`` ``100000L``, refresh ``=`` ``0L``,`\
+`                         show_messages ``=`` ``FALSE``, show_exceptions ``=`` ``FALSE``)`\
+`draws`` ``<-`` ``fit_nuts``$``draws``(``"beta"``, format ``=`` ``"matrix"``)`\
+`draws`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``draws``, ncol ``=`` ``data``$``p``, dimnames ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``NULL``, `[`colnames`](https://rdrr.io/r/base/colnames.html)`(``draws``)``)``)`\
+`bounds`` ``<-`` `[`setNames`](https://rdrr.io/r/stats/setNames.html)`(`[`rep`](https://rdrr.io/r/base/rep.html)`(``-``Inf``, ``data``$``p``)``, `[`colnames`](https://rdrr.io/r/base/colnames.html)`(``draws``)``)`\
+`bridge`` ``<-`` `[`bridge_sampler`](https://rdrr.io/pkg/bridgesampling/man/bridge_sampler.html)`(``draws``, log_posterior ``=`` ``log_post_one``, data ``=`` ``data``,`\
+`                         lb ``=`` ``bounds``, ub ``=`` ``-``bounds``, silent ``=`` ``TRUE``)`\
+\
+`# Laplace approximation`\
+`lap`` ``<-`` `[`laplace`](https://rdrr.io/pkg/LearnBayes/man/laplace.html)`(``log_post_one``, `[`coef`](https://rdrr.io/r/stats/coef.html)`(``mle``)``, ``data``)`\
+\
+`# INLA`\
+`df`` ``<-`` `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``y ``=`` ``y``, ``X``[``, ``-``1L``, drop ``=`` ``FALSE``]``)`\
+[`names`](https://rdrr.io/r/base/names.html)`(``df``)`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``"y"``, `[`paste0`](https://rdrr.io/r/base/paste.html)`(``"x"``, `[`seq_len`](https://rdrr.io/r/base/seq.html)`(``p`` ``-`` ``1L``)``)``)`\
+`fi`` ``<-`` `[`inla`](https://rdrr.io/pkg/INLA/man/inla.html)`(`[`reformulate`](https://rdrr.io/r/stats/delete.response.html)`(`[`names`](https://rdrr.io/r/base/names.html)`(``df``)``[``-``1L``]``, ``"y"``)``, family ``=`` ``"binomial"``,`\
+`           Ntrials ``=`` ``1``, data ``=`` ``df``,`\
+`           control.fixed ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``prec ``=`` ``1`` ``/`` ``prior_sd``^``2``,`\
+`                                prec.intercept ``=`` ``1`` ``/`` ``prior_sd``^``2``)``,`\
+`           num.threads ``=`` ``"1:1"``)`\
+\
+`# BayesianTools, differential-evolution sampler DEzs`\
+`setup`` ``<-`` `[`createBayesianSetup`](https://rdrr.io/pkg/BayesianTools/man/createBayesianSetup.html)`(`\
+`  likelihood ``=`` ``function``(``theta``)`` ``log_lik_one``(``theta``, ``data``)``,`\
+`  prior ``=`` `[`createPrior`](https://rdrr.io/pkg/BayesianTools/man/createPrior.html)`(`\
+`    density ``=`` ``function``(``theta``)`` `[`sum`](https://rdrr.io/r/base/sum.html)`(`[`dnorm`](https://rdrr.io/r/stats/Normal.html)`(``theta``, ``0``, ``prior_sd``, log ``=`` ``TRUE``)``)``,`\
+`    sampler ``=`` ``function``(``n`` ``=`` ``1L``)`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n`` ``*`` ``p``, ``0``, ``prior_sd``)``, ``n``)`\
+`  ``)`\
+`)`\
+[`set.seed`](https://rdrr.io/r/base/Random.html)`(``r``)`\
+`bt`` ``<-`` `[`runMCMC`](https://rdrr.io/pkg/BayesianTools/man/runMCMC.html)`(``setup``, sampler ``=`` ``"DEzs"``,`\
+`              settings ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``iterations ``=`` ``15000L``, message ``=`` ``FALSE``)``)`\
+`draws_bt`` ``<-`` `[`getSample`](https://rdrr.io/pkg/BayesianTools/man/getSample.html)`(``bt``, start ``=`` ``1000L``)`
 
 The code needs `cmdstanr` with CmdStan, `bridgesampling`, `LearnBayes`,
 `INLA` and `BayesianTools`. `cmdstanr` and `INLA` are installed from
@@ -543,7 +517,7 @@ gives the full simulation and a five-parameter example on survey data.
 
 The certificate is consistent with a good fit. The rounds settled before
 the limit, and the weights did not collapse. The 3,000 weighted draws of
-the last round were worth 2427 equally weighted draws, 81 per cent of
+the last round were worth 2428 equally weighted draws, 81 per cent of
 the total. The broad distribution was replaced 5 times during the fit.
 The KL divergence on fresh draws is 0.017, with a simulation standard
 error of 0.003, most of it from the estimate of the log normalising
@@ -688,12 +662,10 @@ proxymix 0.16.0, cmdstanr 0.9.0 with CmdStan 2.38.0, bridgesampling
 1.2-1, LearnBayes 2.15.2, INLA 26.08.07 and BayesianTools 0.1.9, which
 took about 20 minutes.
 
-``` r
+\
+[`sessionInfo`](https://rdrr.io/r/utils/sessionInfo.html)`(``)`
 
-sessionInfo()
 ```
-
-``` session-info
 #> R version 4.6.1 (2026-06-24)
 #> Platform: aarch64-apple-darwin23
 #> Running under: macOS Tahoe 26.6.2

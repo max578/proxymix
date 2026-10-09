@@ -80,50 +80,6 @@ mean and a probability-contour ellipse.</p>
 
 
     <div class="section level2">
-    <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
-
-
-<dl><dt id="arg-object">object<a class="anchor" aria-label="anchor" href="#arg-object"></a></dt>
-<dd><p>A <a href="gmm_fit.html">gmm_fit</a>, typically from <code><a href="fit_proxymix.html">fit_proxymix()</a></code>.</p></dd>
-
-
-<dt id="arg-dims">dims<a class="anchor" aria-label="anchor" href="#arg-dims"></a></dt>
-<dd><p>Integer vector of length one or two giving the coordinate(s) to
-display, in <code>1:p</code>. Defaults to the first two coordinates (or the only
-coordinate when <code>p == 1</code>).</p></dd>
-
-
-<dt id="arg-n-grid">n_grid<a class="anchor" aria-label="anchor" href="#arg-n-grid"></a></dt>
-<dd><p>Integer scalar — the number of grid points per axis at which
-the density is evaluated. A two-dimensional plot evaluates <code>n_grid^2</code>
-points.</p></dd>
-
-
-<dt id="arg-n-sd">n_sd<a class="anchor" aria-label="anchor" href="#arg-n-sd"></a></dt>
-<dd><p>Numeric scalar — how many component standard deviations beyond
-the extreme component means the plotting window extends.</p></dd>
-
-
-<dt id="arg-level">level<a class="anchor" aria-label="anchor" href="#arg-level"></a></dt>
-<dd><p>Numeric scalar in <code>(0, 1)</code> — the probability level of the
-per-component ellipse drawn on a two-dimensional plot.</p></dd>
-
-
-<dt id="arg-show-components">show_components<a class="anchor" aria-label="anchor" href="#arg-show-components"></a></dt>
-<dd><p>Logical scalar — whether to overlay the per-component
-densities (one dimension) or mean-and-ellipse glyphs (two dimensions).</p></dd>
-
-
-<dt id="arg-show-data">show_data<a class="anchor" aria-label="anchor" href="#arg-show-data"></a></dt>
-<dd><p>Logical scalar — whether to overlay the target's samples,
-when the fitted target carries any.</p></dd>
-
-
-<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>Currently ignored, present for generic compatibility.</p></dd>
-
-</dl></div>
-    <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A <code>ggplot</code> object.</p>
     </div>
@@ -134,6 +90,27 @@ when <code>ggplot2</code> is installed; call it as <code>ggplot2::autoplot(fit)<
 <code>ggplot2</code> first. It returns the <code>ggplot</code> object, so the usual <code>+</code> layering
 applies for further customisation.</p>
     </div>
+    <div class="section level2">
+    <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
+
+
+<p>Called as <code>ggplot2::autoplot(object, dims = c(1L, 2L), n_grid = 120L, n_sd = 3.5, level = 0.95, show_components = TRUE, show_data = TRUE, ...)</code>.</p><ul><li><p><code>object</code>: a <a href="gmm_fit.html">gmm_fit</a>, typically from <code><a href="fit_proxymix.html">fit_proxymix()</a></code>.</p></li>
+<li><p><code>dims</code>: integer vector of length one or two giving the coordinate(s) to
+display, in <code>1:p</code>. Defaults to the first two coordinates (or the only
+coordinate when <code>p == 1</code>).</p></li>
+<li><p><code>n_grid</code>: integer scalar, the number of grid points per axis at which
+the density is evaluated. A two-dimensional plot evaluates <code>n_grid^2</code>
+points.</p></li>
+<li><p><code>n_sd</code>: numeric scalar, how many component standard deviations beyond
+the extreme component means the plotting window extends.</p></li>
+<li><p><code>level</code>: numeric scalar in <code>(0, 1)</code>, the probability level of the
+per-component ellipse drawn on a two-dimensional plot.</p></li>
+<li><p><code>show_components</code>: logical scalar, whether to overlay the per-component
+densities (one dimension) or mean-and-ellipse glyphs (two dimensions).</p></li>
+<li><p><code>show_data</code>: logical scalar, whether to overlay the target's samples,
+when the fitted target carries any.</p></li>
+<li><p><code>...</code>: ignored, present for generic compatibility.</p></li>
+</ul></div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p>Other classes:

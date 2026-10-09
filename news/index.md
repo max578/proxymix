@@ -2,6 +2,8 @@
 
 ## proxymix 0.16.0
 
+CRAN release: 2026-10-08
+
 #### Changes to defaults
 
 - [`gmm_independence_graph()`](https://max578.github.io/proxymix/reference/gmm_independence_graph.md)
@@ -64,6 +66,21 @@
   fitted proxy reports `validation_kld`, the held-out KL estimate.
 
 #### Bug fixes
+
+- [`fit_em_samples()`](https://max578.github.io/proxymix/reference/fit_em_samples.md)
+  and
+  [`fit_kld_em()`](https://max578.github.io/proxymix/reference/fit_kld_em.md)
+  scale the ridge `ridge_eps` by each coordinate’s variance. They scaled
+  one ridge by the mean variance, which inflated the fitted spread of
+  coordinates whose variance is far below the mean: with standard
+  deviations from 0.026 to 5078, the smallest came out 85 times too
+  wide. Fits whose coordinates have similar variances barely change.
+
+- [`gmm_independence_graph()`](https://max578.github.io/proxymix/reference/gmm_independence_graph.md)
+  scales its ridge by each coordinate’s variance for the same reason. A
+  partial correlation of 0.6 between two coordinates with standard
+  deviation 0.001, beside one with standard deviation 10000, was
+  reported as 0.
 
 - [`gmm_evidence()`](https://max578.github.io/proxymix/reference/gmm_evidence.md)
   keeps proxy draws at which the target density is zero as zero terms of
@@ -209,11 +226,10 @@
   did not survive the computation were corrected: the regime (i) and
   regime
 
-  3.  fits at `N = 1` do not agree to within Monte Carlo error, the
-      donut’s residual divergence needed a grid-quadrature reference to
-      be stated at all, and the fraction of `x2` deleted in the
-      imputation example was near a half rather than the two fifths
-      claimed.
+  \(iii\) fits at `N = 1` do not agree to within Monte Carlo error, the
+  donut’s residual divergence needed a grid-quadrature reference to be
+  stated at all, and the fraction of `x2` deleted in the imputation
+  example was near a half rather than the two fifths claimed.
 
 - Every figure chunk across the vignette set now carries a `fig.cap`
   stating what the figure shows, and the four uncaptioned or
@@ -340,13 +356,14 @@
   plus a `defensive_gamma` share of the original proposal as a
   heavy-tailed anchor) – the mixture population-Monte-Carlo scheme of
   Cappé et al.
-  2008. with the Owen–Zhou (2000) defensive safeguard. While a batch is
-        degenerate the refresh fires every iteration with an escalating
-        inflation floored at a growing fraction of the batch’s sample
-        covariance, so a collapsed iterate walks back out to the target;
-        and convergence is only accepted on an adapted batch. The
-        per-batch ESS trace ships in `diagnostics$ess_history` and the
-        total evaluation cost in `diagnostics$n_target_evals`.
+
+  \(2008\) with the Owen–Zhou (2000) defensive safeguard. While a batch
+  is degenerate the refresh fires every iteration with an escalating
+  inflation floored at a growing fraction of the batch’s sample
+  covariance, so a collapsed iterate walks back out to the target; and
+  convergence is only accepted on an adapted batch. The per-batch ESS
+  trace ships in `diagnostics$ess_history` and the total evaluation cost
+  in `diagnostics$n_target_evals`.
 
   Validated against analytic conjugate Gaussians and a ten-dimensional
   warped target (`validation/adaptive_pmc_study.R` in the development

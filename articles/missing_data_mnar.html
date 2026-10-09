@@ -79,7 +79,7 @@
 
     
     
-<!-- Render time: ~25 s under rmarkdown::render() with ggplot2 installed;
+<!-- Render time: ~7 s under rmarkdown::render() with ggplot2 installed;
      macOS arm64 (Apple silicon), R 4.6.1, one core. The sweep over five
      slopes takes most of it. The comparison with mice, Amelia,
      sampleSelection, AER and survival is read from
@@ -231,13 +231,13 @@ data are kept as the truth.</p>
 </h3>
 <p>The first imputation assumes missing at random. The second supplies
 the slope that generated the data, <code>beta = 0.7</code>, to
-<code><a href="../reference/mechanism.html">mnar()</a></code>. Both make 10 completed datasets. Both allow up to
+<code><a href="../reference/mechanism.html">mnar()</a></code>. Both make 5 completed datasets. Both allow up to
 500 fitting rounds (<code>max_iter</code>), the default of
 <code><a href="../reference/proxy_mnar_sensitivity.html">proxy_mnar_sensitivity()</a></code> below. Near missing at random, the
 fitting can take more rounds than the <code><a href="../reference/gmm_impute.html">gmm_impute()</a></code> default
 of 100.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">m_draws</span> <span class="op">&lt;-</span> <span class="fl">10L</span></span>
+<code class="sourceCode R"><span><span class="va">m_draws</span> <span class="op">&lt;-</span> <span class="fl">5L</span></span>
 <span><span class="va">mar_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gmm_impute.html">gmm_impute</a></span><span class="op">(</span><span class="va">dat</span>, N <span class="op">=</span> <span class="fl">2L</span>, m <span class="op">=</span> <span class="va">m_draws</span>, mechanism <span class="op">=</span> <span class="fu"><a href="../reference/mechanism.html">mar</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>                      seed <span class="op">=</span> <span class="fl">1L</span>, max_iter <span class="op">=</span> <span class="fl">500L</span><span class="op">)</span></span>
 <span><span class="va">mnar_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gmm_impute.html">gmm_impute</a></span><span class="op">(</span><span class="va">dat</span>, N <span class="op">=</span> <span class="fl">2L</span>, m <span class="op">=</span> <span class="va">m_draws</span>,</span>
@@ -280,13 +280,13 @@ deleted.</caption>
 </tr>
 <tr class="odd">
 <td align="left">imputed, missing at random</td>
-<td align="right">0.058</td>
-<td align="right">-0.227</td>
+<td align="right">0.061</td>
+<td align="right">-0.224</td>
 </tr>
 <tr class="even">
 <td align="left">imputed, missing not at random (slope 0.7)</td>
-<td align="right">0.240</td>
-<td align="right">-0.046</td>
+<td align="right">0.244</td>
+<td align="right">-0.041</td>
 </tr>
 </tbody>
 </table>
@@ -336,41 +336,41 @@ the complete data is 0.285.</caption>
 <tbody>
 <tr class="odd">
 <td align="right">0.0</td>
-<td align="right">0.063</td>
-<td align="right">-0.061</td>
-<td align="right">0.187</td>
+<td align="right">0.057</td>
+<td align="right">-0.114</td>
+<td align="right">0.228</td>
 <td align="right">-1812.4</td>
 <td align="left">yes</td>
 </tr>
 <tr class="even">
 <td align="right">0.3</td>
-<td align="right">0.135</td>
-<td align="right">0.028</td>
-<td align="right">0.243</td>
+<td align="right">0.129</td>
+<td align="right">-0.004</td>
+<td align="right">0.262</td>
 <td align="right">-1802.9</td>
 <td align="left">yes</td>
 </tr>
 <tr class="odd">
 <td align="right">0.6</td>
-<td align="right">0.227</td>
-<td align="right">0.129</td>
-<td align="right">0.325</td>
+<td align="right">0.225</td>
+<td align="right">0.119</td>
+<td align="right">0.332</td>
 <td align="right">-1797.6</td>
 <td align="left">yes</td>
 </tr>
 <tr class="even">
 <td align="right">0.9</td>
-<td align="right">0.276</td>
-<td align="right">0.176</td>
-<td align="right">0.377</td>
+<td align="right">0.279</td>
+<td align="right">0.161</td>
+<td align="right">0.396</td>
 <td align="right">-1795.5</td>
 <td align="left">yes</td>
 </tr>
 <tr class="odd">
 <td align="right">1.2</td>
-<td align="right">0.351</td>
-<td align="right">0.236</td>
-<td align="right">0.466</td>
+<td align="right">0.368</td>
+<td align="right">0.234</td>
+<td align="right">0.502</td>
 <td align="right">-1795.9</td>
 <td align="left">yes</td>
 </tr>
@@ -410,8 +410,8 @@ marks the slope that generated the data.
 </div>
 <p>The row at slope 0 makes the same missing-at-random assumption as the
 earlier table, but <code><a href="../reference/proxy_mnar_sensitivity.html">proxy_mnar_sensitivity()</a></code> refits the
-mixture and draws its own completions. Its mean of 0.063 therefore
-differs from the earlier 0.058 by 0.005.</p>
+mixture and draws its own completions. Its mean of 0.057 therefore
+differs from the earlier 0.061 by 0.004.</p>
 </div>
 <div class="section level3">
 <h3 id="censoring-at-a-known-limit">Censoring at a known limit<a class="anchor" aria-label="anchor" href="#censoring-at-a-known-limit"></a>
@@ -464,8 +464,8 @@ values were hidden.</caption>
 </tr>
 <tr class="even">
 <td align="left">imputed, censored below the limit</td>
-<td align="right">0.318</td>
-<td align="right">0.032</td>
+<td align="right">0.347</td>
+<td align="right">0.061</td>
 </tr>
 </tbody>
 </table>
@@ -507,7 +507,7 @@ was pooled by Rubin’s rules.</p>
 <p>Each imputer made 10 completed datasets. Every interval is a 95%
 interval. Coverage is the share of datasets whose interval contained the
 true value, and it should be close to 0.95.</p>
-<table style="width:100%;" class="table">
+<table style="width:99%;" class="table">
 <caption>Results over 300 simulated datasets per design. Bias is the
 average difference from the true value, and error is the root mean
 squared error. The mean of y is 0.25 in the population, and the true
@@ -700,12 +700,12 @@ mechanisms to two real datasets.</p>
 <p>Of the 600 values of <code>y</code>, 250 were deleted. Because the
 larger values were deleted more often, the rows not deleted give a mean
 of -0.044, against 0.285 in the complete data. Imputing under missing at
-random gives 0.058, which is still 0.227 too low. That imputation model
+random gives 0.061, which is still 0.224 too low. That imputation model
 is fitted to the rows that remain, which have too few large values.
-Supplying the true slope to <code><a href="../reference/mechanism.html">mnar()</a></code> gives 0.240, within
-0.046 of the complete-data mean.</p>
-<p>In the sweep, the pooled mean rises at every step from 0.063 at slope
-0 to 0.351 at slope 1.2. Its interval first contains the complete-data
+Supplying the true slope to <code><a href="../reference/mechanism.html">mnar()</a></code> gives 0.244, within
+0.041 of the complete-data mean.</p>
+<p>In the sweep, the pooled mean rises at every step from 0.057 at slope
+0 to 0.368 at slope 1.2. Its interval first contains the complete-data
 mean at a slope of 0.6. The data were generated with a slope of 0.7. The
 fit converged at every slope. The log-likelihood is highest at slope
 0.9, where it is about 17 above its value at slope 0. This difference
@@ -718,7 +718,7 @@ each hidden value to half the limit gives 0.631, which is still 0.345
 too high. Half the limit is a convention for concentrations, which
 cannot fall below zero. Here <code>y</code> can be negative, and 90 per
 cent of the hidden values lie below 0.15. The censored imputation gives
-0.318, within 0.032 of the complete-data mean.</p>
+0.347, within 0.061 of the complete-data mean.</p>
 </div>
 <div class="section level2">
 <h2 id="limitations">Limitations<a class="anchor" aria-label="anchor" href="#limitations"></a>
@@ -738,8 +738,8 @@ what the sweep covers. The sweep is not a test, and its log-likelihood
 cannot tell you which slope is right. The range of results is only as
 wide as the grid you choose.</p>
 <p>The single-dataset examples use one simulated dataset of 600 rows
-with 10 completed datasets. Their numbers would change with another
-seed. The settings that matter most are the number of components and the
+with 5 completed datasets. Their numbers would change with another seed.
+The settings that matter most are the number of components and the
 assumed slope. A mixture with too few components cannot represent the
 two groups in the data. The pooled mean moves steadily as the assumed
 slope moves away from the truth, as the sweep table shows.</p>

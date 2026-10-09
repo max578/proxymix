@@ -615,11 +615,12 @@ and 0.014 at
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>m</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">m = 1</annotation></semantics></math>
 and 0.645 at
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>m</mi><mo>=</mo><mn>5</mn></mrow><annotation encoding="application/x-tex">m = 5</annotation></semantics></math>.</p>
-<p>proxymix was the slowest of the five packages. For one series at
+<p><code>KFAS</code> was the slowest of the five packages. For one
+series at
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>m</mi><annotation encoding="application/x-tex">m</annotation></semantics></math>
-= 3, the two proxymix calibrations together took 85 ms, including the
-<code><a href="https://rdrr.io/r/stats/arima.html" class="external-link">arima()</a></code> fit that supplies the parameters. <code>KFAS</code>
-took 33 ms and <code>dlm</code> 10 ms, each including its own fit.
+= 3, it took 26 ms and <code>dlm</code> took 9 ms, each including its
+own fit. The two proxymix calibrations together took 8 ms, including the
+<code><a href="https://rdrr.io/r/stats/arima.html" class="external-link">arima()</a></code> fit that supplies the parameters.
 <code>strucchange</code> and <code>changepoint</code> each took less
 than 1 ms (median of five runs of 10 calls each, on one computer).</p>
 <p>The code below applies every check to one simulated series with

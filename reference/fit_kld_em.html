@@ -134,8 +134,9 @@ targets (the importance-sampled KLD estimate carries an additive
 
 
 <dt id="arg-ridge-eps">ridge_eps<a class="anchor" aria-label="anchor" href="#arg-ridge-eps"></a></dt>
-<dd><p>Ridge added to each component covariance at every
-M-step.</p></dd>
+<dd><p>Relative ridge. At every M-step, <code>ridge_eps</code> times
+each coordinate's variance under the target is added to that
+coordinate's diagonal entry of each component covariance.</p></dd>
 
 
 <dt id="arg-min-ess">min_ess<a class="anchor" aria-label="anchor" href="#arg-min-ess"></a></dt>
@@ -316,9 +317,9 @@ Statistics</em> 39, 798–812. <a href="https://doi.org/10.1111/j.1467-9469.2011
 <span class="r-in"><span>                  is_size <span class="op">=</span> <span class="fl">1500L</span>, max_iter <span class="op">=</span> <span class="fl">25L</span>, seed <span class="op">=</span> <span class="fl">1L</span>,</span></span>
 <span class="r-in"><span>                  validation_size <span class="op">=</span> <span class="fl">1500L</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">fit</span><span class="op">@</span><span class="va">diagnostics</span><span class="op">$</span><span class="va">kld_final</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.006967304</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.00696729</span>
 <span class="r-in"><span><span class="va">fit</span><span class="op">@</span><span class="va">diagnostics</span><span class="op">$</span><span class="va">validation_kld</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.00926966</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.009269613</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

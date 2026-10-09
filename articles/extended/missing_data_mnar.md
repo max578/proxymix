@@ -1,15 +1,11 @@
 # Missing data that depends on the missing value
 
-``` r
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`
 
-library(proxymix)
-```
-
-``` r
-
-has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
-has_mice <- requireNamespace("mice", quietly = TRUE)
-```
+\
+`has_ggplot2`` ``<-`` `[`requireNamespace`](https://rdrr.io/r/base/ns-load.html)`(``"ggplot2"``, quietly ``=`` ``TRUE``)`\
+`has_mice`` ``<-`` `[`requireNamespace`](https://rdrr.io/r/base/ns-load.html)`(``"mice"``, quietly ``=`` ``TRUE``)`
 
 ## The problem
 
@@ -73,22 +69,20 @@ itself, so the larger values are under-represented among the observed.
 The complete data is generated first and kept, so the truth is available
 to score against.
 
-``` r
-
-set.seed(20260622)
-n <- 600L
-comp <- sample(1:2, n, replace = TRUE)
-mu <- rbind(c(0, 0), c(1.5, 0.5))
-chol_r <- chol(matrix(c(1, 0.6, 0.6, 1), 2L))
-z_full <- matrix(rnorm(2 * n), n, 2L) %*% chol_r + mu[comp, ]
-colnames(z_full) <- c("x1", "y")
-truth <- mean(z_full[, 2L])
-
-beta_true <- 0.7
-miss <- runif(n) < plogis(-0.5 + beta_true * z_full[, 2L])
-dat <- z_full
-dat[miss, "y"] <- NA
-```
+\
+[`set.seed`](https://rdrr.io/r/base/Random.html)`(``20260622``)`\
+`n`` ``<-`` ``600L`\
+`comp`` ``<-`` `[`sample`](https://rdrr.io/r/base/sample.html)`(``1``:``2``, ``n``, replace ``=`` ``TRUE``)`\
+`mu`` ``<-`` `[`rbind`](https://rdrr.io/r/base/cbind.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``1.5``, ``0.5``)``)`\
+`chol_r`` ``<-`` `[`chol`](https://rdrr.io/r/base/chol.html)`(`[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``1``, ``0.6``, ``0.6``, ``1``)``, ``2L``)``)`\
+`z_full`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``2`` ``*`` ``n``)``, ``n``, ``2L``)`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``chol_r`` ``+`` ``mu``[``comp``, ``]`\
+[`colnames`](https://rdrr.io/r/base/colnames.html)`(``z_full``)`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``"x1"``, ``"y"``)`\
+`truth`` ``<-`` `[`mean`](https://rdrr.io/r/base/mean.html)`(``z_full``[``, ``2L``]``)`\
+\
+`beta_true`` ``<-`` ``0.7`\
+`miss`` ``<-`` `[`runif`](https://rdrr.io/r/stats/Uniform.html)`(``n``)`` ``<`` `[`plogis`](https://rdrr.io/r/stats/Logistic.html)`(``-``0.5`` ``+`` ``beta_true`` ``*`` ``z_full``[``, ``2L``]``)`\
+`dat`` ``<-`` ``z_full`\
+`dat``[``miss``, ``"y"``]`` ``<-`` ``NA`
 
 An imputer that assumes the data are missing at random fills the gap
 from the conditional of the observed, which is itself short of the large
@@ -99,20 +93,18 @@ completions and allow 500 iterations, the limit
 [`proxy_mnar_sensitivity()`](https://max578.github.io/proxymix/reference/proxy_mnar_sensitivity.md)
 uses below.
 
-``` r
-
-m_draws <- 10L
-mar_fit <- gmm_impute(dat, N = 2L, m = m_draws, mechanism = mar(),
-                      seed = 1L, max_iter = 500L)
-mnar_fit <- gmm_impute(dat, N = 2L, m = m_draws,
-                       mechanism = mnar("y", beta = beta_true), seed = 1L,
-                       max_iter = 500L)
-mar_est <- proxy_pool(mar_fit, "y")$estimate
-mnar_est <- proxy_pool(mnar_fit, "y")$estimate
-#> Analytic pooling is not defined for a gated ("mnar") mechanism;
-#> pooling by Rubin's rules instead.
-#> ℹ The returned attribute `method` records what was used.
-```
+\
+`m_draws`` ``<-`` ``10L`\
+`mar_fit`` ``<-`` `[`gmm_impute`](https://max578.github.io/proxymix/reference/gmm_impute.md)`(``dat``, N ``=`` ``2L``, m ``=`` ``m_draws``, mechanism ``=`` `[`mar`](https://max578.github.io/proxymix/reference/mechanism.md)`(``)``,`\
+`                      seed ``=`` ``1L``, max_iter ``=`` ``500L``)`\
+`mnar_fit`` ``<-`` `[`gmm_impute`](https://max578.github.io/proxymix/reference/gmm_impute.md)`(``dat``, N ``=`` ``2L``, m ``=`` ``m_draws``,`\
+`                       mechanism ``=`` `[`mnar`](https://max578.github.io/proxymix/reference/mechanism.md)`(``"y"``, beta ``=`` ``beta_true``)``, seed ``=`` ``1L``,`\
+`                       max_iter ``=`` ``500L``)`\
+`mar_est`` ``<-`` `[`proxy_pool`](https://max578.github.io/proxymix/reference/proxy_pool.md)`(``mar_fit``, ``"y"``)``$``estimate`\
+`mnar_est`` ``<-`` `[`proxy_pool`](https://max578.github.io/proxymix/reference/proxy_pool.md)`(``mnar_fit``, ``"y"``)``$``estimate`\
+`#> Analytic pooling is not defined for a gated (``"mnar"``) mechanism;`\
+`#> pooling by Rubin's rules instead.`\
+`#> ``ℹ```  The returned attribute `method` records what was used. ``
 
 Analytic pooling is defined for the plain conditional but not for a
 gated one, so the gated fits fall back to Rubin’s rules (Rubin, 1987)
@@ -146,16 +138,14 @@ whether the fit converged. The analyst reads off where a conclusion
 would change. Five slope values from 0 to 1.2 are enough to show the
 shape.
 
-``` r
-
-sweep <- proxy_mnar_sensitivity(dat, "y",
-                                beta_grid = seq(0, 1.2, by = 0.3),
-                                N = 2L, m = m_draws, seed = 1L)
-covers <- sweep$conf.low <= truth & sweep$conf.high >= truth
-beta_first <- sweep$beta[min(which(covers))]
-beta_best <- sweep$beta[which.max(sweep$loglik)]
-ll_gain <- max(sweep$loglik) - sweep$loglik[1L]
-```
+\
+`sweep`` ``<-`` `[`proxy_mnar_sensitivity`](https://max578.github.io/proxymix/reference/proxy_mnar_sensitivity.md)`(``dat``, ``"y"``,`\
+`                                beta_grid ``=`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``0``, ``1.2``, by ``=`` ``0.3``)``,`\
+`                                N ``=`` ``2L``, m ``=`` ``m_draws``, seed ``=`` ``1L``)`\
+`covers`` ``<-`` ``sweep``$``conf.low`` ``<=`` ``truth`` ``&`` ``sweep``$``conf.high`` ``>=`` ``truth`\
+`beta_first`` ``<-`` ``sweep``$``beta``[`[`min`](https://rdrr.io/r/base/Extremes.html)`(`[`which`](https://rdrr.io/r/base/which.html)`(``covers``)``)``]`\
+`beta_best`` ``<-`` ``sweep``$``beta``[`[`which.max`](https://rdrr.io/r/base/which.min.html)`(``sweep``$``loglik``)``]`\
+`ll_gain`` ``<-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(``sweep``$``loglik``)`` ``-`` ``sweep``$``loglik``[``1L``]`
 
 | Assumed slope | Pooled mean | CI lower | CI upper | Log-likelihood | Converged |
 |--------------:|------------:|---------:|---------:|---------------:|:----------|
@@ -179,33 +169,31 @@ analytically, without drawing. The two estimates, 0.063 and 0.058,
 differ by 0.005. With `m` = 10 completions, the slope-0 estimate alone
 has a Monte Carlo standard error of 0.014.
 
-``` r
-
-sweep_df <- as.data.frame(sweep)
-ggplot2::ggplot(sweep_df, ggplot2::aes(beta, estimate)) +
-  ggplot2::geom_ribbon(
-    ggplot2::aes(ymin = conf.low, ymax = conf.high),
-    fill = "#56B4E9", alpha = 0.3
-  ) +
-  ggplot2::geom_line(colour = "#0072B2", linewidth = 0.9) +
-  ggplot2::geom_point(colour = "#0072B2", size = 2) +
-  ggplot2::geom_hline(yintercept = truth, linetype = "dashed",
-                      colour = "#000000") +
-  ggplot2::geom_vline(xintercept = beta_true, linetype = "dotted",
-                      colour = "#D55E00") +
-  ggplot2::annotate("text", x = min(sweep_df$beta), y = truth,
-                    label = "complete-data truth", hjust = 0, vjust = -0.6,
-                    size = 3.2) +
-  ggplot2::annotate("text", x = beta_true, y = min(sweep_df$conf.low),
-                    label = "generating slope", hjust = 1.05, vjust = 0,
-                    size = 3.2, colour = "#D55E00") +
-  ggplot2::labs(
-    x = "assumed selection slope (log-odds per unit of y)",
-    y = "pooled mean of y",
-    title = "A sensitivity curve, not a single estimate"
-  ) +
-  ggplot2::theme_minimal(base_size = 11)
-```
+\
+`sweep_df`` ``<-`` `[`as.data.frame`](https://rdrr.io/r/base/as.data.frame.html)`(``sweep``)`\
+`ggplot2``::`[`ggplot`](https://ggplot2.tidyverse.org/reference/ggplot.html)`(``sweep_df``, ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``beta``, ``estimate``)``)`` ``+`\
+`  ``ggplot2``::`[`geom_ribbon`](https://ggplot2.tidyverse.org/reference/geom_ribbon.html)`(`\
+`    ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``ymin ``=`` ``conf.low``, ymax ``=`` ``conf.high``)``,`\
+`    fill ``=`` ``"#56B4E9"``, alpha ``=`` ``0.3`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`geom_line`](https://ggplot2.tidyverse.org/reference/geom_path.html)`(``colour ``=`` ``"#0072B2"``, linewidth ``=`` ``0.9``)`` ``+`\
+`  ``ggplot2``::`[`geom_point`](https://ggplot2.tidyverse.org/reference/geom_point.html)`(``colour ``=`` ``"#0072B2"``, size ``=`` ``2``)`` ``+`\
+`  ``ggplot2``::`[`geom_hline`](https://ggplot2.tidyverse.org/reference/geom_abline.html)`(``yintercept ``=`` ``truth``, linetype ``=`` ``"dashed"``,`\
+`                      colour ``=`` ``"#000000"``)`` ``+`\
+`  ``ggplot2``::`[`geom_vline`](https://ggplot2.tidyverse.org/reference/geom_abline.html)`(``xintercept ``=`` ``beta_true``, linetype ``=`` ``"dotted"``,`\
+`                      colour ``=`` ``"#D55E00"``)`` ``+`\
+`  ``ggplot2``::`[`annotate`](https://ggplot2.tidyverse.org/reference/annotate.html)`(``"text"``, x ``=`` `[`min`](https://rdrr.io/r/base/Extremes.html)`(``sweep_df``$``beta``)``, y ``=`` ``truth``,`\
+`                    label ``=`` ``"complete-data truth"``, hjust ``=`` ``0``, vjust ``=`` ``-``0.6``,`\
+`                    size ``=`` ``3.2``)`` ``+`\
+`  ``ggplot2``::`[`annotate`](https://ggplot2.tidyverse.org/reference/annotate.html)`(``"text"``, x ``=`` ``beta_true``, y ``=`` `[`min`](https://rdrr.io/r/base/Extremes.html)`(``sweep_df``$``conf.low``)``,`\
+`                    label ``=`` ``"generating slope"``, hjust ``=`` ``1.05``, vjust ``=`` ``0``,`\
+`                    size ``=`` ``3.2``, colour ``=`` ``"#D55E00"``)`` ``+`\
+`  ``ggplot2``::`[`labs`](https://ggplot2.tidyverse.org/reference/labs.html)`(`\
+`    x ``=`` ``"assumed selection slope (log-odds per unit of y)"``,`\
+`    y ``=`` ``"pooled mean of y"``,`\
+`    title ``=`` ``"A sensitivity curve, not a single estimate"`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`theme_minimal`](https://ggplot2.tidyverse.org/reference/ggtheme.html)`(``base_size ``=`` ``11``)`
 
 ![Pooled mean of y against the assumed selection slope, with a shaded
 confidence band, a marked point at each swept value, a dashed horizontal
@@ -226,19 +214,17 @@ hides values of `y` below a threshold is
 conditional truncated to the censored interval rather than substituting
 a constant such as half the limit.
 
-``` r
-
-thr <- 0.3
-cmiss <- z_full[, 2L] < thr
-cdat <- z_full
-cdat[cmiss, "y"] <- NA
-cfit <- gmm_impute(cdat, N = 2L, m = m_draws,
-                   mechanism = censored("y", upper = thr), seed = 1L)
-cens_est <- proxy_pool(cfit, "y")$estimate
-#> Analytic pooling is not defined for a gated ("censored") mechanism;
-#> pooling by Rubin's rules instead.
-#> ℹ The returned attribute `method` records what was used.
-```
+\
+`thr`` ``<-`` ``0.3`\
+`cmiss`` ``<-`` ``z_full``[``, ``2L``]`` ``<`` ``thr`\
+`cdat`` ``<-`` ``z_full`\
+`cdat``[``cmiss``, ``"y"``]`` ``<-`` ``NA`\
+`cfit`` ``<-`` `[`gmm_impute`](https://max578.github.io/proxymix/reference/gmm_impute.md)`(``cdat``, N ``=`` ``2L``, m ``=`` ``m_draws``,`\
+`                   mechanism ``=`` `[`censored`](https://max578.github.io/proxymix/reference/mechanism.md)`(``"y"``, upper ``=`` ``thr``)``, seed ``=`` ``1L``)`\
+`cens_est`` ``<-`` `[`proxy_pool`](https://max578.github.io/proxymix/reference/proxy_pool.md)`(``cfit``, ``"y"``)``$``estimate`\
+`#> Analytic pooling is not defined for a gated (``"censored"``) mechanism;`\
+`#> pooling by Rubin's rules instead.`\
+`#> ``ℹ```  The returned attribute `method` records what was used. ``
 
 | Estimator of the mean of y | Estimate |  Bias |
 |:---------------------------|---------:|------:|
@@ -339,61 +325,53 @@ regression is then run on and pooled.
 
 The competitors install from CRAN once and load as usual:
 
-``` r
+\
+[`install.packages`](https://rdrr.io/r/utils/install.packages.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``"mice"``, ``"Amelia"``, ``"AER"``, ``"survival"``, ``"sampleSelection"``)``)`
 
-install.packages(c("mice", "Amelia", "AER", "survival", "sampleSelection"))
-```
-
-``` r
-
-library(mice)
-library(Amelia)
-library(AER)
-library(survival)
-library(sampleSelection)
-```
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`mice`](https://github.com/amices/mice)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`Amelia`](https://gking.harvard.edu/amelia)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(``AER``)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`survival`](https://github.com/therneau/survival)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`sampleSelection`](https://r-forge.r-project.org/projects/sampleselection/)`)`
 
 The data are the `Affairs` survey of Fair (1978), shipped with AER and
 the package’s own Tobit example. The number of affairs in the past year
 is regressed on age, years married, religiousness, occupation and a
 self-rating of the marriage:
 
-``` r
-
-data("Affairs", package = "AER")
-cols_aff <- c("affairs", "age", "yearsmarried", "religiousness",
-              "occupation", "rating")
-aff <- Affairs[, cols_aff]
-f_aff <- affairs ~ age + yearsmarried + religiousness + occupation + rating
-```
+\
+[`data`](https://rdrr.io/r/utils/data.html)`(``"Affairs"``, package ``=`` ``"AER"``)`\
+`cols_aff`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``"affairs"``, ``"age"``, ``"yearsmarried"``, ``"religiousness"``,`\
+`              ``"occupation"``, ``"rating"``)`\
+`aff`` ``<-`` ``Affairs``[``, ``cols_aff``]`\
+`f_aff`` ``<-`` ``affairs`` ``~`` ``age`` ``+`` ``yearsmarried`` ``+`` ``religiousness`` ``+`` ``occupation`` ``+`` ``rating`
 
 Of the 601 respondents, 451 reported no affairs, which the Tobit model
 reads as a latent value at or below zero.
 
-``` r
-
-fit_tobit <- tobit(f_aff, data = aff)
-fit_survreg <- survreg(
-  Surv(affairs, affairs > 0, type = "left") ~ age + yearsmarried +
-    religiousness + occupation + rating,
-  data = aff, dist = "gaussian"
-)
-
-aff_holes <- aff
-aff_holes$affairs[aff$affairs == 0] <- NA
-imp_aff <- gmm_impute(aff_holes, N = 1L, m = 20L,
-                      mechanism = censored("affairs", upper = 0), seed = 1L)
-imp_aff_bic <- gmm_impute(aff_holes, m = 20L,
-                          mechanism = censored("affairs", upper = 0),
-                          seed = 1L)
-pool_aff <- function(imp) {
-  fits <- lapply(complete(as_mids(imp), "all"),
-                 function(d) lm(f_aff, data = d))
-  summary(pool(fits))
-}
-pooled_aff <- pool_aff(imp_aff)
-pooled_aff_bic <- pool_aff(imp_aff_bic)
-```
+\
+`fit_tobit`` ``<-`` `[`tobit`](https://rdrr.io/pkg/AER/man/tobit.html)`(``f_aff``, data ``=`` ``aff``)`\
+`fit_survreg`` ``<-`` `[`survreg`](https://rdrr.io/pkg/survival/man/survreg.html)`(`\
+`  `[`Surv`](https://rdrr.io/pkg/survival/man/Surv.html)`(``affairs``, ``affairs`` ``>`` ``0``, type ``=`` ``"left"``)`` ``~`` ``age`` ``+`` ``yearsmarried`` ``+`\
+`    ``religiousness`` ``+`` ``occupation`` ``+`` ``rating``,`\
+`  data ``=`` ``aff``, dist ``=`` ``"gaussian"`\
+`)`\
+\
+`aff_holes`` ``<-`` ``aff`\
+`aff_holes``$``affairs``[``aff``$``affairs`` ``==`` ``0``]`` ``<-`` ``NA`\
+`imp_aff`` ``<-`` `[`gmm_impute`](https://max578.github.io/proxymix/reference/gmm_impute.md)`(``aff_holes``, N ``=`` ``1L``, m ``=`` ``20L``,`\
+`                      mechanism ``=`` `[`censored`](https://max578.github.io/proxymix/reference/mechanism.md)`(``"affairs"``, upper ``=`` ``0``)``, seed ``=`` ``1L``)`\
+`imp_aff_bic`` ``<-`` `[`gmm_impute`](https://max578.github.io/proxymix/reference/gmm_impute.md)`(``aff_holes``, m ``=`` ``20L``,`\
+`                          mechanism ``=`` `[`censored`](https://max578.github.io/proxymix/reference/mechanism.md)`(``"affairs"``, upper ``=`` ``0``)``,`\
+`                          seed ``=`` ``1L``)`\
+`pool_aff`` ``<-`` ``function``(``imp``)`` ``{`\
+`  ``fits`` ``<-`` `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`complete`](https://tidyr.tidyverse.org/reference/complete.html)`(`[`as_mids`](https://max578.github.io/proxymix/reference/as_mids.md)`(``imp``)``, ``"all"``)``,`\
+`                 ``function``(``d``)`` `[`lm`](https://rdrr.io/r/stats/lm.html)`(``f_aff``, data ``=`` ``d``)``)`\
+`  `[`summary`](https://rdrr.io/r/base/summary.html)`(`[`pool`](https://amices.org/mice/reference/pool.html)`(``fits``)``)`\
+`}`\
+`pooled_aff`` ``<-`` ``pool_aff``(``imp_aff``)`\
+`pooled_aff_bic`` ``<-`` ``pool_aff``(``imp_aff_bic``)`
 
 | Coefficient | AER tobit | survival survreg | proxymix, N = 1 | proxymix, N = 6 |
 |:---|---:|---:|---:|---:|
@@ -454,18 +432,16 @@ in kilograms. Body mass is deleted with a probability that rises with
 body mass itself, at a log-odds slope of 1.5 per kilogram, and the
 deleted values stay aside for scoring.
 
-``` r
-
-cols <- c("bill_len", "bill_dep", "flipper_len", "body_mass")
-peng <- na.omit(penguins[, cols])
-peng$body_mass <- peng$body_mass / 1000
-
-set.seed(20260925)
-gone <- runif(nrow(peng)) < plogis(1.5 * (peng$body_mass - 4.5))
-peng_holes <- peng
-peng_holes$body_mass[gone] <- NA
-mass_truth <- mean(peng$body_mass)
-```
+\
+`cols`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``"bill_len"``, ``"bill_dep"``, ``"flipper_len"``, ``"body_mass"``)`\
+`peng`` ``<-`` `[`na.omit`](https://rdrr.io/r/stats/na.fail.html)`(``penguins``[``, ``cols``]``)`\
+`peng``$``body_mass`` ``<-`` ``peng``$``body_mass`` ``/`` ``1000`\
+\
+[`set.seed`](https://rdrr.io/r/base/Random.html)`(``20260925``)`\
+`gone`` ``<-`` `[`runif`](https://rdrr.io/r/stats/Uniform.html)`(`[`nrow`](https://rdrr.io/r/base/nrow.html)`(``peng``)``)`` ``<`` `[`plogis`](https://rdrr.io/r/stats/Logistic.html)`(``1.5`` ``*`` ``(``peng``$``body_mass`` ``-`` ``4.5``)``)`\
+`peng_holes`` ``<-`` ``peng`\
+`peng_holes``$``body_mass``[``gone``]`` ``<-`` ``NA`\
+`mass_truth`` ``<-`` `[`mean`](https://rdrr.io/r/base/mean.html)`(``peng``$``body_mass``)`
 
 That leaves 342 birds, of which 145 lose their body mass. The mean of
 the retained masses is 3.871 kg against 4.202 kg over all the birds.
@@ -476,51 +452,49 @@ covers five shifts from 0 to 0.6 kg, three quarters of a standard
 deviation of body mass, with imputation by the normal linear model so
 that the shift acts on a model-based draw:
 
-``` r
-
-beta_peng <- seq(0, 3, by = 0.75)
-delta_peng <- seq(0, 0.6, by = 0.15)
-
-sweep_peng <- proxy_mnar_sensitivity(peng_holes, "body_mass",
-                                     beta_grid = beta_peng, m = 20L,
-                                     seed = 1L)
-
-pool_mean <- function(fits) {
-  s <- summary(pool(fits), conf.int = TRUE)
-  unlist(s[1L, c("estimate", "conf.low", "conf.high")])
-}
-mice_delta <- function(delta) {
-  post <- make.post(peng_holes)
-  post["body_mass"] <- paste0("imp[[j]][, i] <- imp[[j]][, i] + ", delta)
-  imp <- mice(peng_holes, m = 20L, method = "norm", post = post, seed = 1L,
-              printFlag = FALSE)
-  pool_mean(with(imp, lm(body_mass ~ 1))$analyses)
-}
-sweep_mice <- t(vapply(delta_peng, mice_delta, numeric(3L)))
-
-set.seed(1L)
-imp_amelia <- amelia(peng_holes, m = 20L, p2s = 0L)
-mean_amelia <- pool_mean(lapply(imp_amelia$imputations,
-                                function(d) lm(body_mass ~ 1, data = d)))
-
-peng_sel <- peng_holes
-peng_sel$seen <- !is.na(peng_sel$body_mass)
-fit_heckit <- heckit(seen ~ bill_len + bill_dep + flipper_len,
-                     body_mass ~ bill_len + bill_dep + flipper_len,
-                     data = peng_sel)
-# the mean of the outcome equation over every bird, delta-method interval
-heckit_mean <- function(fit, data, outcome_cols) {
-  x_bar <- c(1, colMeans(data[, outcome_cols]))
-  b <- coef(fit)[seq_along(x_bar) + length(x_bar)]
-  v <- vcov(fit)[seq_along(x_bar) + length(x_bar),
-                 seq_along(x_bar) + length(x_bar)]
-  est <- sum(x_bar * b)
-  se <- sqrt(as.numeric(t(x_bar) %*% v %*% x_bar))
-  c(estimate = est, conf.low = est - qnorm(0.975) * se,
-    conf.high = est + qnorm(0.975) * se)
-}
-mean_heckit <- heckit_mean(fit_heckit, peng_sel, cols[1:3])
-```
+\
+`beta_peng`` ``<-`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``0``, ``3``, by ``=`` ``0.75``)`\
+`delta_peng`` ``<-`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``0``, ``0.6``, by ``=`` ``0.15``)`\
+\
+`sweep_peng`` ``<-`` `[`proxy_mnar_sensitivity`](https://max578.github.io/proxymix/reference/proxy_mnar_sensitivity.md)`(``peng_holes``, ``"body_mass"``,`\
+`                                     beta_grid ``=`` ``beta_peng``, m ``=`` ``20L``,`\
+`                                     seed ``=`` ``1L``)`\
+\
+`pool_mean`` ``<-`` ``function``(``fits``)`` ``{`\
+`  ``s`` ``<-`` `[`summary`](https://rdrr.io/r/base/summary.html)`(`[`pool`](https://amices.org/mice/reference/pool.html)`(``fits``)``, conf.int ``=`` ``TRUE``)`\
+`  `[`unlist`](https://rdrr.io/r/base/unlist.html)`(``s``[``1L``, `[`c`](https://rdrr.io/r/base/c.html)`(``"estimate"``, ``"conf.low"``, ``"conf.high"``)``]``)`\
+`}`\
+`mice_delta`` ``<-`` ``function``(``delta``)`` ``{`\
+`  ``post`` ``<-`` `[`make.post`](https://amices.org/mice/reference/make.post.html)`(``peng_holes``)`\
+`  ``post``[``"body_mass"``]`` ``<-`` `[`paste0`](https://rdrr.io/r/base/paste.html)`(``"imp[[j]][, i] <- imp[[j]][, i] + "``, ``delta``)`\
+`  ``imp`` ``<-`` `[`mice`](https://amices.org/mice/reference/mice.html)`(``peng_holes``, m ``=`` ``20L``, method ``=`` ``"norm"``, post ``=`` ``post``, seed ``=`` ``1L``,`\
+`              printFlag ``=`` ``FALSE``)`\
+`  ``pool_mean``(`[`with`](https://rdrr.io/r/base/with.html)`(``imp``, `[`lm`](https://rdrr.io/r/stats/lm.html)`(``body_mass`` ``~`` ``1``)``)``$``analyses``)`\
+`}`\
+`sweep_mice`` ``<-`` `[`t`](https://rdrr.io/r/base/t.html)`(`[`vapply`](https://rdrr.io/r/base/lapply.html)`(``delta_peng``, ``mice_delta``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``3L``)``)``)`\
+\
+[`set.seed`](https://rdrr.io/r/base/Random.html)`(``1L``)`\
+`imp_amelia`` ``<-`` `[`amelia`](https://rdrr.io/pkg/Amelia/man/amelia.html)`(``peng_holes``, m ``=`` ``20L``, p2s ``=`` ``0L``)`\
+`mean_amelia`` ``<-`` ``pool_mean``(`[`lapply`](https://rdrr.io/r/base/lapply.html)`(``imp_amelia``$``imputations``,`\
+`                                ``function``(``d``)`` `[`lm`](https://rdrr.io/r/stats/lm.html)`(``body_mass`` ``~`` ``1``, data ``=`` ``d``)``)``)`\
+\
+`peng_sel`` ``<-`` ``peng_holes`\
+`peng_sel``$``seen`` ``<-`` ``!`[`is.na`](https://rdrr.io/r/base/NA.html)`(``peng_sel``$``body_mass``)`\
+`fit_heckit`` ``<-`` `[`heckit`](https://rdrr.io/pkg/sampleSelection/man/selection.html)`(``seen`` ``~`` ``bill_len`` ``+`` ``bill_dep`` ``+`` ``flipper_len``,`\
+`                     ``body_mass`` ``~`` ``bill_len`` ``+`` ``bill_dep`` ``+`` ``flipper_len``,`\
+`                     data ``=`` ``peng_sel``)`\
+`# the mean of the outcome equation over every bird, delta-method interval`\
+`heckit_mean`` ``<-`` ``function``(``fit``, ``data``, ``outcome_cols``)`` ``{`\
+`  ``x_bar`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``1``, `[`colMeans`](https://rdrr.io/r/base/colSums.html)`(``data``[``, ``outcome_cols``]``)``)`\
+`  ``b`` ``<-`` `[`coef`](https://rdrr.io/r/stats/coef.html)`(``fit``)``[`[`seq_along`](https://rdrr.io/r/base/seq.html)`(``x_bar``)`` ``+`` `[`length`](https://rdrr.io/r/base/length.html)`(``x_bar``)``]`\
+`  ``v`` ``<-`` `[`vcov`](https://rdrr.io/r/stats/vcov.html)`(``fit``)``[`[`seq_along`](https://rdrr.io/r/base/seq.html)`(``x_bar``)`` ``+`` `[`length`](https://rdrr.io/r/base/length.html)`(``x_bar``)``,`\
+`                 `[`seq_along`](https://rdrr.io/r/base/seq.html)`(``x_bar``)`` ``+`` `[`length`](https://rdrr.io/r/base/length.html)`(``x_bar``)``]`\
+`  ``est`` ``<-`` `[`sum`](https://rdrr.io/r/base/sum.html)`(``x_bar`` ``*`` ``b``)`\
+`  ``se`` ``<-`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(`[`as.numeric`](https://rdrr.io/r/base/numeric.html)`(`[`t`](https://rdrr.io/r/base/t.html)`(``x_bar``)`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``v`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``x_bar``)``)`\
+`  `[`c`](https://rdrr.io/r/base/c.html)`(``estimate ``=`` ``est``, conf.low ``=`` ``est`` ``-`` `[`qnorm`](https://rdrr.io/r/stats/Normal.html)`(``0.975``)`` ``*`` ``se``,`\
+`    conf.high ``=`` ``est`` ``+`` `[`qnorm`](https://rdrr.io/r/stats/Normal.html)`(``0.975``)`` ``*`` ``se``)`\
+`}`\
+`mean_heckit`` ``<-`` ``heckit_mean``(``fit_heckit``, ``peng_sel``, ``cols``[``1``:``3``]``)`
 
 Deleting the heavier birds pulls the mean of the available cases down by
 0.331 kg. The proxymix curve at slope 0 and Amelia both impute under
@@ -618,138 +592,136 @@ and the tables below it are read from its stored output. For a quick
 reduced run, change the line `n_rep <- 300L` to a small number such as
 `n_rep <- 3L`.
 
-``` r
-
-library(proxymix)
-library(mice)
-library(Amelia)
-library(AER)
-library(survival)
-library(sampleSelection)
-
-n <- 300L      # rows in each dataset
-m <- 10L       # completions per imputer
-n_rep <- 300L  # datasets per design
-
-beta_grid <- c(0, 0.35, 0.7, 1.05)   # proxymix selection slopes
-delta_grid <- c(0, 0.2, 0.4, 0.6)    # mice shifts, in units of y
-a_cens <- -sqrt(2) * qnorm(0.3)      # 30% of the latent values fall below 0
-
-truth <- c(mnar_mean = 0.25, cens_intercept = a_cens, cens_slope = 1)
-
-# estimate and 95% interval for every coefficient: the usual interval for
-# one dataset, Rubin's rules over several completions
-ci_fits <- function(fits) {
-  if (length(fits) == 1L) {
-    return(cbind(coef(fits[[1L]]), confint(fits[[1L]])))
-  }
-  s <- summary(pool(fits), conf.int = TRUE)
-  as.matrix(s[, c("estimate", "conf.low", "conf.high")])
-}
-
-# Wald interval for the regression coefficients of a Tobit fit
-ci_wald <- function(fit, k) {
-  est <- coef(fit)[seq_len(k)]
-  se <- sqrt(diag(vcov(fit)))[seq_len(k)]
-  cbind(est, est - qnorm(0.975) * se, est + qnorm(0.975) * se)
-}
-
-# the mean of a Heckman outcome equation over every row, delta method
-ci_heckit_mean <- function(fit, x_bar) {
-  idx <- seq_along(x_bar) + length(x_bar)
-  est <- sum(x_bar * coef(fit)[idx])
-  v <- as.numeric(t(x_bar) %*% vcov(fit)[idx, idx] %*% x_bar)
-  se <- if (is.finite(v) && v >= 0) sqrt(v) else NA_real_
-  cbind(est, est - qnorm(0.975) * se, est + qnorm(0.975) * se)
-}
-
-rows_of <- function(design, estimand, method, ci) {
-  data.frame(design = design, estimand = estimand, method = method,
-             estimate = ci[, 1L], lower = ci[, 2L], upper = ci[, 3L])
-}
-
-mu <- rbind(c(0, 0), c(1.5, 0.5))
-chol_r <- chol(matrix(c(1, 0.6, 0.6, 1), 2L))
-
-one_mnar <- function(r) {
-  set.seed(r)
-  comp <- sample(1:2, n, replace = TRUE)
-  z <- matrix(rnorm(2 * n), n, 2L) %*% chol_r + mu[comp, ]
-  full <- data.frame(x1 = z[, 1L], y = z[, 2L])
-  obs <- full
-  obs$y[runif(n) < plogis(-0.5 + 0.7 * full$y)] <- NA
-  seen <- !is.na(obs$y)
-  out <- list(
-    rows_of("mnar", "mean", "complete data",
-            ci_fits(list(lm(y ~ 1, data = full)))),
-    rows_of("mnar", "mean", "available cases",
-            ci_fits(list(lm(y ~ 1, data = obs[seen, ]))))
-  )
-  sw <- proxy_mnar_sensitivity(obs, "y", beta_grid = beta_grid, m = m,
-                               seed = r)
-  out[[3L]] <- rows_of("mnar", "mean", paste0("proxymix, slope ", sw$beta),
-                       as.matrix(sw[, c("estimate", "conf.low", "conf.high")]))
-  out[[4L]] <- do.call(rbind, lapply(delta_grid, function(delta) {
-    post <- make.post(obs)
-    post["y"] <- paste0("imp[[j]][, i] <- imp[[j]][, i] + ", delta)
-    imp <- mice(obs, m = m, method = "norm", post = post, seed = r,
-                printFlag = FALSE)
-    rows_of("mnar", "mean", paste0("mice, shift ", delta),
-            ci_fits(with(imp, lm(y ~ 1))$analyses))
-  }))
-  out[[5L]] <- rows_of("mnar", "mean", "Amelia",
-                       ci_fits(lapply(amelia(obs, m = m, p2s = 0L)$imputations,
-                                      function(d) lm(y ~ 1, data = d))))
-  obs$seen <- seen
-  fit <- heckit(seen ~ x1, y ~ x1, data = obs)
-  out[[6L]] <- rows_of("mnar", "mean", "sampleSelection heckit",
-                       ci_heckit_mean(fit, c(1, mean(obs$x1))))
-  do.call(rbind, out)
-}
-
-one_censored <- function(r) {
-  set.seed(r)
-  x <- rnorm(n)
-  y_star <- a_cens + x + rnorm(n)
-  full <- data.frame(x = x, y = y_star)
-  obs <- data.frame(x = x, y = pmax(y_star, 0))
-  holes <- obs
-  holes$y[obs$y == 0] <- NA
-  imp <- gmm_impute(holes, m = m, mechanism = censored("y", upper = 0),
-                    seed = r)
-  cis <- list(
-    "complete data" = ci_fits(list(lm(y ~ x, data = full))),
-    "zeros at face value" = ci_fits(list(lm(y ~ x, data = obs))),
-    "AER tobit" = ci_wald(tobit(y ~ x, data = obs), 2L),
-    "survival survreg" = ci_wald(
-      survreg(Surv(y, y > 0, type = "left") ~ x, data = obs,
-              dist = "gaussian"), 2L),
-    proxymix = ci_fits(lapply(complete(as_mids(imp), "all"),
-                              function(d) lm(y ~ x, data = d)))
-  )
-  do.call(rbind, lapply(names(cis), function(method) {
-    rows_of("censored", c("intercept", "slope"), method, cis[[method]])
-  }))
-}
-
-res <- rbind(
-  do.call(rbind, lapply(seq_len(n_rep), one_mnar)),
-  do.call(rbind, lapply(seq_len(n_rep), one_censored))
-)
-res$truth <- truth[ifelse(res$design == "mnar", "mnar_mean",
-                          paste0("cens_", res$estimand))]
-n_undefined <- sum(is.na(res$lower))
-
-sim_tab <- aggregate(
-  cbind(bias = estimate - truth, rmse = (estimate - truth)^2,
-        coverage = lower <= truth & truth <= upper,
-        width = upper - lower) ~ design + estimand + method,
-  data = res, FUN = function(v) mean(v, na.rm = TRUE),
-  na.action = na.pass
-)
-sim_tab$rmse <- sqrt(sim_tab$rmse)
-sim_tab
-```
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`mice`](https://github.com/amices/mice)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`Amelia`](https://gking.harvard.edu/amelia)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(``AER``)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`survival`](https://github.com/therneau/survival)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`sampleSelection`](https://r-forge.r-project.org/projects/sampleselection/)`)`\
+\
+`n`` ``<-`` ``300L``      ``# rows in each dataset`\
+`m`` ``<-`` ``10L``       ``# completions per imputer`\
+`n_rep`` ``<-`` ``300L``  ``# datasets per design`\
+\
+`beta_grid`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0.35``, ``0.7``, ``1.05``)``   ``# proxymix selection slopes`\
+`delta_grid`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0.2``, ``0.4``, ``0.6``)``    ``# mice shifts, in units of y`\
+`a_cens`` ``<-`` ``-`[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(``2``)`` ``*`` `[`qnorm`](https://rdrr.io/r/stats/Normal.html)`(``0.3``)``      ``# 30% of the latent values fall below 0`\
+\
+`truth`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``mnar_mean ``=`` ``0.25``, cens_intercept ``=`` ``a_cens``, cens_slope ``=`` ``1``)`\
+\
+`# estimate and 95% interval for every coefficient: the usual interval for`\
+`# one dataset, Rubin's rules over several completions`\
+`ci_fits`` ``<-`` ``function``(``fits``)`` ``{`\
+`  ``if`` ``(`[`length`](https://rdrr.io/r/base/length.html)`(``fits``)`` ``==`` ``1L``)`` ``{`\
+`    `[`return`](https://rdrr.io/r/base/function.html)`(`[`cbind`](https://amices.org/mice/reference/cbind.html)`(`[`coef`](https://rdrr.io/r/stats/coef.html)`(``fits``[[``1L``]``]``)``, `[`confint`](https://rdrr.io/r/stats/confint.html)`(``fits``[[``1L``]``]``)``)``)`\
+`  ``}`\
+`  ``s`` ``<-`` `[`summary`](https://rdrr.io/r/base/summary.html)`(`[`pool`](https://amices.org/mice/reference/pool.html)`(``fits``)``, conf.int ``=`` ``TRUE``)`\
+`  `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(``s``[``, `[`c`](https://rdrr.io/r/base/c.html)`(``"estimate"``, ``"conf.low"``, ``"conf.high"``)``]``)`\
+`}`\
+\
+`# Wald interval for the regression coefficients of a Tobit fit`\
+`ci_wald`` ``<-`` ``function``(``fit``, ``k``)`` ``{`\
+`  ``est`` ``<-`` `[`coef`](https://rdrr.io/r/stats/coef.html)`(``fit``)``[`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``k``)``]`\
+`  ``se`` ``<-`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(`[`diag`](https://rdrr.io/r/base/diag.html)`(`[`vcov`](https://rdrr.io/r/stats/vcov.html)`(``fit``)``)``)``[`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``k``)``]`\
+`  `[`cbind`](https://amices.org/mice/reference/cbind.html)`(``est``, ``est`` ``-`` `[`qnorm`](https://rdrr.io/r/stats/Normal.html)`(``0.975``)`` ``*`` ``se``, ``est`` ``+`` `[`qnorm`](https://rdrr.io/r/stats/Normal.html)`(``0.975``)`` ``*`` ``se``)`\
+`}`\
+\
+`# the mean of a Heckman outcome equation over every row, delta method`\
+`ci_heckit_mean`` ``<-`` ``function``(``fit``, ``x_bar``)`` ``{`\
+`  ``idx`` ``<-`` `[`seq_along`](https://rdrr.io/r/base/seq.html)`(``x_bar``)`` ``+`` `[`length`](https://rdrr.io/r/base/length.html)`(``x_bar``)`\
+`  ``est`` ``<-`` `[`sum`](https://rdrr.io/r/base/sum.html)`(``x_bar`` ``*`` `[`coef`](https://rdrr.io/r/stats/coef.html)`(``fit``)``[``idx``]``)`\
+`  ``v`` ``<-`` `[`as.numeric`](https://rdrr.io/r/base/numeric.html)`(`[`t`](https://rdrr.io/r/base/t.html)`(``x_bar``)`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` `[`vcov`](https://rdrr.io/r/stats/vcov.html)`(``fit``)``[``idx``, ``idx``]`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``x_bar``)`\
+`  ``se`` ``<-`` ``if`` ``(`[`is.finite`](https://rdrr.io/r/base/is.finite.html)`(``v``)`` ``&&`` ``v`` ``>=`` ``0``)`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(``v``)`` ``else`` ``NA_real_`\
+`  `[`cbind`](https://amices.org/mice/reference/cbind.html)`(``est``, ``est`` ``-`` `[`qnorm`](https://rdrr.io/r/stats/Normal.html)`(``0.975``)`` ``*`` ``se``, ``est`` ``+`` `[`qnorm`](https://rdrr.io/r/stats/Normal.html)`(``0.975``)`` ``*`` ``se``)`\
+`}`\
+\
+`rows_of`` ``<-`` ``function``(``design``, ``estimand``, ``method``, ``ci``)`` ``{`\
+`  `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``design ``=`` ``design``, estimand ``=`` ``estimand``, method ``=`` ``method``,`\
+`             estimate ``=`` ``ci``[``, ``1L``]``, lower ``=`` ``ci``[``, ``2L``]``, upper ``=`` ``ci``[``, ``3L``]``)`\
+`}`\
+\
+`mu`` ``<-`` `[`rbind`](https://amices.org/mice/reference/cbind.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``1.5``, ``0.5``)``)`\
+`chol_r`` ``<-`` `[`chol`](https://rdrr.io/r/base/chol.html)`(`[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``1``, ``0.6``, ``0.6``, ``1``)``, ``2L``)``)`\
+\
+`one_mnar`` ``<-`` ``function``(``r``)`` ``{`\
+`  `[`set.seed`](https://rdrr.io/r/base/Random.html)`(``r``)`\
+`  ``comp`` ``<-`` `[`sample`](https://rdrr.io/r/base/sample.html)`(``1``:``2``, ``n``, replace ``=`` ``TRUE``)`\
+`  ``z`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``2`` ``*`` ``n``)``, ``n``, ``2L``)`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``chol_r`` ``+`` ``mu``[``comp``, ``]`\
+`  ``full`` ``<-`` `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``x1 ``=`` ``z``[``, ``1L``]``, y ``=`` ``z``[``, ``2L``]``)`\
+`  ``obs`` ``<-`` ``full`\
+`  ``obs``$``y``[`[`runif`](https://rdrr.io/r/stats/Uniform.html)`(``n``)`` ``<`` `[`plogis`](https://rdrr.io/r/stats/Logistic.html)`(``-``0.5`` ``+`` ``0.7`` ``*`` ``full``$``y``)``]`` ``<-`` ``NA`\
+`  ``seen`` ``<-`` ``!`[`is.na`](https://rdrr.io/r/base/NA.html)`(``obs``$``y``)`\
+`  ``out`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(`\
+`    ``rows_of``(``"mnar"``, ``"mean"``, ``"complete data"``,`\
+`            ``ci_fits``(`[`list`](https://rdrr.io/r/base/list.html)`(`[`lm`](https://rdrr.io/r/stats/lm.html)`(``y`` ``~`` ``1``, data ``=`` ``full``)``)``)``)``,`\
+`    ``rows_of``(``"mnar"``, ``"mean"``, ``"available cases"``,`\
+`            ``ci_fits``(`[`list`](https://rdrr.io/r/base/list.html)`(`[`lm`](https://rdrr.io/r/stats/lm.html)`(``y`` ``~`` ``1``, data ``=`` ``obs``[``seen``, ``]``)``)``)``)`\
+`  ``)`\
+`  ``sw`` ``<-`` `[`proxy_mnar_sensitivity`](https://max578.github.io/proxymix/reference/proxy_mnar_sensitivity.md)`(``obs``, ``"y"``, beta_grid ``=`` ``beta_grid``, m ``=`` ``m``,`\
+`                               seed ``=`` ``r``)`\
+`  ``out``[[``3L``]``]`` ``<-`` ``rows_of``(``"mnar"``, ``"mean"``, `[`paste0`](https://rdrr.io/r/base/paste.html)`(``"proxymix, slope "``, ``sw``$``beta``)``,`\
+`                       `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(``sw``[``, `[`c`](https://rdrr.io/r/base/c.html)`(``"estimate"``, ``"conf.low"``, ``"conf.high"``)``]``)``)`\
+`  ``out``[[``4L``]``]`` ``<-`` `[`do.call`](https://rdrr.io/r/base/do.call.html)`(``rbind``, `[`lapply`](https://rdrr.io/r/base/lapply.html)`(``delta_grid``, ``function``(``delta``)`` ``{`\
+`    ``post`` ``<-`` `[`make.post`](https://amices.org/mice/reference/make.post.html)`(``obs``)`\
+`    ``post``[``"y"``]`` ``<-`` `[`paste0`](https://rdrr.io/r/base/paste.html)`(``"imp[[j]][, i] <- imp[[j]][, i] + "``, ``delta``)`\
+`    ``imp`` ``<-`` `[`mice`](https://amices.org/mice/reference/mice.html)`(``obs``, m ``=`` ``m``, method ``=`` ``"norm"``, post ``=`` ``post``, seed ``=`` ``r``,`\
+`                printFlag ``=`` ``FALSE``)`\
+`    ``rows_of``(``"mnar"``, ``"mean"``, `[`paste0`](https://rdrr.io/r/base/paste.html)`(``"mice, shift "``, ``delta``)``,`\
+`            ``ci_fits``(`[`with`](https://rdrr.io/r/base/with.html)`(``imp``, `[`lm`](https://rdrr.io/r/stats/lm.html)`(``y`` ``~`` ``1``)``)``$``analyses``)``)`\
+`  ``}``)``)`\
+`  ``out``[[``5L``]``]`` ``<-`` ``rows_of``(``"mnar"``, ``"mean"``, ``"Amelia"``,`\
+`                       ``ci_fits``(`[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`amelia`](https://rdrr.io/pkg/Amelia/man/amelia.html)`(``obs``, m ``=`` ``m``, p2s ``=`` ``0L``)``$``imputations``,`\
+`                                      ``function``(``d``)`` `[`lm`](https://rdrr.io/r/stats/lm.html)`(``y`` ``~`` ``1``, data ``=`` ``d``)``)``)``)`\
+`  ``obs``$``seen`` ``<-`` ``seen`\
+`  ``fit`` ``<-`` `[`heckit`](https://rdrr.io/pkg/sampleSelection/man/selection.html)`(``seen`` ``~`` ``x1``, ``y`` ``~`` ``x1``, data ``=`` ``obs``)`\
+`  ``out``[[``6L``]``]`` ``<-`` ``rows_of``(``"mnar"``, ``"mean"``, ``"sampleSelection heckit"``,`\
+`                       ``ci_heckit_mean``(``fit``, `[`c`](https://rdrr.io/r/base/c.html)`(``1``, `[`mean`](https://rdrr.io/r/base/mean.html)`(``obs``$``x1``)``)``)``)`\
+`  `[`do.call`](https://rdrr.io/r/base/do.call.html)`(``rbind``, ``out``)`\
+`}`\
+\
+`one_censored`` ``<-`` ``function``(``r``)`` ``{`\
+`  `[`set.seed`](https://rdrr.io/r/base/Random.html)`(``r``)`\
+`  ``x`` ``<-`` `[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n``)`\
+`  ``y_star`` ``<-`` ``a_cens`` ``+`` ``x`` ``+`` `[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n``)`\
+`  ``full`` ``<-`` `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``x ``=`` ``x``, y ``=`` ``y_star``)`\
+`  ``obs`` ``<-`` `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``x ``=`` ``x``, y ``=`` `[`pmax`](https://rdrr.io/r/base/Extremes.html)`(``y_star``, ``0``)``)`\
+`  ``holes`` ``<-`` ``obs`\
+`  ``holes``$``y``[``obs``$``y`` ``==`` ``0``]`` ``<-`` ``NA`\
+`  ``imp`` ``<-`` `[`gmm_impute`](https://max578.github.io/proxymix/reference/gmm_impute.md)`(``holes``, m ``=`` ``m``, mechanism ``=`` `[`censored`](https://max578.github.io/proxymix/reference/mechanism.md)`(``"y"``, upper ``=`` ``0``)``,`\
+`                    seed ``=`` ``r``)`\
+`  ``cis`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(`\
+`    ``"complete data"`` ``=`` ``ci_fits``(`[`list`](https://rdrr.io/r/base/list.html)`(`[`lm`](https://rdrr.io/r/stats/lm.html)`(``y`` ``~`` ``x``, data ``=`` ``full``)``)``)``,`\
+`    ``"zeros at face value"`` ``=`` ``ci_fits``(`[`list`](https://rdrr.io/r/base/list.html)`(`[`lm`](https://rdrr.io/r/stats/lm.html)`(``y`` ``~`` ``x``, data ``=`` ``obs``)``)``)``,`\
+`    ``"AER tobit"`` ``=`` ``ci_wald``(`[`tobit`](https://rdrr.io/pkg/AER/man/tobit.html)`(``y`` ``~`` ``x``, data ``=`` ``obs``)``, ``2L``)``,`\
+`    ``"survival survreg"`` ``=`` ``ci_wald``(`\
+`      `[`survreg`](https://rdrr.io/pkg/survival/man/survreg.html)`(`[`Surv`](https://rdrr.io/pkg/survival/man/Surv.html)`(``y``, ``y`` ``>`` ``0``, type ``=`` ``"left"``)`` ``~`` ``x``, data ``=`` ``obs``,`\
+`              dist ``=`` ``"gaussian"``)``, ``2L``)``,`\
+`    proxymix ``=`` ``ci_fits``(`[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`complete`](https://tidyr.tidyverse.org/reference/complete.html)`(`[`as_mids`](https://max578.github.io/proxymix/reference/as_mids.md)`(``imp``)``, ``"all"``)``,`\
+`                              ``function``(``d``)`` `[`lm`](https://rdrr.io/r/stats/lm.html)`(``y`` ``~`` ``x``, data ``=`` ``d``)``)``)`\
+`  ``)`\
+`  `[`do.call`](https://rdrr.io/r/base/do.call.html)`(``rbind``, `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`names`](https://rdrr.io/r/base/names.html)`(``cis``)``, ``function``(``method``)`` ``{`\
+`    ``rows_of``(``"censored"``, `[`c`](https://rdrr.io/r/base/c.html)`(``"intercept"``, ``"slope"``)``, ``method``, ``cis``[[``method``]``]``)`\
+`  ``}``)``)`\
+`}`\
+\
+`res`` ``<-`` `[`rbind`](https://amices.org/mice/reference/cbind.html)`(`\
+`  `[`do.call`](https://rdrr.io/r/base/do.call.html)`(``rbind``, `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``n_rep``)``, ``one_mnar``)``)``,`\
+`  `[`do.call`](https://rdrr.io/r/base/do.call.html)`(``rbind``, `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``n_rep``)``, ``one_censored``)``)`\
+`)`\
+`res``$``truth`` ``<-`` ``truth``[`[`ifelse`](https://rdrr.io/r/base/ifelse.html)`(``res``$``design`` ``==`` ``"mnar"``, ``"mnar_mean"``,`\
+`                          `[`paste0`](https://rdrr.io/r/base/paste.html)`(``"cens_"``, ``res``$``estimand``)``)``]`\
+`n_undefined`` ``<-`` `[`sum`](https://rdrr.io/r/base/sum.html)`(`[`is.na`](https://rdrr.io/r/base/NA.html)`(``res``$``lower``)``)`\
+\
+`sim_tab`` ``<-`` `[`aggregate`](https://rdrr.io/r/stats/aggregate.html)`(`\
+`  `[`cbind`](https://amices.org/mice/reference/cbind.html)`(``bias ``=`` ``estimate`` ``-`` ``truth``, rmse ``=`` ``(``estimate`` ``-`` ``truth``)``^``2``,`\
+`        coverage ``=`` ``lower`` ``<=`` ``truth`` ``&`` ``truth`` ``<=`` ``upper``,`\
+`        width ``=`` ``upper`` ``-`` ``lower``)`` ``~`` ``design`` ``+`` ``estimand`` ``+`` ``method``,`\
+`  data ``=`` ``res``, FUN ``=`` ``function``(``v``)`` `[`mean`](https://rdrr.io/r/base/mean.html)`(``v``, na.rm ``=`` ``TRUE``)``,`\
+`  na.action ``=`` ``na.pass`\
+`)`\
+`sim_tab``$``rmse`` ``<-`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(``sim_tab``$``rmse``)`\
+`sim_tab`
 
 | Method                 |   Bias |    RMSE | Coverage |    Width |
 |:-----------------------|-------:|--------:|---------:|---------:|
@@ -911,52 +883,50 @@ results come from the code shown, run on 26 September 2026 with R 4.6.1,
 proxymix 0.16.0, mice 3.19.0, Amelia 1.8.3, AER 1.2-17, survival 3.8-11
 and sampleSelection 1.2-14, and the run raised 0 warnings.
 
-``` r
-
-sessionInfo()
-#> R version 4.6.1 (2026-06-24)
-#> Platform: aarch64-apple-darwin23
-#> Running under: macOS Tahoe 26.6.2
-#> 
-#> Matrix products: default
-#> BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib 
-#> LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1
-#> 
-#> locale:
-#> [1] en_AU.UTF-8/en_AU.UTF-8/en_AU.UTF-8/C/en_AU.UTF-8/en_AU.UTF-8
-#> 
-#> time zone: Australia/Adelaide
-#> tzcode source: internal
-#> 
-#> attached base packages:
-#> [1] stats     graphics  grDevices utils     datasets  methods   base     
-#> 
-#> other attached packages:
-#>  [1] sampleSelection_1.2-14 maxLik_1.5-2.2         miscTools_0.6-30      
-#>  [4] AER_1.2-17             survival_3.8-11        sandwich_3.1-3        
-#>  [7] lmtest_0.9-40          zoo_1.9-0              car_3.1-5             
-#> [10] carData_3.0-6          Amelia_1.8.3           Rcpp_1.1.2            
-#> [13] mice_3.19.0            proxymix_0.16.0       
-#> 
-#> loaded via a namespace (and not attached):
-#>  [1] gtable_0.3.6       shape_1.4.6.1      xfun_0.60          bslib_0.12.0      
-#>  [5] ggplot2_4.0.3      htmlwidgets_1.6.4  lattice_0.23-1     vctrs_0.7.3       
-#>  [9] tools_4.6.1        Rdpack_2.6.6       generics_0.1.4     stats4_4.6.1      
-#> [13] tibble_3.3.1       pan_2.0            pkgconfig_2.0.3    jomo_2.7-6        
-#> [17] Matrix_1.7-6       RColorBrewer_1.1-3 S7_0.2.2           desc_1.4.3        
-#> [21] lifecycle_1.0.5    compiler_4.6.1     farver_2.1.2       textshaping_1.0.5 
-#> [25] codetools_0.2-20   systemfit_1.1-30   htmltools_0.5.9    sass_0.4.10       
-#> [29] yaml_2.3.12        glmnet_5.0         Formula_1.2-6      pillar_1.11.1     
-#> [33] pkgdown_2.2.1      nloptr_2.2.1       jquerylib_0.1.4    tidyr_1.3.2       
-#> [37] MASS_7.3-66        cachem_1.1.0       reformulas_0.4.4   iterators_1.0.14  
-#> [41] abind_1.4-8        rpart_4.1.27       boot_1.3-32        foreach_1.5.2     
-#> [45] mitml_0.4-5        nlme_3.1-171       tidyselect_1.2.1   digest_0.6.39     
-#> [49] mvtnorm_1.4-2      dplyr_1.2.1        purrr_1.2.2        labeling_0.4.3    
-#> [53] splines_4.6.1      fastmap_1.2.0      grid_4.6.1         cli_3.6.6         
-#> [57] magrittr_2.0.5     dichromat_2.0-1    broom_1.0.13       foreign_0.8-91    
-#> [61] withr_3.0.3        scales_1.4.0       backports_1.5.1    rmarkdown_2.32    
-#> [65] otel_0.2.0         nnet_7.3-21        lme4_2.0-6         ragg_1.5.2        
-#> [69] VGAM_1.1-14        evaluate_1.0.5     knitr_1.51         rbibutils_2.4.1   
-#> [73] rlang_1.3.0        glue_1.8.1         minqa_1.2.8        jsonlite_2.0.0    
-#> [77] R6_2.6.1           systemfonts_1.3.2  fs_2.1.0
-```
+\
+[`sessionInfo`](https://rdrr.io/r/utils/sessionInfo.html)`(``)`\
+`#> R version 4.6.1 (2026-06-24)`\
+`#> Platform: aarch64-apple-darwin23`\
+`#> Running under: macOS Tahoe 26.6.2`\
+`#> `\
+`#> Matrix products: default`\
+`#> BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib `\
+`#> LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1`\
+`#> `\
+`#> locale:`\
+`#> [1] en_AU.UTF-8/en_AU.UTF-8/en_AU.UTF-8/C/en_AU.UTF-8/en_AU.UTF-8`\
+`#> `\
+`#> time zone: Australia/Adelaide`\
+`#> tzcode source: internal`\
+`#> `\
+`#> attached base packages:`\
+`#> [1] stats     graphics  grDevices utils     datasets  methods   base     `\
+`#> `\
+`#> other attached packages:`\
+`#>  [1] sampleSelection_1.2-14 maxLik_1.5-2.2         miscTools_0.6-30      `\
+`#>  [4] AER_1.2-17             survival_3.8-11        sandwich_3.1-3        `\
+`#>  [7] lmtest_0.9-40          zoo_1.9-0              car_3.1-5             `\
+`#> [10] carData_3.0-6          Amelia_1.8.3           Rcpp_1.1.2            `\
+`#> [13] mice_3.19.0            proxymix_0.16.0       `\
+`#> `\
+`#> loaded via a namespace (and not attached):`\
+`#>  [1] gtable_0.3.6       shape_1.4.6.1      xfun_0.60          bslib_0.12.0      `\
+`#>  [5] ggplot2_4.0.3      htmlwidgets_1.6.4  lattice_0.23-1     vctrs_0.7.3       `\
+`#>  [9] tools_4.6.1        Rdpack_2.6.6       generics_0.1.4     stats4_4.6.1      `\
+`#> [13] tibble_3.3.1       pan_2.0            pkgconfig_2.0.3    jomo_2.7-6        `\
+`#> [17] Matrix_1.7-6       RColorBrewer_1.1-3 S7_0.2.2           desc_1.4.3        `\
+`#> [21] lifecycle_1.0.5    compiler_4.6.1     farver_2.1.2       textshaping_1.0.5 `\
+`#> [25] codetools_0.2-20   systemfit_1.1-30   htmltools_0.5.9    sass_0.4.10       `\
+`#> [29] yaml_2.3.12        glmnet_5.0         Formula_1.2-6      pillar_1.11.1     `\
+`#> [33] pkgdown_2.2.1      nloptr_2.2.1       jquerylib_0.1.4    tidyr_1.3.2       `\
+`#> [37] MASS_7.3-66        cachem_1.1.0       reformulas_0.4.4   iterators_1.0.14  `\
+`#> [41] abind_1.4-8        rpart_4.1.27       boot_1.3-32        foreach_1.5.2     `\
+`#> [45] mitml_0.4-5        nlme_3.1-171       tidyselect_1.2.1   digest_0.6.39     `\
+`#> [49] mvtnorm_1.4-2      dplyr_1.2.1        purrr_1.2.2        labeling_0.4.3    `\
+`#> [53] splines_4.6.1      fastmap_1.2.0      grid_4.6.1         cli_3.6.6         `\
+`#> [57] magrittr_2.0.5     dichromat_2.0-1    broom_1.0.13       foreign_0.8-91    `\
+`#> [61] withr_3.0.3        scales_1.4.0       backports_1.5.1    rmarkdown_2.32    `\
+`#> [65] otel_0.2.0         nnet_7.3-21        lme4_2.0-6         ragg_1.5.2        `\
+`#> [69] VGAM_1.1-14        evaluate_1.0.5     knitr_1.51         rbibutils_2.4.1   `\
+`#> [73] rlang_1.3.0        glue_1.8.1         minqa_1.2.8        jsonlite_2.0.0    `\
+`#> [77] R6_2.6.1           systemfonts_1.3.2  fs_2.1.0`

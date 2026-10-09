@@ -1,14 +1,10 @@
 # Reading the entropy of a fitted mixture
 
-``` r
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`
 
-library(proxymix)
-```
-
-``` r
-
-has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
-```
+\
+`has_ggplot2`` ``<-`` `[`requireNamespace`](https://rdrr.io/r/base/ns-load.html)`(``"ggplot2"``, quietly ``=`` ``TRUE``)`
 
 ## The problem
 
@@ -59,10 +55,8 @@ builds the density with the largest entropy that meets them (Jaynes,
 
 ## Addressing the problem
 
-``` r
-
-set.seed(20260618)
-```
+\
+[`set.seed`](https://rdrr.io/r/base/Random.html)`(``20260618``)`
 
 ### Why some quantities have closed forms
 
@@ -85,23 +79,21 @@ $`H_2(\mathcal{N}(\mu, \Sigma)) =
 \tfrac{p}{2}\log(4\pi) + \tfrac{1}{2}\log\det\Sigma`$ in $`p`$
 dimensions, which is an independent check on the implementation.
 
-``` r
-
-g <- gmm(
-  weights = c(0.5, 0.5),
-  means = list(c(-2, 0), c(2, 0)),
-  covariances = list(diag(2), diag(2))
-)
-h2_mixture <- gmm_entropy(g)
-
-sigma_one <- matrix(c(1, 0.3, 0.3, 1), 2L, 2L)
-one <- gmm(weights = 1, means = list(c(0, 0)),
-           covariances = list(sigma_one))
-h2_closed <- gmm_entropy(one)
-h2_analytic <- 0.5 * (2 * log(4 * pi) +
-  as.numeric(determinant(sigma_one, logarithm = TRUE)$modulus))
-h2_gap <- abs(h2_closed - h2_analytic)
-```
+\
+`g`` ``<-`` `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(`\
+`  weights ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``0.5``, ``0.5``)``,`\
+`  means ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``-``2``, ``0``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``2``, ``0``)``)``,`\
+`  covariances ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``, `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``)`\
+`)`\
+`h2_mixture`` ``<-`` `[`gmm_entropy`](https://max578.github.io/proxymix/reference/gmm_entropy.md)`(``g``)`\
+\
+`sigma_one`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``1``, ``0.3``, ``0.3``, ``1``)``, ``2L``, ``2L``)`\
+`one`` ``<-`` `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(``weights ``=`` ``1``, means ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)``)``,`\
+`           covariances ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``sigma_one``)``)`\
+`h2_closed`` ``<-`` `[`gmm_entropy`](https://max578.github.io/proxymix/reference/gmm_entropy.md)`(``one``)`\
+`h2_analytic`` ``<-`` ``0.5`` ``*`` ``(``2`` ``*`` `[`log`](https://rdrr.io/r/base/Log.html)`(``4`` ``*`` ``pi``)`` ``+`\
+`  `[`as.numeric`](https://rdrr.io/r/base/numeric.html)`(`[`determinant`](https://rdrr.io/r/base/det.html)`(``sigma_one``, logarithm ``=`` ``TRUE``)``$``modulus``)``)`\
+`h2_gap`` ``<-`` `[`abs`](https://rdrr.io/r/base/MathFun.html)`(``h2_closed`` ``-`` ``h2_analytic``)`
 
 | Quantity                           | Rényi-2 entropy (nats) |
 |:-----------------------------------|-----------------------:|
@@ -116,12 +108,10 @@ Closed-form order-2 Rényi entropy, and the analytic check. {.table}
 Shannon entropy is returned as a Monte Carlo estimate with its standard
 error and an analytic upper bound.
 
-``` r
-
-sh <- gmm_entropy(g, order = "shannon", n_mc = 5000L, seed = 1L)
-sh_slack <- sh$upper_bound - sh$mc
-sh_slack_se <- sh_slack / sh$mc_se
-```
+\
+`sh`` ``<-`` `[`gmm_entropy`](https://max578.github.io/proxymix/reference/gmm_entropy.md)`(``g``, order ``=`` ``"shannon"``, n_mc ``=`` ``5000L``, seed ``=`` ``1L``)`\
+`sh_slack`` ``<-`` ``sh``$``upper_bound`` ``-`` ``sh``$``mc`\
+`sh_slack_se`` ``<-`` ``sh_slack`` ``/`` ``sh``$``mc_se`
 
 | Quantity                   |  Value |
 |:---------------------------|-------:|
@@ -141,17 +131,15 @@ When the asymmetric Kullback-Leibler divergence is wanted instead,
 `type = "kl"` delegates to the package’s Monte Carlo estimator
 [`gmm_kld()`](https://max578.github.io/proxymix/reference/gmm_kld.md).
 
-``` r
-
-q <- gmm(
-  weights = 1, means = list(c(0, 0)), covariances = list(diag(2) * 2)
-)
-d_cs <- gmm_divergence(g, q)
-d_self <- gmm_divergence(g, g)
-# takes no seed argument: the draws come from the stream set.seed() started
-d_kl <- gmm_divergence(g, q, type = "kl", n_mc = 2000L)
-d_kl_gap <- d_kl$mc - d_kl$variational
-```
+\
+`q`` ``<-`` `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(`\
+`  weights ``=`` ``1``, means ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)``)``, covariances ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)`` ``*`` ``2``)`\
+`)`\
+`d_cs`` ``<-`` `[`gmm_divergence`](https://max578.github.io/proxymix/reference/gmm_divergence.md)`(``g``, ``q``)`\
+`d_self`` ``<-`` `[`gmm_divergence`](https://max578.github.io/proxymix/reference/gmm_divergence.md)`(``g``, ``g``)`\
+`# takes no seed argument: the draws come from the stream set.seed() started`\
+`d_kl`` ``<-`` `[`gmm_divergence`](https://max578.github.io/proxymix/reference/gmm_divergence.md)`(``g``, ``q``, type ``=`` ``"kl"``, n_mc ``=`` ``2000L``)`\
+`d_kl_gap`` ``<-`` ``d_kl``$``mc`` ``-`` ``d_kl``$``variational`
 
 | Quantity                                          | Value (nats) |
 |:--------------------------------------------------|-------------:|
@@ -173,23 +161,21 @@ the conditional mixture that
 returns. It is evaluated row by row, with `NA` marking the target
 coordinate.
 
-``` r
-
-sigma_joint <- matrix(c(1, 0.7, 0.7, 1), 2L, 2L)
-joint <- gmm(
-  weights = 1, means = list(c(0, 0)), covariances = list(sigma_joint)
-)
-mi <- gmm_mutual_information(joint, 1L, 2L)
-
-sigma_free <- diag(2)
-independent <- gmm(
-  weights = 1, means = list(c(0, 0)), covariances = list(sigma_free)
-)
-mi_independent <- gmm_mutual_information(independent, 1L, 2L)
-
-given_grid <- rbind(c(NA, 0), c(NA, 1), c(NA, 2))
-h_cond <- gmm_conditional_entropy(joint, given = given_grid)
-```
+\
+`sigma_joint`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``1``, ``0.7``, ``0.7``, ``1``)``, ``2L``, ``2L``)`\
+`joint`` ``<-`` `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(`\
+`  weights ``=`` ``1``, means ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)``)``, covariances ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``sigma_joint``)`\
+`)`\
+`mi`` ``<-`` `[`gmm_mutual_information`](https://max578.github.io/proxymix/reference/gmm_mutual_information.md)`(``joint``, ``1L``, ``2L``)`\
+\
+`sigma_free`` ``<-`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)`\
+`independent`` ``<-`` `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(`\
+`  weights ``=`` ``1``, means ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)``)``, covariances ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``sigma_free``)`\
+`)`\
+`mi_independent`` ``<-`` `[`gmm_mutual_information`](https://max578.github.io/proxymix/reference/gmm_mutual_information.md)`(``independent``, ``1L``, ``2L``)`\
+\
+`given_grid`` ``<-`` `[`rbind`](https://rdrr.io/r/base/cbind.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``NA``, ``0``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``NA``, ``1``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``NA``, ``2``)``)`\
+`h_cond`` ``<-`` `[`gmm_conditional_entropy`](https://max578.github.io/proxymix/reference/gmm_conditional_entropy.md)`(``joint``, given ``=`` ``given_grid``)`
 
 | Quantity                                             | Value (nats) |
 |:-----------------------------------------------------|-------------:|
@@ -218,21 +204,19 @@ or
 [`fit_kld_em()`](https://max578.github.io/proxymix/reference/fit_kld_em.md)
 starts the usual EM fit from the result of this cooling.
 
-``` r
-
-x_three <- rbind(
-  matrix(rnorm(200L), ncol = 2L) +
-    matrix(rep(c(-7, -7), each = 100L), ncol = 2L),
-  matrix(rnorm(200L), ncol = 2L) +
-    matrix(rep(c(7, -7), each = 100L), ncol = 2L),
-  matrix(rnorm(200L), ncol = 2L) +
-    matrix(rep(c(0, 8), each = 100L), ncol = 2L)
-)
-tgt_three <- gmm_target_from_samples(x_three)
-fit_annealed <- fit_em_samples(tgt_three, N = 3L, anneal = TRUE, seed = 1L)
-fit_annealed@diagnostics$annealed
-#> [1] TRUE
-```
+\
+`x_three`` ``<-`` `[`rbind`](https://rdrr.io/r/base/cbind.html)`(`\
+`  `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``200L``)``, ncol ``=`` ``2L``)`` ``+`\
+`    `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`rep`](https://rdrr.io/r/base/rep.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``-``7``, ``-``7``)``, each ``=`` ``100L``)``, ncol ``=`` ``2L``)``,`\
+`  `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``200L``)``, ncol ``=`` ``2L``)`` ``+`\
+`    `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`rep`](https://rdrr.io/r/base/rep.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``7``, ``-``7``)``, each ``=`` ``100L``)``, ncol ``=`` ``2L``)``,`\
+`  `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``200L``)``, ncol ``=`` ``2L``)`` ``+`\
+`    `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`rep`](https://rdrr.io/r/base/rep.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``8``)``, each ``=`` ``100L``)``, ncol ``=`` ``2L``)`\
+`)`\
+`tgt_three`` ``<-`` `[`gmm_target_from_samples`](https://max578.github.io/proxymix/reference/gmm_target_from_samples.md)`(``x_three``)`\
+`fit_annealed`` ``<-`` `[`fit_em_samples`](https://max578.github.io/proxymix/reference/fit_em_samples.md)`(``tgt_three``, N ``=`` ``3L``, anneal ``=`` ``TRUE``, seed ``=`` ``1L``)`\
+`fit_annealed``@``diagnostics``$``annealed`\
+`#> [1] TRUE`
 
 Cooling also discovers the component count.
 [`gmm_anneal_path()`](https://max578.github.io/proxymix/reference/gmm_anneal_path.md)
@@ -247,14 +231,12 @@ covariance of the data and $`\Sigma = \sigma^2 I`$ the covariance shared
 by the annealed components. The default $`\sigma = 1`$ makes $`T_c`$ the
 largest eigenvalue of $`C`$.
 
-``` r
-
-path <- gmm_anneal_path(x_three, k_max = 6L, n_steps = 60L, seed = 1L)
-k_found <- path$k_selected
-t_empirical <- path$first_critical_temperature
-t_analytic <- path$t_critical_analytic
-t_ratio <- t_empirical / t_analytic
-```
+\
+`path`` ``<-`` `[`gmm_anneal_path`](https://max578.github.io/proxymix/reference/gmm_anneal_path.md)`(``x_three``, k_max ``=`` ``6L``, n_steps ``=`` ``60L``, seed ``=`` ``1L``)`\
+`k_found`` ``<-`` ``path``$``k_selected`\
+`t_empirical`` ``<-`` ``path``$``first_critical_temperature`\
+`t_analytic`` ``<-`` ``path``$``t_critical_analytic`\
+`t_ratio`` ``<-`` ``t_empirical`` ``/`` ``t_analytic`
 
 | Quantity                              | Value |
 |:--------------------------------------|------:|
@@ -281,41 +263,39 @@ $`H = -n^{-1} \sum_{i,k} \gamma_{ik} \log(\gamma_{ik} / \pi_k)`$ is the
 entropy of the assignments relative to the component weights, zero when
 every point is assigned in proportion to the weights.
 
-``` r
-
-anneal_df <- rbind(
-  data.frame(
-    temperature = path$path$temperature,
-    value = path$path$n_effective,
-    panel = "distinct centroids"
-  ),
-  data.frame(
-    temperature = path$path$temperature,
-    value = path$path$free_energy,
-    panel = "variational free energy"
-  )
-)
-ggplot2::ggplot(anneal_df, ggplot2::aes(temperature, value)) +
-  ggplot2::geom_vline(
-    xintercept = t_analytic, linetype = "dotted",
-    colour = "#0072B2", linewidth = 0.7
-  ) +
-  ggplot2::geom_vline(
-    xintercept = t_empirical, linetype = "dashed",
-    colour = "#D55E00", linewidth = 0.7
-  ) +
-  # a count recorded at one temperature holds until the next, cooler step
-  ggplot2::geom_step(direction = "vh", linewidth = 0.8,
-                     colour = "#000000") +
-  ggplot2::facet_wrap(~ panel, ncol = 1L, scales = "free_y") +
-  ggplot2::scale_x_log10() +
-  ggplot2::labs(
-    x = "temperature (log scale, cooling to the left)",
-    y = NULL,
-    title = "Where the components bifurcate as the fit cools"
-  ) +
-  ggplot2::theme_minimal(base_size = 11)
-```
+\
+`anneal_df`` ``<-`` `[`rbind`](https://rdrr.io/r/base/cbind.html)`(`\
+`  `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(`\
+`    temperature ``=`` ``path``$``path``$``temperature``,`\
+`    value ``=`` ``path``$``path``$``n_effective``,`\
+`    panel ``=`` ``"distinct centroids"`\
+`  ``)``,`\
+`  `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(`\
+`    temperature ``=`` ``path``$``path``$``temperature``,`\
+`    value ``=`` ``path``$``path``$``free_energy``,`\
+`    panel ``=`` ``"variational free energy"`\
+`  ``)`\
+`)`\
+`ggplot2``::`[`ggplot`](https://ggplot2.tidyverse.org/reference/ggplot.html)`(``anneal_df``, ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``temperature``, ``value``)``)`` ``+`\
+`  ``ggplot2``::`[`geom_vline`](https://ggplot2.tidyverse.org/reference/geom_abline.html)`(`\
+`    xintercept ``=`` ``t_analytic``, linetype ``=`` ``"dotted"``,`\
+`    colour ``=`` ``"#0072B2"``, linewidth ``=`` ``0.7`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`geom_vline`](https://ggplot2.tidyverse.org/reference/geom_abline.html)`(`\
+`    xintercept ``=`` ``t_empirical``, linetype ``=`` ``"dashed"``,`\
+`    colour ``=`` ``"#D55E00"``, linewidth ``=`` ``0.7`\
+`  ``)`` ``+`\
+`  ``# a count recorded at one temperature holds until the next, cooler step`\
+`  ``ggplot2``::`[`geom_step`](https://ggplot2.tidyverse.org/reference/geom_path.html)`(``direction ``=`` ``"vh"``, linewidth ``=`` ``0.8``,`\
+`                     colour ``=`` ``"#000000"``)`` ``+`\
+`  ``ggplot2``::`[`facet_wrap`](https://ggplot2.tidyverse.org/reference/facet_wrap.html)`(``~`` ``panel``, ncol ``=`` ``1L``, scales ``=`` ``"free_y"``)`` ``+`\
+`  ``ggplot2``::`[`scale_x_log10`](https://ggplot2.tidyverse.org/reference/scale_continuous.html)`(``)`` ``+`\
+`  ``ggplot2``::`[`labs`](https://ggplot2.tidyverse.org/reference/labs.html)`(`\
+`    x ``=`` ``"temperature (log scale, cooling to the left)"``,`\
+`    y ``=`` ``NULL``,`\
+`    title ``=`` ``"Where the components bifurcate as the fit cools"`\
+`  ``)`` ``+`\
+`  ``ggplot2``::`[`theme_minimal`](https://ggplot2.tidyverse.org/reference/ggtheme.html)`(``base_size ``=`` ``11``)`
 
 ![Two stacked panels against a logarithmic temperature axis running from
 hot to cold: the upper panel is a rising staircase of the number of
@@ -344,13 +324,11 @@ Hoek and Elliott (2024) fits a target from a density that can only be
 evaluated (`regime = "kld"`). For these targets it draws its trial
 points from a distribution chosen automatically to cover that support.
 
-``` r
-
-me_gauss <- maxent_target(moments = list(mean = c(0, 0), cov = diag(2)))
-me_unif <- maxent_target(support = list(lower = c(0, 0), upper = c(1, 1)))
-unif_density <- exp(me_unif@log_density(matrix(c(0.5, 0.5), nrow = 1L)))
-gauss_density <- exp(me_gauss@log_density(matrix(c(0, 0), nrow = 1L)))
-```
+\
+`me_gauss`` ``<-`` `[`maxent_target`](https://max578.github.io/proxymix/reference/maxent_target.md)`(``moments ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``mean ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)``, cov ``=`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``)``)`\
+`me_unif`` ``<-`` `[`maxent_target`](https://max578.github.io/proxymix/reference/maxent_target.md)`(``support ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``lower ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)``, upper ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``1``, ``1``)``)``)`\
+`unif_density`` ``<-`` `[`exp`](https://rdrr.io/r/base/Log.html)`(``me_unif``@``log_density``(`[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0.5``, ``0.5``)``, nrow ``=`` ``1L``)``)``)`\
+`gauss_density`` ``<-`` `[`exp`](https://rdrr.io/r/base/Log.html)`(``me_gauss``@``log_density``(`[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)``, nrow ``=`` ``1L``)``)``)`
 
 | Constraint supplied | Maximum-entropy family | Density at the centre |
 |:--------------------|:-----------------------|----------------------:|
@@ -373,16 +351,14 @@ penalises mixtures whose components overlap and favours well-separated
 solutions. It equals the BIC for a single component and is never
 smaller.
 
-``` r
-
-x_two <- rbind(
-  matrix(rnorm(200L, -4), ncol = 2L),
-  matrix(rnorm(200L, 4), ncol = 2L)
-)
-fit_two <- fit_em_samples(gmm_target_from_samples(x_two), N = 2L, seed = 1L)
-crit <- bic_aic(fit_two)
-icl_gap <- crit$icl - crit$bic
-```
+\
+`x_two`` ``<-`` `[`rbind`](https://rdrr.io/r/base/cbind.html)`(`\
+`  `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``200L``, ``-``4``)``, ncol ``=`` ``2L``)``,`\
+`  `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``200L``, ``4``)``, ncol ``=`` ``2L``)`\
+`)`\
+`fit_two`` ``<-`` `[`fit_em_samples`](https://max578.github.io/proxymix/reference/fit_em_samples.md)`(`[`gmm_target_from_samples`](https://max578.github.io/proxymix/reference/gmm_target_from_samples.md)`(``x_two``)``, N ``=`` ``2L``, seed ``=`` ``1L``)`\
+`crit`` ``<-`` `[`bic_aic`](https://max578.github.io/proxymix/reference/bic_aic.md)`(``fit_two``)`\
+`icl_gap`` ``<-`` ``crit``$``icl`` ``-`` ``crit``$``bic`
 
 | Criterion              |                   Value |
 |:-----------------------|------------------------:|
@@ -409,19 +385,17 @@ value. The overall covariance of a mixture is closed-form in its
 parameters, so no sampling is needed. A tridiagonal precision matrix is
 a chain, and the recovered graph should be that chain.
 
-``` r
-
-omega <- diag(4L)
-for (i1 in seq_len(3L)) {
-  omega[i1, i1 + 1L] <- -0.5
-  omega[i1 + 1L, i1] <- -0.5
-} # ends i1, over the off-diagonal band of the chain precision
-g_chain <- gmm(
-  weights = 1, means = list(rep(0, 4L)), covariances = list(solve(omega))
-)
-adj_chain <- gmm_independence_graph(g_chain, threshold = 0.05)
-edges_chain <- sum(adj_chain) / 2L
-```
+\
+`omega`` ``<-`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``4L``)`\
+`for`` ``(``i1`` ``in`` `[`seq_len`](https://rdrr.io/r/base/seq.html)`(``3L``)``)`` ``{`\
+`  ``omega``[``i1``, ``i1`` ``+`` ``1L``]`` ``<-`` ``-``0.5`\
+`  ``omega``[``i1`` ``+`` ``1L``, ``i1``]`` ``<-`` ``-``0.5`\
+`}`` ``# ends i1, over the off-diagonal band of the chain precision`\
+`g_chain`` ``<-`` `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(`\
+`  weights ``=`` ``1``, means ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`rep`](https://rdrr.io/r/base/rep.html)`(``0``, ``4L``)``)``, covariances ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`solve`](https://rdrr.io/r/base/solve.html)`(``omega``)``)`\
+`)`\
+`adj_chain`` ``<-`` `[`gmm_independence_graph`](https://max578.github.io/proxymix/reference/gmm_independence_graph.md)`(``g_chain``, threshold ``=`` ``0.05``)`\
+`edges_chain`` ``<-`` `[`sum`](https://rdrr.io/r/base/sum.html)`(``adj_chain``)`` ``/`` ``2L`
 
 |     |  x1 |  x2 |  x3 |  x4 |
 |:----|----:|----:|----:|----:|
@@ -443,58 +417,54 @@ energy of the continuous field below couples $`x_1`$ with $`x_2`$ and
 $`x_2`$ with $`x_3`$ and has no term in $`x_1 x_3`$, so $`x_1`$ and
 $`x_3`$ are conditionally independent given $`x_2`$.
 
-``` r
-
-energy <- function(x_mat) {
-  x_mat <- matrix(x_mat, ncol = 3L)
-  rowSums((x_mat^2 - 1)^2) -
-    0.7 * (x_mat[, 1L] * x_mat[, 2L] + x_mat[, 2L] * x_mat[, 3L])
-}
-field <- gmm_target(n_dim = 3L,
-                    log_density = function(x_mat) -energy(x_mat))
-
-fit_field <- fit_kld_em(
-  field,
-  N = 8L,
-  proposal = proposal_uniform(3L, -3, 3),
-  is_size = 6000L,
-  anneal = TRUE,
-  seed = 1L,
-  support_warn = FALSE
-)
-adj_field <- gmm_independence_graph(fit_field, threshold = 0.05)
-edges_field <- sum(adj_field) / 2L
-round(attr(adj_field, "pcor"), 3L)
-#>       x1    x2    x3
-#> x1 1.000 0.517 0.069
-#> x2 0.517 1.000 0.440
-#> x3 0.069 0.440 1.000
-```
+\
+`energy`` ``<-`` ``function``(``x_mat``)`` ``{`\
+`  ``x_mat`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``x_mat``, ncol ``=`` ``3L``)`\
+`  `[`rowSums`](https://rdrr.io/r/base/colSums.html)`(``(``x_mat``^``2`` ``-`` ``1``)``^``2``)`` ``-`\
+`    ``0.7`` ``*`` ``(``x_mat``[``, ``1L``]`` ``*`` ``x_mat``[``, ``2L``]`` ``+`` ``x_mat``[``, ``2L``]`` ``*`` ``x_mat``[``, ``3L``]``)`\
+`}`\
+`field`` ``<-`` `[`gmm_target`](https://max578.github.io/proxymix/reference/gmm_target.md)`(``n_dim ``=`` ``3L``,`\
+`                    log_density ``=`` ``function``(``x_mat``)`` ``-``energy``(``x_mat``)``)`\
+\
+`fit_field`` ``<-`` `[`fit_kld_em`](https://max578.github.io/proxymix/reference/fit_kld_em.md)`(`\
+`  ``field``,`\
+`  N ``=`` ``8L``,`\
+`  proposal ``=`` `[`proposal_uniform`](https://max578.github.io/proxymix/reference/proposal_uniform.md)`(``3L``, ``-``3``, ``3``)``,`\
+`  is_size ``=`` ``6000L``,`\
+`  anneal ``=`` ``TRUE``,`\
+`  seed ``=`` ``1L``,`\
+`  support_warn ``=`` ``FALSE`\
+`)`\
+`adj_field`` ``<-`` `[`gmm_independence_graph`](https://max578.github.io/proxymix/reference/gmm_independence_graph.md)`(``fit_field``, threshold ``=`` ``0.05``)`\
+`edges_field`` ``<-`` `[`sum`](https://rdrr.io/r/base/sum.html)`(``adj_field``)`` ``/`` ``2L`\
+[`round`](https://rdrr.io/r/base/Round.html)`(`[`attr`](https://rdrr.io/r/base/attr.html)`(``adj_field``, ``"pcor"``)``, ``3L``)`\
+`#>       x1    x2    x3`\
+`#> x1 1.000 0.517 0.069`\
+`#> x2 0.517 1.000 0.440`\
+`#> x3 0.069 0.440 1.000`
 
 Conditional independence does not force a zero partial correlation in
 general, so the target’s own partial correlations are computed by
 quadrature on a grid over $`[-3, 3]^3`$.
 
-``` r
-
-g_axis <- seq(-3, 3, length.out = 61L)
-g_pts <- as.matrix(expand.grid(g_axis, g_axis, g_axis))
-g_w <- exp(-energy(g_pts))
-g_w <- g_w / sum(g_w)
-g_mean <- colSums(g_pts * g_w)
-prec_exact <- solve(crossprod(g_pts * sqrt(g_w)) - tcrossprod(g_mean))
-pcor_exact <- -prec_exact / tcrossprod(sqrt(diag(prec_exact)))
-diag(pcor_exact) <- 1
-x_names <- paste0("x", seq_len(3L))
-dimnames(pcor_exact) <- list(x_names, x_names)
-# mass on grid points more than 2.5 from the origin in any coordinate
-outer_mass <- sum(g_w[apply(abs(g_pts), 1L, max) > 2.5])
-round(pcor_exact, 4L)
-#>        x1     x2     x3
-#> x1 1.0000 0.4724 0.0009
-#> x2 0.4724 1.0000 0.4724
-#> x3 0.0009 0.4724 1.0000
-```
+\
+`g_axis`` ``<-`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``3``, ``3``, length.out ``=`` ``61L``)`\
+`g_pts`` ``<-`` `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(`[`expand.grid`](https://rdrr.io/r/base/expand.grid.html)`(``g_axis``, ``g_axis``, ``g_axis``)``)`\
+`g_w`` ``<-`` `[`exp`](https://rdrr.io/r/base/Log.html)`(``-``energy``(``g_pts``)``)`\
+`g_w`` ``<-`` ``g_w`` ``/`` `[`sum`](https://rdrr.io/r/base/sum.html)`(``g_w``)`\
+`g_mean`` ``<-`` `[`colSums`](https://rdrr.io/r/base/colSums.html)`(``g_pts`` ``*`` ``g_w``)`\
+`prec_exact`` ``<-`` `[`solve`](https://rdrr.io/r/base/solve.html)`(`[`crossprod`](https://rdrr.io/r/base/crossprod.html)`(``g_pts`` ``*`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(``g_w``)``)`` ``-`` `[`tcrossprod`](https://rdrr.io/r/base/crossprod.html)`(``g_mean``)``)`\
+`pcor_exact`` ``<-`` ``-``prec_exact`` ``/`` `[`tcrossprod`](https://rdrr.io/r/base/crossprod.html)`(`[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(`[`diag`](https://rdrr.io/r/base/diag.html)`(``prec_exact``)``)``)`\
+[`diag`](https://rdrr.io/r/base/diag.html)`(``pcor_exact``)`` ``<-`` ``1`\
+`x_names`` ``<-`` `[`paste0`](https://rdrr.io/r/base/paste.html)`(``"x"``, `[`seq_len`](https://rdrr.io/r/base/seq.html)`(``3L``)``)`\
+[`dimnames`](https://rdrr.io/r/base/dimnames.html)`(``pcor_exact``)`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(``x_names``, ``x_names``)`\
+`# mass on grid points more than 2.5 from the origin in any coordinate`\
+`outer_mass`` ``<-`` `[`sum`](https://rdrr.io/r/base/sum.html)`(``g_w``[`[`apply`](https://rdrr.io/r/base/apply.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``g_pts``)``, ``1L``, ``max``)`` ``>`` ``2.5``]``)`\
+[`round`](https://rdrr.io/r/base/Round.html)`(``pcor_exact``, ``4L``)`\
+`#>        x1     x2     x3`\
+`#> x1 1.0000 0.4724 0.0009`\
+`#> x2 0.4724 1.0000 0.4724`\
+`#> x3 0.0009 0.4724 1.0000`
 
 The grid points beyond 2.5 in any coordinate carry $`5 \times 10^{-15}`$
 of the grid’s mass, so the grid covers the target. The target’s partial
@@ -669,20 +639,16 @@ The competitors install from CRAN once and load as usual. pcalg also
 needs the graph and RBGL packages, which install from Bioconductor
 through BiocManager:
 
-``` r
+\
+[`install.packages`](https://rdrr.io/r/utils/install.packages.html)`(``"BiocManager"``)`\
+`BiocManager``::`[`install`](https://bioconductor.github.io/BiocManager/reference/install.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``"graph"``, ``"RBGL"``)``)`\
+[`install.packages`](https://rdrr.io/r/utils/install.packages.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``"mclust"``, ``"FNN"``, ``"glasso"``, ``"huge"``, ``"pcalg"``, ``"cubature"``)``)`
 
-install.packages("BiocManager")
-BiocManager::install(c("graph", "RBGL"))
-install.packages(c("mclust", "FNN", "glasso", "huge", "pcalg", "cubature"))
-```
-
-``` r
-
-library(FNN)
-library(glasso)
-library(huge)
-library(pcalg)
-```
+\
+[`library`](https://rdrr.io/r/base/library.html)`(``FNN``)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`glasso`](http://www-stat.stanford.edu/~tibs/glasso)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`huge`](https://github.com/Gatech-Flash/huge)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`pcalg`](https://pcalg.r-forge.r-project.org/)`)`
 
 FNN estimates entropy by the nearest-neighbour rule of Kozachenko and
 Leonenko (1987), and its
@@ -697,20 +663,18 @@ number of neighbours within that radius in each marginal gives the
 estimate. Ten neighbours are used throughout, the default of
 [`FNN::entropy()`](https://rdrr.io/pkg/FNN/man/entropy.html).
 
-``` r
-
-ksg_mi <- function(xa, xb, k) {
-  da <- as.matrix(dist(xa, method = "maximum"))
-  db <- as.matrix(dist(xb, method = "maximum"))
-  dj <- pmax(da, db)
-  n <- nrow(dj)
-  # the point itself is the first of the sorted distances
-  eps <- apply(dj, 1L, function(v) sort(v)[k + 1L])
-  n_a <- rowSums(da < eps) - 1L
-  n_b <- rowSums(db < eps) - 1L
-  digamma(k) + digamma(n) - mean(digamma(n_a + 1L) + digamma(n_b + 1L))
-}
-```
+\
+`ksg_mi`` ``<-`` ``function``(``xa``, ``xb``, ``k``)`` ``{`\
+`  ``da`` ``<-`` `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(`[`dist`](https://rdrr.io/r/stats/dist.html)`(``xa``, method ``=`` ``"maximum"``)``)`\
+`  ``db`` ``<-`` `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(`[`dist`](https://rdrr.io/r/stats/dist.html)`(``xb``, method ``=`` ``"maximum"``)``)`\
+`  ``dj`` ``<-`` `[`pmax`](https://rdrr.io/r/base/Extremes.html)`(``da``, ``db``)`\
+`  ``n`` ``<-`` `[`nrow`](https://rdrr.io/r/base/nrow.html)`(``dj``)`\
+`  ``# the point itself is the first of the sorted distances`\
+`  ``eps`` ``<-`` `[`apply`](https://rdrr.io/r/base/apply.html)`(``dj``, ``1L``, ``function``(``v``)`` `[`sort`](https://rdrr.io/r/base/sort.html)`(``v``)``[``k`` ``+`` ``1L``]``)`\
+`  ``n_a`` ``<-`` `[`rowSums`](https://rdrr.io/r/base/colSums.html)`(``da`` ``<`` ``eps``)`` ``-`` ``1L`\
+`  ``n_b`` ``<-`` `[`rowSums`](https://rdrr.io/r/base/colSums.html)`(``db`` ``<`` ``eps``)`` ``-`` ``1L`\
+`  `[`digamma`](https://rdrr.io/r/base/Special.html)`(``k``)`` ``+`` `[`digamma`](https://rdrr.io/r/base/Special.html)`(``n``)`` ``-`` `[`mean`](https://rdrr.io/r/base/mean.html)`(`[`digamma`](https://rdrr.io/r/base/Special.html)`(``n_a`` ``+`` ``1L``)`` ``+`` `[`digamma`](https://rdrr.io/r/base/Special.html)`(``n_b`` ``+`` ``1L``)``)`\
+`}`
 
 The birds measured in full are kept, and each measurement is centred and
 scaled to unit variance, since the nearest-neighbour estimators depend
@@ -725,43 +689,37 @@ the pair, each a Monte Carlo estimate from
 [`gmm_entropy()`](https://max578.github.io/proxymix/reference/gmm_entropy.md)
 on the marginalised fit.
 
-``` r
+\
+`cols`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``"bill_len"``, ``"bill_dep"``, ``"flipper_len"``, ``"body_mass"``)`\
+`keep`` ``<-`` `[`complete.cases`](https://rdrr.io/r/stats/complete.cases.html)`(``penguins``[``, ``cols``]``)`\
+`peng`` ``<-`` `[`scale`](https://rdrr.io/r/base/scale.html)`(`[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(``penguins``[``keep``, ``cols``]``)``)`\
+`species`` ``<-`` ``penguins``$``species``[``keep``]`\
+\
+`sel_colony`` ``<-`` `[`select_N`](https://max578.github.io/proxymix/reference/select_N.md)`(`[`gmm_target_from_samples`](https://max578.github.io/proxymix/reference/gmm_target_from_samples.md)`(``peng``)``, candidates ``=`` ``1``:``5``,`\
+`                       seed ``=`` ``1L``)`\
+`fit_colony`` ``<-`` ``sel_colony``$``best_fit`
 
-cols <- c("bill_len", "bill_dep", "flipper_len", "body_mass")
-keep <- complete.cases(penguins[, cols])
-peng <- scale(as.matrix(penguins[keep, cols]))
-species <- penguins$species[keep]
+\
+`h_mc`` ``<-`` ``function``(``g``)`` `[`gmm_entropy`](https://max578.github.io/proxymix/reference/gmm_entropy.md)`(``g``, order ``=`` ``"shannon"``, n_mc ``=`` ``5000L``,`\
+`                                seed ``=`` ``1L``)``$``mc`\
+`pairs`` ``<-`` `[`combn`](https://rdrr.io/r/utils/combn.html)`(``4L``, ``2L``)`\
+`mi_tab`` ``<-`` `[`t`](https://rdrr.io/r/base/t.html)`(`[`apply`](https://rdrr.io/r/base/apply.html)`(``pairs``, ``2L``, ``function``(``ij``)`` ``{`\
+`  ``a`` ``<-`` ``ij``[``1L``]`\
+`  ``b`` ``<-`` ``ij``[``2L``]`\
+`  `[`c`](https://rdrr.io/r/base/c.html)`(``cs ``=`` `[`gmm_mutual_information`](https://max578.github.io/proxymix/reference/gmm_mutual_information.md)`(``fit_colony``, ``a``, ``b``)``,`\
+`    shannon ``=`` ``h_mc``(`[`gmm_marginalise`](https://max578.github.io/proxymix/reference/gmm_marginalise.md)`(``fit_colony``, ``a``)``)`` ``+`\
+`      ``h_mc``(`[`gmm_marginalise`](https://max578.github.io/proxymix/reference/gmm_marginalise.md)`(``fit_colony``, ``b``)``)`` ``-`\
+`      ``h_mc``(`[`gmm_marginalise`](https://max578.github.io/proxymix/reference/gmm_marginalise.md)`(``fit_colony``, ``ij``)``)``,`\
+`    ksg ``=`` ``ksg_mi``(``peng``[``, ``a``, drop ``=`` ``FALSE``]``, ``peng``[``, ``b``, drop ``=`` ``FALSE``]``, ``10L``)``)`\
+`}``)``)`
 
-sel_colony <- select_N(gmm_target_from_samples(peng), candidates = 1:5,
-                       seed = 1L)
-fit_colony <- sel_colony$best_fit
-```
-
-``` r
-
-h_mc <- function(g) gmm_entropy(g, order = "shannon", n_mc = 5000L,
-                                seed = 1L)$mc
-pairs <- combn(4L, 2L)
-mi_tab <- t(apply(pairs, 2L, function(ij) {
-  a <- ij[1L]
-  b <- ij[2L]
-  c(cs = gmm_mutual_information(fit_colony, a, b),
-    shannon = h_mc(gmm_marginalise(fit_colony, a)) +
-      h_mc(gmm_marginalise(fit_colony, b)) -
-      h_mc(gmm_marginalise(fit_colony, ij)),
-    ksg = ksg_mi(peng[, a, drop = FALSE], peng[, b, drop = FALSE], 10L))
-}))
-```
-
-``` r
-
-ksg_fnn <- apply(pairs, 2L, function(ij) {
-  mutinfo(peng[, ij[1L]], peng[, ij[2L]], k = 10L)
-})
-ksg_gap <- max(abs(mi_tab[, "ksg"] - ksg_fnn))
-ksg_gap
-#> [1] 0
-```
+\
+`ksg_fnn`` ``<-`` `[`apply`](https://rdrr.io/r/base/apply.html)`(``pairs``, ``2L``, ``function``(``ij``)`` ``{`\
+`  `[`mutinfo`](https://rdrr.io/pkg/FNN/man/mutual_information.html)`(``peng``[``, ``ij``[``1L``]``]``, ``peng``[``, ``ij``[``2L``]``]``, k ``=`` ``10L``)`\
+`}``)`\
+`ksg_gap`` ``<-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``mi_tab``[``, ``"ksg"``]`` ``-`` ``ksg_fnn``)``)`\
+`ksg_gap`\
+`#> [1] 0`
 
 | Pair of measurements | Correlation | Cauchy-Schwarz, mixture | Shannon, mixture | Shannon, KSG |
 |:---|---:|---:|---:|---:|
@@ -789,63 +747,61 @@ defaults, neighbourhood selection with the rotation information
 criterion; the PC algorithm runs Fisher’s $`z`$ test at level 0.01 and
 its skeleton is kept.
 
-``` r
-
-glasso_bic <- function(x) {
-  s <- cov(x)
-  rhos <- exp(seq(log(1e-3), log(1), length.out = 30L))
-  bics <- vapply(rhos, function(rho) {
-    wi <- glasso(s, rho)$wi
-    edges <- sum(abs(wi[upper.tri(wi)]) > 1e-8)
-    loglik <- 0.5 * nrow(x) *
-      (determinant(wi)$modulus[1L] - sum(diag(s %*% wi)))
-    -2 * loglik + log(nrow(x)) * edges
-  }, numeric(1L))
-  wi <- glasso(s, rhos[which.min(bics)])$wi
-  adj <- (abs(wi) > 1e-8) * 1L
-  diag(adj) <- 0L
-  adj
-}
-
-pc_skeleton <- function(x, alpha) {
-  fit <- pc(suffStat = list(C = cor(x), n = nrow(x)),
-            indepTest = gaussCItest, alpha = alpha, p = ncol(x))
-  adj <- as(fit@graph, "matrix")
-  ((adj + t(adj)) > 0) * 1L
-}
-
-four_graphs <- function(x, candidates) {
-  sel <- select_N(gmm_target_from_samples(x), candidates = candidates,
-                  seed = 1L)
-  # huge's rotation criterion draws rows at random
-  set.seed(1L)
-  out <- list(
-    proxymix = gmm_independence_graph(sel$best_fit),
-    glasso = glasso_bic(x),
-    huge = as.matrix(huge.select(huge(x, verbose = FALSE),
-                                 verbose = FALSE)$refit),
-    pcalg = pc_skeleton(x, alpha = 0.01)
-  )
-  attr(out, "n_components") <- sel$best_n
-  out
-}
-
-graphs <- lapply(split(seq_len(nrow(peng)), species), function(rows) {
-  four_graphs(peng[rows, ], candidates = 1:3)
-})
-
-# components chosen, and the largest partial correlation, within species
-n_within <- vapply(graphs, attr, numeric(1L), "n_components")
-pcor_within <- vapply(graphs, function(g) {
-  p <- attr(g$proxymix, "pcor")
-  max(abs(p[upper.tri(p)]))
-}, numeric(1L))
-data.frame(components = n_within, largest_pcor = round(pcor_within, 3L))
-#>           components largest_pcor
-#> Adelie             1        0.433
-#> Chinstrap          1        0.468
-#> Gentoo             1        0.361
-```
+\
+`glasso_bic`` ``<-`` ``function``(``x``)`` ``{`\
+`  ``s`` ``<-`` `[`cov`](https://rdrr.io/r/stats/cor.html)`(``x``)`\
+`  ``rhos`` ``<-`` `[`exp`](https://rdrr.io/r/base/Log.html)`(`[`seq`](https://rdrr.io/r/base/seq.html)`(`[`log`](https://rdrr.io/r/base/Log.html)`(``1e-3``)``, `[`log`](https://rdrr.io/r/base/Log.html)`(``1``)``, length.out ``=`` ``30L``)``)`\
+`  ``bics`` ``<-`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``rhos``, ``function``(``rho``)`` ``{`\
+`    ``wi`` ``<-`` `[`glasso`](https://rdrr.io/pkg/glasso/man/glasso.html)`(``s``, ``rho``)``$``wi`\
+`    ``edges`` ``<-`` `[`sum`](https://rdrr.io/r/base/sum.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``wi``[`[`upper.tri`](https://rdrr.io/r/base/lower.tri.html)`(``wi``)``]``)`` ``>`` ``1e-8``)`\
+`    ``loglik`` ``<-`` ``0.5`` ``*`` `[`nrow`](https://rdrr.io/r/base/nrow.html)`(``x``)`` ``*`\
+`      ``(`[`determinant`](https://rdrr.io/r/base/det.html)`(``wi``)``$``modulus``[``1L``]`` ``-`` `[`sum`](https://rdrr.io/r/base/sum.html)`(`[`diag`](https://rdrr.io/r/base/diag.html)`(``s`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``wi``)``)``)`\
+`    ``-``2`` ``*`` ``loglik`` ``+`` `[`log`](https://rdrr.io/r/base/Log.html)`(`[`nrow`](https://rdrr.io/r/base/nrow.html)`(``x``)``)`` ``*`` ``edges`\
+`  ``}``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)`\
+`  ``wi`` ``<-`` `[`glasso`](https://rdrr.io/pkg/glasso/man/glasso.html)`(``s``, ``rhos``[`[`which.min`](https://rdrr.io/r/base/which.min.html)`(``bics``)``]``)``$``wi`\
+`  ``adj`` ``<-`` ``(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``wi``)`` ``>`` ``1e-8``)`` ``*`` ``1L`\
+`  `[`diag`](https://rdrr.io/r/base/diag.html)`(``adj``)`` ``<-`` ``0L`\
+`  ``adj`\
+`}`\
+\
+`pc_skeleton`` ``<-`` ``function``(``x``, ``alpha``)`` ``{`\
+`  ``fit`` ``<-`` `[`pc`](https://rdrr.io/pkg/pcalg/man/pc.html)`(``suffStat ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``C ``=`` `[`cor`](https://rdrr.io/r/stats/cor.html)`(``x``)``, n ``=`` `[`nrow`](https://rdrr.io/r/base/nrow.html)`(``x``)``)``,`\
+`            indepTest ``=`` ``gaussCItest``, alpha ``=`` ``alpha``, p ``=`` `[`ncol`](https://rdrr.io/r/base/nrow.html)`(``x``)``)`\
+`  ``adj`` ``<-`` `[`as`](https://rdrr.io/r/methods/as.html)`(``fit``@``graph``, ``"matrix"``)`\
+`  ``(``(``adj`` ``+`` `[`t`](https://rdrr.io/r/base/t.html)`(``adj``)``)`` ``>`` ``0``)`` ``*`` ``1L`\
+`}`\
+\
+`four_graphs`` ``<-`` ``function``(``x``, ``candidates``)`` ``{`\
+`  ``sel`` ``<-`` `[`select_N`](https://max578.github.io/proxymix/reference/select_N.md)`(`[`gmm_target_from_samples`](https://max578.github.io/proxymix/reference/gmm_target_from_samples.md)`(``x``)``, candidates ``=`` ``candidates``,`\
+`                  seed ``=`` ``1L``)`\
+`  ``# huge's rotation criterion draws rows at random`\
+`  `[`set.seed`](https://rdrr.io/r/base/Random.html)`(``1L``)`\
+`  ``out`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(`\
+`    proxymix ``=`` `[`gmm_independence_graph`](https://max578.github.io/proxymix/reference/gmm_independence_graph.md)`(``sel``$``best_fit``)``,`\
+`    glasso ``=`` ``glasso_bic``(``x``)``,`\
+`    huge ``=`` `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(`[`huge.select`](https://rdrr.io/pkg/huge/man/huge.select.html)`(`[`huge`](https://rdrr.io/pkg/huge/man/huge.html)`(``x``, verbose ``=`` ``FALSE``)``,`\
+`                                 verbose ``=`` ``FALSE``)``$``refit``)``,`\
+`    pcalg ``=`` ``pc_skeleton``(``x``, alpha ``=`` ``0.01``)`\
+`  ``)`\
+`  `[`attr`](https://rdrr.io/r/base/attr.html)`(``out``, ``"n_components"``)`` ``<-`` ``sel``$``best_n`\
+`  ``out`\
+`}`\
+\
+`graphs`` ``<-`` `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`split`](https://rdrr.io/r/base/split.html)`(`[`seq_len`](https://rdrr.io/r/base/seq.html)`(`[`nrow`](https://rdrr.io/r/base/nrow.html)`(``peng``)``)``, ``species``)``, ``function``(``rows``)`` ``{`\
+`  ``four_graphs``(``peng``[``rows``, ``]``, candidates ``=`` ``1``:``3``)`\
+`}``)`\
+\
+`# components chosen, and the largest partial correlation, within species`\
+`n_within`` ``<-`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``graphs``, ``attr``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``, ``"n_components"``)`\
+`pcor_within`` ``<-`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``graphs``, ``function``(``g``)`` ``{`\
+`  ``p`` ``<-`` `[`attr`](https://rdrr.io/r/base/attr.html)`(``g``$``proxymix``, ``"pcor"``)`\
+`  `[`max`](https://rdrr.io/r/base/Extremes.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``p``[`[`upper.tri`](https://rdrr.io/r/base/lower.tri.html)`(``p``)``]``)``)`\
+`}``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)`\
+[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``components ``=`` ``n_within``, largest_pcor ``=`` `[`round`](https://rdrr.io/r/base/Round.html)`(``pcor_within``, ``3L``)``)`\
+`#>           components largest_pcor`\
+`#> Adelie             1        0.433`\
+`#> Chinstrap          1        0.468`\
+`#> Gentoo             1        0.361`
 
 | Species              | Method   | Edges | Edge set                          |
 |:---------------------|:---------|------:|:----------------------------------|
@@ -943,275 +899,273 @@ on one core (R 4.6.1, Apple silicon); the results below are read from
 its stored output. For a quick reduced run, change the line
 `n_rep <- 200L` to a small number such as `n_rep <- 3L`.
 
-``` r
-
-library(proxymix)
-library(mclust)
-library(FNN)
-library(glasso)
-library(huge)
-library(pcalg)
-library(cubature)
-
-n <- 500L      # rows in each dataset
-n_rep <- 200L  # datasets per design
-k_nn <- 10L    # neighbours in the nearest-neighbour estimators
-k_max <- 5L    # largest component count offered to the selectors
-
-# a mixture as plain lists with its own density and sampler, so the reference
-# values and the data do not pass through the package
-mixture <- function(w, mu, sig) {
-  list(w = w, mu = mu, sig = sig, p = length(mu[[1L]]))
-}
-
-dmix <- function(x_mat, m) {
-  p <- ncol(x_mat)
-  rowSums(vapply(seq_along(m$w), function(k) {
-    m$w[k] * exp(-0.5 * mahalanobis(x_mat, m$mu[[k]], m$sig[[k]]) -
-                   0.5 * (determinant(m$sig[[k]])$modulus[1L] +
-                            p * log(2 * pi)))
-  }, numeric(nrow(x_mat))))
-}
-
-rmix <- function(n, m) {
-  z <- sample.int(length(m$w), n, replace = TRUE, prob = m$w)
-  x <- matrix(rnorm(n * m$p), n, m$p)
-  for (k in seq_along(m$w)) {
-    s1 <- z == k
-    x[s1, ] <- x[s1, , drop = FALSE] %*% chol(m$sig[[k]]) +
-      matrix(m$mu[[k]], sum(s1), m$p, byrow = TRUE)
-  }
-  x
-}
-
-marginal <- function(m, keep) {
-  mixture(m$w, lapply(m$mu, function(v) v[keep]),
-          lapply(m$sig, function(s) s[keep, keep, drop = FALSE]))
-}
-
-overall_box <- function(m) {
-  mean_all <- Reduce(`+`, Map(`*`, m$w, m$mu))
-  cov_all <- Reduce(`+`, Map(function(w, mu, s) w * (s + tcrossprod(mu)),
-                             m$w, m$mu, m$sig)) - tcrossprod(mean_all)
-  half <- 7 * sqrt(diag(cov_all))
-  list(lower = mean_all - half, upper = mean_all + half)
-}
-
-# an integral of a function of the density over the box, by adaptive
-# quadrature; the integrand receives points as columns
-box_integral <- function(f, box) {
-  hcubature(function(x_mat) matrix(f(t(x_mat)), 1L), box$lower, box$upper,
-            tol = 1e-6, vectorInterface = TRUE)$integral
-}
-
-shannon_quad <- function(m) {
-  box_integral(function(x) {
-    d <- dmix(x, m)
-    ifelse(d > 0, -d * log(d), 0)
-  }, overall_box(m))
-}
-
-square_quad <- function(m) box_integral(function(x) dmix(x, m)^2,
-                                        overall_box(m))
-
-# Cauchy-Schwarz mutual information from the three integrals in its
-# definition, each by quadrature
-cs_mi_quad <- function(m, a, b) {
-  ma <- marginal(m, a)
-  mb <- marginal(m, b)
-  cross <- box_integral(function(x) {
-    dmix(x, m) * dmix(x[, a, drop = FALSE], ma) *
-      dmix(x[, b, drop = FALSE], mb)
-  }, overall_box(m))
-  0.5 * log(square_quad(m)) + 0.5 * log(square_quad(ma) * square_quad(mb)) -
-    log(cross)
-}
-
-designs <- list(
-  "2-d, three components" = mixture(
-    w = c(0.4, 0.35, 0.25),
-    mu = list(c(-2, 0), c(2, 1), c(0, 3)),
-    sig = list(matrix(c(1, 0.5, 0.5, 1), 2L),
-               matrix(c(1.5, -0.6, -0.6, 0.8), 2L),
-               diag(c(0.5, 1.2)))
-  ),
-  "4-d, two components" = mixture(
-    w = c(0.6, 0.4),
-    mu = list(c(0, 0, 0, 0), c(3, 0, 2, 0)),
-    sig = list(0.5^abs(outer(1:4, 1:4, "-")),
-               1.5 * (0.3 + 0.7 * diag(4L)))
-  )
-)
-blocks <- list(list(1L, 2L), list(1:2, 3:4))
-
-truth <- do.call(rbind, lapply(seq_along(designs), function(i1) {
-  m <- designs[[i1]]
-  a <- blocks[[i1]][[1L]]
-  b <- blocks[[i1]][[2L]]
-  h_joint <- shannon_quad(m)
-  data.frame(
-    design = names(designs)[i1],
-    quantity = c("Shannon entropy", "Renyi-2 entropy",
-                 "Shannon mutual information",
-                 "Cauchy-Schwarz mutual information"),
-    truth = c(h_joint, -log(square_quad(m)),
-              shannon_quad(marginal(m, a)) + shannon_quad(marginal(m, b)) -
-                h_joint,
-              cs_mi_quad(m, a, b)),
-    stringsAsFactors = FALSE
-  )
-}))
-
-# Kraskov, Stoegbauer and Grassberger mutual information, first algorithm
-ksg_mi <- function(xa, xb, k) {
-  da <- as.matrix(dist(xa, method = "maximum"))
-  db <- as.matrix(dist(xb, method = "maximum"))
-  dj <- pmax(da, db)
-  n <- nrow(dj)
-  eps <- apply(dj, 1L, function(v) sort(v)[k + 1L])  # the point itself is v[1]
-  n_a <- rowSums(da < eps) - 1L
-  n_b <- rowSums(db < eps) - 1L
-  digamma(k) + digamma(n) - mean(digamma(n_a + 1L) + digamma(n_b + 1L))
-}
-
-one_entropy <- function(i1, r) {
-  set.seed(r)
-  m <- designs[[i1]]
-  a <- blocks[[i1]][[1L]]
-  b <- blocks[[i1]][[2L]]
-  x <- rmix(n, m)
-  tgt <- gmm_target_from_samples(x)
-  fit <- fit_em_samples(tgt, N = length(m$w), seed = r)
-  h_mc <- function(g) gmm_entropy(g, order = "shannon", n_mc = 5000L,
-                                  seed = r)$mc
-  est <- data.frame(
-    design = names(designs)[i1],
-    rep = r,
-    quantity = c("Shannon entropy", "Shannon entropy", "Renyi-2 entropy",
-                 "Shannon mutual information", "Shannon mutual information",
-                 "Cauchy-Schwarz mutual information"),
-    method = c("proxymix", "FNN", "proxymix", "proxymix", "KSG", "proxymix"),
-    estimate = c(
-      h_mc(fit),
-      entropy(x, k = k_nn)[k_nn],
-      gmm_entropy(fit),
-      h_mc(gmm_marginalise(fit, a)) + h_mc(gmm_marginalise(fit, b)) -
-        h_mc(fit),
-      ksg_mi(x[, a, drop = FALSE], x[, b, drop = FALSE], k_nn),
-      gmm_mutual_information(fit, a, b)
-    ),
-    stringsAsFactors = FALSE
-  )
-  crit <- lapply(seq_len(k_max), function(k) {
-    bic_aic(fit_em_samples(tgt, N = k, seed = r))
-  })
-  icl_m <- mclustICL(x, G = seq_len(k_max), verbose = FALSE)
-  k_sel <- data.frame(
-    design = names(designs)[i1],
-    rep = r,
-    selector = c("proxymix, BIC", "proxymix, ICL", "mclust, BIC",
-                 "mclust, ICL"),
-    chosen = c(which.min(vapply(crit, `[[`, numeric(1L), "bic")),
-               which.min(vapply(crit, `[[`, numeric(1L), "icl")),
-               Mclust(x, G = seq_len(k_max), verbose = FALSE)$G,
-               which(icl_m == max(icl_m, na.rm = TRUE), arr.ind = TRUE)[1L]),
-    stringsAsFactors = FALSE
-  )
-  list(est = est, k_sel = k_sel)
-}
-
-# the graph design: a chain precision shared by two components whose means
-# differ along the first coordinate
-omega <- diag(6L)
-omega[abs(row(omega) - col(omega)) == 1L] <- -0.4
-graph_design <- mixture(w = c(0.5, 0.5),
-                        mu = list(rep(0, 6L), c(4, rep(0, 5L))),
-                        sig = list(solve(omega), solve(omega)))
-adj_chain <- (abs(omega) > 0) * 1L
-diag(adj_chain) <- 0L
-
-glasso_bic <- function(x) {
-  s <- cov(x)
-  rhos <- exp(seq(log(1e-3), log(1), length.out = 30L))
-  bics <- vapply(rhos, function(rho) {
-    wi <- glasso(s, rho)$wi
-    edges <- sum(abs(wi[upper.tri(wi)]) > 1e-8)
-    loglik <- 0.5 * nrow(x) *
-      (determinant(wi)$modulus[1L] - sum(diag(s %*% wi)))
-    -2 * loglik + log(nrow(x)) * edges
-  }, numeric(1L))
-  wi <- glasso(s, rhos[which.min(bics)])$wi
-  adj <- (abs(wi) > 1e-8) * 1L
-  diag(adj) <- 0L
-  adj
-}
-
-pc_skeleton <- function(x, alpha) {
-  fit <- pc(suffStat = list(C = cor(x), n = nrow(x)),
-            indepTest = gaussCItest, alpha = alpha, p = ncol(x))
-  adj <- as(fit@graph, "matrix")
-  ((adj + t(adj)) > 0) * 1L
-}
-
-one_graph <- function(r) {
-  set.seed(r)
-  x <- rmix(n, graph_design)
-  sel <- select_N(gmm_target_from_samples(x), candidates = 1:4, seed = r)
-  adj <- list(
-    proxymix = gmm_independence_graph(sel$best_fit),
-    glasso = glasso_bic(x),
-    huge = as.matrix(huge.select(huge(x, verbose = FALSE),
-                                 verbose = FALSE)$refit),
-    pcalg = pc_skeleton(x, alpha = 0.01)
-  )
-  data.frame(
-    rep = r,
-    method = names(adj),
-    shd = vapply(adj, function(a) sum(abs(a - adj_chain)) / 2, numeric(1L)),
-    edges = vapply(adj, function(a) sum(a) / 2, numeric(1L)),
-    n_components = sel$best_n,
-    stringsAsFactors = FALSE
-  )
-}
-
-runs <- lapply(seq_along(designs), function(i1) {
-  lapply(seq_len(n_rep), function(r) one_entropy(i1, r))
-})
-est <- do.call(rbind, lapply(runs, function(d) {
-  do.call(rbind, lapply(d, `[[`, "est"))
-}))
-k_sel <- do.call(rbind, lapply(runs, function(d) {
-  do.call(rbind, lapply(d, `[[`, "k_sel"))
-}))
-graph_res <- do.call(rbind, lapply(seq_len(n_rep), one_graph))
-
-est <- merge(est, truth, by = c("design", "quantity"))
-est$error <- est$estimate - est$truth
-entropy_tab <- aggregate(
-  cbind(bias = error, abs_error = abs(error)) ~ design + quantity + method,
-  data = est, FUN = mean
-)
-entropy_tab$abs_error_se <- aggregate(
-  abs(error) ~ design + quantity + method, data = est,
-  FUN = function(v) sd(v) / sqrt(length(v))
-)[[4L]]
-
-k_sel$true_k <- vapply(designs[k_sel$design], function(m) length(m$w),
-                       integer(1L))
-k_tab <- aggregate(
-  cbind(share_true = chosen == true_k, mean_chosen = chosen) ~
-    design + selector,
-  data = k_sel, FUN = mean
-)
-
-graph_tab <- aggregate(
-  cbind(mean_shd = shd, share_exact = shd == 0, mean_edges = edges) ~ method,
-  data = graph_res, FUN = mean
-)
-entropy_tab
-k_tab
-graph_tab
-```
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`mclust`](https://mclust-org.github.io/mclust/)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(``FNN``)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`glasso`](http://www-stat.stanford.edu/~tibs/glasso)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`huge`](https://github.com/Gatech-Flash/huge)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`pcalg`](https://pcalg.r-forge.r-project.org/)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`cubature`](https://bnaras.github.io/cubature/)`)`\
+\
+`n`` ``<-`` ``500L``      ``# rows in each dataset`\
+`n_rep`` ``<-`` ``200L``  ``# datasets per design`\
+`k_nn`` ``<-`` ``10L``    ``# neighbours in the nearest-neighbour estimators`\
+`k_max`` ``<-`` ``5L``    ``# largest component count offered to the selectors`\
+\
+`# a mixture as plain lists with its own density and sampler, so the reference`\
+`# values and the data do not pass through the package`\
+`mixture`` ``<-`` ``function``(``w``, ``mu``, ``sig``)`` ``{`\
+`  `[`list`](https://rdrr.io/r/base/list.html)`(``w ``=`` ``w``, mu ``=`` ``mu``, sig ``=`` ``sig``, p ``=`` `[`length`](https://rdrr.io/r/base/length.html)`(``mu``[[``1L``]``]``)``)`\
+`}`\
+\
+`dmix`` ``<-`` ``function``(``x_mat``, ``m``)`` ``{`\
+`  ``p`` ``<-`` `[`ncol`](https://rdrr.io/r/base/nrow.html)`(``x_mat``)`\
+`  `[`rowSums`](https://rdrr.io/r/base/colSums.html)`(`[`vapply`](https://rdrr.io/r/base/lapply.html)`(`[`seq_along`](https://rdrr.io/r/base/seq.html)`(``m``$``w``)``, ``function``(``k``)`` ``{`\
+`    ``m``$``w``[``k``]`` ``*`` `[`exp`](https://rdrr.io/r/base/Log.html)`(``-``0.5`` ``*`` `[`mahalanobis`](https://rdrr.io/r/stats/mahalanobis.html)`(``x_mat``, ``m``$``mu``[[``k``]``]``, ``m``$``sig``[[``k``]``]``)`` ``-`\
+`                   ``0.5`` ``*`` ``(`[`determinant`](https://rdrr.io/r/base/det.html)`(``m``$``sig``[[``k``]``]``)``$``modulus``[``1L``]`` ``+`\
+`                            ``p`` ``*`` `[`log`](https://rdrr.io/r/base/Log.html)`(``2`` ``*`` ``pi``)``)``)`\
+`  ``}``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(`[`nrow`](https://rdrr.io/r/base/nrow.html)`(``x_mat``)``)``)``)`\
+`}`\
+\
+`rmix`` ``<-`` ``function``(``n``, ``m``)`` ``{`\
+`  ``z`` ``<-`` `[`sample.int`](https://rdrr.io/r/base/sample.html)`(`[`length`](https://rdrr.io/r/base/length.html)`(``m``$``w``)``, ``n``, replace ``=`` ``TRUE``, prob ``=`` ``m``$``w``)`\
+`  ``x`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n`` ``*`` ``m``$``p``)``, ``n``, ``m``$``p``)`\
+`  ``for`` ``(``k`` ``in`` `[`seq_along`](https://rdrr.io/r/base/seq.html)`(``m``$``w``)``)`` ``{`\
+`    ``s1`` ``<-`` ``z`` ``==`` ``k`\
+`    ``x``[``s1``, ``]`` ``<-`` ``x``[``s1``, , drop ``=`` ``FALSE``]`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` `[`chol`](https://rdrr.io/r/base/chol.html)`(``m``$``sig``[[``k``]``]``)`` ``+`\
+`      `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``m``$``mu``[[``k``]``]``, `[`sum`](https://rdrr.io/r/base/sum.html)`(``s1``)``, ``m``$``p``, byrow ``=`` ``TRUE``)`\
+`  ``}`\
+`  ``x`\
+`}`\
+\
+`marginal`` ``<-`` ``function``(``m``, ``keep``)`` ``{`\
+`  ``mixture``(``m``$``w``, `[`lapply`](https://rdrr.io/r/base/lapply.html)`(``m``$``mu``, ``function``(``v``)`` ``v``[``keep``]``)``,`\
+`          `[`lapply`](https://rdrr.io/r/base/lapply.html)`(``m``$``sig``, ``function``(``s``)`` ``s``[``keep``, ``keep``, drop ``=`` ``FALSE``]``)``)`\
+`}`\
+\
+`overall_box`` ``<-`` ``function``(``m``)`` ``{`\
+`  ``mean_all`` ``<-`` `[`Reduce`](https://rdrr.io/r/base/funprog.html)`(``` `+` ```, `[`Map`](https://rdrr.io/r/base/funprog.html)`(``` `*` ```, ``m``$``w``, ``m``$``mu``)``)`\
+`  ``cov_all`` ``<-`` `[`Reduce`](https://rdrr.io/r/base/funprog.html)`(``` `+` ```, `[`Map`](https://rdrr.io/r/base/funprog.html)`(``function``(``w``, ``mu``, ``s``)`` ``w`` ``*`` ``(``s`` ``+`` `[`tcrossprod`](https://rdrr.io/r/base/crossprod.html)`(``mu``)``)``,`\
+`                             ``m``$``w``, ``m``$``mu``, ``m``$``sig``)``)`` ``-`` `[`tcrossprod`](https://rdrr.io/r/base/crossprod.html)`(``mean_all``)`\
+`  ``half`` ``<-`` ``7`` ``*`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(`[`diag`](https://rdrr.io/r/base/diag.html)`(``cov_all``)``)`\
+`  `[`list`](https://rdrr.io/r/base/list.html)`(``lower ``=`` ``mean_all`` ``-`` ``half``, upper ``=`` ``mean_all`` ``+`` ``half``)`\
+`}`\
+\
+`# an integral of a function of the density over the box, by adaptive`\
+`# quadrature; the integrand receives points as columns`\
+`box_integral`` ``<-`` ``function``(``f``, ``box``)`` ``{`\
+`  `[`hcubature`](https://bnaras.github.io/cubature/reference/hcubature.html)`(``function``(``x_mat``)`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``f``(`[`t`](https://rdrr.io/r/base/t.html)`(``x_mat``)``)``, ``1L``)``, ``box``$``lower``, ``box``$``upper``,`\
+`            tol ``=`` ``1e-6``, vectorInterface ``=`` ``TRUE``)``$``integral`\
+`}`\
+\
+`shannon_quad`` ``<-`` ``function``(``m``)`` ``{`\
+`  ``box_integral``(``function``(``x``)`` ``{`\
+`    ``d`` ``<-`` ``dmix``(``x``, ``m``)`\
+`    `[`ifelse`](https://rdrr.io/r/base/ifelse.html)`(``d`` ``>`` ``0``, ``-``d`` ``*`` `[`log`](https://rdrr.io/r/base/Log.html)`(``d``)``, ``0``)`\
+`  ``}``, ``overall_box``(``m``)``)`\
+`}`\
+\
+`square_quad`` ``<-`` ``function``(``m``)`` ``box_integral``(``function``(``x``)`` ``dmix``(``x``, ``m``)``^``2``,`\
+`                                        ``overall_box``(``m``)``)`\
+\
+`# Cauchy-Schwarz mutual information from the three integrals in its`\
+`# definition, each by quadrature`\
+`cs_mi_quad`` ``<-`` ``function``(``m``, ``a``, ``b``)`` ``{`\
+`  ``ma`` ``<-`` ``marginal``(``m``, ``a``)`\
+`  ``mb`` ``<-`` ``marginal``(``m``, ``b``)`\
+`  ``cross`` ``<-`` ``box_integral``(``function``(``x``)`` ``{`\
+`    ``dmix``(``x``, ``m``)`` ``*`` ``dmix``(``x``[``, ``a``, drop ``=`` ``FALSE``]``, ``ma``)`` ``*`\
+`      ``dmix``(``x``[``, ``b``, drop ``=`` ``FALSE``]``, ``mb``)`\
+`  ``}``, ``overall_box``(``m``)``)`\
+`  ``0.5`` ``*`` `[`log`](https://rdrr.io/r/base/Log.html)`(``square_quad``(``m``)``)`` ``+`` ``0.5`` ``*`` `[`log`](https://rdrr.io/r/base/Log.html)`(``square_quad``(``ma``)`` ``*`` ``square_quad``(``mb``)``)`` ``-`\
+`    `[`log`](https://rdrr.io/r/base/Log.html)`(``cross``)`\
+`}`\
+\
+`designs`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(`\
+`  ``"2-d, three components"`` ``=`` ``mixture``(`\
+`    w ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``0.4``, ``0.35``, ``0.25``)``,`\
+`    mu ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``-``2``, ``0``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``2``, ``1``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``3``)``)``,`\
+`    sig ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``1``, ``0.5``, ``0.5``, ``1``)``, ``2L``)``,`\
+`               `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``1.5``, ``-``0.6``, ``-``0.6``, ``0.8``)``, ``2L``)``,`\
+`               `[`diag`](https://rdrr.io/r/base/diag.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0.5``, ``1.2``)``)``)`\
+`  ``)``,`\
+`  ``"4-d, two components"`` ``=`` ``mixture``(`\
+`    w ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``0.6``, ``0.4``)``,`\
+`    mu ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``, ``0``, ``0``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``3``, ``0``, ``2``, ``0``)``)``,`\
+`    sig ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``0.5``^`[`abs`](https://rdrr.io/r/base/MathFun.html)`(`[`outer`](https://rdrr.io/r/base/outer.html)`(``1``:``4``, ``1``:``4``, ``"-"``)``)``,`\
+`               ``1.5`` ``*`` ``(``0.3`` ``+`` ``0.7`` ``*`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``4L``)``)``)`\
+`  ``)`\
+`)`\
+`blocks`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`list`](https://rdrr.io/r/base/list.html)`(``1L``, ``2L``)``, `[`list`](https://rdrr.io/r/base/list.html)`(``1``:``2``, ``3``:``4``)``)`\
+\
+`truth`` ``<-`` `[`do.call`](https://rdrr.io/r/base/do.call.html)`(``rbind``, `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`seq_along`](https://rdrr.io/r/base/seq.html)`(``designs``)``, ``function``(``i1``)`` ``{`\
+`  ``m`` ``<-`` ``designs``[[``i1``]``]`\
+`  ``a`` ``<-`` ``blocks``[[``i1``]``]``[[``1L``]``]`\
+`  ``b`` ``<-`` ``blocks``[[``i1``]``]``[[``2L``]``]`\
+`  ``h_joint`` ``<-`` ``shannon_quad``(``m``)`\
+`  `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(`\
+`    design ``=`` `[`names`](https://rdrr.io/r/base/names.html)`(``designs``)``[``i1``]``,`\
+`    quantity ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"Shannon entropy"``, ``"Renyi-2 entropy"``,`\
+`                 ``"Shannon mutual information"``,`\
+`                 ``"Cauchy-Schwarz mutual information"``)``,`\
+`    truth ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``h_joint``, ``-`[`log`](https://rdrr.io/r/base/Log.html)`(``square_quad``(``m``)``)``,`\
+`              ``shannon_quad``(``marginal``(``m``, ``a``)``)`` ``+`` ``shannon_quad``(``marginal``(``m``, ``b``)``)`` ``-`\
+`                ``h_joint``,`\
+`              ``cs_mi_quad``(``m``, ``a``, ``b``)``)``,`\
+`    stringsAsFactors ``=`` ``FALSE`\
+`  ``)`\
+`}``)``)`\
+\
+`# Kraskov, Stoegbauer and Grassberger mutual information, first algorithm`\
+`ksg_mi`` ``<-`` ``function``(``xa``, ``xb``, ``k``)`` ``{`\
+`  ``da`` ``<-`` `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(`[`dist`](https://rdrr.io/r/stats/dist.html)`(``xa``, method ``=`` ``"maximum"``)``)`\
+`  ``db`` ``<-`` `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(`[`dist`](https://rdrr.io/r/stats/dist.html)`(``xb``, method ``=`` ``"maximum"``)``)`\
+`  ``dj`` ``<-`` `[`pmax`](https://rdrr.io/r/base/Extremes.html)`(``da``, ``db``)`\
+`  ``n`` ``<-`` `[`nrow`](https://rdrr.io/r/base/nrow.html)`(``dj``)`\
+`  ``eps`` ``<-`` `[`apply`](https://rdrr.io/r/base/apply.html)`(``dj``, ``1L``, ``function``(``v``)`` `[`sort`](https://rdrr.io/r/base/sort.html)`(``v``)``[``k`` ``+`` ``1L``]``)``  ``# the point itself is v[1]`\
+`  ``n_a`` ``<-`` `[`rowSums`](https://rdrr.io/r/base/colSums.html)`(``da`` ``<`` ``eps``)`` ``-`` ``1L`\
+`  ``n_b`` ``<-`` `[`rowSums`](https://rdrr.io/r/base/colSums.html)`(``db`` ``<`` ``eps``)`` ``-`` ``1L`\
+`  `[`digamma`](https://rdrr.io/r/base/Special.html)`(``k``)`` ``+`` `[`digamma`](https://rdrr.io/r/base/Special.html)`(``n``)`` ``-`` `[`mean`](https://rdrr.io/r/base/mean.html)`(`[`digamma`](https://rdrr.io/r/base/Special.html)`(``n_a`` ``+`` ``1L``)`` ``+`` `[`digamma`](https://rdrr.io/r/base/Special.html)`(``n_b`` ``+`` ``1L``)``)`\
+`}`\
+\
+`one_entropy`` ``<-`` ``function``(``i1``, ``r``)`` ``{`\
+`  `[`set.seed`](https://rdrr.io/r/base/Random.html)`(``r``)`\
+`  ``m`` ``<-`` ``designs``[[``i1``]``]`\
+`  ``a`` ``<-`` ``blocks``[[``i1``]``]``[[``1L``]``]`\
+`  ``b`` ``<-`` ``blocks``[[``i1``]``]``[[``2L``]``]`\
+`  ``x`` ``<-`` ``rmix``(``n``, ``m``)`\
+`  ``tgt`` ``<-`` `[`gmm_target_from_samples`](https://max578.github.io/proxymix/reference/gmm_target_from_samples.md)`(``x``)`\
+`  ``fit`` ``<-`` `[`fit_em_samples`](https://max578.github.io/proxymix/reference/fit_em_samples.md)`(``tgt``, N ``=`` `[`length`](https://rdrr.io/r/base/length.html)`(``m``$``w``)``, seed ``=`` ``r``)`\
+`  ``h_mc`` ``<-`` ``function``(``g``)`` `[`gmm_entropy`](https://max578.github.io/proxymix/reference/gmm_entropy.md)`(``g``, order ``=`` ``"shannon"``, n_mc ``=`` ``5000L``,`\
+`                                  seed ``=`` ``r``)``$``mc`\
+`  ``est`` ``<-`` `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(`\
+`    design ``=`` `[`names`](https://rdrr.io/r/base/names.html)`(``designs``)``[``i1``]``,`\
+`    rep ``=`` ``r``,`\
+`    quantity ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"Shannon entropy"``, ``"Shannon entropy"``, ``"Renyi-2 entropy"``,`\
+`                 ``"Shannon mutual information"``, ``"Shannon mutual information"``,`\
+`                 ``"Cauchy-Schwarz mutual information"``)``,`\
+`    method ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"proxymix"``, ``"FNN"``, ``"proxymix"``, ``"proxymix"``, ``"KSG"``, ``"proxymix"``)``,`\
+`    estimate ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(`\
+`      ``h_mc``(``fit``)``,`\
+`      `[`entropy`](https://rdrr.io/pkg/FNN/man/entropy.html)`(``x``, k ``=`` ``k_nn``)``[``k_nn``]``,`\
+`      `[`gmm_entropy`](https://max578.github.io/proxymix/reference/gmm_entropy.md)`(``fit``)``,`\
+`      ``h_mc``(`[`gmm_marginalise`](https://max578.github.io/proxymix/reference/gmm_marginalise.md)`(``fit``, ``a``)``)`` ``+`` ``h_mc``(`[`gmm_marginalise`](https://max578.github.io/proxymix/reference/gmm_marginalise.md)`(``fit``, ``b``)``)`` ``-`\
+`        ``h_mc``(``fit``)``,`\
+`      ``ksg_mi``(``x``[``, ``a``, drop ``=`` ``FALSE``]``, ``x``[``, ``b``, drop ``=`` ``FALSE``]``, ``k_nn``)``,`\
+`      `[`gmm_mutual_information`](https://max578.github.io/proxymix/reference/gmm_mutual_information.md)`(``fit``, ``a``, ``b``)`\
+`    ``)``,`\
+`    stringsAsFactors ``=`` ``FALSE`\
+`  ``)`\
+`  ``crit`` ``<-`` `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``k_max``)``, ``function``(``k``)`` ``{`\
+`    `[`bic_aic`](https://max578.github.io/proxymix/reference/bic_aic.md)`(`[`fit_em_samples`](https://max578.github.io/proxymix/reference/fit_em_samples.md)`(``tgt``, N ``=`` ``k``, seed ``=`` ``r``)``)`\
+`  ``}``)`\
+`  ``icl_m`` ``<-`` `[`mclustICL`](https://mclust-org.github.io/mclust/reference/mclustICL.html)`(``x``, G ``=`` `[`seq_len`](https://rdrr.io/r/base/seq.html)`(``k_max``)``, verbose ``=`` ``FALSE``)`\
+`  ``k_sel`` ``<-`` `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(`\
+`    design ``=`` `[`names`](https://rdrr.io/r/base/names.html)`(``designs``)``[``i1``]``,`\
+`    rep ``=`` ``r``,`\
+`    selector ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"proxymix, BIC"``, ``"proxymix, ICL"``, ``"mclust, BIC"``,`\
+`                 ``"mclust, ICL"``)``,`\
+`    chosen ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(`[`which.min`](https://rdrr.io/r/base/which.min.html)`(`[`vapply`](https://rdrr.io/r/base/lapply.html)`(``crit``, ``` `[[` ```, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``, ``"bic"``)``)``,`\
+`               `[`which.min`](https://rdrr.io/r/base/which.min.html)`(`[`vapply`](https://rdrr.io/r/base/lapply.html)`(``crit``, ``` `[[` ```, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``, ``"icl"``)``)``,`\
+`               `[`Mclust`](https://mclust-org.github.io/mclust/reference/Mclust.html)`(``x``, G ``=`` `[`seq_len`](https://rdrr.io/r/base/seq.html)`(``k_max``)``, verbose ``=`` ``FALSE``)``$``G``,`\
+`               `[`which`](https://rdrr.io/r/base/which.html)`(``icl_m`` ``==`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(``icl_m``, na.rm ``=`` ``TRUE``)``, arr.ind ``=`` ``TRUE``)``[``1L``]``)``,`\
+`    stringsAsFactors ``=`` ``FALSE`\
+`  ``)`\
+`  `[`list`](https://rdrr.io/r/base/list.html)`(``est ``=`` ``est``, k_sel ``=`` ``k_sel``)`\
+`}`\
+\
+`# the graph design: a chain precision shared by two components whose means`\
+`# differ along the first coordinate`\
+`omega`` ``<-`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``6L``)`\
+`omega``[`[`abs`](https://rdrr.io/r/base/MathFun.html)`(`[`row`](https://rdrr.io/r/base/row.html)`(``omega``)`` ``-`` `[`col`](https://rdrr.io/r/base/col.html)`(``omega``)``)`` ``==`` ``1L``]`` ``<-`` ``-``0.4`\
+`graph_design`` ``<-`` ``mixture``(``w ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``0.5``, ``0.5``)``,`\
+`                        mu ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`rep`](https://rdrr.io/r/base/rep.html)`(``0``, ``6L``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``4``, `[`rep`](https://rdrr.io/r/base/rep.html)`(``0``, ``5L``)``)``)``,`\
+`                        sig ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`solve`](https://rdrr.io/r/base/solve.html)`(``omega``)``, `[`solve`](https://rdrr.io/r/base/solve.html)`(``omega``)``)``)`\
+`adj_chain`` ``<-`` ``(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``omega``)`` ``>`` ``0``)`` ``*`` ``1L`\
+[`diag`](https://rdrr.io/r/base/diag.html)`(``adj_chain``)`` ``<-`` ``0L`\
+\
+`glasso_bic`` ``<-`` ``function``(``x``)`` ``{`\
+`  ``s`` ``<-`` `[`cov`](https://rdrr.io/r/stats/cor.html)`(``x``)`\
+`  ``rhos`` ``<-`` `[`exp`](https://rdrr.io/r/base/Log.html)`(`[`seq`](https://rdrr.io/r/base/seq.html)`(`[`log`](https://rdrr.io/r/base/Log.html)`(``1e-3``)``, `[`log`](https://rdrr.io/r/base/Log.html)`(``1``)``, length.out ``=`` ``30L``)``)`\
+`  ``bics`` ``<-`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``rhos``, ``function``(``rho``)`` ``{`\
+`    ``wi`` ``<-`` `[`glasso`](https://rdrr.io/pkg/glasso/man/glasso.html)`(``s``, ``rho``)``$``wi`\
+`    ``edges`` ``<-`` `[`sum`](https://rdrr.io/r/base/sum.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``wi``[`[`upper.tri`](https://rdrr.io/r/base/lower.tri.html)`(``wi``)``]``)`` ``>`` ``1e-8``)`\
+`    ``loglik`` ``<-`` ``0.5`` ``*`` `[`nrow`](https://rdrr.io/r/base/nrow.html)`(``x``)`` ``*`\
+`      ``(`[`determinant`](https://rdrr.io/r/base/det.html)`(``wi``)``$``modulus``[``1L``]`` ``-`` `[`sum`](https://rdrr.io/r/base/sum.html)`(`[`diag`](https://rdrr.io/r/base/diag.html)`(``s`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``wi``)``)``)`\
+`    ``-``2`` ``*`` ``loglik`` ``+`` `[`log`](https://rdrr.io/r/base/Log.html)`(`[`nrow`](https://rdrr.io/r/base/nrow.html)`(``x``)``)`` ``*`` ``edges`\
+`  ``}``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)`\
+`  ``wi`` ``<-`` `[`glasso`](https://rdrr.io/pkg/glasso/man/glasso.html)`(``s``, ``rhos``[`[`which.min`](https://rdrr.io/r/base/which.min.html)`(``bics``)``]``)``$``wi`\
+`  ``adj`` ``<-`` ``(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``wi``)`` ``>`` ``1e-8``)`` ``*`` ``1L`\
+`  `[`diag`](https://rdrr.io/r/base/diag.html)`(``adj``)`` ``<-`` ``0L`\
+`  ``adj`\
+`}`\
+\
+`pc_skeleton`` ``<-`` ``function``(``x``, ``alpha``)`` ``{`\
+`  ``fit`` ``<-`` `[`pc`](https://rdrr.io/pkg/pcalg/man/pc.html)`(``suffStat ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``C ``=`` `[`cor`](https://rdrr.io/r/stats/cor.html)`(``x``)``, n ``=`` `[`nrow`](https://rdrr.io/r/base/nrow.html)`(``x``)``)``,`\
+`            indepTest ``=`` ``gaussCItest``, alpha ``=`` ``alpha``, p ``=`` `[`ncol`](https://rdrr.io/r/base/nrow.html)`(``x``)``)`\
+`  ``adj`` ``<-`` `[`as`](https://rdrr.io/r/methods/as.html)`(``fit``@``graph``, ``"matrix"``)`\
+`  ``(``(``adj`` ``+`` `[`t`](https://rdrr.io/r/base/t.html)`(``adj``)``)`` ``>`` ``0``)`` ``*`` ``1L`\
+`}`\
+\
+`one_graph`` ``<-`` ``function``(``r``)`` ``{`\
+`  `[`set.seed`](https://rdrr.io/r/base/Random.html)`(``r``)`\
+`  ``x`` ``<-`` ``rmix``(``n``, ``graph_design``)`\
+`  ``sel`` ``<-`` `[`select_N`](https://max578.github.io/proxymix/reference/select_N.md)`(`[`gmm_target_from_samples`](https://max578.github.io/proxymix/reference/gmm_target_from_samples.md)`(``x``)``, candidates ``=`` ``1``:``4``, seed ``=`` ``r``)`\
+`  ``adj`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(`\
+`    proxymix ``=`` `[`gmm_independence_graph`](https://max578.github.io/proxymix/reference/gmm_independence_graph.md)`(``sel``$``best_fit``)``,`\
+`    glasso ``=`` ``glasso_bic``(``x``)``,`\
+`    huge ``=`` `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(`[`huge.select`](https://rdrr.io/pkg/huge/man/huge.select.html)`(`[`huge`](https://rdrr.io/pkg/huge/man/huge.html)`(``x``, verbose ``=`` ``FALSE``)``,`\
+`                                 verbose ``=`` ``FALSE``)``$``refit``)``,`\
+`    pcalg ``=`` ``pc_skeleton``(``x``, alpha ``=`` ``0.01``)`\
+`  ``)`\
+`  `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(`\
+`    rep ``=`` ``r``,`\
+`    method ``=`` `[`names`](https://rdrr.io/r/base/names.html)`(``adj``)``,`\
+`    shd ``=`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``adj``, ``function``(``a``)`` `[`sum`](https://rdrr.io/r/base/sum.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``a`` ``-`` ``adj_chain``)``)`` ``/`` ``2``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)``,`\
+`    edges ``=`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``adj``, ``function``(``a``)`` `[`sum`](https://rdrr.io/r/base/sum.html)`(``a``)`` ``/`` ``2``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)``,`\
+`    n_components ``=`` ``sel``$``best_n``,`\
+`    stringsAsFactors ``=`` ``FALSE`\
+`  ``)`\
+`}`\
+\
+`runs`` ``<-`` `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`seq_along`](https://rdrr.io/r/base/seq.html)`(``designs``)``, ``function``(``i1``)`` ``{`\
+`  `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``n_rep``)``, ``function``(``r``)`` ``one_entropy``(``i1``, ``r``)``)`\
+`}``)`\
+`est`` ``<-`` `[`do.call`](https://rdrr.io/r/base/do.call.html)`(``rbind``, `[`lapply`](https://rdrr.io/r/base/lapply.html)`(``runs``, ``function``(``d``)`` ``{`\
+`  `[`do.call`](https://rdrr.io/r/base/do.call.html)`(``rbind``, `[`lapply`](https://rdrr.io/r/base/lapply.html)`(``d``, ``` `[[` ```, ``"est"``)``)`\
+`}``)``)`\
+`k_sel`` ``<-`` `[`do.call`](https://rdrr.io/r/base/do.call.html)`(``rbind``, `[`lapply`](https://rdrr.io/r/base/lapply.html)`(``runs``, ``function``(``d``)`` ``{`\
+`  `[`do.call`](https://rdrr.io/r/base/do.call.html)`(``rbind``, `[`lapply`](https://rdrr.io/r/base/lapply.html)`(``d``, ``` `[[` ```, ``"k_sel"``)``)`\
+`}``)``)`\
+`graph_res`` ``<-`` `[`do.call`](https://rdrr.io/r/base/do.call.html)`(``rbind``, `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``n_rep``)``, ``one_graph``)``)`\
+\
+`est`` ``<-`` `[`merge`](https://rdrr.io/r/base/merge.html)`(``est``, ``truth``, by ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"design"``, ``"quantity"``)``)`\
+`est``$``error`` ``<-`` ``est``$``estimate`` ``-`` ``est``$``truth`\
+`entropy_tab`` ``<-`` `[`aggregate`](https://rdrr.io/r/stats/aggregate.html)`(`\
+`  `[`cbind`](https://rdrr.io/r/base/cbind.html)`(``bias ``=`` ``error``, abs_error ``=`` `[`abs`](https://rdrr.io/r/base/MathFun.html)`(``error``)``)`` ``~`` ``design`` ``+`` ``quantity`` ``+`` ``method``,`\
+`  data ``=`` ``est``, FUN ``=`` ``mean`\
+`)`\
+`entropy_tab``$``abs_error_se`` ``<-`` `[`aggregate`](https://rdrr.io/r/stats/aggregate.html)`(`\
+`  `[`abs`](https://rdrr.io/r/base/MathFun.html)`(``error``)`` ``~`` ``design`` ``+`` ``quantity`` ``+`` ``method``, data ``=`` ``est``,`\
+`  FUN ``=`` ``function``(``v``)`` `[`sd`](https://rdrr.io/r/stats/sd.html)`(``v``)`` ``/`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(`[`length`](https://rdrr.io/r/base/length.html)`(``v``)``)`\
+`)``[[``4L``]``]`\
+\
+`k_sel``$``true_k`` ``<-`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``designs``[``k_sel``$``design``]``, ``function``(``m``)`` `[`length`](https://rdrr.io/r/base/length.html)`(``m``$``w``)``,`\
+`                       `[`integer`](https://rdrr.io/r/base/integer.html)`(``1L``)``)`\
+`k_tab`` ``<-`` `[`aggregate`](https://rdrr.io/r/stats/aggregate.html)`(`\
+`  `[`cbind`](https://rdrr.io/r/base/cbind.html)`(``share_true ``=`` ``chosen`` ``==`` ``true_k``, mean_chosen ``=`` ``chosen``)`` ``~`\
+`    ``design`` ``+`` ``selector``,`\
+`  data ``=`` ``k_sel``, FUN ``=`` ``mean`\
+`)`\
+\
+`graph_tab`` ``<-`` `[`aggregate`](https://rdrr.io/r/stats/aggregate.html)`(`\
+`  `[`cbind`](https://rdrr.io/r/base/cbind.html)`(``mean_shd ``=`` ``shd``, share_exact ``=`` ``shd`` ``==`` ``0``, mean_edges ``=`` ``edges``)`` ``~`` ``method``,`\
+`  data ``=`` ``graph_res``, FUN ``=`` ``mean`\
+`)`\
+`entropy_tab`\
+`k_tab`\
+`graph_tab`
 
 | Design | Quantity        | Quadrature | Method   |   Bias | Mean abs. error |    SE |
 |:-------|:----------------|-----------:|:---------|-------:|----------------:|------:|
@@ -1422,10 +1376,8 @@ from the code shown, run on 26 September 2026 with R 4.6.1, proxymix
 0.16.0, mclust 6.1.3, FNN 1.1.4.1, glasso 1.11, huge 2.0.1, pcalg 2.7-12
 and cubature 2.1.4-1, and raised 0 warnings.
 
-``` r
-
-sessionInfo()
-```
+\
+[`sessionInfo`](https://rdrr.io/r/utils/sessionInfo.html)`(``)`
 
     #> R version 4.6.1 (2026-06-24)
     #> Platform: aarch64-apple-darwin23

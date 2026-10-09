@@ -65,18 +65,6 @@ count, and the regime's headline fit statistics. Available as
 
 
     <div class="section level2">
-    <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
-
-
-<dl><dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
-<dd><p>A <a href="gmm_fit.html">gmm_fit</a>.</p></dd>
-
-
-<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>Ignored, for generic compatibility.</p></dd>
-
-</dl></div>
-    <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A one-row data frame with columns <code>regime</code>, <code>n_components</code>,
 <code>dim</code>, <code>converged</code>, <code>iterations</code>, <code>ess</code>, <code>kld_final</code>, <code>validation_kld</code>,
@@ -89,6 +77,13 @@ draws the fit was tuned to, so it reads low and can be negative.
 <code>validation_kld</code> is the estimate on an independent draw and is the one to
 quote as the fit's accuracy; it is <code>NA</code> when the fit was made with
 <code>validation_size = 0</code>.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
+
+
+<p>Called as <code>generics::glance(x, ...)</code>, where <code>x</code> is a <a href="gmm_fit.html">gmm_fit</a> and <code>...</code>
+is ignored.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

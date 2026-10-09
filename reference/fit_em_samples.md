@@ -51,7 +51,9 @@ fit_em_samples(
 
 - ridge_eps:
 
-  Ridge added to each component covariance at every M-step.
+  Relative ridge. At every M-step, `ridge_eps` times each coordinate's
+  sample variance is added to that coordinate's diagonal entry of each
+  component covariance.
 
 - n_starts:
 

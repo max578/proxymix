@@ -97,15 +97,15 @@ Other imputation:
 
 ``` r
 set.seed(1)
-x1 <- rnorm(300)
-y <- x1 + rnorm(300)
-y[runif(300) < plogis(-0.4 + 0.8 * y)] <- NA      # MNAR on y
+x1 <- rnorm(200)
+y <- x1 + rnorm(200)
+y[runif(200) < plogis(-0.4 + 0.8 * y)] <- NA      # MNAR on y
 dat <- data.frame(x1 = x1, y = y)
 proxy_mnar_sensitivity(dat, "y", beta_grid = c(0, 0.5, 1), m = 5L, seed = 1L)
-#>   beta    estimate  std.error    conf.low    conf.high       fmi    loglik
-#> 1  0.0 -0.19648308 0.09406029 -0.38446678 -0.008499378 0.2526332 -857.1654
-#> 2  0.5  0.01881364 0.10018178 -0.18144275  0.219070025 0.2538684 -836.8685
-#> 3  1.0  0.21915436 0.11313359 -0.01039855  0.448707273 0.3355709 -832.4386
+#>   beta   estimate std.error   conf.low   conf.high       fmi    loglik
+#> 1  0.0 -0.3588626 0.1471407 -0.6864382 -0.03128708 0.6304986 -557.7112
+#> 2  0.5 -0.1233208 0.1261837 -0.3886618  0.14202015 0.4743556 -552.2003
+#> 3  1.0  0.1370836 0.1242975 -0.1173614  0.39152868 0.3752030 -552.1423
 #>   converged
 #> 1      TRUE
 #> 2      TRUE

@@ -289,7 +289,7 @@ from the first of the 20 completions of its imputer.
 <span><span class="va">mean_truth</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">truth</span><span class="op">[</span>, <span class="st">"x2"</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">err_mix</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">pooled</span><span class="op">$</span><span class="va">estimate</span> <span class="op">-</span> <span class="va">mean_truth</span><span class="op">)</span></span>
 <span><span class="va">err_one</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">pooled1</span><span class="op">$</span><span class="va">estimate</span> <span class="op">-</span> <span class="va">mean_truth</span><span class="op">)</span></span></code></pre></div>
-<table style="width:100%;" class="table">
+<table style="width:99%;" class="table">
 <caption>The mean of
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>2</mn></msub><annotation encoding="application/x-tex">x_2</annotation></semantics></math>
 in the complete data and recovered three ways, each scored against that
@@ -535,7 +535,7 @@ imputations alone:</p>
 <span></span>
 <span><span class="va">mean_mass</span> <span class="op">&lt;-</span> <span class="fu">pool_three</span><span class="op">(</span><span class="va">body_mass</span> <span class="op">~</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">slope_mass</span> <span class="op">&lt;-</span> <span class="fu">pool_three</span><span class="op">(</span><span class="va">body_mass</span> <span class="op">~</span> <span class="va">bill_dep</span><span class="op">)</span></span></code></pre></div>
-<table style="width:100%;" class="table">
+<table style="width:99%;" class="table">
 <caption>Mean body mass and its slope on bill depth, each with a 95%
 interval, from the complete data, from the birds whose mass was kept,
 and from each package’s 20 completions pooled by Rubin’s

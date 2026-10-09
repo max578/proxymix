@@ -23,8 +23,9 @@ For each observed unit \verb{(y, t, x)}, the counterfactual-mean uplift of movin
 from \code{t0} to \code{t1}, \eqn{E[Y_{t_1} \mid y, t, x] - E[Y_{t_0} \mid y, t, x]},
 computed by \code{\link[=gmm_counterfactual]{gmm_counterfactual()}}. Unlike \code{\link[=proxy_cate]{proxy_cate()}}, the abduction
 gate uses the observed outcome \code{y} as well, sharpening the per-unit estimate.
-Only the counterfactual \emph{mean} is identified; the spread is not (see
-\code{\link[=gmm_cf_variance]{gmm_cf_variance()}}).
+Both means assume each unit keeps its structural residual when the
+treatment changes, which the data cannot confirm (see
+\code{\link[=gmm_counterfactual]{gmm_counterfactual()}}).
 }
 \examples{
 set.seed(1)

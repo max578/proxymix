@@ -225,8 +225,9 @@ proxy_policy_value <- function(model,
 #' from `t0` to `t1`, \eqn{E[Y_{t_1} \mid y, t, x] - E[Y_{t_0} \mid y, t, x]},
 #' computed by [gmm_counterfactual()]. Unlike [proxy_cate()], the abduction
 #' gate uses the observed outcome `y` as well, sharpening the per-unit estimate.
-#' Only the counterfactual *mean* is identified; the spread is not (see
-#' [gmm_cf_variance()]).
+#' Both means assume each unit keeps its structural residual when the
+#' treatment changes, which the data cannot confirm (see
+#' [gmm_counterfactual()]).
 #'
 #' @param model An [uplift_model].
 #' @param observed A data frame carrying the outcome, treatment, and covariate
@@ -475,7 +476,7 @@ S7::method(print, uplift_identification) <- function(x, ...) {
   cat(sprintf("               mean |Delta| = %.4g, max |Delta| = %.4g\n",
               x@confounding_gap_mean, x@confounding_gap_max))
   cat("  NOT identified : the individual counterfactual law\n")
-  cat("                   (its variance and tail probabilities).\n")
+  cat("                   (per-unit means assume a kept residual).\n")
   cat("===========================================================\n")
   invisible(x)
 }

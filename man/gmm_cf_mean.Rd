@@ -2,7 +2,7 @@
 % Please edit documentation in R/intervene.R
 \name{gmm_cf_mean}
 \alias{gmm_cf_mean}
-\title{The identified counterfactual mean}
+\title{The counterfactual mean}
 \usage{
 gmm_cf_mean(x)
 }
@@ -13,7 +13,8 @@ gmm_cf_mean(x)
 Numeric scalar.
 }
 \description{
-Returns the one identified summary of a \link{gmm_counterfactual_law} -- its mean.
+Returns the mean of a \link{gmm_counterfactual_law}. Like the law itself, it
+assumes the unit keeps its structural residual under the intervention.
 }
 \examples{
 g <- gmm(weights = 1, means = list(c(0, 0, 0)),

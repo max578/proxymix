@@ -22,7 +22,7 @@ counterfactual outcomes.}
 \item{weights}{Numeric vector of length \code{K} -- the abduction weights
 \eqn{\pi_k(\text{evidence})}.}
 
-\item{mean}{Numeric scalar -- the identified counterfactual mean.}
+\item{mean}{Numeric scalar -- the counterfactual mean.}
 
 \item{query}{Integer scalar -- the queried coordinate index.}
 
@@ -39,11 +39,12 @@ An S7 object of class \code{gmm_counterfactual_law}.
 }
 \description{
 The return type of \code{\link[=gmm_counterfactual]{gmm_counterfactual()}}: a discrete law on \code{K} atoms (the
-per-component counterfactual outcomes) with abduction weights, plus the one
-identified summary -- the counterfactual \code{mean}. The atom spread is regime
-(epistemic) uncertainty about which structural component generated the unit;
-it is \strong{not} the counterfactual outcome's dispersion, which is unidentified.
-Accordingly \code{\link[=gmm_cf_variance]{gmm_cf_variance()}} and \code{\link[=gmm_cf_tail_prob]{gmm_cf_tail_prob()}} refuse to answer.
+per-component counterfactual outcomes) with abduction weights, plus the
+counterfactual \code{mean}. All three assume the unit keeps its structural
+residual under the intervention, which the data cannot confirm. The atom
+spread is uncertainty about which component generated the unit;
+\code{\link[=gmm_cf_variance]{gmm_cf_variance()}} and \code{\link[=gmm_cf_tail_prob]{gmm_cf_tail_prob()}} refuse to report it as the
+dispersion of the counterfactual outcome.
 }
 \seealso{
 Other classes:

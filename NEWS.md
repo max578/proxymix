@@ -28,6 +28,15 @@
   the criterion of Eriksson and Koivunen (2003), reported as
   `diagnostics$dependence`.
 
+### Corrections
+
+* The help for `gmm_counterfactual()`, `gmm_cf_mean()` and
+  `proxy_retrospective_uplift()` no longer calls the per-unit counterfactual
+  mean identified. It assumes the unit keeps its structural residual when the
+  treatment changes; if the residual were redrawn, the same mixture would give
+  a different mean. A printed counterfactual law now labels its mean
+  "residual kept".
+
 # proxymix 0.16.0
 
 ### Changes to defaults

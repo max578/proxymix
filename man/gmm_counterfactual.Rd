@@ -24,7 +24,7 @@ numerical hygiene.}
 }
 \value{
 A \code{gmm_counterfactual_law} object carrying the \code{K} atoms, their
-abduction weights, and the identified counterfactual \code{mean}.
+abduction weights, and the counterfactual \code{mean}.
 }
 \description{
 Computes the per-unit counterfactual of a \code{query} coordinate (the outcome)
@@ -40,10 +40,13 @@ component, its structural residual. \emph{Action} sets the \code{do} coordinates
 result is a discrete law on \code{K} atoms,
 \deqn{Y_{t'} \mid (y, t, x) = \sum_k \pi_k(y, t, x)\,
       \delta\!\big(y + \beta_k^{T}(t' - t)\big),}
-where \eqn{\beta_k^T} is component \code{k}'s within-class treatment slope. Only
-the \strong{mean} of this law is identified; its spread reflects regime
-uncertainty, not the (unidentified) cross-world coupling, so the variance
-and tail accessors refuse to answer (see \code{\link[=gmm_cf_variance]{gmm_cf_variance()}}).
+where \eqn{\beta_k^T} is component \code{k}'s within-class treatment slope.
+
+This law assumes the unit keeps its structural residual when the treatment
+changes. The joint density cannot confirm that assumption: if the residual
+were redrawn instead, the same mixture would give a different counterfactual
+law for the unit, mean included. The variance and tail accessors refuse to
+answer (see \code{\link[=gmm_cf_variance]{gmm_cf_variance()}}).
 }
 \examples{
 ## Observed unit (y = 1.2, t = 0, x = 0.5); imagine t = 1.

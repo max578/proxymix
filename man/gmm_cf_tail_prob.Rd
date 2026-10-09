@@ -16,9 +16,9 @@ Never returns; always raises a \code{proxymix_not_identified} error.
 }
 \description{
 Like \code{\link[=gmm_cf_variance]{gmm_cf_variance()}}, a per-unit counterfactual tail probability
-\eqn{P(Y_{t'} > c \mid y, t, x)} is not identified -- it is a functional of
-the unidentified counterfactual law, not of its identified mean. This
-accessor refuses rather than mislead.
+\eqn{P(Y_{t'} > c \mid y, t, x)} is not identified: it depends on the
+cross-world coupling of the structural residuals. This accessor raises an
+error rather than return a value.
 }
 \examples{
 g <- gmm(weights = 1, means = list(c(0, 0, 0)),

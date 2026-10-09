@@ -173,9 +173,8 @@
   list(par = op$par, value = op$value, hit_limit = op$convergence == 1L)
 }
 
-## Levenberg-Marquardt with box bounds, for the final polish. The loss is
-## a sum of squares, and near an exact fit this reaches machine precision
-## where a quasi-Newton method stalls.
+## Levenberg-Marquardt with box bounds, for the final polish of the
+## sum-of-squares loss.
 .cf_lm <- function(par, W, ph, K, p, lb, ub, maxit, tol = 1e-9) {
   par <- pmin(pmax(par, lb), ub)
   o <- .cf_resid_jac(par, W, ph, K, p)

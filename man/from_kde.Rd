@@ -87,7 +87,7 @@ sampled in closed form as it stands. \code{from_kde()} is a \strong{compression}
 it replaces the \code{n} components with the closest \code{N}-component mixture in
 the Kullback-Leibler sense, with \code{N} much smaller than \code{n}. Density
 evaluation, storage and the operator calculus then cost in proportion to
-\code{N} rather than \code{n} (products and convolutions of two mixtures have as
+\code{N} (products and convolutions of two mixtures have as
 many components as the product of their counts). Bias inherited from the
 KDE is reproduced in the proxy; the bandwidth controls the bias-variance
 trade-off.

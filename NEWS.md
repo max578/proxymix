@@ -159,7 +159,7 @@
   is asymptotic, assumes stationary ergodic innovations, and can over-reject
   in short series. It also states how `method = "andrews"` differs from
   Andrews' (2003) P-test: its p-value counts the tested block, and the block
-  statistics are computed at the supplied model rather than re-estimated.
+  statistics are computed at the supplied model without re-estimating it.
 * The `mnar()` and `proxy_mnar_sensitivity()` help no longer says the data
   cannot identify the missing-not-at-random slope. Under the mixture
   selection model the observed data inform the slope through the assumed

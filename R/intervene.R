@@ -383,8 +383,8 @@ gmm_cf_variance <- function(x) {
 #'
 #' Like [gmm_cf_variance()], a per-unit counterfactual tail probability
 #' \eqn{P(Y_{t'} > c \mid y, t, x)} is not identified: it depends on the
-#' cross-world coupling of the structural residuals. This accessor raises an
-#' error rather than return a value.
+#' cross-world coupling of the structural residuals. This accessor always
+#' raises an error.
 #'
 #' @param x A [gmm_counterfactual_law].
 #' @param threshold Numeric scalar `c`.

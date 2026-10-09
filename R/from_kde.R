@@ -89,7 +89,7 @@ make_kde_log_density <- function(samples, h, chunk = 256L) {
 #' it replaces the `n` components with the closest `N`-component mixture in
 #' the Kullback-Leibler sense, with `N` much smaller than `n`. Density
 #' evaluation, storage and the operator calculus then cost in proportion to
-#' `N` rather than `n` (products and convolutions of two mixtures have as
+#' `N` (products and convolutions of two mixtures have as
 #' many components as the product of their counts). Bias inherited from the
 #' KDE is reproduced in the proxy; the bandwidth controls the bias-variance
 #' trade-off.

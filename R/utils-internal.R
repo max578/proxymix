@@ -64,7 +64,7 @@ kl_gauss <- function(mu_a, S_a, mu_b, S_b) {
            p + log_det_S_b - log_det_S_a)
 }
 
-## Ridge a matrix to make it positive-definite-ish: S + diag(epsilon).
+## Ridge a matrix towards positive definiteness: S + diag(epsilon).
 ## `epsilon` is absolute, either one value or one per coordinate. Callers
 ## that regularise across EM iterations pass a DATA-scaled epsilon (see
 ## `.data_scaled_eps()`), so the floor is invariant to the data's units but

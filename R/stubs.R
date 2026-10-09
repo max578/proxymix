@@ -1,5 +1,5 @@
 ## Planned features (not yet implemented). INTERNAL as of v0.13.0: the
-## placeholders keep stable signatures and classed not-yet-implemented
+## stubs keep stable signatures and classed not-yet-implemented
 ## errors (guarded by tests/testthat/test-stubs.R via `:::`), but are no
 ## longer exported -- an exported function whose only behaviour is to
 ## error reads as vapourware on the public surface.

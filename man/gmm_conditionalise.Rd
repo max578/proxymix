@@ -32,6 +32,7 @@ gmm_conditionalise(g, given = c(NA, 0.5))
 Other ops:
 \code{\link[=dgmm]{dgmm()}},
 \code{\link[=gmm_canonicalise]{gmm_canonicalise()}},
+\code{\link[=gmm_cf]{gmm_cf()}},
 \code{\link[=gmm_divergence]{gmm_divergence()}},
 \code{\link[=gmm_kld]{gmm_kld()}},
 \code{\link[=gmm_marginalise]{gmm_marginalise()}},

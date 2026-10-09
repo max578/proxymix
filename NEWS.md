@@ -1,3 +1,33 @@
+# proxymix (development version)
+
+### New features
+
+* `fit_mppca_samples()` fits a mixture of probabilistic principal component
+  analysers (Tipping and Bishop, 1999): each component covariance is a rank-`q`
+  term plus equal noise in every direction. It can be fitted when a component
+  holds fewer points than there are variables, where a full-covariance fit is
+  singular, and returns an ordinary fitted mixture.
+* `from_cf()` fits a Gaussian mixture to a distribution given by its
+  characteristic function, for targets with no usable density such as stable
+  laws. The fit reports its error on frequencies
+  it did not use and warns when the target has heavy tails.
+* `gmm_cf()` evaluates the characteristic function of a mixture.
+* `gmm_cf_distance()` returns a lower and an upper bound for the Kolmogorov
+  distance between a characteristic-function target and a mixture along a
+  direction, computed by numerical inversion and without sampling. The upper
+  bound needs a target whose projected characteristic function is integrable.
+* `from_cf_elliptical()` fits normal components with a common centre and
+  proportional covariances to an elliptical characteristic function, such as
+  a multivariate Cauchy or an elliptical stable law. It needs no starting
+  value and matches the distribution out to about its 0.999 quantile, even
+  with heavy tails.
+* `from_cf_sources()` fits a linear mix of independent sources, with or
+  without Gaussian noise. It returns a list with functions for the
+  characteristic function, sampling and one-dimensional projections, not a
+  `gmm`. The separated coordinates are tested for pairwise independence with
+  the criterion of Eriksson and Koivunen (2003), reported as
+  `diagnostics$dependence`.
+
 # proxymix 0.16.0
 
 ### Changes to defaults

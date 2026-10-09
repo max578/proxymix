@@ -156,8 +156,8 @@ gmm_intervene <- function(g, do, given = NULL, ridge_eps = 1e-6) {
 #' This law assumes the unit keeps its structural residual when the treatment
 #' changes. The joint density cannot confirm that assumption: if the residual
 #' were redrawn instead, the same mixture would give a different counterfactual
-#' law for the unit, mean included. The variance and tail accessors refuse to
-#' answer (see [gmm_cf_variance()]).
+#' law for the unit, mean included. [gmm_cf_mean()], [gmm_cf_variance()] and
+#' [gmm_cf_tail_prob()] summarise the law under the same assumption.
 #'
 #' @param g A [gmm] (or [gmm_fit]) in `R^p`.
 #' @param evidence A length-`p` numeric vector of the observed unit.
@@ -254,10 +254,9 @@ gmm_counterfactual <- function(g, evidence, do, query, ridge_eps = 1e-6) {
 #' The return type of [gmm_counterfactual()]: a discrete law on `K` atoms (the
 #' per-component counterfactual outcomes) with abduction weights, plus the
 #' counterfactual `mean`. All three assume the unit keeps its structural
-#' residual under the intervention, which the data cannot confirm. The atom
-#' spread is uncertainty about which component generated the unit;
-#' [gmm_cf_variance()] and [gmm_cf_tail_prob()] refuse to report it as the
-#' dispersion of the counterfactual outcome.
+#' residual under the intervention, which the data cannot confirm. Under that
+#' assumption the atom spread is uncertainty about which component generated
+#' the unit, reported by [gmm_cf_variance()] and [gmm_cf_tail_prob()].
 #'
 #' @param atoms Numeric vector of length `K` -- the per-component
 #'   counterfactual outcomes.
@@ -307,6 +306,8 @@ gmm_counterfactual_law <- S7::new_class(
 S7::method(print, gmm_counterfactual_law) <- function(x, ...) {
   cat(sprintf("<gmm_counterfactual_law>: %d atoms\n", length(x@atoms)))
   cat(sprintf("  counterfactual mean : %.6g  (residual kept)\n", x@mean))
+  cat(sprintf("  variance            : %.6g  (residual kept)\n",
+              gmm_cf_variance(x)))
   ord <- order(x@weights, decreasing = TRUE)
   show_max <- min(length(x@atoms), 4L)
   for (j in seq_len(show_max)) {
@@ -317,7 +318,6 @@ S7::method(print, gmm_counterfactual_law) <- function(x, ...) {
   if (length(x@atoms) > show_max) {
     cat(sprintf("  ... %d more atoms\n", length(x@atoms) - show_max))
   }
-  cat("  variance / tail   : not identified (cross-world coupling)\n")
   invisible(x)
 }
 
@@ -346,66 +346,62 @@ gmm_cf_mean <- function(x) {
   x@mean
 }
 
-## Refused accessors (identification limits) --------------------------------
+## Variance and tail accessors ----------------------------------------------
 
-#' Refused: the variance of an individual counterfactual law
+#' The counterfactual variance
 #'
-#' The per-unit counterfactual *variance* is not identified from the joint
-#' density: it depends on the cross-world coupling of the structural residuals
-#' under the factual and counterfactual treatments, which no goodness-of-fit
-#' can certify. This accessor therefore raises an error rather than return the
-#' (misleading) spread of the abduction atoms.
+#' Returns the variance of a [gmm_counterfactual_law], the weighted spread of
+#' its atoms around the counterfactual mean. Like the law itself, it assumes the
+#' unit keeps its structural residual under the intervention. Under that
+#' assumption the only uncertainty left is which component generated the unit;
+#' if the residual were redrawn, the same mixture would give a different
+#' variance.
 #'
-#' @param x A [gmm_counterfactual_law].
+#' @param x A `gmm_counterfactual_law`.
 #'
-#' @returns Never returns; always raises a `proxymix_not_identified` error.
+#' @returns Numeric scalar. Zero when the mixture has one component.
 #' @family decision
 #' @export
 #' @examples
-#' g <- gmm(weights = 1, means = list(c(0, 0, 0)),
-#'          covariances = list(diag(3)))
-#' cf <- gmm_counterfactual(g, evidence = c(1, 0, 0.2),
+#' g <- gmm(weights = c(0.6, 0.4),
+#'          means = list(c(0, 0, 0), c(2, 1, 1)),
+#'          covariances = list(diag(3), diag(3)))
+#' cf <- gmm_counterfactual(g, evidence = c(1.2, 0, 0.5),
 #'                          do = c(NA, 1, NA), query = 1L)
-#' try(gmm_cf_variance(cf))
+#' gmm_cf_variance(cf)
 gmm_cf_variance <- function(x) {
   if (!S7::S7_inherits(x, gmm_counterfactual_law)) {
     cli::cli_abort("`x` must be a {.cls gmm_counterfactual_law}.")
   }
-  cli::cli_abort(
-    c("The individual counterfactual variance is not identified.",
-      "i" = "It depends on the unidentified cross-world coupling of the structural residuals.",
-      "i" = "The mean under a kept residual is returned by {.fn gmm_cf_mean}."),
-    class = "proxymix_not_identified"
-  )
+  sum(x@weights * (x@atoms - x@mean)^2)
 }
 
-#' Refused: a tail probability of an individual counterfactual law
+#' A counterfactual tail probability
 #'
-#' Like [gmm_cf_variance()], a per-unit counterfactual tail probability
-#' \eqn{P(Y_{t'} > c \mid y, t, x)} is not identified: it depends on the
-#' cross-world coupling of the structural residuals. This accessor always
-#' raises an error.
+#' Returns \eqn{P(Y_{t'} > c \mid y, t, x)} for a [gmm_counterfactual_law]:
+#' the total weight of the atoms above the threshold `c`. The law is discrete,
+#' so the probability changes only where `c` crosses an atom. It rests on the
+#' same kept-residual assumption as [gmm_cf_mean()].
 #'
-#' @param x A [gmm_counterfactual_law].
+#' @param x A `gmm_counterfactual_law`.
 #' @param threshold Numeric scalar `c`.
 #'
-#' @returns Never returns; always raises a `proxymix_not_identified` error.
+#' @returns Numeric scalar in `[0, 1]`.
 #' @family decision
 #' @export
 #' @examples
-#' g <- gmm(weights = 1, means = list(c(0, 0, 0)),
-#'          covariances = list(diag(3)))
-#' cf <- gmm_counterfactual(g, evidence = c(1, 0, 0.2),
+#' g <- gmm(weights = c(0.6, 0.4),
+#'          means = list(c(0, 0, 0), c(2, 1, 1)),
+#'          covariances = list(diag(3), diag(3)))
+#' cf <- gmm_counterfactual(g, evidence = c(1.2, 0, 0.5),
 #'                          do = c(NA, 1, NA), query = 1L)
-#' try(gmm_cf_tail_prob(cf, threshold = 2))
+#' gmm_cf_tail_prob(cf, threshold = 2)
 gmm_cf_tail_prob <- function(x, threshold) {
   if (!S7::S7_inherits(x, gmm_counterfactual_law)) {
     cli::cli_abort("`x` must be a {.cls gmm_counterfactual_law}.")
   }
-  cli::cli_abort(
-    c("Individual counterfactual tail probabilities are not identified.",
-      "i" = "They are functionals of the unidentified counterfactual law, not its mean.",
-      "i" = "The mean under a kept residual is returned by {.fn gmm_cf_mean}."),
-    class = "proxymix_not_identified"
-  )
+  if (!is.numeric(threshold) || length(threshold) != 1L || is.na(threshold)) {
+    cli::cli_abort("`threshold` must be a single non-missing number.")
+  }
+  sum(x@weights[x@atoms > threshold])
 }

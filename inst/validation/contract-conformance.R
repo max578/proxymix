@@ -581,12 +581,13 @@ CASES <- list(
   ok_case("gmm_cf_mean", "gmm_cf_mean finite",
           function() gmm_cf_mean(cf), check = function(v) all(is.finite(unlist(v)))),
   err_case("gmm_cf_mean", "gmm_cf_mean non-law", function() gmm_cf_mean(42)),
-  ## the individual counterfactual variance / tail probability are not identified,
-  ## so the contract is to refuse the query even on a valid law (a principled abstention)
-  err_case("gmm_cf_variance", "gmm_cf_variance refuses an unidentified query",
-           function() gmm_cf_variance(cf)),
-  err_case("gmm_cf_tail_prob", "gmm_cf_tail_prob refuses an unidentified query",
-           function() gmm_cf_tail_prob(cf, threshold = 1)),
+  ok_case("gmm_cf_variance", "gmm_cf_variance non-negative",
+          function() gmm_cf_variance(cf), check = function(v) unlist(v)[1] >= 0),
+  ok_case("gmm_cf_tail_prob", "gmm_cf_tail_prob in [0, 1]",
+          function() gmm_cf_tail_prob(cf, threshold = 1),
+          check = function(v) unlist(v)[1] >= 0 && unlist(v)[1] <= 1),
+  err_case("gmm_cf_tail_prob", "gmm_cf_tail_prob non-scalar threshold",
+           function() gmm_cf_tail_prob(cf, threshold = c(1, 2))),
 
   ## -- uplift estimation + the uplift_model surface ---------------------------
   ok_case("fit_uplift", "fit_uplift moment regime",
@@ -685,11 +686,6 @@ CASES <- list(
 ##     row above; every call signals
 ##     `proxymix_not_yet_implemented`, so there is no valid input that returns
 ##     ok; only the error side is meaningful (see their err_case rows above).
-##   * gmm_cf_variance / gmm_cf_tail_prob -- by-design refusal accessors. The
-##     individual counterfactual variance and tail probability are not
-##     identified, so the contract is to refuse even a valid law (a principled
-##     abstention). Both sides of their surface are therefore "error"; there is
-##     no legitimate ok case (see the refusal err_case rows above).
 ##   * mar / fb_producer_available -- zero-required-argument constructors / a
 ##     pure environment probe. They take no rejectable input, so there is no
 ##     malformed call to add; only the ok side exists.

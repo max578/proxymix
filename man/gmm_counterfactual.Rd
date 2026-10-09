@@ -45,8 +45,8 @@ where \eqn{\beta_k^T} is component \code{k}'s within-class treatment slope.
 This law assumes the unit keeps its structural residual when the treatment
 changes. The joint density cannot confirm that assumption: if the residual
 were redrawn instead, the same mixture would give a different counterfactual
-law for the unit, mean included. The variance and tail accessors refuse to
-answer (see \code{\link[=gmm_cf_variance]{gmm_cf_variance()}}).
+law for the unit, mean included. \code{\link[=gmm_cf_mean]{gmm_cf_mean()}}, \code{\link[=gmm_cf_variance]{gmm_cf_variance()}} and
+\code{\link[=gmm_cf_tail_prob]{gmm_cf_tail_prob()}} summarise the law under the same assumption.
 }
 \examples{
 ## Observed unit (y = 1.2, t = 0, x = 0.5); imagine t = 1.

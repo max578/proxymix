@@ -117,15 +117,45 @@ test_that("counterfactual atoms preserve the observed residual within a regime",
   expect_equal(cf@mean, y_obs + a * 1, tolerance = 1e-8)
 })
 
-test_that("counterfactual variance and tail accessors refuse (not identified)", {
-  g <- .linear_scm_k1()
-  cf <- gmm_counterfactual(g, evidence = c(1, 0, 0.2),
-                           do = c(NA, 1, NA), query = 1L)
+test_that("counterfactual variance and tail match the kept-residual law", {
+  ## Two regimes with treatment slopes 2 and -1. With the residual kept, the
+  ## unit's outcome under t' = 1 is y + a_k in regime k, with probability equal
+  ## to the regime posterior given the observed (y, t, x).
+  slopes <- c(2, -1)
+  mus <- list(c(0, 0, 0), c(1.5, 0.2, -0.5))
+  covs <- lapply(slopes, function(a) .linear_scm_k1(a = a)@covariances[[1L]])
+  g <- gmm(weights = c(0.3, 0.7), means = mus, covariances = covs)
 
-  expect_error(gmm_cf_variance(cf), class = "proxymix_not_identified")
-  expect_error(gmm_cf_tail_prob(cf, threshold = 2),
-               class = "proxymix_not_identified")
-  expect_equal(gmm_cf_mean(cf), cf@mean)
+  ev <- c(1, 0, 0.2)
+  cf <- gmm_counterfactual(g, evidence = ev, do = c(NA, 1, NA), query = 1L)
+
+  dens <- vapply(1:2, function(k) {
+    mvnfast::dmvn(matrix(ev, nrow = 1L), mus[[k]], covs[[k]])
+  }, numeric(1L))
+  post <- c(0.3, 0.7) * dens / sum(c(0.3, 0.7) * dens)
+  outcomes <- ev[1L] + slopes
+  m <- sum(post * outcomes)
+
+  expect_equal(gmm_cf_mean(cf), m, tolerance = 1e-6)
+  expect_equal(gmm_cf_variance(cf), sum(post * (outcomes - m)^2),
+               tolerance = 1e-6)
+  expect_equal(gmm_cf_tail_prob(cf, threshold = 2), post[1L], tolerance = 1e-6)
+  expect_equal(gmm_cf_tail_prob(cf, threshold = -1), 1)
+  expect_equal(gmm_cf_tail_prob(cf, threshold = 3), 0)
+})
+
+test_that("one regime gives zero counterfactual variance", {
+  cf <- gmm_counterfactual(.linear_scm_k1(), evidence = c(1, 0, 0.2),
+                           do = c(NA, 1, NA), query = 1L)
+  expect_equal(gmm_cf_variance(cf), 0)
+})
+
+test_that("gmm_cf_tail_prob() rejects a malformed threshold", {
+  cf <- gmm_counterfactual(.linear_scm_k1(), evidence = c(1, 0, 0.2),
+                           do = c(NA, 1, NA), query = 1L)
+  expect_error(gmm_cf_tail_prob(cf, threshold = c(1, 2)), "threshold")
+  expect_error(gmm_cf_tail_prob(cf, threshold = NA_real_), "threshold")
+  expect_error(gmm_cf_tail_prob(cf, threshold = "2"), "threshold")
 })
 
 test_that("intervene / counterfactual validate their coordinate arguments", {

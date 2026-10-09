@@ -2,29 +2,31 @@
 % Please edit documentation in R/intervene.R
 \name{gmm_cf_variance}
 \alias{gmm_cf_variance}
-\title{Refused: the variance of an individual counterfactual law}
+\title{The counterfactual variance}
 \usage{
 gmm_cf_variance(x)
 }
 \arguments{
-\item{x}{A \link{gmm_counterfactual_law}.}
+\item{x}{A \code{gmm_counterfactual_law}.}
 }
 \value{
-Never returns; always raises a \code{proxymix_not_identified} error.
+Numeric scalar. Zero when the mixture has one component.
 }
 \description{
-The per-unit counterfactual \emph{variance} is not identified from the joint
-density: it depends on the cross-world coupling of the structural residuals
-under the factual and counterfactual treatments, which no goodness-of-fit
-can certify. This accessor therefore raises an error rather than return the
-(misleading) spread of the abduction atoms.
+Returns the variance of a \link{gmm_counterfactual_law}, the weighted spread of
+its atoms around the counterfactual mean. Like the law itself, it assumes the
+unit keeps its structural residual under the intervention. Under that
+assumption the only uncertainty left is which component generated the unit;
+if the residual were redrawn, the same mixture would give a different
+variance.
 }
 \examples{
-g <- gmm(weights = 1, means = list(c(0, 0, 0)),
-         covariances = list(diag(3)))
-cf <- gmm_counterfactual(g, evidence = c(1, 0, 0.2),
+g <- gmm(weights = c(0.6, 0.4),
+         means = list(c(0, 0, 0), c(2, 1, 1)),
+         covariances = list(diag(3), diag(3)))
+cf <- gmm_counterfactual(g, evidence = c(1.2, 0, 0.5),
                          do = c(NA, 1, NA), query = 1L)
-try(gmm_cf_variance(cf))
+gmm_cf_variance(cf)
 }
 \seealso{
 Other decision:

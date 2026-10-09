@@ -165,11 +165,11 @@ test_that("the identification report prints the latent-confounder branch", {
   expect_output(print(rep), "only confounder")
 })
 
-test_that("a counterfactual law prints its mean and refuses the spread", {
+test_that("a counterfactual law prints its mean and variance", {
   g <- gmm(weights = c(0.5, 0.5), means = list(c(0, 0, 0), c(2, 1, 1)),
            covariances = list(diag(3), diag(3)))
   cf <- gmm_counterfactual(g, evidence = c(1, 0, 0.3),
                            do = c(NA, 1, NA), query = 1L)
   expect_output(print(cf), "counterfactual mean")
-  expect_output(print(cf), "not identified")
+  expect_output(print(cf), "variance")
 })

@@ -28,6 +28,14 @@
   the criterion of Eriksson and Koivunen (2003), reported as
   `diagnostics$dependence`.
 
+### Behaviour changes
+
+* `gmm_cf_variance()` and `gmm_cf_tail_prob()` now return the variance and the
+  tail probability of a per-unit counterfactual law instead of an error. They
+  rest on the same assumption as `gmm_cf_mean()`: the unit keeps its structural
+  residual when the treatment changes. A printed counterfactual law shows its
+  variance.
+
 ### Corrections
 
 * The help for `gmm_counterfactual()`, `gmm_cf_mean()` and

@@ -2,30 +2,31 @@
 % Please edit documentation in R/intervene.R
 \name{gmm_cf_tail_prob}
 \alias{gmm_cf_tail_prob}
-\title{Refused: a tail probability of an individual counterfactual law}
+\title{A counterfactual tail probability}
 \usage{
 gmm_cf_tail_prob(x, threshold)
 }
 \arguments{
-\item{x}{A \link{gmm_counterfactual_law}.}
+\item{x}{A \code{gmm_counterfactual_law}.}
 
 \item{threshold}{Numeric scalar \code{c}.}
 }
 \value{
-Never returns; always raises a \code{proxymix_not_identified} error.
+Numeric scalar in \verb{[0, 1]}.
 }
 \description{
-Like \code{\link[=gmm_cf_variance]{gmm_cf_variance()}}, a per-unit counterfactual tail probability
-\eqn{P(Y_{t'} > c \mid y, t, x)} is not identified: it depends on the
-cross-world coupling of the structural residuals. This accessor always
-raises an error.
+Returns \eqn{P(Y_{t'} > c \mid y, t, x)} for a \link{gmm_counterfactual_law}:
+the total weight of the atoms above the threshold \code{c}. The law is discrete,
+so the probability changes only where \code{c} crosses an atom. It rests on the
+same kept-residual assumption as \code{\link[=gmm_cf_mean]{gmm_cf_mean()}}.
 }
 \examples{
-g <- gmm(weights = 1, means = list(c(0, 0, 0)),
-         covariances = list(diag(3)))
-cf <- gmm_counterfactual(g, evidence = c(1, 0, 0.2),
+g <- gmm(weights = c(0.6, 0.4),
+         means = list(c(0, 0, 0), c(2, 1, 1)),
+         covariances = list(diag(3), diag(3)))
+cf <- gmm_counterfactual(g, evidence = c(1.2, 0, 0.5),
                          do = c(NA, 1, NA), query = 1L)
-try(gmm_cf_tail_prob(cf, threshold = 2))
+gmm_cf_tail_prob(cf, threshold = 2)
 }
 \seealso{
 Other decision:

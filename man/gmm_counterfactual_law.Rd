@@ -41,10 +41,9 @@ An S7 object of class \code{gmm_counterfactual_law}.
 The return type of \code{\link[=gmm_counterfactual]{gmm_counterfactual()}}: a discrete law on \code{K} atoms (the
 per-component counterfactual outcomes) with abduction weights, plus the
 counterfactual \code{mean}. All three assume the unit keeps its structural
-residual under the intervention, which the data cannot confirm. The atom
-spread is uncertainty about which component generated the unit;
-\code{\link[=gmm_cf_variance]{gmm_cf_variance()}} and \code{\link[=gmm_cf_tail_prob]{gmm_cf_tail_prob()}} refuse to report it as the
-dispersion of the counterfactual outcome.
+residual under the intervention, which the data cannot confirm. Under that
+assumption the atom spread is uncertainty about which component generated
+the unit, reported by \code{\link[=gmm_cf_variance]{gmm_cf_variance()}} and \code{\link[=gmm_cf_tail_prob]{gmm_cf_tail_prob()}}.
 }
 \seealso{
 Other classes:

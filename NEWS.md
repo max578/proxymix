@@ -45,6 +45,13 @@
   a different mean. A printed counterfactual law now labels its mean
   "residual kept".
 
+### Documentation and CI
+
+* The package has a logo.
+* README lists related packages and carries R-CMD-check, coverage and
+  r-universe badges.
+* CI runs lintr (report-only) and test coverage.
+
 # proxymix 0.16.0
 
 ### Changes to defaults

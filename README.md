@@ -1,12 +1,16 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file. -->
 
-# proxymix
+# proxymix <img src="man/figures/logo.png" align="right" height="139" alt="proxymix logo" />
 
 <!-- badges: start -->
 
 [![CRAN
 status](https://www.r-pkg.org/badges/version/proxymix)](https://CRAN.R-project.org/package=proxymix)
+[![R-CMD-check](https://github.com/max578/proxymix/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/max578/proxymix/actions/workflows/R-CMD-check.yaml)
+[![Codecov test
+coverage](https://codecov.io/gh/max578/proxymix/graph/badge.svg)](https://app.codecov.io/gh/max578/proxymix)
+[![r-universe](https://max578.r-universe.dev/badges/proxymix)](https://max578.r-universe.dev/proxymix)
 <!-- badges: end -->
 
 `proxymix` fits multivariate Gaussian-mixture proxies that are
@@ -44,6 +48,24 @@ sharply beyond roughly $p = 5$–$10$, and every fit reports its effective
 sample size so that limit is visible rather than silent. For
 high-dimensional posteriors, sample with your favourite MCMC and use
 regime (ii) on the draws.
+
+## Related packages
+
+- [mclust](https://CRAN.R-project.org/package=mclust) fits Gaussian
+  finite mixtures by EM for model-based clustering, classification and
+  density estimation.
+- [mixtools](https://CRAN.R-project.org/package=mixtools) analyses
+  finite mixture models in parametric and semiparametric settings,
+  including mixtures of regressions, with tools for choosing the number
+  of components.
+- [AdMit](https://CRAN.R-project.org/package=AdMit) fits an adaptive
+  mixture of Student-t distributions to a target density through its
+  kernel, for use as an importance density or a Metropolis-Hastings
+  candidate.
+
+mclust and mixtools fit to draws from the target. proxymix also fits to
+a density it can only evaluate, and its Gaussian components keep
+marginals, conditionals and Bayes updates in closed form.
 
 ## Installation
 
@@ -201,8 +223,8 @@ Gaussians.* Stochastic Analysis and Applications.
 
 ## Contributing
 
-Bug reports and suggestions are welcome through the
-[GitHub issues](https://github.com/max578/proxymix/issues).
+Bug reports and suggestions are welcome through the [GitHub
+issues](https://github.com/max578/proxymix/issues).
 
 ## Citation
 

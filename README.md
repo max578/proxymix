@@ -5,12 +5,14 @@
 
 <!-- badges: start -->
 
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 [![CRAN
 status](https://www.r-pkg.org/badges/version/proxymix)](https://CRAN.R-project.org/package=proxymix)
 [![R-CMD-check](https://github.com/max578/proxymix/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/max578/proxymix/actions/workflows/R-CMD-check.yaml)
 [![Codecov test
 coverage](https://codecov.io/gh/max578/proxymix/graph/badge.svg)](https://app.codecov.io/gh/max578/proxymix)
 [![r-universe](https://max578.r-universe.dev/badges/proxymix)](https://max578.r-universe.dev/proxymix)
+[![pkgdown](https://github.com/max578/proxymix/actions/workflows/pkgdown.yaml/badge.svg)](https://max578.github.io/proxymix/)
 <!-- badges: end -->
 
 `proxymix` fits multivariate Gaussian-mixture proxies that are

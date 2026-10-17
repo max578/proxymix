@@ -511,6 +511,13 @@ has_changepoint <- requireNamespace("changepoint", quietly = TRUE)
 has_kfas <- requireNamespace("KFAS", quietly = TRUE)
 has_dlm <- requireNamespace("dlm", quietly = TRUE)
 run_illustration <- has_strucchange && has_changepoint && has_kfas && has_dlm
+## prose that quotes the illustration's results, knitted only when its
+## chunks ran
+knitr::knit_engines$set(illustration = function(options) {
+  if (!isTRUE(options$eval)) return(invisible(NULL))
+  knitr::knit_child(text = options$code, envir = knitr::knit_global(),
+                    quiet = TRUE)
+})
 ```
 
 ```{r illustration-skip, eval = !run_illustration, echo = FALSE, results = "asis"}
@@ -711,6 +718,7 @@ cat("ggplot2 is not installed on this build, so the Nile figure is",
     "skipped.\n")
 ```
 
+```{illustration, eval = run_illustration}
 The local level fitted to 1871--1898 has a level variance of
 `r if (level_fit$coef[["level"]] == 0) "zero" else fixed(level_fit$coef[["level"]], 1)`, so the model is a constant mean
 with an observation standard deviation of `r round(sd_obs)`, and the 1899
@@ -743,6 +751,7 @@ checks, spending their level over three years, return
 is again at its floor, $1 / `r floor_den_3`$. This is one series and one
 documented change, which shows which tests exist at each window but cannot
 measure their size or power, so the simulation below does.
+```
 
 ### A simulation benchmark
 
@@ -978,7 +987,8 @@ stopifnot(all(power_kfas[-1L] < power_kfas[1L]),
           all(power_dlm[-1L] < power_dlm[1L]))
 # a version as its DESCRIPTION writes it, when the installed one is the one stored
 desc_version <- function(pkg, stored) {
-  if (identical(as.character(packageVersion(pkg)), stored)) {
+  if (requireNamespace(pkg, quietly = TRUE) &&
+        identical(as.character(packageVersion(pkg)), stored)) {
     utils::packageDescription(pkg)$Version
   } else {
     stored

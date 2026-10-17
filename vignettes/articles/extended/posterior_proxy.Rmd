@@ -537,6 +537,13 @@ has_learnbayes <- requireNamespace("LearnBayes", quietly = TRUE)
 has_inla <- requireNamespace("INLA", quietly = TRUE)
 has_bt <- requireNamespace("BayesianTools", quietly = TRUE)
 run_illustration <- has_aer && has_learnbayes && has_inla && has_bt
+## prose that quotes the illustration's results, knitted only when its
+## chunks ran
+knitr::knit_engines$set(illustration = function(options) {
+  if (!isTRUE(options$eval)) return(invisible(NULL))
+  knitr::knit_child(text = options$code, envir = knitr::knit_global(),
+                    quiet = TRUE)
+})
 ```
 
 ```{r illustration-skip, eval = !run_illustration, echo = FALSE, results = "asis"}
@@ -941,6 +948,7 @@ aff_value <- function(method, what) aff_tbl[aff_tbl$method == method, what]
 time_order <- ordered_text(aff_tbl$method, aff_tbl$secs, 2L, " s")
 ```
 
+```{illustration, eval = run_illustration}
 The reference run's smallest bulk effective sample size over the five
 coefficients is `r format(round(ref$long$ess_min), big.mark = ",")`, so
 its posterior means carry a Monte Carlo standard error of at most about
@@ -975,6 +983,7 @@ cent ensemble intervals on the posterior means contain the reference mean
 for `r n_word(sum(covered_aff))` of the `r n_word(p_aff)` coefficients, at a further
 `r fixed(secs_ens, 1)` s. On wall time the order, fastest first, is
 `r time_order`.
+```
 
 ### A simulation benchmark
 

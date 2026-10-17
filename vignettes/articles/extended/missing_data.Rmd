@@ -401,6 +401,13 @@ would fit noise into the conditional law.
 has_amelia <- requireNamespace("Amelia", quietly = TRUE)
 has_penguins <- exists("penguins", envir = asNamespace("datasets"))
 run_illustration <- has_mice && has_amelia && has_penguins
+## prose that quotes the illustration's results, knitted only when its
+## chunks ran
+knitr::knit_engines$set(illustration = function(options) {
+  if (!isTRUE(options$eval)) return(invisible(NULL))
+  knitr::knit_child(text = options$code, envir = knitr::knit_global(),
+                    quiet = TRUE)
+})
 ```
 
 ```{r illustration-skip, eval = !run_illustration, echo = FALSE, results = "asis"}
@@ -452,6 +459,7 @@ slope_within <- vapply(split(peng, species), function(d) {
 gone_gentoo <- mean(gone[species == "Gentoo"])
 ```
 
+```{illustration, eval = run_illustration}
 That leaves `r nrow(peng)` birds with bill length, bill depth and flipper
 length in millimetres and body mass in grams. Deletion removes
 `r round(100 * mean(gone))` per cent of the masses, and
@@ -462,6 +470,7 @@ species form separate clusters, and across the colony body mass falls by
 `r round(abs(slope_colony))` g per millimetre of bill depth, while within
 each species it rises by `r round(min(slope_within))` to
 `r round(max(slope_within))` g per millimetre.
+```
 
 Each package imputes the same data frame with its default settings and 20
 completions:
@@ -531,6 +540,7 @@ knitr::kable(
 err_mean <- abs(mean_mass[, "estimate"] - mean_all[1L, 1L])
 ```
 
+```{illustration, eval = run_illustration}
 Given only the four measurements, proxymix selected
 `r imp_proxymix@n_components` mixture components, the number of species.
 Keeping only the birds whose mass survived pulls the mean body mass down from
@@ -549,6 +559,7 @@ towards zero, consistent with a single multivariate-normal model, which gives
 bill depth one conditional coefficient across the three species. This is one
 deletion of one dataset, which illustrates the imputers but cannot rank them,
 so the simulation below repeats the exercise many times.
+```
 
 ### A simulation benchmark
 

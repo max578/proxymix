@@ -375,6 +375,13 @@ has_selection <- requireNamespace("sampleSelection", quietly = TRUE)
 has_penguins <- exists("penguins", envir = asNamespace("datasets"))
 run_illustration <- has_mice && has_amelia && has_aer && has_survival &&
   has_selection && has_penguins
+## prose that quotes the illustration's results, knitted only when its
+## chunks ran
+knitr::knit_engines$set(illustration = function(options) {
+  if (!isTRUE(options$eval)) return(invisible(NULL))
+  knitr::knit_child(text = options$code, envir = knitr::knit_global(),
+                    quiet = TRUE)
+})
 ```
 
 ```{r illustration-skip, eval = !run_illustration, echo = FALSE, results = "asis"}
@@ -423,8 +430,10 @@ aff <- Affairs[, cols_aff]
 f_aff <- affairs ~ age + yearsmarried + religiousness + occupation + rating
 ```
 
+```{illustration, eval = run_illustration}
 Of the `r nrow(aff)` respondents, `r sum(aff$affairs == 0)` reported no
 affairs, which the Tobit model reads as a latent value at or below zero.
+```
 
 ```{r affairs-fit, eval = run_illustration}
 fit_tobit <- tobit(f_aff, data = aff)
@@ -493,6 +502,7 @@ name_list <- function(v) {
 }
 ```
 
+```{illustration, eval = run_illustration}
 The two Tobit fits are the same fit, as the identical columns show. With a
 single component, proxymix's model of the latent value given the covariates
 is the same linear-Gaussian model, estimated by expectation-maximisation
@@ -516,6 +526,7 @@ the largest in Tobit standard errors being on
 `r fixed(shift_aff[largest_shift], 2)` standard errors. On this data the Tobit model is the natural
 reading, and the single component is the like-for-like comparison; the
 simulation below scores it against the truth.
+```
 
 ### Value-dependent deletion: the Palmer penguins data
 
@@ -553,10 +564,12 @@ peng_holes$body_mass[gone] <- NA
 mass_truth <- mean(peng$body_mass)
 ```
 
+```{illustration, eval = run_illustration}
 That leaves `r nrow(peng)` birds, of which `r sum(gone)` lose their body
 mass. The mean of the retained masses is
 `r fixed(mean(peng_holes$body_mass, na.rm = TRUE), 3)` kg against
 `r fixed(mass_truth, 3)` kg over all the birds.
+```
 
 The proxymix sweep covers five slopes from 0 to 3 per kilogram, which
 bracket the generating slope, at 20 completions each. The mice sweep covers
@@ -652,6 +665,7 @@ ols_flipper <- coef(lm(body_mass ~ bill_len + bill_dep + flipper_len,
                        data = peng))[["flipper_len"]]
 ```
 
+```{illustration, eval = run_illustration}
 Deleting the heavier birds pulls the mean of the available cases down by
 `r fixed(mass_truth - peng_rows[2L, 1L], 3)` kg. The proxymix curve at slope
 0 and Amelia both impute under missing at random, and both recover most of
@@ -680,6 +694,7 @@ selection and outcome errors is `r fixed(heck_rho, 2)`, outside $[-1, 1]$,
 and its coefficient on flipper length is `r fixed(heck_flipper, 3)` kg per
 millimetre against `r fixed(ols_flipper, 3)` in the complete data. This is one deletion of one dataset, so the simulation repeats
 it.
+```
 
 ```{=latex}
 \par\penalty-100\begingroup\dimen0=26\baselineskip\dimen2=\pagegoal
@@ -977,7 +992,8 @@ cv <- function(estimand, method, what) {
 mcse_coverage <- sqrt(0.95 * 0.05 / sim$n_rep)
 # a version as its DESCRIPTION writes it, when the installed one is the one stored
 desc_version <- function(pkg, stored) {
-  if (identical(as.character(packageVersion(pkg)), stored)) {
+  if (requireNamespace(pkg, quietly = TRUE) &&
+        identical(as.character(packageVersion(pkg)), stored)) {
     utils::packageDescription(pkg)$Version
   } else {
     stored

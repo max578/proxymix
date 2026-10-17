@@ -468,6 +468,13 @@ has_mixtools <- requireNamespace("mixtools", quietly = TRUE)
 has_flexmix <- requireNamespace("flexmix", quietly = TRUE)
 has_ks <- requireNamespace("ks", quietly = TRUE)
 run_illustration <- has_mclust && has_mixtools && has_flexmix && has_ks
+## prose that quotes the illustration's results, knitted only when its
+## chunks ran
+knitr::knit_engines$set(illustration = function(options) {
+  if (!isTRUE(options$eval)) return(invisible(NULL))
+  knitr::knit_child(text = options$code, envir = knitr::knit_global(),
+                    quiet = TRUE)
+})
 ```
 
 ```{r illustration-skip, eval = !run_illustration, echo = FALSE, results = "asis"}
@@ -776,6 +783,7 @@ weight_iii <- max(k_faithful@weights)
 kde_peak <- max(kde_direct)
 ```
 
+```{illustration, eval = run_illustration}
 The four regime-(ii) fits are within
 `r fixed(ceiling(1000 * (max(ll_two) - min(ll_two))) / 1000, 3)` of one another on the held-out
 half: proxymix gives `r fixed(ll_ii, 3)`, mclust `r fixed(ll_of("mclust"), 3)`
@@ -806,6 +814,7 @@ is `r power_ten(kde_check)`, where the largest density at those points is
 `r fixed(kde_peak, 4)`. This
 is one split of one dataset, so the simulation below repeats the regime-(ii)
 comparison where the truth is known.
+```
 
 ### A simulation benchmark
 
@@ -1015,7 +1024,8 @@ mcnemar_p <- binom.test(sum(mis_ii & !mis_mc),
                         sum(xor(mis_ii, mis_mc)))$p.value
 # a version as its DESCRIPTION writes it, when the installed one is the one stored
 desc_version <- function(pkg, stored) {
-  if (identical(as.character(packageVersion(pkg)), stored)) {
+  if (requireNamespace(pkg, quietly = TRUE) &&
+        identical(as.character(packageVersion(pkg)), stored)) {
     utils::packageDescription(pkg)$Version
   } else {
     stored
@@ -1171,8 +1181,8 @@ importance sampler is seeded with that index plus the sample size. The
 stored simulation results come from the code shown, run on `r sim$run_date` with R `r sim$versions[["R"]]`,
 proxymix `r sim$versions[["proxymix"]]`, mclust
 `r sim$versions[["mclust"]]` and flexmix `r flexmix_version`,
-and that run raised `r length(sim$warnings)` warnings. The mixtools
-version used above is `r format(packageVersion("mixtools"))`.
+and that run raised `r length(sim$warnings)` warnings.
+`r if (run_illustration) paste0("The mixtools version used above is ", format(packageVersion("mixtools")), ".") else ""`
 
 ```{r session-info}
 old_opt <- options(width = 72L)

@@ -83,9 +83,9 @@ fixed <- function(v, digits) {
 ## (2.7-12, not 2.7.12), when the installed version is the one stored.
 desc_version <- function(pkg) {
   stored <- sim$versions[[pkg]]
-  installed <- utils::packageDescription(pkg)$Version
-  if (identical(as.character(package_version(installed)), stored)) {
-    installed
+  if (requireNamespace(pkg, quietly = TRUE) &&
+        identical(as.character(packageVersion(pkg)), stored)) {
+    utils::packageDescription(pkg)$Version
   } else {
     stored
   }
@@ -778,6 +778,13 @@ has_pcalg <- requireNamespace("pcalg", quietly = TRUE)
 has_penguins <- exists("penguins", envir = asNamespace("datasets"))
 run_illustration <- has_fnn && has_glasso && has_huge && has_pcalg &&
   has_penguins
+## prose that quotes the illustration's results, knitted only when its
+## chunks ran
+knitr::knit_engines$set(illustration = function(options) {
+  if (!isTRUE(options$eval)) return(invisible(NULL))
+  knitr::knit_child(text = options$code, envir = knitr::knit_global(),
+                    quiet = TRUE)
+})
 ```
 
 ```{r illustration-skip, eval = !run_illustration, echo = FALSE, results = "asis"}
@@ -1038,6 +1045,7 @@ n_edges <- function(sp, method) graph_df$edges[graph_df$species ==
 birds <- range(table(species))
 ```
 
+```{illustration, eval = run_illustration}
 Given only the four measurements, `select_N()` chose
 `r sel_colony$best_n` components for the colony, the number of species.
 Every pair carries dependence. `r top_shannon_text` The Cauchy-Schwarz
@@ -1066,6 +1074,7 @@ per cent level, keeps
 given the other two measurements, at the 5 per cent level, on
 `r birds[1L]` to `r birds[2L]` birds. The largest within-species
 partial correlation is `r fixed(max(pcor_within), 2)`.
+```
 
 ### A simulation benchmark
 

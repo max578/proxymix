@@ -170,9 +170,9 @@ sci_above <- function(v) {
 ## (2.2-8, not 2.2.8), when the installed version is the one stored.
 desc_version <- function(pkg) {
   stored <- sim$versions[[pkg]]
-  installed <- utils::packageDescription(pkg)$Version
-  if (identical(as.character(package_version(installed)), stored)) {
-    installed
+  if (requireNamespace(pkg, quietly = TRUE) &&
+        identical(as.character(packageVersion(pkg)), stored)) {
+    utils::packageDescription(pkg)$Version
   } else {
     stored
   }
@@ -315,6 +315,13 @@ competitors <- c("GenSA", "DEoptim", "cmaes", "nloptr", "optimx")
 run_illustration <- all(vapply(c(competitors, "mclust", "MASS"),
                                requireNamespace, logical(1L),
                                quietly = TRUE))
+## prose that quotes the illustration's results, knitted only when its
+## chunks ran
+knitr::knit_engines$set(illustration = function(options) {
+  if (!isTRUE(options$eval)) return(invisible(NULL))
+  knitr::knit_child(text = options$code, envir = knitr::knit_global(),
+                    quiet = TRUE)
+})
 ```
 
 ```{r illustration-skip, eval = !run_illustration, echo = FALSE, results = "asis"}
@@ -429,6 +436,7 @@ knitr::kable(
 )
 ```
 
+```{illustration, eval = run_illustration}
 The descents end in `r nrow(minima)` distinct minima. M1 and M2 are the
 maximum-likelihood fit and its label-switched twin, both within
 `r fixed(max(abs(minima[1:2, 6L] - nll_ref)), 2)` of the mclust value. The others
@@ -437,6 +445,7 @@ narrow component at the lower bound of the scale, the other collapses the
 mixture onto one component. A method has found a basin when a local descent
 from one of its reported solutions ends within 5% of the box of that
 minimum.
+```
 
 ```{r geyser-methods, eval = run_illustration}
 budget <- 5000L
@@ -573,6 +582,7 @@ n_start_mle <- sum(apply(d_start[seq_len(nrow(ends)), nrow(ends) + 1:2], 1L,
                          min) < 0.05)
 ```
 
+```{illustration, eval = run_illustration}
 At `r budget` evaluations, `r paste(at_mle, collapse = " and ")` reach the
 maximum-likelihood value, `r one_point$method[which.max(one_point$excess)]`
 ends `r fixed(max(one_point$excess), 2)` above it, and each of the three
@@ -618,6 +628,7 @@ excesses of `r paste0("$", fixed(min(geyser_res$excess), 2), "$")` are the toler
 mclust's expectation-maximisation stops.
 This is one run of one objective, so the simulation
 below repeats the comparison on two functions whose optima are known.
+```
 
 ### A simulation benchmark
 

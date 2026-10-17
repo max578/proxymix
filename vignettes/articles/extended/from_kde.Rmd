@@ -399,6 +399,13 @@ has_kernsmooth <- requireNamespace("KernSmooth", quietly = TRUE)
 has_penguins <- exists("penguins", envir = asNamespace("datasets"))
 run_illustration <- has_ks && has_np && has_mclust && has_mixtools &&
   has_kernsmooth && has_penguins
+## prose that quotes the illustration's results, knitted only when its
+## chunks ran
+knitr::knit_engines$set(illustration = function(options) {
+  if (!isTRUE(options$eval)) return(invisible(NULL))
+  knitr::knit_child(text = options$code, envir = knitr::knit_global(),
+                    quiet = TRUE)
+})
 ```
 
 ```{r illustration-skip, eval = !run_illustration, echo = FALSE, results = "asis"}
@@ -691,6 +698,7 @@ if (!startsWith(fastest_query, "KernSmooth")) {
 }
 ```
 
+```{illustration, eval = run_illustration}
 Compressing the faithful estimate to three components moves the
 conditional mean by `r fixed(score_of("faithful", "proxymix, K = 3", "mean_err"), 2)`
 minutes on average and the 90 per cent quantile by
@@ -742,6 +750,7 @@ of the reference, and its 90 per cent
 quantile falls up to `r fixed(ceiling(10 * mc_q90_drop) / 10, 1)` minutes below the reference
 from the jump to the long eruptions. Two datasets are too few to rank the methods, so the
 simulation below repeats the comparison on data drawn from a known density.
+```
 
 ### A simulation benchmark
 
@@ -780,7 +789,8 @@ mclust_G_mode <- names(mclust_G_sim)[which.max(mclust_G_sim)]
 # a version as its DESCRIPTION writes it, when the installed one is the one stored
 desc_version <- function(pkg) {
   stored <- sim$versions[[pkg]]
-  if (identical(as.character(packageVersion(pkg)), stored)) {
+  if (requireNamespace(pkg, quietly = TRUE) &&
+        identical(as.character(packageVersion(pkg)), stored)) {
     utils::packageDescription(pkg)$Version
   } else {
     stored
@@ -964,6 +974,7 @@ knitr::kable(
 )
 ```
 
+```{illustration, eval = run_illustration}
 In this run proxymix came out ahead of the three kernel estimators on
 integrated squared error at $K$ = 3 and 5 and level with ks at $K$ = 8,
 and a conditional query on the three-component proxy was about
@@ -977,6 +988,7 @@ and closest to the reference. One
 well-separated mixture at one sample size and one bandwidth rule were tried;
 heavier tails, overlapping components, higher dimensions and bandwidths
 chosen by cross-validation are not covered.
+```
 
 ## Further reading
 

@@ -766,6 +766,13 @@ proxy's error exactly.
 has_dlm <- requireNamespace("dlm", quietly = TRUE)
 has_kfas <- requireNamespace("KFAS", quietly = TRUE)
 run_illustration <- has_dlm && has_kfas
+## prose that quotes the illustration's results, knitted only when its
+## chunks ran
+knitr::knit_engines$set(illustration = function(options) {
+  if (!isTRUE(options$eval)) return(invisible(NULL))
+  knitr::knit_child(text = options$code, envir = knitr::knit_global(),
+                    quiet = TRUE)
+})
 ```
 
 ```{r illustration-skip, eval = !run_illustration, echo = FALSE, results = "asis"}
@@ -879,6 +886,7 @@ rel_var_gap <- max(pmax(abs(var_pm - var_dlm), abs(var_pm - var_kfas)) /
 ll_three <- fixed(c(ll_pm, ll_dlm, ll_kfas), 2)
 ```
 
+```{illustration, eval = run_illustration}
 The estimated variances are $H$ = `r fixed(h_nile, 0)` and $Q$ =
 `r fixed(q_nile, 0)`. At one component `gmm_filter()` returns the Kalman
 filter: its filtered means agree with dlm and KFAS to
@@ -887,6 +895,7 @@ filtered variances, which settle at `r round(var_pm[n_nile])`, to
 `r sci(var_gap_pm)`, a relative difference of at most
 `r sci(rel_var_gap)`. The three log-likelihoods are
 `r if (length(unique(ll_three)) == 1L) paste("all", keep_whole(ll_three[1L])) else paste(keep_whole(ll_three), collapse = ", ")`.
+```
 
 ### The same series with an outlier component in the noise
 
@@ -1010,6 +1019,7 @@ ll_mix_over_gauss <- round(ll_mix, 2L) - round(ll_pm, 2L)
 mix_pf_ll_gap <- round(ll_mix, 2L) - round(pf_nile$log_lik, 2L)
 ```
 
+```{illustration, eval = run_illustration}
 The two-component noise lowers the log-likelihood of the series by
 `r fixed(-ll_mix_over_gauss, 2)` against the Gaussian noise of the same
 variance, so the Nile readings do not favour the split, and the capped
@@ -1024,6 +1034,7 @@ the drop, the Gaussian filter lowers its level by `r fixed(abs(step_gauss), 1)` 
 the mixture filter by `r fixed(abs(step_mix), 1)`, because the mixture
 filter gives part of that reading to the outlier component. The series has
 no true level to score against, so the simulation below supplies one.
+```
 
 ### A simulation benchmark
 
@@ -1301,7 +1312,8 @@ z_of <- function(p) p[["diff"]] / p[["se"]]
 # a version as its DESCRIPTION writes it, when the installed one is the one stored
 desc_version <- function(pkg) {
   stored <- sim$versions[[pkg]]
-  if (identical(as.character(packageVersion(pkg)), stored)) {
+  if (requireNamespace(pkg, quietly = TRUE) &&
+        identical(as.character(packageVersion(pkg)), stored)) {
     utils::packageDescription(pkg)$Version
   } else {
     stored

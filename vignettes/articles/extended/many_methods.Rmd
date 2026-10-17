@@ -762,6 +762,13 @@ has_penguins <- exists("penguins", envir = asNamespace("datasets"))
 run_classical <- has_glmnet && has_mass && has_penguins
 run_treatment <- has_grf && has_tmle && has_matchit && has_mgcv &&
   has_sandwich
+## prose that quotes the illustration's results, knitted only when its
+## chunks ran
+knitr::knit_engines$set(illustration = function(options) {
+  if (!isTRUE(options$eval)) return(invisible(NULL))
+  knitr::knit_child(text = options$code, envir = knitr::knit_global(),
+                    quiet = TRUE)
+})
 ```
 
 ```{r illustration-skip, eval = !(run_classical && run_treatment), echo = FALSE, results = "asis"}
@@ -783,7 +790,12 @@ ver <- function(pkg) utils::packageDescription(pkg)$Version
 ## a stored version in DESCRIPTION form, when the installed one is the one
 ## stored
 desc_version <- function(pkg, stored) {
-  if (identical(as.character(packageVersion(pkg)), stored)) ver(pkg) else stored
+  if (requireNamespace(pkg, quietly = TRUE) &&
+        identical(as.character(packageVersion(pkg)), stored)) {
+    ver(pkg)
+  } else {
+    stored
+  }
 }
 ```
 
@@ -1067,6 +1079,7 @@ ci_lal <- proxy_functional_ci(ens_lal, att_of, level = 0.95)
 se_lal <- sd(vapply(ens_lal$members, att_of, numeric(1L)))
 ```
 
+```{illustration, eval = run_treatment}
 The ensemble holds `r length(ens_lal$members)` bootstrap refits. The sweep
 over one to four components warned twice that the
 expectation-maximisation objective decreased, in the three-component fit,
@@ -1076,6 +1089,7 @@ per cent of the men and a component
 can collapse onto them; the fit selected by BIC has
 `r gmm_n_components(model_lal@fit)` component, and the warnings do not
 concern it.
+```
 
 ```{r lalonde-competitors, eval = run_treatment}
 cf_lal <- causal_forest(lal[, covs], lal$re78, lal$treat,
@@ -1173,6 +1187,7 @@ knitr::kable(
 )
 ```
 
+```{illustration, eval = run_treatment}
 The five point estimates run from `r round(min(att_tbl$att))` to
 `r round(max(att_tbl$att))` USD, with standard errors from
 `r round(min(att_tbl$se))` to `r round(max(att_tbl$se))` USD; every
@@ -1182,6 +1197,7 @@ interval overlaps every other, and `r sum(att_tbl$lower > 0)` of the five
 every covariate, is the lowest. One dataset without a known answer cannot
 say which is right, so the simulation below scores the same methods
 against a known effect.
+```
 
 ### A simulation benchmark
 
@@ -1208,8 +1224,8 @@ treated is above 1 because treated units have larger $x_1$.
 Each method estimates the per-unit effect at every unit of its dataset and
 one average effect with a 95 per cent interval. proxymix chooses its
 component count by BIC and takes its interval from a
-`r B_sim`-member bootstrap ensemble, against
-`r length(ens_lal$members)` on the job-training data. The causal forest, tmle and the
+`r B_sim`-member bootstrap ensemble`r if (run_treatment) paste0(", against ", length(ens_lal$members), " on the job-training data") else ""`.
+The causal forest, tmle and the
 T-learner estimate the average effect, and nearest-neighbour matching the
 effect on the treated. The matched outcome regression carries
 treatment-by-covariate interactions so that it also returns a per-unit
@@ -1562,7 +1578,7 @@ throughout this page and applies it to holes in the data.
   and Its Applications 9(1), 141--142. <https://doi.org/10.1137/1109020>.
 * Polley, E., LeDell, E., Kennedy, C. and van der Laan, M. (2026).
   *SuperLearner: Super Learner Prediction.* R package version
-  `r ver("SuperLearner")`. <https://doi.org/10.32614/CRAN.package.SuperLearner>.
+  `r desc_version("SuperLearner", ref$versions[["SuperLearner"]])`. <https://doi.org/10.32614/CRAN.package.SuperLearner>.
 * Tipping, M. E. and Bishop, C. M. (1999). *Probabilistic principal
   component analysis.* Journal of the Royal Statistical Society B 61(3),
   611--622. <https://doi.org/10.1111/1467-9868.00196>.

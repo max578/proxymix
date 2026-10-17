@@ -1,0 +1,36 @@
+# Authors and Citation
+
+## Authors
+
+- **Max Moldovan**. Author, maintainer.
+  [](https://orcid.org/0000-0001-9680-8474)
+
+- **John van der Hoek**. Author.
+
+## Citation
+
+Source:
+[`inst/CITATION`](https://github.com/max578/proxymix/blob/main/inst/CITATION)
+
+Moldovan M, van der Hoek J (2026). *proxymix: Kullback-Leibler Optimal
+Gaussian Mixture Proxies for Target Densities*. R package version
+0.16.0.9000.
+
+    @Manual{,
+      title = {{proxymix}: Kullback-Leibler Optimal Gaussian Mixture Proxies for Target Densities},
+      author = {Max Moldovan and John {van der Hoek}},
+      year = {2026},
+      note = {R package version 0.16.0.9000},
+    }
+
+Hoek, J. van der and Elliott, R. J. (2024). Mixtures of multivariate
+Gaussians. Stochastic Analysis and Applications.
+doi:10.1080/07362994.2024.2372605
+
+    @Article{,
+      title = {Mixtures of multivariate {G}aussians},
+      author = {John {van der Hoek} and Robert J. Elliott},
+      journal = {Stochastic Analysis and Applications},
+      year = {2024},
+      doi = {10.1080/07362994.2024.2372605},
+    }

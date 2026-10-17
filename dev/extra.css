@@ -1,0 +1,5 @@
+/* library paths in sessionInfo() output are single long words */
+pre.session-info {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

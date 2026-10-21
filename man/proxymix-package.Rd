@@ -4,7 +4,7 @@
 \name{proxymix-package}
 \alias{proxymix}
 \alias{proxymix-package}
-\title{proxymix: Kullback-Leibler Optimal Gaussian Mixture Proxies for Target Densities}
+\title{proxymix: Gaussian Mixture Proxies for Densities and Characteristic Functions}
 \description{
 \if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
 

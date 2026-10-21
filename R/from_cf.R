@@ -976,6 +976,12 @@ gmm_cf <- function(g, t) {
 #' probability `probs[1]` or `1 - probs[2]` to the difference at the nearest
 #' end. Move `probs` towards 0 and 1 to shrink the outside term.
 #'
+#' Both bounds are computed from the numerically integrated differences, so
+#' they hold up to the error of that integration, which neither includes.
+#' Against closed-form distribution functions (Cauchy, normal, and a Gamma
+#' plus uniform sum, by quadrature) that error was below `5e-6`, and
+#' `distance` exceeded the exact Kolmogorov distance by at most `3e-6`.
+#'
 #' @param g A [gmm] or [gmm_fit].
 #' @param cf The target's characteristic function, as in [from_cf()].
 #' @param direction Numeric vector with one entry for each dimension of

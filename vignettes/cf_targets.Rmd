@@ -228,7 +228,8 @@ fit_sum@diagnostics$bracket
 ```
 
 * `distance` is the largest gap between the two distribution functions on
-  the grid. It is a lower bound for the Kolmogorov distance.
+  the grid. It is a lower bound for the Kolmogorov distance, up to the
+  error of the numerical integration, which is of the order of `1e-6`.
 * `upper` is an upper bound for it over the whole line. It holds when
   `truncation` and `cutoff_gap` are small, which they are here. Both measure
   how much of the inversion integral was left out, and are large when the

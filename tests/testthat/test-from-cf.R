@@ -130,12 +130,12 @@ test_that("the fit carries its diagnostics and works with the operators", {
   truth <- two_cluster()
   cf <- function(t) gmm_cf(truth, t)
   fit <- from_cf(cf, n_dim = 2L, N = 2L, n_freq = 1024L, seed = 1L)
-  expect_true(is.na(fit@regime))
+  expect_identical(fit@regime, "cf")
   expect_named(
     fit@diagnostics,
     c("loss", "loss_by_start", "loss_path", "heldout_rms", "heldout_max",
       "relocations", "tail_index", "cf_mean", "cf_cov", "n_freq",
-      "bandwidths")
+      "bandwidths", "bracket", "bracket_directions")
   )
   expect_length(fit@diagnostics$loss_path, 2L)
   q <- gmm_fit_quality(fit)

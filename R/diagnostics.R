@@ -195,7 +195,12 @@ ess_summary <- function(fit) {
 #'   `log f - log g` over the fitting draws. It approximates the KL
 #'   divergence only when the proxy is close to the target, and it does not
 #'   depend on the target's normalising constant. Both are `NA` outside
-#'   regime `"kld"`.
+#'   regime `"kld"`. A fit to a characteristic function (regime `"cf"`)
+#'   adds `cf_heldout_rms`, `cf_distance` and `cf_upper`: the held-out
+#'   root mean square error of the characteristic function and the largest
+#'   lower and upper bounds for the Kolmogorov distance over the checked
+#'   directions (see [from_cf()]). A composite certificate carries the
+#'   largest `cf_upper` of its operands.
 #' @family diagnostics
 #' @export
 #' @examples

@@ -4,7 +4,14 @@
 \alias{from_cf_elliptical}
 \title{Fit concentric normals to an elliptical characteristic function}
 \usage{
-from_cf_elliptical(cf, n_dim, N = 20L, scale_range = NULL, seed = NULL)
+from_cf_elliptical(
+  cf,
+  n_dim,
+  N = 20L,
+  scale_range = NULL,
+  seed = NULL,
+  bracket = TRUE
+)
 }
 \arguments{
 \item{cf, n_dim}{As in \code{\link[=from_cf]{from_cf()}}.}
@@ -21,16 +28,20 @@ both in units of that law's scale.}
 
 \item{seed}{Optional integer seed for the random directions. When
 supplied, the random number generator state is restored on exit.}
+
+\item{bracket}{Logical. Compute Kolmogorov bounds against \code{cf} along
+eight directions, as in \code{\link[=from_cf]{from_cf()}}. Default \code{TRUE}.}
 }
 \value{
-A \link{gmm_fit} with \code{regime} set to \code{NA}. Its \code{diagnostics} hold
+A \link{gmm_fit} with \code{regime} set to \code{"cf"}. Its \code{diagnostics} hold
 \code{shape} (the matrix \eqn{\Sigma}), \code{shape_ratio}, \code{asymmetry} (the
 largest imaginary part of the centred characteristic function, relative
 to its modulus), \code{scales} (all \code{N} grid values, including those
 dropped),
 \code{tail_index}, \code{radial_error} (the largest absolute difference between
-\eqn{\rho} and its fit on the frequencies used), and \code{heldout_rms} and
-\code{heldout_max} as in \code{\link[=from_cf]{from_cf()}}.
+\eqn{\rho} and its fit on the frequencies used), \code{heldout_rms} and
+\code{heldout_max}, and \code{bracket} and \code{bracket_directions}, as in
+\code{\link[=from_cf]{from_cf()}}.
 }
 \description{
 Fits a Gaussian mixture to a symmetric distribution whose characteristic

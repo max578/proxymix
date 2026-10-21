@@ -12,7 +12,8 @@ gmm_target(
   normalised = NA,
   log_normalizer = NA_real_,
   name = "gmm_target",
-  metadata = list()
+  metadata = list(),
+  cf = NULL
 )
 }
 \arguments{
@@ -47,6 +48,11 @@ subtracts it from the shifted KLD estimates.}
 \item{name}{Human-readable name.}
 
 \item{metadata}{Optional list of additional descriptors.}
+
+\item{cf}{Optional characteristic function of the target, as in
+\code{\link[=from_cf]{from_cf()}}: a function of an \code{n} by \code{p} matrix of frequencies
+returning \code{n} complex values. \code{\link[=cf_target]{cf_target()}} checks it before building
+the target.}
 }
 \value{
 An S7 object of class \code{gmm_target}.
@@ -54,17 +60,19 @@ An S7 object of class \code{gmm_target}.
 \description{
 An S7 representation of a target density that \code{proxymix} is asked to
 approximate. A target may carry an evaluable \code{log_density}, a matrix of
-i.i.d. \code{samples}, or both. Each of the three fitting regimes consumes a
-different subset:
+i.i.d. \code{samples}, a characteristic function \code{cf}, or several of these.
+Each of the four fitting regimes consumes a different subset:
 }
 \details{
 \itemize{
 \item regime \code{"moment"} needs samples (or both moments via metadata);
 \item regime \code{"sample"} needs samples;
-\item regime \code{"kld"} needs the log-density.
+\item regime \code{"kld"} needs the log-density;
+\item regime \code{"cf"} needs the characteristic function.
 }
 
-Use \code{\link[=gmm_target]{gmm_target()}} or \code{\link[=gmm_target_from_samples]{gmm_target_from_samples()}} to construct.
+Use \code{\link[=gmm_target]{gmm_target()}}, \code{\link[=gmm_target_from_samples]{gmm_target_from_samples()}} or \code{\link[=cf_target]{cf_target()}} to
+construct.
 
 Importance-sampled KLD-EM (regime \code{"kld"}) only requires \code{log_density}
 to be specified up to an unknown additive constant — the self-normalised

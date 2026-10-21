@@ -188,15 +188,18 @@
 #'   both in units of that law's scale.
 #' @param seed Optional integer seed for the random directions. When
 #'   supplied, the random number generator state is restored on exit.
+#' @param bracket Logical. Compute Kolmogorov bounds against `cf` along
+#'   eight directions, as in [from_cf()]. Default `TRUE`.
 #'
-#' @returns A [gmm_fit] with `regime` set to `NA`. Its `diagnostics` hold
+#' @returns A [gmm_fit] with `regime` set to `"cf"`. Its `diagnostics` hold
 #'   `shape` (the matrix \eqn{\Sigma}), `shape_ratio`, `asymmetry` (the
 #'   largest imaginary part of the centred characteristic function, relative
 #'   to its modulus), `scales` (all `N` grid values, including those
 #'   dropped),
 #'   `tail_index`, `radial_error` (the largest absolute difference between
-#'   \eqn{\rho} and its fit on the frequencies used), and `heldout_rms` and
-#'   `heldout_max` as in [from_cf()].
+#'   \eqn{\rho} and its fit on the frequencies used), `heldout_rms` and
+#'   `heldout_max`, and `bracket` and `bracket_directions`, as in
+#'   [from_cf()].
 #' @references
 #' Lawson, C. L. and Hanson, R. J. (1974). *Solving Least Squares
 #' Problems*. Prentice-Hall.
@@ -217,9 +220,11 @@ from_cf_elliptical <- function(
   n_dim,
   N = 20L,
   scale_range = NULL,
-  seed = NULL
+  seed = NULL,
+  bracket = TRUE
 ) {
   .check_cf_elliptical_arguments(cf, n_dim, N, scale_range)
+  .check_cf_bracket_argument(bracket)
   p <- as.integer(n_dim)
   K <- as.integer(N)
   phi <- .cf_checked(cf, p)
@@ -328,12 +333,18 @@ from_cf_elliptical <- function(
   }
 
   sds <- res$sds[res$used]
+  means <- rep(list(res$mu), length(sds))
+  covs <- lapply(sds, function(s) s^2 * res$Sigma)
+  kb <- .cf_bracket(
+    gmm(weights = res$w, means = means, covariances = covs), phi, p,
+    bracket, seed
+  )
   fit <- gmm_fit(
     weights = res$w,
-    means = rep(list(res$mu), length(sds)),
-    covariances = lapply(sds, function(s) s^2 * res$Sigma),
+    means = means,
+    covariances = covs,
     target = NULL,
-    regime = NA_character_,
+    regime = "cf",
     diagnostics = list(
       shape = res$Sigma,
       shape_ratio = res$shape_ratio,
@@ -342,7 +353,9 @@ from_cf_elliptical <- function(
       tail_index = res$tail_index,
       radial_error = res$radial_error,
       heldout_rms = res$heldout_rms,
-      heldout_max = res$heldout_max
+      heldout_max = res$heldout_max,
+      bracket = kb$table,
+      bracket_directions = kb$directions
     ),
     converged = TRUE,
     iterations = NA_integer_,
@@ -361,7 +374,9 @@ from_cf_elliptical <- function(
       kld_approx = NA_real_,
       validation_gap = NA_real_,
       heldout_kld = NA_real_,
-      cf_heldout_rms = res$heldout_rms
+      cf_heldout_rms = res$heldout_rms,
+      cf_distance = kb$distance,
+      cf_upper = kb$upper
     ))
   )
   gmm_canonicalise(fit)
@@ -485,7 +500,9 @@ from_cf_elliptical <- function(
 #' function of each pair with the product of the two marginal ones at all
 #' frequencies. If the criterion is above 0.01 the frequencies are drawn
 #' again, up to four times, and the directions with the smallest value are
-#' kept.
+#' kept. A draw at which the second derivatives are too ill-conditioned to
+#' give directions is drawn again in the same way; the function stops only
+#' when all five draws fail.
 #'
 #' The target must have a finite, positive definite covariance. A warning of class
 #' `proxymix_cf_not_sources` is raised when the criterion is still above
@@ -494,7 +511,9 @@ from_cf_elliptical <- function(
 #'
 #' @param cf,n_dim As in [from_cf()]. `n_dim` must be at least 2.
 #' @param N Number of mixture components for each source.
-#' @param n_freq,bandwidths,max_iter Passed to [from_cf()] for each source.
+#' @param n_freq,bandwidths,max_iter,bracket Passed to [from_cf()] for each
+#'   source. With `bracket = TRUE` each source fit carries its Kolmogorov
+#'   bounds.
 #' @param seed Optional integer seed. When supplied, the random number
 #'   generator state is restored on exit.
 #'
@@ -560,9 +579,11 @@ from_cf_sources <- function(
   n_freq = 8192L,
   bandwidths = c(0.3, 0.6, 1.2, 2.5, 5),
   max_iter = 300L,
-  seed = NULL
+  seed = NULL,
+  bracket = TRUE
 ) {
   .check_cf_sources_arguments(cf, n_dim, N)
+  .check_cf_bracket_argument(bracket)
   .check_cf_arguments(cf, 1L, N, n_freq, bandwidths, 1L, max_iter)
   p <- as.integer(n_dim)
   K <- as.integer(N)
@@ -595,16 +616,21 @@ from_cf_sources <- function(
         dependence = .cf_pair_dependence(phi, B, noise_cov)
       ))
     }
-    ## The frequencies are drawn again, up to four times, while the
-    ## separated coordinates are still dependent.
-    dirs <- directions()
-    for (i in seq_len(4L)) {
-      if (dirs$dependence <= 0.01) break
+    ## Up to five draws of the frequencies, while the separated coordinates
+    ## are still dependent or a draw cannot separate them.
+    dirs <- NULL
+    for (i in seq_len(5L)) {
+      if (!is.null(dirs) && dirs$dependence <= 0.01) break
       again <- tryCatch(
-        directions(), proxymix_cf_not_sources = function(e) NULL
+        directions(), proxymix_cf_not_sources = function(e) e
       )
-      if (!is.null(again) && again$dependence < dirs$dependence) dirs <- again
+      if (inherits(again, "proxymix_cf_not_sources")) {
+        failed <- again
+      } else if (is.null(dirs) || again$dependence < dirs$dependence) {
+        dirs <- again
+      }
     }
+    if (is.null(dirs)) stop(failed)
     B <- dirs$B
     A_hat <- dirs$A_hat
     noise_cov <- dirs$noise_cov
@@ -613,7 +639,8 @@ from_cf_sources <- function(
     sources <- lapply(seq_len(p), function(j) {
       from_cf(
         function(t) phi(outer(t[, 1L], B[j, ])), 1L, K,
-        n_freq = n_freq, bandwidths = bandwidths, max_iter = max_iter
+        n_freq = n_freq, bandwidths = bandwidths, max_iter = max_iter,
+        bracket = bracket
       )
     })
     list(

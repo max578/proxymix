@@ -13,7 +13,8 @@ from_cf(
   n_start = 1L,
   max_iter = 300L,
   init = NULL,
-  seed = NULL
+  seed = NULL,
+  bracket = TRUE
 )
 }
 \arguments{
@@ -54,16 +55,20 @@ from, in place of the grown start. Default \code{NULL}.}
 
 \item{seed}{Optional integer seed. When supplied, the random number
 generator state is restored on exit.}
+
+\item{bracket}{Logical. Compute the Kolmogorov bounds described under
+\emph{Checking a fit}. Default \code{TRUE}.}
 }
 \value{
-A \link{gmm_fit} with \code{regime} set to \code{NA}. Its \code{diagnostics} hold
+A \link{gmm_fit} with \code{regime} set to \code{"cf"}. Its \code{diagnostics} hold
 \code{loss} (the final loss), \code{loss_by_start}, \code{loss_path} (the loss as the
 grown start went from 1 to \code{N} components, or \code{NULL} when \code{init} is
 given), \code{heldout_rms} and
 \code{heldout_max}, \code{relocations} (the number of moves kept), \code{tail_index}
 (one value for each coordinate), \code{cf_mean} and \code{cf_cov} (the target's
 mean and covariance read from \code{cf}, or \code{NULL} when the target has no
-finite, positive definite covariance), \code{n_freq} and \code{bandwidths}.
+finite, positive definite covariance), \code{n_freq}, \code{bandwidths}, and,
+with \code{bracket = TRUE}, \code{bracket} and \code{bracket_directions}.
 \code{converged} is \code{FALSE} when the final optimisation of the returned fit
 stopped at its iteration limit.
 }
@@ -96,8 +101,19 @@ a move if it cuts the loss by at least 10\%, up to \code{N} moves.
 The returned object reports the root mean square and the maximum of
 \eqn{|\varphi - \varphi_g|} on \code{n_freq} fresh frequencies that the fit
 did not use (\code{heldout_rms} and \code{heldout_max} in \code{diagnostics}).
-\code{\link[=gmm_cf_distance]{gmm_cf_distance()}} gives a lower and an upper bound for the Kolmogorov
-distance between the target and the fit along any direction.
+
+With \code{bracket = TRUE} (the default) the fit also carries a lower and an
+upper bound for the Kolmogorov distance between the target and the fit,
+computed by \code{\link[=gmm_cf_distance]{gmm_cf_distance()}} along eight directions: the first
+\code{min(n_dim, 8)} coordinate axes and, when \code{n_dim < 8}, random unit
+directions to make up eight (one direction when \code{n_dim = 1}). The bounds
+for each direction are in \code{diagnostics$bracket}, the directions in
+\code{diagnostics$bracket_directions}, and the largest of each over the
+directions in the quality record as \code{cf_distance} and \code{cf_upper}
+(\code{\link[=gmm_fit_quality]{gmm_fit_quality()}}). These bounds compare distribution functions; they
+are not a Kullback-Leibler divergence. Drawing the random directions does
+not change the state of the random number generator; with \code{seed} they
+follow the seed. Set \code{bracket = FALSE} to skip the bounds.
 }
 
 \section{Heavy tails}{

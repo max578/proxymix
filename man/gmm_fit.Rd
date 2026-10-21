@@ -23,7 +23,7 @@ gmm_fit(
 
 \item{target}{The \link{gmm_target} the mixture was fitted to.}
 
-\item{regime}{One of \code{"moment"}, \code{"sample"}, \code{"kld"}.}
+\item{regime}{One of \code{"moment"}, \code{"sample"}, \code{"kld"}, \code{"cf"}.}
 
 \item{diagnostics}{A list of regime-specific diagnostics
 (see \code{\link[=kld_trace]{kld_trace()}}, \code{\link[=ess_trace]{ess_trace()}}).}

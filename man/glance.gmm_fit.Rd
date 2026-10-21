@@ -6,7 +6,8 @@
 \value{
 A one-row data frame with columns \code{regime}, \code{n_components},
 \code{dim}, \code{converged}, \code{iterations}, \code{ess}, \code{kld_final}, \code{validation_kld},
-\code{loglik_final} and \code{bic} (\code{NA} where not applicable to the regime).
+\code{loglik_final}, \code{bic}, \code{cf_heldout_rms}, \code{cf_distance} and \code{cf_upper}
+(\code{NA} where not applicable to the regime).
 }
 \description{
 A broom-style \code{glance()} method: a one-row summary of a \link{gmm_fit} with
@@ -20,6 +21,13 @@ draws the fit was tuned to, so it reads low and can be negative.
 \code{validation_kld} is the estimate on an independent draw and is the one to
 quote as the fit's accuracy; it is \code{NA} when the fit was made with
 \code{validation_size = 0}.
+
+For a fit to a characteristic function (regime \code{"cf"}), \code{cf_heldout_rms}
+is the root mean square error of the characteristic function on
+frequencies the fit did not use, and \code{cf_distance} and \code{cf_upper} are the
+largest lower and upper bounds for the Kolmogorov distance over the
+checked directions (\code{\link[=from_cf]{from_cf()}}, \emph{Checking a fit}). They are \code{NA} when the
+fit was made with \code{bracket = FALSE}.
 }
 \section{Arguments}{
 

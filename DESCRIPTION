@@ -14,12 +14,14 @@ Authors@R: c(
            email = "john.vanderhoek@adelaide.edu.au"))
 Description: Fits multivariate Gaussian-mixture proxies that are
     Kullback-Leibler optimal to user-supplied target densities on real
-    Euclidean space. Three fitting regimes are unified under one verb:
+    Euclidean space. Four fitting regimes are unified under one verb:
     (i) closed-form moment matching for a single component,
     (ii) classical expectation-maximisation when independent samples are
-    available, and (iii) importance-sampled expectation-maximisation that
+    available, (iii) importance-sampled expectation-maximisation that
     minimises the Kullback-Leibler divergence when the target can be
-    evaluated point-wise but not (cheaply) sampled. Closed-form
+    evaluated point-wise but not (cheaply) sampled, and (iv) a least-squares
+    fit to the characteristic function when only that is known, with
+    bounds on the Kolmogorov distance. Closed-form
     Gaussian-mixture operators (density, sampling, marginalisation,
     conditioning, divergence) round out the toolkit. The conditioning
     operator drives multiple imputation of data missing at random,

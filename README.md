@@ -5,7 +5,8 @@
 
 <!-- badges: start -->
 
-[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+[![Lifecycle:
+experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 [![CRAN
 status](https://www.r-pkg.org/badges/version/proxymix)](https://CRAN.R-project.org/package=proxymix)
 [![R-CMD-check](https://github.com/max578/proxymix/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/max578/proxymix/actions/workflows/R-CMD-check.yaml)
@@ -17,14 +18,16 @@ coverage](https://codecov.io/gh/max578/proxymix/graph/badge.svg)](https://app.co
 
 `proxymix` fits multivariate Gaussian-mixture proxies that are
 **Kullback–Leibler optimal** to user-supplied target densities on
-$\mathbb{R}^p$. Three regimes from van der Hoek and Elliott (2024) are
-unified under one verb:
+$\mathbb{R}^p$. Three regimes from van der Hoek and Elliott (2024), and
+a fourth for a distribution known only through its characteristic
+function, are unified under one verb:
 
 | Regime | When it applies | Method |
 |----|----|----|
 | **(i) moment** | $N = 1$ component | Closed-form moment matching |
 | **(ii) sample** | i.i.d. samples from the target are available | Classical EM |
 | **(iii) kld** | target density `f(x)` can be evaluated but **not** (cheaply) sampled | **KLD-EM with importance sampling** |
+| **(iv) cf** | only the characteristic function of the target is known | Least squares on the characteristic function, with Kolmogorov bounds |
 
 Regime (iii) is the reason the package exists. The sample-based mixture
 packages (`mclust`, `mixtools`, `flexmix`) all assume i.i.d. draws from
@@ -127,14 +130,14 @@ gmm_conditionalise(fit, given = c(NA, 0.5))
     fit_proxymix(
       target,
       N        = 1L,
-      regime   = c("auto", "moment", "sample", "kld"),
+      regime   = c("auto", "moment", "sample", "kld", "cf"),
       ...
     )
 
 - `target` is an S7 `gmm_target` produced by `gmm_target()` (from a
-  log-density), `gmm_target_from_samples()` (from samples), or one of
-  the built-in factories (`banana_target()`, `donut_target()`,
-  `mixture_target()`).
+  log-density), `gmm_target_from_samples()` (from samples),
+  `cf_target()` (from a characteristic function), or one of the built-in
+  factories (`banana_target()`, `donut_target()`, `mixture_target()`).
 - `regime = "auto"` picks the cheapest applicable regime from the
   target’s contents.
 
@@ -165,6 +168,7 @@ and returns a closed-form mixture over its low regions, so a multimodal
 | i.i.d. samples | a mixture fit | `gmm_target_from_samples()` then `fit_proxymix()` |
 | an objective function | a map of its optima | `from_objective()`, `gmm_modes()` |
 | a kernel density estimate | a small closed-form surrogate | `from_kde()` |
+| a characteristic function only (a stable law, a sum of independent variables) | a mixture with Kolmogorov bounds | `cf_target()` then `fit_proxymix()`, or `from_cf()`, `from_cf_elliptical()`, `from_cf_sources()` |
 | a fitted mixture | marginals, conditionals, updates | `gmm_marginalise()`, `gmm_conditionalise()`, `gmm_observe()`, `gmm_affine()` |
 | data with holes | multiple imputation | `gmm_impute()` with `mar()` / `mnar()` / `censored()` |
 | a time series + state-space model | filtering / stability testing | `gmm_filter()`, `gmm_eos_test()` |

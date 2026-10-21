@@ -1,0 +1,251 @@
+---
+title: "Fitting a mixture to a characteristic function"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Fitting a mixture to a characteristic function}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4,
+  dpi = 150,
+  out.width = "100%"
+)
+```
+
+```{r library}
+library(proxymix)
+```
+
+```{r helpers, include = FALSE}
+## Small numbers are written as plain decimals rather than in the
+## scientific notation that knitr's inline hook would otherwise use.
+fixed <- function(v, digits) {
+  format(round(v, digits), nsmall = digits, scientific = FALSE)
+}
+```
+
+## The problem
+
+Some distributions are easiest to write down through their characteristic
+function, $\varphi(t) = E \exp(i t X)$. A stable law has a closed-form
+characteristic function but, apart from a few cases, no closed-form density.
+The sum of independent variables has as characteristic function the product
+of theirs, while its density is a convolution integral. The state of a
+filter after a step with heavy-tailed noise is another such sum. In each case
+the density is not at hand, so the fitting regimes that need samples or a
+log-density do not apply directly.
+
+`proxymix` fits a Gaussian mixture to the characteristic function itself. The
+fit minimises the mean squared difference between the target's
+characteristic function and the mixture's over a fixed set of frequencies.
+The result is an ordinary mixture, so its density, distribution function,
+quantiles, marginals and conditionals are then available in closed form.
+
+## Package capabilities
+
+* `cf_target()` builds a target from a characteristic function and checks it:
+  value 1 at zero, modulus at most 1, and $\varphi(-t)$ equal to the complex
+  conjugate of $\varphi(t)$.
+* `fit_proxymix()` fits such a target with regime `"cf"`, which it picks by
+  itself when the target has a characteristic function and neither samples
+  nor a log-density. `from_cf()` is the same fit called directly.
+* `from_cf_elliptical()` fits normals with a common centre and proportional
+  covariances, for elliptical laws such as the multivariate Cauchy.
+  `from_cf_sources()` fits a linear mix of independent sources.
+* Every fit carries lower and upper bounds for the Kolmogorov distance
+  between the target and the mixture, the largest gap between their
+  distribution functions, along eight directions (one in one dimension).
+  `gmm_cf_distance()` computes the same bounds along any direction.
+
+## A sum of independent variables
+
+Let $X = G + U$, with $G$ following a Gamma distribution with shape 3 and
+$U$ uniform on $(-1, 1)$, independent of $G$. The characteristic function of
+$X$ is the product of $(1 - i t)^{-3}$ and $\sin(t) / t$. The function below
+takes a matrix of frequencies, one per row, and returns one complex value for
+each row.
+
+```{r sum-target}
+cf_sum <- function(t) {
+  s <- t[, 1]
+  uniform <- ifelse(s == 0, 1, sin(s) / s)
+  (1 - 1i * s)^(-3) * uniform
+}
+tgt <- cf_target(cf_sum, n_dim = 1L, name = "Gamma(3) plus uniform")
+fit_sum <- fit_proxymix(tgt, N = 4L, n_freq = 2048L, seed = 1L)
+fit_sum
+```
+
+The printed fit reports two checks. The held-out error is the root mean
+square difference between the two characteristic functions at frequencies
+the fit did not use. The Kolmogorov bounds say how far apart the two
+distribution functions can be. The distribution function of $X$ can also be
+computed here by integrating the Gamma distribution function over the
+uniform, which gives an independent check of the bounds.
+
+```{r sum-check}
+cdf_sum <- function(x) {
+  vapply(x, function(z) {
+    stats::integrate(function(u) stats::pgamma(z - u, 3) / 2, -1, 1)$value
+  }, numeric(1))
+}
+x <- seq(-1, 15, length.out = 801L)
+exact_gap <- max(abs(cdf_sum(x) - pgmm(x, fit_sum)))
+q_sum <- gmm_fit_quality(fit_sum)
+c(lower = q_sum$cf_distance, exact = exact_gap, upper = q_sum$cf_upper)
+```
+
+The exact gap, `r fixed(exact_gap, 4)`, lies between the two bounds. The
+lower bound is the largest gap found on a grid of 201 points between the
+mixture's 0.005 and 0.995 quantiles. The upper bound also covers the gaps
+between grid points and outside the grid, and the probability 0.005 left
+outside the grid at each end is most of its excess over the lower bound.
+
+```{r sum-plot, fig.alt = "Distribution function of the Gamma plus uniform sum and of the four-component mixture fitted to its characteristic function. The two curves overlap."}
+plot(x, cdf_sum(x), type = "l", lwd = 3, col = "grey60",
+     xlab = "x", ylab = "P(X <= x)")
+lines(x, pgmm(x, fit_sum), lwd = 1.5, lty = 2)
+legend("bottomright", c("exact", "mixture, 4 components"),
+       lwd = c(3, 1.5), lty = c(1, 2), col = c("grey60", "black"),
+       bty = "n")
+```
+
+## A stable law
+
+The Cauchy distribution is the stable law of index 1, with characteristic
+function $\exp(-|t|)$. It is used here because its distribution function and
+quantiles are known exactly. A mixture of normals has finite variance and
+the Cauchy does not, so `from_cf()` warns that the fit can match the centre of
+the distribution but not its far tails.
+
+```{r cauchy-fit}
+cf_cauchy <- function(t) exp(-abs(t[, 1]))
+fit_cauchy <- from_cf(cf_cauchy, n_dim = 1L, N = 6L, n_freq = 2048L,
+                      seed = 1L)
+```
+
+```{r cauchy-check}
+probs <- c(0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99)
+fit_ell <- from_cf_elliptical(cf_cauchy, n_dim = 1L, seed = 1L)
+quantiles <- rbind(
+  exact = stats::qcauchy(probs),
+  `from_cf, 6 components` = qgmm(probs, fit_cauchy),
+  `from_cf_elliptical` = qgmm(probs, fit_ell)
+)
+colnames(quantiles) <- probs
+round(quantiles, 3)
+```
+
+Between the 0.05 and 0.95 quantiles the general fit is close to the exact
+values. At 0.01 and 0.99 it falls short, as the warning said it would.
+`from_cf_elliptical()` uses the fact that every symmetric stable law is a
+scale mixture of normals: it places normals with a common centre and a
+geometric grid of `r length(fit_ell@weights)` standard deviations, and finds
+their weights by non-negative least squares. It reaches far further into the
+tails.
+
+```{r cauchy-bounds}
+x <- seq(-60, 60, length.out = 12001L)
+exact_cauchy <- max(abs(stats::pcauchy(x) - pgmm(x, fit_cauchy)))
+q_cauchy <- gmm_fit_quality(fit_cauchy)
+c(lower = q_cauchy$cf_distance, exact = exact_cauchy,
+  upper = q_cauchy$cf_upper)
+```
+
+The bounds again contain the exact Kolmogorov distance. They need the
+characteristic function of the target, projected on the direction checked,
+to be integrable, which holds for every stable law.
+
+## One filtering step
+
+A state $X_0$ follows the mixture below. One step later it is
+$X_1 = 0.9 X_0 + e$, where $e$ is Cauchy noise with scale 0.2, and $X_1$ is
+then observed with normal error of variance 0.25. The law of $X_1$ is a
+convolution with no closed-form density, but its characteristic function is
+the product of the two.
+
+```{r filter-predict}
+prior <- gmm(weights = c(0.5, 0.5), means = list(-1, 2),
+             covariances = list(matrix(0.3), matrix(0.5)))
+cf_pred <- function(t) gmm_cf(prior, 0.9 * t[, 1]) * exp(-0.2 * abs(t[, 1]))
+pred <- suppressWarnings(
+  from_cf(cf_pred, n_dim = 1L, N = 6L, n_freq = 2048L, seed = 1L),
+  classes = "proxymix_cf_heavy_tail"
+)
+```
+
+The predicted state is a mixture, so the update on an observation $y = 1.2$
+is the closed-form Bayes update of a mixture under a normal measurement.
+
+```{r filter-update}
+post <- gmm_observe(pred, A = matrix(1), y = 1.2, noise_cov = matrix(0.25))
+post_mean <- sum(post@weights * unlist(post@means))
+post_sd <- sqrt(sum(post@weights * (unlist(post@covariances) +
+                                      unlist(post@means)^2)) - post_mean^2)
+```
+
+As a check, the predicted density can be computed by numerical convolution
+and multiplied by the normal likelihood on a grid.
+
+```{r filter-check}
+dens_pred <- function(x) {
+  vapply(x, function(z) {
+    stats::integrate(function(e) {
+      dgmm(matrix((z - e) / 0.9), prior) / 0.9 * stats::dcauchy(e, 0, 0.2)
+    }, -Inf, Inf, subdivisions = 500L)$value
+  }, numeric(1))
+}
+grid <- seq(-6, 8, length.out = 1401L)
+h <- grid[2] - grid[1]
+w <- dens_pred(grid) * stats::dnorm(1.2, grid, 0.5)
+w <- w / sum(w * h)
+exact_mean <- sum(grid * w * h)
+exact_sd <- sqrt(sum((grid - exact_mean)^2 * w * h))
+round(rbind(exact = c(mean = exact_mean, sd = exact_sd),
+            mixture = c(post_mean, post_sd)), 4)
+```
+
+The posterior from the mixture agrees with the numerical posterior to about
+three decimal places in mean and standard deviation. The normal
+measurement keeps the posterior within the region where the predicted
+mixture fits the convolution well. A far-out observation would lean on the
+tails, where the mixture is least accurate.
+
+## Reading the bounds
+
+The quality record returned by `gmm_fit_quality()` has the largest lower bound
+and the largest upper bound over the checked directions as `cf_distance` and
+`cf_upper`, and `fit@diagnostics$bracket` has both bounds for each direction.
+
+```{r bracket-table}
+fit_sum@diagnostics$bracket
+```
+
+* `distance` is the largest gap between the two distribution functions on
+  the grid. It is a lower bound for the Kolmogorov distance.
+* `upper` is an upper bound for it over the whole line. It holds when
+  `truncation` and `cutoff_gap` are small, which they are here. Both measure
+  how much of the inversion integral was left out, and are large when the
+  target has a point mass or a characteristic function that decays very
+  slowly.
+* The bounds compare distribution functions. They are not a
+  Kullback-Leibler divergence, which needs a density of the target.
+
+The bounds take little time next to the fit. `bracket = FALSE` skips them, and
+`gmm_cf_distance()` gives them for any other direction, grid or range of
+probabilities.
+
+## References
+
+Gil-Pelaez, J. (1951). Note on the inversion theorem. *Biometrika*, 38(3-4),
+481-482. <https://doi.org/10.1093/biomet/38.3-4.481>
+
+van der Hoek, J. and Elliott, R. J. (2024). Mixtures of multivariate
+Gaussians. *Stochastic Analysis and Applications*.
+<https://doi.org/10.1080/07362994.2024.2372605>

@@ -150,7 +150,7 @@ gmm_n_components <- function(x) {
 #'
 #' @param weights,means,covariances,name,metadata See [gmm].
 #' @param target The [gmm_target] the mixture was fitted to.
-#' @param regime One of `"moment"`, `"sample"`, `"kld"`.
+#' @param regime One of `"moment"`, `"sample"`, `"kld"`, `"cf"`.
 #' @param diagnostics A list of regime-specific diagnostics
 #'   (see [kld_trace()], [ess_trace()]).
 #' @param converged Logical scalar.
@@ -194,8 +194,8 @@ gmm_fit <- S7::new_class(
       return("`regime` must be a single string")
     }
     if (!is.na(self@regime) &&
-        !self@regime %in% c("moment", "sample", "kld")) {
-      return("`regime` must be one of \"moment\", \"sample\" or \"kld\"")
+        !self@regime %in% c("moment", "sample", "kld", "cf")) {
+      return("`regime` must be one of \"moment\", \"sample\", \"kld\" or \"cf\"")
     }
     NULL
   }
@@ -209,14 +209,16 @@ gmm_fit <- S7::new_class(
 #'
 #' An S7 representation of a target density that `proxymix` is asked to
 #' approximate. A target may carry an evaluable `log_density`, a matrix of
-#' i.i.d. `samples`, or both. Each of the three fitting regimes consumes a
-#' different subset:
+#' i.i.d. `samples`, a characteristic function `cf`, or several of these.
+#' Each of the four fitting regimes consumes a different subset:
 #'
 #' * regime `"moment"` needs samples (or both moments via metadata);
 #' * regime `"sample"` needs samples;
-#' * regime `"kld"` needs the log-density.
+#' * regime `"kld"` needs the log-density;
+#' * regime `"cf"` needs the characteristic function.
 #'
-#' Use [gmm_target()] or [gmm_target_from_samples()] to construct.
+#' Use [gmm_target()], [gmm_target_from_samples()] or [cf_target()] to
+#' construct.
 #'
 #' Importance-sampled KLD-EM (regime `"kld"`) only requires `log_density`
 #' to be specified up to an unknown additive constant — the self-normalised
@@ -254,6 +256,10 @@ gmm_fit <- S7::new_class(
 #'   [fit_kld_em()].
 #' @param name Human-readable name.
 #' @param metadata Optional list of additional descriptors.
+#' @param cf Optional characteristic function of the target, as in
+#'   [from_cf()]: a function of an `n` by `p` matrix of frequencies
+#'   returning `n` complex values. [cf_target()] checks it before building
+#'   the target.
 #'
 #' @returns An S7 object of class `gmm_target`.
 #' @family classes
@@ -293,14 +299,22 @@ gmm_target <- S7::new_class(
     metadata = S7::new_property(
       class = S7::class_list,
       default = list()
+    ),
+    cf = S7::new_property(
+      class = S7::class_any,
+      default = NULL
     )
   ),
   validator = function(self) {
     if (length(self@n_dim) != 1L || self@n_dim < 1L) {
       return("`n_dim` must be a positive integer of length 1")
     }
-    if (is.null(self@log_density) && is.null(self@samples)) {
-      return("at least one of `log_density` or `samples` must be supplied")
+    if (is.null(self@log_density) && is.null(self@samples) &&
+        is.null(self@cf)) {
+      return("at least one of `log_density`, `samples` or `cf` must be supplied")
+    }
+    if (!is.null(self@cf) && !is.function(self@cf)) {
+      return("`cf` must be a function (or NULL)")
     }
     if (!is.null(self@log_density) && !is.function(self@log_density)) {
       return("`log_density` must be a function (or NULL)")
@@ -432,6 +446,20 @@ S7::method(print, gmm_fit) <- function(x, ...) {
   cat(sprintf("  iterations : %s\n",
               if (is.na(x@iterations)) "NA" else as.character(x@iterations)))
   cat(sprintf("  converged  : %s\n", as.character(x@converged)))
+  if (identical(x@regime, "cf")) {
+    q <- x@metadata$quality
+    cat(sprintf("  cf held-out RMS error : %s\n",
+                format(signif(q$cf_heldout_rms, 3L))))
+    if (is.finite(q$cf_distance %||% NA_real_)) {
+      n_dir <- nrow(x@diagnostics$bracket)
+      cat(sprintf("  Kolmogorov distance   : at least %s, at most %s (%d %s)\n",
+                  format(signif(q$cf_distance, 3L)),
+                  format(signif(q$cf_upper, 3L)),
+                  n_dir, if (n_dir == 1L) "direction" else "directions"))
+    } else {
+      cat("  Kolmogorov distance   : not computed (bracket = FALSE)\n")
+    }
+  }
   K <- gmm_n_components(x)
   show_max <- min(K, 5L)
   for (k in seq_len(show_max)) {
@@ -455,6 +483,7 @@ S7::method(print, gmm_target) <- function(x, ...) {
               if (!is.null(x@samples))
                 sprintf("%d x %d matrix", nrow(x@samples), ncol(x@samples))
               else "<absent>"))
+  if (!is.null(x@cf)) cat("  cf          : supplied\n")
   norm_str <- if (is.na(x@normalised)) {
     "unknown"
   } else if (isTRUE(x@normalised)) {

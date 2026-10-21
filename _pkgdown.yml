@@ -19,11 +19,11 @@ reference:
   contents:
   - has_concept("classes")
 - title: Target constructors
-  desc: Ways to build a `gmm_target` — from samples, from a log-density, or from a built-in.
+  desc: Ways to build a `gmm_target` — from samples, from a log-density, from a characteristic function, or from a built-in.
   contents:
   - has_concept("targets")
 - title: Fitting regimes
-  desc: The three KL-optimal fitting regimes from Hoek and Elliott (2024).
+  desc: The three KL-optimal fitting regimes from Hoek and Elliott (2024), and fits to a characteristic function.
   contents:
   - has_concept("fitting")
 - title: Closed-form mixture operators
@@ -73,6 +73,7 @@ articles:
   - density_shapes
   - operator_calculus
   - from_kde
+  - cf_targets
   - many_methods
   - entropy
   - calibration

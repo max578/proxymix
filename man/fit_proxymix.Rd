@@ -7,7 +7,7 @@
 fit_proxymix(
   target,
   N = 1L,
-  regime = c("auto", "moment", "sample", "kld"),
+  regime = c("auto", "moment", "sample", "kld", "cf"),
   ...
 )
 }
@@ -16,13 +16,15 @@ fit_proxymix(
 
 \item{N}{Number of components.}
 
-\item{regime}{One of \code{"auto"}, \code{"moment"}, \code{"sample"}, \code{"kld"}.}
+\item{regime}{One of \code{"auto"}, \code{"moment"}, \code{"sample"}, \code{"kld"}, \code{"cf"}.}
 
 \item{...}{Additional arguments forwarded to the regime-specific fitter.
 The most useful pass-throughs are \code{canonicalise} (whether to apply
 \code{\link[=gmm_canonicalise]{gmm_canonicalise()}} to the returned fit; default \code{TRUE}),
 \code{validation_size} and \code{validation_proposal} (held-out IS validation
-for regime \code{"kld"}), \code{max_iter}, \code{tol}, \code{n_starts}, and \code{seed}.}
+for regime \code{"kld"}), \code{max_iter}, \code{tol}, \code{n_starts}, and \code{seed}. For
+regime \code{"cf"} the arguments of \code{\link[=from_cf]{from_cf()}} apply, among them \code{n_freq},
+\code{n_start}, \code{seed} and \code{bracket}.}
 }
 \value{
 A \link{gmm_fit}.
@@ -38,6 +40,8 @@ fitter:
 \item \code{"sample"} - classical EM on i.i.d. samples (\code{\link[=fit_em_samples]{fit_em_samples()}}).
 \item \code{"kld"} - importance-sampled KLD-EM (\code{\link[=fit_kld_em]{fit_kld_em()}}) for a target
 that can be evaluated but not sampled.
+\item \code{"cf"} - a fit to the target's characteristic function (\code{\link[=from_cf]{from_cf()}}),
+for a target known only through it (\code{\link[=cf_target]{cf_target()}}).
 }
 
 With \code{regime = "auto"} the choice is made from the shape of the supplied
@@ -46,6 +50,7 @@ target:
 \item \code{N == 1} and the target carries samples or moments: \code{"moment"}.
 \item \code{N >= 2} and the target carries samples: \code{"sample"}.
 \item The target carries \code{log_density} only (no samples): \code{"kld"}.
+\item The target carries \code{cf} only (no samples, no \code{log_density}): \code{"cf"}.
 }
 }
 \examples{

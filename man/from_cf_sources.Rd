@@ -11,7 +11,8 @@ from_cf_sources(
   n_freq = 8192L,
   bandwidths = c(0.3, 0.6, 1.2, 2.5, 5),
   max_iter = 300L,
-  seed = NULL
+  seed = NULL,
+  bracket = TRUE
 )
 }
 \arguments{
@@ -19,7 +20,9 @@ from_cf_sources(
 
 \item{N}{Number of mixture components for each source.}
 
-\item{n_freq, bandwidths, max_iter}{Passed to \code{\link[=from_cf]{from_cf()}} for each source.}
+\item{n_freq, bandwidths, max_iter, bracket}{Passed to \code{\link[=from_cf]{from_cf()}} for each
+source. With \code{bracket = TRUE} each source fit carries its Kolmogorov
+bounds.}
 
 \item{seed}{Optional integer seed. When supplied, the random number
 generator state is restored on exit.}
@@ -83,7 +86,9 @@ Eriksson and Koivunen (2003), which compares the joint characteristic
 function of each pair with the product of the two marginal ones at all
 frequencies. If the criterion is above 0.01 the frequencies are drawn
 again, up to four times, and the directions with the smallest value are
-kept.
+kept. A draw at which the second derivatives are too ill-conditioned to
+give directions is drawn again in the same way; the function stops only
+when all five draws fail.
 
 The target must have a finite, positive definite covariance. A warning of class
 \code{proxymix_cf_not_sources} is raised when the criterion is still above

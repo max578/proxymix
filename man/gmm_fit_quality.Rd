@@ -29,7 +29,12 @@ same draws. \code{kld_approx} is half the importance-weighted variance of
 \verb{log f - log g} over the fitting draws. It approximates the KL
 divergence only when the proxy is close to the target, and it does not
 depend on the target's normalising constant. Both are \code{NA} outside
-regime \code{"kld"}.
+regime \code{"kld"}. A fit to a characteristic function (regime \code{"cf"})
+adds \code{cf_heldout_rms}, \code{cf_distance} and \code{cf_upper}: the held-out
+root mean square error of the characteristic function and the largest
+lower and upper bounds for the Kolmogorov distance over the checked
+directions (see \code{\link[=from_cf]{from_cf()}}). A composite certificate carries the
+largest \code{cf_upper} of its operands.
 }
 \description{
 Returns the fit-quality certificate: a small list recording the fitting

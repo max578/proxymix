@@ -133,6 +133,7 @@ symmetrise <- function(S) 0.5 * (S + t(S))
       kld_approx        = worst("kld_approx", max),
       validation_gap    = worst("validation_gap", max, abs),
       heldout_kld       = worst("heldout_kld", max),
+      cf_upper          = worst("cf_upper", max),
       quality_sources   = lapply(gs, function(g) {
         list(name = g@name, quality = g@metadata$quality)
       })

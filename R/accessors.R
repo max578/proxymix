@@ -93,13 +93,21 @@ NULL
 #' quote as the fit's accuracy; it is `NA` when the fit was made with
 #' `validation_size = 0`.
 #'
+#' For a fit to a characteristic function (regime `"cf"`), `cf_heldout_rms`
+#' is the root mean square error of the characteristic function on
+#' frequencies the fit did not use, and `cf_distance` and `cf_upper` are the
+#' largest lower and upper bounds for the Kolmogorov distance over the
+#' checked directions ([from_cf()], *Checking a fit*). They are `NA` when the
+#' fit was made with `bracket = FALSE`.
+#'
 #' @section Arguments:
 #' Called as `generics::glance(x, ...)`, where `x` is a [gmm_fit] and `...`
 #' is ignored.
 #'
 #' @returns A one-row data frame with columns `regime`, `n_components`,
 #'   `dim`, `converged`, `iterations`, `ess`, `kld_final`, `validation_kld`,
-#'   `loglik_final` and `bic` (`NA` where not applicable to the regime).
+#'   `loglik_final`, `bic`, `cf_heldout_rms`, `cf_distance` and `cf_upper`
+#'   (`NA` where not applicable to the regime).
 #' @family classes
 #' @name glance.gmm_fit
 #' @examplesIf requireNamespace("generics", quietly = TRUE)
@@ -110,6 +118,7 @@ NULL
 
 .glance_gmm_fit <- function(x, ...) {
   d <- x@diagnostics
+  q <- x@metadata$quality
   data.frame(
     regime = x@regime,
     n_components = gmm_n_components(x),
@@ -120,6 +129,9 @@ NULL
     kld_final = d$kld_final %||% NA_real_,
     validation_kld = d$validation_kld %||% NA_real_,
     loglik_final = d$loglik_final %||% NA_real_,
-    bic = d$bic %||% NA_real_
+    bic = d$bic %||% NA_real_,
+    cf_heldout_rms = q$cf_heldout_rms %||% NA_real_,
+    cf_distance = q$cf_distance %||% NA_real_,
+    cf_upper = q$cf_upper %||% NA_real_
   )
 }

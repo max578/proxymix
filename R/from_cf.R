@@ -613,8 +613,19 @@
 #' The returned object reports the root mean square and the maximum of
 #' \eqn{|\varphi - \varphi_g|} on `n_freq` fresh frequencies that the fit
 #' did not use (`heldout_rms` and `heldout_max` in `diagnostics`).
-#' [gmm_cf_distance()] gives a lower and an upper bound for the Kolmogorov
-#' distance between the target and the fit along any direction.
+#'
+#' With `bracket = TRUE` (the default) the fit also carries a lower and an
+#' upper bound for the Kolmogorov distance between the target and the fit,
+#' computed by [gmm_cf_distance()] along eight directions: the first
+#' `min(n_dim, 8)` coordinate axes and, when `n_dim < 8`, random unit
+#' directions to make up eight (one direction when `n_dim = 1`). The bounds
+#' for each direction are in `diagnostics$bracket`, the directions in
+#' `diagnostics$bracket_directions`, and the largest of each over the
+#' directions in the quality record as `cf_distance` and `cf_upper`
+#' ([gmm_fit_quality()]). These bounds compare distribution functions; they
+#' are not a Kullback-Leibler divergence. Drawing the random directions does
+#' not change the state of the random number generator; with `seed` they
+#' follow the seed. Set `bracket = FALSE` to skip the bounds.
 #'
 #' @section Heavy tails:
 #' A Gaussian mixture has finite moments of every order, so it cannot
@@ -656,15 +667,18 @@
 #'   from, in place of the grown start. Default `NULL`.
 #' @param seed Optional integer seed. When supplied, the random number
 #'   generator state is restored on exit.
+#' @param bracket Logical. Compute the Kolmogorov bounds described under
+#'   *Checking a fit*. Default `TRUE`.
 #'
-#' @returns A [gmm_fit] with `regime` set to `NA`. Its `diagnostics` hold
+#' @returns A [gmm_fit] with `regime` set to `"cf"`. Its `diagnostics` hold
 #'   `loss` (the final loss), `loss_by_start`, `loss_path` (the loss as the
 #'   grown start went from 1 to `N` components, or `NULL` when `init` is
 #'   given), `heldout_rms` and
 #'   `heldout_max`, `relocations` (the number of moves kept), `tail_index`
 #'   (one value for each coordinate), `cf_mean` and `cf_cov` (the target's
 #'   mean and covariance read from `cf`, or `NULL` when the target has no
-#'   finite, positive definite covariance), `n_freq` and `bandwidths`.
+#'   finite, positive definite covariance), `n_freq`, `bandwidths`, and,
+#'   with `bracket = TRUE`, `bracket` and `bracket_directions`.
 #'   `converged` is `FALSE` when the final optimisation of the returned fit
 #'   stopped at its iteration limit.
 #' @references
@@ -689,9 +703,11 @@ from_cf <- function(
   n_start = 1L,
   max_iter = 300L,
   init = NULL,
-  seed = NULL
+  seed = NULL,
+  bracket = TRUE
 ) {
   .check_cf_arguments(cf, n_dim, N, n_freq, bandwidths, n_start, max_iter)
+  .check_cf_bracket_argument(bracket)
   p <- as.integer(n_dim)
   K <- as.integer(N)
   .check_cf_init(init, p, K)
@@ -787,13 +803,17 @@ from_cf <- function(
   })
   covs <- lapply(res$gs$L, function(L) tcrossprod(A %*% L))
   converged <- !isTRUE(res$best$hit_limit)
+  kb <- .cf_bracket(
+    gmm(weights = res$gs$w, means = means, covariances = covs), phi, p,
+    bracket, seed
+  )
 
   fit <- gmm_fit(
     weights = res$gs$w,
     means = means,
     covariances = covs,
     target = NULL,
-    regime = NA_character_,
+    regime = "cf",
     diagnostics = list(
       loss = res$best$value,
       loss_by_start = res$loss_by_start,
@@ -805,7 +825,9 @@ from_cf <- function(
       cf_mean = res$co$mean,
       cf_cov = res$co$cov,
       n_freq = n_freq,
-      bandwidths = bandwidths
+      bandwidths = bandwidths,
+      bracket = kb$table,
+      bracket_directions = kb$directions
     ),
     converged = converged,
     iterations = NA_integer_,
@@ -824,10 +846,51 @@ from_cf <- function(
       kld_approx = NA_real_,
       validation_gap = NA_real_,
       heldout_kld = NA_real_,
-      cf_heldout_rms = res$heldout_rms
+      cf_heldout_rms = res$heldout_rms,
+      cf_distance = kb$distance,
+      cf_upper = kb$upper
     ))
   )
   gmm_canonicalise(fit)
+}
+
+.check_cf_bracket_argument <- function(bracket) {
+  if (!is.logical(bracket) || length(bracket) != 1L || is.na(bracket)) {
+    cli::cli_abort("{.arg bracket} must be {.code TRUE} or {.code FALSE}.")
+  }
+  invisible(NULL)
+}
+
+## Directions for the Kolmogorov bounds of a fit: the first min(p, 8)
+## coordinate axes, then random unit directions up to eight, drawn under
+## `seed` when given; the generator state is left unchanged either way.
+.cf_bracket_directions <- function(p, seed = NULL) {
+  axes <- diag(p)[seq_len(min(p, 8L)), , drop = FALSE]
+  if (p == 1L || p >= 8L) return(axes)
+  draw <- function() .cf_unit_directions(8L - p, p)
+  rbind(axes, if (is.null(seed)) withr::with_preserve_seed(draw()) else
+    withr::with_seed(seed, draw()))
+}
+
+## Kolmogorov bounds of `g` against the characteristic function `phi` along
+## each bracket direction. NULL table and NA summaries when `bracket` is FALSE.
+.cf_bracket <- function(g, phi, p, bracket, seed = NULL) {
+  if (!bracket) {
+    return(list(table = NULL, directions = NULL,
+                distance = NA_real_, upper = NA_real_))
+  }
+  D <- .cf_bracket_directions(p, seed)
+  rows <- lapply(seq_len(nrow(D)), function(i) {
+    d <- gmm_cf_distance(g, phi, direction = D[i, ])
+    data.frame(
+      direction = i, distance = d$distance, upper = d$upper,
+      upper_inside = d$upper_inside, truncation = d$truncation,
+      cutoff_gap = d$cutoff_gap
+    )
+  })
+  tab <- do.call(rbind, rows)
+  list(table = tab, directions = D,
+       distance = max(tab$distance), upper = max(tab$upper))
 }
 
 # ---------------------------------------------------------------------------

@@ -23,9 +23,14 @@
 #' @returns A [gmm_target] with `cf` set and no `log_density` or
 #'   `samples`.
 #' @family targets
-#' @seealso [from_cf()], [fit_proxymix()].
+#' @seealso [fit_proxymix()], [from_cf()], [from_cf_elliptical()],
+#'   [from_cf_sources()], [gmm_cf_distance()].
 #' @export
 #' @examples
+#' \dontshow{if (requireNamespace("RhpcBLASctl", quietly = TRUE)) {
+#'   blas_threads <- RhpcBLASctl::blas_get_num_procs()
+#'   RhpcBLASctl::blas_set_num_threads(1L)
+#' }}
 #' ## The sum of a Gamma(3) variable and independent N(0, 0.25) noise.
 #' tgt <- cf_target(
 #'   function(t) (1 - 1i * t[, 1])^(-3) * exp(-0.125 * t[, 1]^2),
@@ -34,6 +39,10 @@
 #' tgt
 #' fit <- fit_proxymix(tgt, N = 3L, n_freq = 1024L, seed = 1L)
 #' gmm_fit_quality(fit)$cf_upper
+#' \dontshow{if (exists("blas_threads")) {
+#'   RhpcBLASctl::blas_set_num_threads(blas_threads)
+#'   rm(blas_threads)
+#' }}
 cf_target <- function(cf, n_dim, name = "cf_target", metadata = list()) {
   if (!is.function(cf)) {
     cli::cli_abort("{.arg cf} must be a function of a matrix of frequencies.")

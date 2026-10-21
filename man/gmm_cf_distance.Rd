@@ -84,7 +84,8 @@ Gil-Pelaez, J. (1951). Note on the inversion theorem. \emph{Biometrika},
 38(3--4), 481--482. \doi{10.1093/biomet/38.3-4.481}
 }
 \seealso{
-\code{\link[=from_cf]{from_cf()}}, \code{\link[=gmm_cf]{gmm_cf()}}.
+\code{\link[=from_cf]{from_cf()}}, \code{\link[=from_cf_elliptical]{from_cf_elliptical()}}, \code{\link[=from_cf_sources]{from_cf_sources()}},
+\code{\link[=gmm_cf]{gmm_cf()}}.
 
 Other diagnostics:
 \code{\link[=bic_aic]{bic_aic()}},

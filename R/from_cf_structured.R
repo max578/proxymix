@@ -204,17 +204,28 @@
 #' Lawson, C. L. and Hanson, R. J. (1974). *Solving Least Squares
 #' Problems*. Prentice-Hall.
 #' @family fitting
-#' @seealso [from_cf()], [from_cf_sources()], [gmm_cf_distance()].
+#' @seealso [cf_target()], [from_cf()], [from_cf_sources()],
+#'   [gmm_cf_distance()].
 #' @export
 #' @examples
+#' \dontshow{if (requireNamespace("RhpcBLASctl", quietly = TRUE)) {
+#'   blas_threads <- RhpcBLASctl::blas_get_num_procs()
+#'   RhpcBLASctl::blas_set_num_threads(1L)
+#' }}
 #' ## A bivariate Cauchy distribution.
 #' S <- matrix(c(2, 0.5, 0.5, 1), 2L)
 #' cf <- function(t) exp(1i * t[, 1] - sqrt(rowSums((t %*% S) * t)))
 #' fit <- from_cf_elliptical(cf, n_dim = 2L, seed = 1L)
+#' ## the print shows the Kolmogorov bounds along eight directions
+#' fit
 #' fit@diagnostics$shape_ratio
 #' ## the 0.99 quantile of the first coordinate against the exact value
 #' qgmm(0.99, gmm_marginalise(fit, 1L))
 #' 1 + sqrt(2) * qcauchy(0.99)
+#' \dontshow{if (exists("blas_threads")) {
+#'   RhpcBLASctl::blas_set_num_threads(blas_threads)
+#'   rm(blas_threads)
+#' }}
 from_cf_elliptical <- function(
   cf,
   n_dim,
@@ -512,8 +523,10 @@ from_cf_elliptical <- function(
 #' @param cf,n_dim As in [from_cf()]. `n_dim` must be at least 2.
 #' @param N Number of mixture components for each source.
 #' @param n_freq,bandwidths,max_iter,bracket Passed to [from_cf()] for each
-#'   source. With `bracket = TRUE` each source fit carries its Kolmogorov
-#'   bounds.
+#'   source. With `bracket = TRUE` each source fit carries Kolmogorov
+#'   bounds for its coordinate of \eqn{Z = \hat A^{-1} X}, not for \eqn{X}.
+#'   For a direction of \eqn{X}, apply [gmm_cf_distance()] to the result of
+#'   `project()`.
 #' @param seed Optional integer seed. When supplied, the random number
 #'   generator state is restored on exit.
 #'
@@ -558,9 +571,14 @@ from_cf_elliptical <- function(
 #' characteristic function. *Signal Processing*, 80(5), 897--902.
 #' \doi{10.1016/S0165-1684(00)00062-1}
 #' @family fitting
-#' @seealso [from_cf()], [from_cf_elliptical()].
+#' @seealso [cf_target()], [from_cf()], [from_cf_elliptical()],
+#'   [gmm_cf_distance()].
 #' @export
 #' @examples
+#' \dontshow{if (requireNamespace("RhpcBLASctl", quietly = TRUE)) {
+#'   blas_threads <- RhpcBLASctl::blas_get_num_procs()
+#'   RhpcBLASctl::blas_set_num_threads(1L)
+#' }}
 #' ## Two independent Gamma(3) sources, mixed, with N(0, 0.25 I) noise.
 #' A <- matrix(c(0.7, 0.3, 0, -0.7), 2L)
 #' cf <- function(t) {
@@ -572,6 +590,10 @@ from_cf_elliptical <- function(
 #' fit$diagnostics$off_diagonal
 #' first <- fit$project(c(1, 0))
 #' gmm_cf_distance(first, function(s) cf(cbind(s[, 1], 0)))$distance
+#' \dontshow{if (exists("blas_threads")) {
+#'   RhpcBLASctl::blas_set_num_threads(blas_threads)
+#'   rm(blas_threads)
+#' }}
 from_cf_sources <- function(
   cf,
   n_dim,

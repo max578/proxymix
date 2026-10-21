@@ -21,7 +21,9 @@ A complex vector with one value for each row of \code{t}.
 Evaluates
 \eqn{\varphi_g(t) = \sum_k w_k \exp(i t^\top \mu_k -
 t^\top \Sigma_k t / 2)}
-at each row of \code{t}.
+at each row of \code{t}. Here \code{cf} stands for characteristic function; in
+\code{\link[=gmm_cf_mean]{gmm_cf_mean()}}, \code{\link[=gmm_cf_variance]{gmm_cf_variance()}} and \code{\link[=gmm_cf_tail_prob]{gmm_cf_tail_prob()}} it stands
+for counterfactual.
 }
 \examples{
 g <- gmm(
@@ -32,7 +34,8 @@ g <- gmm(
 gmm_cf(g, rbind(c(0, 0), c(0.5, -1)))
 }
 \seealso{
-\code{\link[=from_cf]{from_cf()}}, \code{\link[=gmm_cf_distance]{gmm_cf_distance()}}.
+\code{\link[=from_cf]{from_cf()}}, \code{\link[=from_cf_elliptical]{from_cf_elliptical()}}, \code{\link[=from_cf_sources]{from_cf_sources()}},
+\code{\link[=gmm_cf_distance]{gmm_cf_distance()}}.
 
 Other ops:
 \code{\link[=dgmm]{dgmm()}},

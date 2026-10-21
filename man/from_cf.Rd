@@ -132,11 +132,20 @@ lattice distributions and distributions with a point mass.
 }
 
 \examples{
+\dontshow{if (requireNamespace("RhpcBLASctl", quietly = TRUE)) {
+  blas_threads <- RhpcBLASctl::blas_get_num_procs()
+  RhpcBLASctl::blas_set_num_threads(1L)
+}}
 ## The sum of a Gamma(3) variable and independent N(0, 0.25) noise.
 cf <- function(t) (1 - 1i * t[, 1])^(-3) * exp(-0.125 * t[, 1]^2)
 fit <- from_cf(cf, n_dim = 1L, N = 3L, n_freq = 1024L, seed = 1L)
-fit@diagnostics$heldout_rms
-gmm_cf_distance(fit, cf)$distance
+## the print shows the held-out error and the Kolmogorov bounds
+fit
+fit@diagnostics$bracket
+\dontshow{if (exists("blas_threads")) {
+  RhpcBLASctl::blas_set_num_threads(blas_threads)
+  rm(blas_threads)
+}}
 }
 \references{
 Brück, F. (2025). Generative neural networks for characteristic
@@ -144,7 +153,9 @@ functions. \emph{Journal of Computational and Graphical Statistics}, 34(4),
 1456--1465. \doi{10.1080/10618600.2025.2455135}
 }
 \seealso{
-\code{\link[=gmm_cf]{gmm_cf()}}, \code{\link[=gmm_cf_distance]{gmm_cf_distance()}}.
+\code{\link[=cf_target]{cf_target()}} and \code{\link[=fit_proxymix]{fit_proxymix()}} for the same fit through the
+unified verb; \code{\link[=from_cf_elliptical]{from_cf_elliptical()}} and \code{\link[=from_cf_sources]{from_cf_sources()}} for
+structured targets; \code{\link[=gmm_cf]{gmm_cf()}}, \code{\link[=gmm_cf_distance]{gmm_cf_distance()}}.
 
 Other fitting:
 \code{\link[=fit_em_samples]{fit_em_samples()}},

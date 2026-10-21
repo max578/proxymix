@@ -71,21 +71,32 @@ is given if either value is outside 0.9 to 1.1, or if the imaginary part
 of the centred characteristic function exceeds 0.001 of its modulus.
 }
 \examples{
+\dontshow{if (requireNamespace("RhpcBLASctl", quietly = TRUE)) {
+  blas_threads <- RhpcBLASctl::blas_get_num_procs()
+  RhpcBLASctl::blas_set_num_threads(1L)
+}}
 ## A bivariate Cauchy distribution.
 S <- matrix(c(2, 0.5, 0.5, 1), 2L)
 cf <- function(t) exp(1i * t[, 1] - sqrt(rowSums((t \%*\% S) * t)))
 fit <- from_cf_elliptical(cf, n_dim = 2L, seed = 1L)
+## the print shows the Kolmogorov bounds along eight directions
+fit
 fit@diagnostics$shape_ratio
 ## the 0.99 quantile of the first coordinate against the exact value
 qgmm(0.99, gmm_marginalise(fit, 1L))
 1 + sqrt(2) * qcauchy(0.99)
+\dontshow{if (exists("blas_threads")) {
+  RhpcBLASctl::blas_set_num_threads(blas_threads)
+  rm(blas_threads)
+}}
 }
 \references{
 Lawson, C. L. and Hanson, R. J. (1974). \emph{Solving Least Squares
 Problems}. Prentice-Hall.
 }
 \seealso{
-\code{\link[=from_cf]{from_cf()}}, \code{\link[=from_cf_sources]{from_cf_sources()}}, \code{\link[=gmm_cf_distance]{gmm_cf_distance()}}.
+\code{\link[=cf_target]{cf_target()}}, \code{\link[=from_cf]{from_cf()}}, \code{\link[=from_cf_sources]{from_cf_sources()}},
+\code{\link[=gmm_cf_distance]{gmm_cf_distance()}}.
 
 Other fitting:
 \code{\link[=fit_em_samples]{fit_em_samples()}},

@@ -33,8 +33,10 @@ regime \code{"kld"}. A fit to a characteristic function (regime \code{"cf"})
 adds \code{cf_heldout_rms}, \code{cf_distance} and \code{cf_upper}: the held-out
 root mean square error of the characteristic function and the largest
 lower and upper bounds for the Kolmogorov distance over the checked
-directions (see \code{\link[=from_cf]{from_cf()}}). A composite certificate carries the
-largest \code{cf_upper} of its operands.
+directions (see \code{\link[=from_cf]{from_cf()}}). A mixture made from such a fit by an
+operator carries the fit's \code{cf_upper}, or the largest over several fits
+for a composite. That value need not bound the new mixture;
+\code{\link[=gmm_cf_distance]{gmm_cf_distance()}} gives bounds for it directly.
 }
 \description{
 Returns the fit-quality certificate: a small list recording the fitting

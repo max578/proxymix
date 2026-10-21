@@ -16,18 +16,18 @@ coverage](https://codecov.io/gh/max578/proxymix/graph/badge.svg)](https://app.co
 [![pkgdown](https://github.com/max578/proxymix/actions/workflows/pkgdown.yaml/badge.svg)](https://max578.github.io/proxymix/)
 <!-- badges: end -->
 
-`proxymix` fits multivariate Gaussian-mixture proxies that are
-**Kullback–Leibler optimal** to user-supplied target densities on
-$\mathbb{R}^p$. Three regimes from van der Hoek and Elliott (2024), and
-a fourth for a distribution known only through its characteristic
-function, are unified under one verb:
+`proxymix` fits multivariate Gaussian-mixture proxies to target
+distributions on $\mathbb{R}^p$. Three regimes from van der Hoek and
+Elliott (2024) fit a density or samples and are **Kullback–Leibler
+optimal**. A fourth fits a distribution known only through its
+characteristic function. All four are unified under one verb:
 
 | Regime | When it applies | Method |
 |----|----|----|
 | **(i) moment** | $N = 1$ component | Closed-form moment matching |
 | **(ii) sample** | i.i.d. samples from the target are available | Classical EM |
 | **(iii) kld** | target density `f(x)` can be evaluated but **not** (cheaply) sampled | **KLD-EM with importance sampling** |
-| **(iv) cf** | only the characteristic function of the target is known | Least squares on the characteristic function, with Kolmogorov bounds |
+| **(iv) cf** | only the characteristic function of the target is known | Least squares on the characteristic function, with bounds on the Kolmogorov distance |
 
 Regime (iii) is the reason the package exists. The sample-based mixture
 packages (`mclust`, `mixtools`, `flexmix`) all assume i.i.d. draws from
@@ -125,6 +125,36 @@ gmm_conditionalise(fit, given = c(NA, 0.5))
 #>   [3] w = 0.0694, |mu| = 1.4188, tr(Sigma) = 0.1199
 ```
 
+## A distribution known only through its characteristic function
+
+``` r
+## The symmetric stable law of index 1.5 has no closed-form density
+## and infinite variance, but its characteristic function is exp(-|t|^1.5).
+cf_stable <- function(t) exp(-abs(t[, 1])^1.5)
+fit_stable <- from_cf_elliptical(cf_stable, n_dim = 1L, seed = 1L)
+fit_stable
+#> <gmm_fit>: regime = "cf", K = 10, p = 1
+#>   target     : <none>
+#>   iterations : NA
+#>   converged  : TRUE
+#>   cf held-out RMS error : 0.000557
+#>   Kolmogorov distance   : at least 0.000245, at most 0.00509 (1 direction)
+#>   [1] w = 0.5595, |mu| = 0.0000, tr(Sigma) = 1.3211
+#>   [2] w = 0.2645, |mu| = 0.0000, tr(Sigma) = 3.7563
+#>   [3] w = 0.0618, |mu| = 0.0000, tr(Sigma) = 10.6806
+#>   [4] w = 0.0500, |mu| = 0.0000, tr(Sigma) = 30.3689
+#>   [5] w = 0.0478, |mu| = 0.0000, tr(Sigma) = 0.4646
+#>   ... 5 more components
+
+## Quantiles, tail probabilities and draws come from the mixture.
+qgmm(c(0.95, 0.99), fit_stable)
+#> [1] 3.048049 7.752634
+```
+
+The printed bounds say how far the distribution function of the mixture
+can be from that of the stable law. The vignette on characteristic
+functions checks them against an exact computation.
+
 ## The unified fitting verb
 
     fit_proxymix(
@@ -168,7 +198,7 @@ and returns a closed-form mixture over its low regions, so a multimodal
 | i.i.d. samples | a mixture fit | `gmm_target_from_samples()` then `fit_proxymix()` |
 | an objective function | a map of its optima | `from_objective()`, `gmm_modes()` |
 | a kernel density estimate | a small closed-form surrogate | `from_kde()` |
-| a characteristic function only (a stable law, a sum of independent variables) | a mixture with Kolmogorov bounds | `cf_target()` then `fit_proxymix()`, or `from_cf()`, `from_cf_elliptical()`, `from_cf_sources()` |
+| a characteristic function only (a stable law, a sum of independent variables) | a mixture with bounds on the Kolmogorov distance | `cf_target()` then `fit_proxymix()`, or `from_cf()`, `from_cf_elliptical()`, `from_cf_sources()` |
 | a fitted mixture | marginals, conditionals, updates | `gmm_marginalise()`, `gmm_conditionalise()`, `gmm_observe()`, `gmm_affine()` |
 | data with holes | multiple imputation | `gmm_impute()` with `mar()` / `mnar()` / `censored()` |
 | a time series + state-space model | filtering / stability testing | `gmm_filter()`, `gmm_eos_test()` |
@@ -181,7 +211,7 @@ and returns a closed-form mixture over its low regions, so a multimodal
 
 ## Vignettes
 
-The package ships with twelve vignettes:
+The package ships with thirteen vignettes:
 
 - **`quickstart`** – one-page tour.
 - **`posterior_proxy`** – the flagship workflow: a real unnormalised
@@ -191,6 +221,10 @@ The package ships with twelve vignettes:
   targets, including the agreement of (i) and (iii) at $N = 1$.
 - **`density_shapes`** – the regime-(iii) demonstration: banana, donut,
   three-mixture targets fit by importance-sampled KLD-EM.
+- **`cf_targets`** – regime (iv): a stable law, a sum of independent
+  variables, two-dimensional targets and a filtering step, each fitted
+  from its characteristic function and checked against an independent
+  computation.
 - **`operator_calculus`** – closed-form pushforward, Bayesian update,
   aggregation and conditioning on a fitted mixture.
 - **`from_kde`** – compressing a kernel density estimate into a

@@ -719,14 +719,25 @@
 #' functions. *Journal of Computational and Graphical Statistics*, 34(4),
 #' 1456--1465. \doi{10.1080/10618600.2025.2455135}
 #' @family fitting
-#' @seealso [gmm_cf()], [gmm_cf_distance()].
+#' @seealso [cf_target()] and [fit_proxymix()] for the same fit through the
+#'   unified verb; [from_cf_elliptical()] and [from_cf_sources()] for
+#'   structured targets; [gmm_cf()], [gmm_cf_distance()].
 #' @export
 #' @examples
+#' \dontshow{if (requireNamespace("RhpcBLASctl", quietly = TRUE)) {
+#'   blas_threads <- RhpcBLASctl::blas_get_num_procs()
+#'   RhpcBLASctl::blas_set_num_threads(1L)
+#' }}
 #' ## The sum of a Gamma(3) variable and independent N(0, 0.25) noise.
 #' cf <- function(t) (1 - 1i * t[, 1])^(-3) * exp(-0.125 * t[, 1]^2)
 #' fit <- from_cf(cf, n_dim = 1L, N = 3L, n_freq = 1024L, seed = 1L)
-#' fit@diagnostics$heldout_rms
-#' gmm_cf_distance(fit, cf)$distance
+#' ## the print shows the held-out error and the Kolmogorov bounds
+#' fit
+#' fit@diagnostics$bracket
+#' \dontshow{if (exists("blas_threads")) {
+#'   RhpcBLASctl::blas_set_num_threads(blas_threads)
+#'   rm(blas_threads)
+#' }}
 from_cf <- function(
   cf,
   n_dim,
@@ -935,7 +946,9 @@ from_cf <- function(
 #' Evaluates
 #' \eqn{\varphi_g(t) = \sum_k w_k \exp(i t^\top \mu_k -
 #' t^\top \Sigma_k t / 2)}
-#' at each row of `t`.
+#' at each row of `t`. Here `cf` stands for characteristic function; in
+#' [gmm_cf_mean()], [gmm_cf_variance()] and [gmm_cf_tail_prob()] it stands
+#' for counterfactual.
 #'
 #' @param g A [gmm] or [gmm_fit].
 #' @param t Numeric matrix of frequencies with one frequency per row and as
@@ -945,7 +958,8 @@ from_cf <- function(
 #'
 #' @returns A complex vector with one value for each row of `t`.
 #' @family ops
-#' @seealso [from_cf()], [gmm_cf_distance()].
+#' @seealso [from_cf()], [from_cf_elliptical()], [from_cf_sources()],
+#'   [gmm_cf_distance()].
 #' @export
 #' @examples
 #' g <- gmm(
@@ -1040,7 +1054,8 @@ gmm_cf <- function(g, t) {
 #' Gil-Pelaez, J. (1951). Note on the inversion theorem. *Biometrika*,
 #' 38(3--4), 481--482. \doi{10.1093/biomet/38.3-4.481}
 #' @family diagnostics
-#' @seealso [from_cf()], [gmm_cf()].
+#' @seealso [from_cf()], [from_cf_elliptical()], [from_cf_sources()],
+#'   [gmm_cf()].
 #' @export
 #' @examples
 #' ## A normal target against a normal with a shifted mean.

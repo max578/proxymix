@@ -2,7 +2,7 @@
 % Please edit documentation in R/fit_proxymix.R
 \name{fit_proxymix}
 \alias{fit_proxymix}
-\title{Fit a Gaussian-mixture proxy to a target density}
+\title{Fit a Gaussian-mixture proxy to a target distribution}
 \usage{
 fit_proxymix(
   target,
@@ -63,5 +63,13 @@ fit_proxymix(tgt_s, N = 2L, max_iter = 25L)
 ## explicit "kld" on a log-density-only target.
 fit_proxymix(banana_target(), N = 3L, regime = "kld",
              is_size = 1000L, max_iter = 20L, seed = 1L)
+
+## auto on a target known only through its characteristic function:
+## a Gamma(3) variable plus N(0, 0.25) noise -> "cf".
+tgt_cf <- cf_target(
+  function(t) (1 - 1i * t[, 1])^(-3) * exp(-0.125 * t[, 1]^2),
+  n_dim = 1L
+)
+fit_proxymix(tgt_cf, N = 3L, n_freq = 1024L, seed = 1L)
 }
 \concept{interface}

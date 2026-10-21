@@ -20,4 +20,8 @@ defects (see NEWS.md).
 * The thirteen vignettes build in about 32 s. Longer versions that compare
   the package with other methods are published only on the package website
   and are excluded from the build.
+* The tests, the characteristic-function examples and their vignette use
+  one BLAS thread (through RhpcBLASctl, now suggested), and the tests run on
+  at most two workers. On a Linux check with multithreaded OpenBLAS the
+  tests had used CPU time 2.6 times elapsed time.
 * No package on CRAN depends on, imports or suggests proxymix.

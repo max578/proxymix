@@ -80,7 +80,7 @@ This vignette works through one example from start to finish.
 - `gmm_target()` describes the distribution you want to approximate, called
   the target. You supply the number of variables and a function that returns the log of the density. Logs are used because density values can be extremely small. `banana_target()` is a ready-made target in two variables,
   shaped like a curved banana.
-- `fit_proxymix()` fits the proxy. It chooses one of three fitting methods
+- `fit_proxymix()` fits the proxy. It chooses one of four fitting methods
   from what you supply.
 - `proposal_mvt()` sets up a wide distribution that is easy to sample, from which the fitting method draws its trial points.
 - `gmm_fit_quality()` returns a short report on the quality of the fit, called its certificate.
@@ -93,24 +93,29 @@ This vignette works through one example from start to finish.
 
 ### Which fitting method applies
 
-The package has three ways of fitting the bell curves, described by van der
-Hoek and Elliott (2024). `fit_proxymix()` picks one according to what you supply.
+The package has four ways of fitting the bell curves. The first three are
+described by van der Hoek and Elliott (2024), and the fourth is for a
+distribution known only through its characteristic function. `fit_proxymix()`
+picks one according to what you supply.
 
 ```{r regime-table, echo = FALSE}
 regime_tbl <- data.frame(
   have = c(
     "Data, and you want one bell curve",
     "Data, and you want several bell curves",
-    "Only the formula, no data"
+    "Only the formula, no data",
+    "Only the characteristic function, as for a stable law"
   ),
   does = c(
     "Fits one bell curve with the same centre and spread as the data",
     paste("Moves and reshapes the bell curves, step by step, until together",
           "they match the data"),
     paste("Draws trial points, weights each one by the formula, then fits",
-          "the bell curves to the weighted points")
+          "the bell curves to the weighted points"),
+    paste("Matches the characteristic function of the bell curves to the",
+          "target's at many frequencies")
   ),
-  setting = c("`\"moment\"`", "`\"sample\"`", "`\"kld\"`"),
+  setting = c("`\"moment\"`", "`\"sample\"`", "`\"kld\"`", "`\"cf\"`"),
   stringsAsFactors = FALSE
 )
 knitr::kable(
@@ -530,6 +535,9 @@ exact operations shown above.
 
 *Compressing a Bayesian posterior you can evaluate but not sample* applies
 this workflow to the result of a Bayesian analysis.
+
+*Fitting a mixture to a characteristic function* covers the fourth method,
+for stable laws, sums of independent variables and filtering.
 
 ## References
 

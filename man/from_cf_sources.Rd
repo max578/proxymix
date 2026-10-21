@@ -21,8 +21,10 @@ from_cf_sources(
 \item{N}{Number of mixture components for each source.}
 
 \item{n_freq, bandwidths, max_iter, bracket}{Passed to \code{\link[=from_cf]{from_cf()}} for each
-source. With \code{bracket = TRUE} each source fit carries its Kolmogorov
-bounds.}
+source. With \code{bracket = TRUE} each source fit carries Kolmogorov
+bounds for its coordinate of \eqn{Z = \hat A^{-1} X}, not for \eqn{X}.
+For a direction of \eqn{X}, apply \code{\link[=gmm_cf_distance]{gmm_cf_distance()}} to the result of
+\code{project()}.}
 
 \item{seed}{Optional integer seed. When supplied, the random number
 generator state is restored on exit.}
@@ -96,6 +98,10 @@ The target must have a finite, positive definite covariance. A warning of class
 frequency. Either is the sign that the target is not of the form above.
 }
 \examples{
+\dontshow{if (requireNamespace("RhpcBLASctl", quietly = TRUE)) {
+  blas_threads <- RhpcBLASctl::blas_get_num_procs()
+  RhpcBLASctl::blas_set_num_threads(1L)
+}}
 ## Two independent Gamma(3) sources, mixed, with N(0, 0.25 I) noise.
 A <- matrix(c(0.7, 0.3, 0, -0.7), 2L)
 cf <- function(t) {
@@ -107,6 +113,10 @@ fit <- from_cf_sources(cf, n_dim = 2L, N = 3L, n_freq = 1024L, seed = 1L)
 fit$diagnostics$off_diagonal
 first <- fit$project(c(1, 0))
 gmm_cf_distance(first, function(s) cf(cbind(s[, 1], 0)))$distance
+\dontshow{if (exists("blas_threads")) {
+  RhpcBLASctl::blas_set_num_threads(blas_threads)
+  rm(blas_threads)
+}}
 }
 \references{
 Attias, H. (1999). Independent factor analysis. \emph{Neural Computation},
@@ -121,7 +131,8 @@ characteristic function. \emph{Signal Processing}, 80(5), 897--902.
 \doi{10.1016/S0165-1684(00)00062-1}
 }
 \seealso{
-\code{\link[=from_cf]{from_cf()}}, \code{\link[=from_cf_elliptical]{from_cf_elliptical()}}.
+\code{\link[=cf_target]{cf_target()}}, \code{\link[=from_cf]{from_cf()}}, \code{\link[=from_cf_elliptical]{from_cf_elliptical()}},
+\code{\link[=gmm_cf_distance]{gmm_cf_distance()}}.
 
 Other fitting:
 \code{\link[=fit_em_samples]{fit_em_samples()}},

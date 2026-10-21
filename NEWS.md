@@ -2,42 +2,43 @@
 
 ### New features
 
-* `fit_proxymix()` has a fourth regime, `"cf"`, for a target known only
-  through its characteristic function. `cf_target()` builds such a target
-  after checking the function, and `regime = "auto"` picks `"cf"` when the
-  target has a characteristic function and neither samples nor a
-  log-density. The other regimes choose as before.
-* Fits to a characteristic function (`from_cf()`, `from_cf_elliptical()`, and
-  each source of `from_cf_sources()`) now carry lower and upper bounds for the
-  Kolmogorov distance to the target along eight directions, reported by
-  `print()`, `glance()` and `gmm_fit_quality()` (`cf_distance`, `cf_upper`).
-  `bracket = FALSE` skips them. The bounds do not change the fit or the state
-  of the random number generator.
-* `fit_mppca_samples()` fits a mixture of probabilistic principal component
-  analysers (Tipping and Bishop, 1999): each component covariance is a rank-`q`
-  term plus equal noise in every direction. It can be fitted when a component
-  holds fewer points than there are variables, where a full-covariance fit is
-  singular, and returns an ordinary fitted mixture.
 * `from_cf()` fits a Gaussian mixture to a distribution given by its
   characteristic function, for targets with no usable density such as stable
-  laws. The fit reports its error on frequencies
-  it did not use and warns when the target has heavy tails.
-* `gmm_cf()` evaluates the characteristic function of a mixture.
-* `gmm_cf_distance()` returns a lower and an upper bound for the Kolmogorov
-  distance between a characteristic-function target and a mixture along a
-  direction, computed by numerical inversion and without sampling. The upper
-  bound needs a target whose projected characteristic function is integrable.
+  laws and sums of independent variables. The fit reports its error on
+  frequencies it did not use and warns when the target has heavy tails.
 * `from_cf_elliptical()` fits normal components with a common centre and
   proportional covariances to an elliptical characteristic function, such as
   a multivariate Cauchy or an elliptical stable law. It needs no starting
-  value and matches the distribution out to about its 0.999 quantile, even
-  with heavy tails.
+  value and reaches further into heavy tails than `from_cf()`: for the
+  bivariate Cauchy of its examples, the 0.99 quantiles of both coordinates
+  are within 0.02 of the exact values.
 * `from_cf_sources()` fits a linear mix of independent sources, with or
   without Gaussian noise. It returns a list with functions for the
   characteristic function, sampling and one-dimensional projections, not a
   `gmm`. The separated coordinates are tested for pairwise independence with
   the criterion of Eriksson and Koivunen (2003), reported as
   `diagnostics$dependence`.
+* `fit_proxymix()` has a fourth regime, `"cf"`, for a target known only
+  through its characteristic function. `cf_target()` builds such a target
+  after checking the function, and `regime = "auto"` picks `"cf"` when the
+  target has a characteristic function and neither samples nor a
+  log-density. The other regimes choose as before.
+* Fits to a characteristic function carry lower and upper bounds for the
+  Kolmogorov distance to the target, computed by numerical inversion without
+  sampling, along eight one-dimensional projections (one in one dimension).
+  For `from_cf_sources()` they are for each separated coordinate. `print()`,
+  `glance()` and `gmm_fit_quality()` report them (`cf_distance`,
+  `cf_upper`). `bracket = FALSE` skips them. The bounds do not change the fit
+  or the state of the random number generator.
+* `gmm_cf_distance()` returns the same bounds between a characteristic-function
+  target and any mixture along a chosen direction. The upper bound needs a
+  target whose projected characteristic function is integrable.
+* `gmm_cf()` evaluates the characteristic function of a mixture.
+* `fit_mppca_samples()` fits a mixture of probabilistic principal component
+  analysers (Tipping and Bishop, 1999): each component covariance is a rank-`q`
+  term plus equal noise in every direction. It can be fitted when a component
+  holds fewer points than there are variables, where a full-covariance fit is
+  singular, and returns an ordinary fitted mixture.
 
 ### Behaviour changes
 
@@ -95,6 +96,10 @@
 
 ### Documentation and CI
 
+* New vignette, *Fitting a mixture to a characteristic function*: a stable
+  law with no closed-form density, a sum of independent variables, two
+  targets in two dimensions and a filtering step, each checked against an
+  independent computation. The README has a short example.
 * The package has a logo.
 * README lists related packages and carries R-CMD-check, coverage and
   r-universe badges.

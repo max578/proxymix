@@ -35,6 +35,10 @@ to one half along each coordinate axis between frequencies \code{1e-4} and
 number generator is left unchanged.
 }
 \examples{
+\dontshow{if (requireNamespace("RhpcBLASctl", quietly = TRUE)) {
+  blas_threads <- RhpcBLASctl::blas_get_num_procs()
+  RhpcBLASctl::blas_set_num_threads(1L)
+}}
 ## The sum of a Gamma(3) variable and independent N(0, 0.25) noise.
 tgt <- cf_target(
   function(t) (1 - 1i * t[, 1])^(-3) * exp(-0.125 * t[, 1]^2),
@@ -43,9 +47,14 @@ tgt <- cf_target(
 tgt
 fit <- fit_proxymix(tgt, N = 3L, n_freq = 1024L, seed = 1L)
 gmm_fit_quality(fit)$cf_upper
+\dontshow{if (exists("blas_threads")) {
+  RhpcBLASctl::blas_set_num_threads(blas_threads)
+  rm(blas_threads)
+}}
 }
 \seealso{
-\code{\link[=from_cf]{from_cf()}}, \code{\link[=fit_proxymix]{fit_proxymix()}}.
+\code{\link[=fit_proxymix]{fit_proxymix()}}, \code{\link[=from_cf]{from_cf()}}, \code{\link[=from_cf_elliptical]{from_cf_elliptical()}},
+\code{\link[=from_cf_sources]{from_cf_sources()}}, \code{\link[=gmm_cf_distance]{gmm_cf_distance()}}.
 
 Other targets:
 \code{\link[=banana_target]{banana_target()}},

@@ -16,6 +16,11 @@ knitr::opts_chunk$set(
   dpi = 150,
   out.width = "100%"
 )
+## One BLAS thread, so that the check of this vignette does not take more CPU
+## time than elapsed time under a multithreaded BLAS.
+if (requireNamespace("RhpcBLASctl", quietly = TRUE)) {
+  RhpcBLASctl::blas_set_num_threads(1L)
+}
 ```
 
 ```{r library}
@@ -44,14 +49,16 @@ log-density do not apply directly.
 `proxymix` fits a Gaussian mixture to the characteristic function itself. The
 fit minimises the mean squared difference between the target's
 characteristic function and the mixture's over a fixed set of frequencies.
-The result is an ordinary mixture, so its density, distribution function,
-quantiles, marginals and conditionals are then available in closed form.
+The result is an ordinary mixture: its density, distribution function,
+marginals and conditionals are in closed form, and its quantiles and draws
+come directly from it.
 
 ## Package capabilities
 
-* `cf_target()` builds a target from a characteristic function and checks it:
-  value 1 at zero, modulus at most 1, and $\varphi(-t)$ equal to the complex
-  conjugate of $\varphi(t)$.
+* `cf_target()` builds a target from a characteristic function and checks
+  three conditions every characteristic function meets: value 1 at zero,
+  modulus at most 1, and $\varphi(-t)$ equal to the complex conjugate of
+  $\varphi(t)$.
 * `fit_proxymix()` fits such a target with regime `"cf"`, which it picks by
   itself when the target has a characteristic function and neither samples
   nor a log-density. `from_cf()` is the same fit called directly.
@@ -60,8 +67,10 @@ quantiles, marginals and conditionals are then available in closed form.
   `from_cf_sources()` fits a linear mix of independent sources.
 * Every fit carries lower and upper bounds for the Kolmogorov distance
   between the target and the mixture, the largest gap between their
-  distribution functions, along eight directions (one in one dimension).
-  `gmm_cf_distance()` computes the same bounds along any direction.
+  distribution functions. In more than one dimension the bounds are for
+  eight one-dimensional projections: the coordinate axes, made up to eight
+  with random directions. `gmm_cf_distance()` computes them along any
+  direction.
 
 ## A sum of independent variables
 
@@ -98,69 +107,224 @@ cdf_sum <- function(x) {
 x <- seq(-1, 15, length.out = 801L)
 exact_gap <- max(abs(cdf_sum(x) - pgmm(x, fit_sum)))
 q_sum <- gmm_fit_quality(fit_sum)
-c(lower = q_sum$cf_distance, exact = exact_gap, upper = q_sum$cf_upper)
+c(lower = q_sum$cf_distance, `fine grid` = exact_gap, upper = q_sum$cf_upper)
 ```
 
-The exact gap, `r fixed(exact_gap, 4)`, lies between the two bounds. The
-lower bound is the largest gap found on a grid of 201 points between the
-mixture's 0.005 and 0.995 quantiles. The upper bound also covers the gaps
-between grid points and outside the grid, and the probability 0.005 left
-outside the grid at each end is most of its excess over the lower bound.
+The largest gap on this fine grid, `r fixed(exact_gap, 4)`, lies between
+the two bounds. The lower bound is the largest gap the package finds on a
+grid of 201 points between the mixture's 0.005 and 0.995 quantiles. The
+upper bound adds what can happen between the grid points and outside the
+grid. With the default range the probability left outside the grid,
+0.005 at each end, sets a floor of about 0.005 under the upper bound. A
+wider range of probabilities tightens it:
 
-```{r sum-plot, fig.alt = "Distribution function of the Gamma plus uniform sum and of the four-component mixture fitted to its characteristic function. The two curves overlap."}
-plot(x, cdf_sum(x), type = "l", lwd = 3, col = "grey60",
-     xlab = "x", ylab = "P(X <= x)")
-lines(x, pgmm(x, fit_sum), lwd = 1.5, lty = 2)
-legend("bottomright", c("exact", "mixture, 4 components"),
-       lwd = c(3, 1.5), lty = c(1, 2), col = c("grey60", "black"),
+```{r sum-wide}
+wide <- gmm_cf_distance(fit_sum, cf_sum, probs = c(1e-4, 1 - 1e-4),
+                        n_grid = 801L)
+c(lower = wide$distance, upper = wide$upper)
+```
+
+The plot shows the difference between the two distribution functions,
+with the default lower bound dashed and the default upper bound dotted.
+
+```{r sum-plot, fig.alt = "Difference between the exact distribution function of the Gamma plus uniform sum and that of the four-component mixture, plotted against x. The difference reaches the dashed line at minus the lower bound near x = 0 and stays well inside the dotted lines at plus and minus the upper bound."}
+plot(x, cdf_sum(x) - pgmm(x, fit_sum), type = "l", lwd = 1.5,
+     ylim = c(-1, 1) * q_sum$cf_upper, xlab = "x",
+     ylab = "exact minus mixture distribution function")
+abline(h = c(-1, 1) * q_sum$cf_distance, lty = 2)
+abline(h = c(-1, 1) * q_sum$cf_upper, lty = 3)
+abline(h = 0, col = "grey60")
+legend("topright", c("lower bound", "upper bound"), lty = c(2, 3),
        bty = "n")
 ```
 
 ## A stable law
 
-The Cauchy distribution is the stable law of index 1, with characteristic
-function $\exp(-|t|)$. It is used here because its distribution function and
-quantiles are known exactly. A mixture of normals has finite variance and
-the Cauchy does not, so `from_cf()` warns that the fit can match the centre of
-the distribution but not its far tails.
+The symmetric stable law of index 1.5 has characteristic function
+$\exp(-|t|^{1.5})$. Its density has no closed form, and its variance is
+infinite: the tail probability $P(X > x)$ falls off like $x^{-1.5}$. A
+mixture of normals has light tails, so `from_cf()` warns that it can match
+the centre of the distribution but not its far tails.
 
-```{r cauchy-fit}
-cf_cauchy <- function(t) exp(-abs(t[, 1]))
-fit_cauchy <- from_cf(cf_cauchy, n_dim = 1L, N = 6L, n_freq = 2048L,
+```{r stable-fit}
+cf_stable <- function(t) exp(-abs(t[, 1])^1.5)
+fit_stable <- from_cf(cf_stable, n_dim = 1L, N = 6L, n_freq = 2048L,
                       seed = 1L)
 ```
 
-```{r cauchy-check}
-probs <- c(0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99)
-fit_ell <- from_cf_elliptical(cf_cauchy, n_dim = 1L, seed = 1L)
+Every symmetric stable law is a scale mixture of normals.
+`from_cf_elliptical()` uses this: it places normals with a common centre on
+a geometric grid of standard deviations, and finds their weights by
+non-negative least squares.
+
+```{r stable-elliptical}
+fit_ell <- from_cf_elliptical(cf_stable, n_dim = 1L, seed = 1L)
+fit_ell
+```
+
+The distribution function of a stable law can be written as a
+one-dimensional integral over a finite range (Nolan, 1997), which gives a
+check that uses neither the characteristic function nor the fit. The
+function below implements it for the symmetric case.
+
+```{r stable-exact}
+## symmetric stable law with characteristic function exp(-|t|^alpha),
+## for 1 < alpha <= 2
+pstable_sym <- function(x, alpha) {
+  r <- alpha / (alpha - 1)
+  v <- function(th) {
+    (cos(th) / sin(alpha * th))^r * cos((alpha - 1) * th) / cos(th)
+  }
+  vapply(x, function(z) {
+    if (z == 0) return(0.5)
+    upper_tail <- stats::integrate(function(th) exp(-abs(z)^r * v(th)),
+                                   0, pi / 2, rel.tol = 1e-10)$value / pi
+    if (z > 0) 1 - upper_tail else upper_tail
+  }, numeric(1))
+}
+probs <- c(0.5, 0.75, 0.95, 0.99, 0.999)
+exact_q <- vapply(probs, function(p) {
+  if (p == 0.5) return(0)
+  stats::uniroot(function(x) pstable_sym(x, 1.5) - p, c(0, 200),
+                 tol = 1e-10)$root
+}, numeric(1))
 quantiles <- rbind(
-  exact = stats::qcauchy(probs),
-  `from_cf, 6 components` = qgmm(probs, fit_cauchy),
-  `from_cf_elliptical` = qgmm(probs, fit_ell)
+  exact = exact_q,
+  `from_cf, 6 components` = qgmm(probs, fit_stable),
+  from_cf_elliptical = qgmm(probs, fit_ell)
 )
 colnames(quantiles) <- probs
 round(quantiles, 3)
 ```
 
-Between the 0.05 and 0.95 quantiles the general fit is close to the exact
-values. At 0.01 and 0.99 it falls short, as the warning said it would.
-`from_cf_elliptical()` uses the fact that every symmetric stable law is a
-scale mixture of normals: it places normals with a common centre and a
-geometric grid of `r length(fit_ell@weights)` standard deviations, and finds
-their weights by non-negative least squares. It reaches far further into the
-tails.
+Up to the 0.95 quantile both fits agree with the exact values to within
+0.005, and at 0.99 to within 0.04. At 0.999 the general fit falls short, as
+its warning said it would, and the scale mixture comes closer. The largest
+gap between the exact and fitted distribution functions on a fine grid lies
+between the bounds of each fit:
 
-```{r cauchy-bounds}
-x <- seq(-60, 60, length.out = 12001L)
-exact_cauchy <- max(abs(stats::pcauchy(x) - pgmm(x, fit_cauchy)))
-q_cauchy <- gmm_fit_quality(fit_cauchy)
-c(lower = q_cauchy$cf_distance, exact = exact_cauchy,
-  upper = q_cauchy$cf_upper)
+```{r stable-bounds}
+x <- seq(-60, 60, length.out = 4001L)
+exact_cdf <- pstable_sym(x, 1.5)
+bounds <- sapply(list(`from_cf` = fit_stable, from_cf_elliptical = fit_ell),
+                 function(fit) {
+  q <- gmm_fit_quality(fit)
+  c(lower = q$cf_distance, `fine grid` = max(abs(exact_cdf - pgmm(x, fit))),
+    upper = q$cf_upper)
+})
+signif(bounds, 3)
 ```
 
-The bounds again contain the exact Kolmogorov distance. They need the
-characteristic function of the target, projected on the direction checked,
-to be integrable, which holds for every stable law.
+A sampler also exists for stable laws (Chambers et al., 1976), which gives
+a second check, on the density. The left panel compares the mixture density
+with a histogram of exact draws. The right panel shows the upper tail on
+log scales. The scale mixture stays close to the exact tail up to
+$x = 100$, the edge of the plot, while the six-component fit drops away
+beyond about $x = 25$. Each mixture still has normal tails beyond its widest
+component.
+
+```{r stable-plot, fig.height = 3.6, fig.alt = "Left: the density of the scale-mixture fit drawn over a histogram of exact draws from the stable law of index 1.5; the curve follows the histogram. Right: upper tail probability of the stable law and of the two mixture fits on log scales; the scale mixture stays close to the stable tail up to x = 100, while the six-component fit drops below it beyond about x = 25."}
+set.seed(2)
+u <- stats::runif(1e5, -pi / 2, pi / 2)
+e <- stats::rexp(1e5)
+draws <- sin(1.5 * u) / cos(u)^(1 / 1.5) *
+  (cos(-0.5 * u) / e)^(-0.5 / 1.5)
+op <- par(mfrow = c(1, 2), mar = c(4, 4, 1.5, 1))
+## density over all draws, shown on (-8, 8)
+h <- hist(draws[abs(draws) < 8], breaks = seq(-8, 8, by = 0.2), plot = FALSE)
+h$density <- h$counts / (length(draws) * 0.2)
+plot(h, freq = FALSE, col = "grey80", border = NA, main = "", xlab = "x",
+     ylab = "density", ylim = c(0, 0.38))
+xs <- seq(-8, 8, length.out = 401L)
+lines(xs, dgmm(matrix(xs), fit_ell), lwd = 2)
+legend("topleft", c("exact draws", "from_cf_elliptical"),
+       fill = c("grey80", NA), border = NA, lwd = c(NA, 2), bty = "n",
+       cex = 0.8)
+xt <- exp(seq(log(0.5), log(100), length.out = 200L))
+## P(X > x) = P(X < -x) by symmetry, which avoids 1 - F(x) rounding to 0
+plot(xt, pstable_sym(-xt, 1.5), log = "xy", type = "l", lwd = 3,
+     col = "grey60", ylim = c(1e-8, 0.5), xlab = "x", ylab = "P(X > x)")
+lines(xt, pgmm(-xt, fit_ell), lwd = 1.5)
+lines(xt, pgmm(-xt, fit_stable), lwd = 1.5, lty = 2)
+legend("bottomleft", c("stable law", "from_cf_elliptical", "from_cf"),
+       lwd = c(3, 1.5, 1.5), lty = c(1, 1, 2),
+       col = c("grey60", "black", "black"), bty = "n")
+par(op)
+```
+
+## Two dimensions
+
+The bivariate Cauchy distribution with centre $(1, 0)$ and scale matrix
+$\Sigma$ has characteristic function
+$\exp(i t_1 - \sqrt{t^\top \Sigma t})$. It is elliptical, so
+`from_cf_elliptical()` applies, and each coordinate is a Cauchy variable,
+which gives exact quantiles to check against.
+
+```{r cauchy2}
+S <- matrix(c(2, 0.5, 0.5, 1), 2L)
+cf_cauchy2 <- function(t) exp(1i * t[, 1] - sqrt(rowSums((t %*% S) * t)))
+fit_c2 <- from_cf_elliptical(cf_cauchy2, n_dim = 2L, seed = 1L)
+fit_c2
+probs <- c(0.01, 0.05, 0.5, 0.95, 0.99)
+round(rbind(
+  `first, exact` = 1 + sqrt(S[1, 1]) * stats::qcauchy(probs),
+  `first, mixture` = qgmm(probs, gmm_marginalise(fit_c2, 1L)),
+  `second, exact` = sqrt(S[2, 2]) * stats::qcauchy(probs),
+  `second, mixture` = qgmm(probs, gmm_marginalise(fit_c2, 2L))
+), 3)
+```
+
+In two or more dimensions the bounds are computed along eight directions,
+so they describe those one-dimensional projections, not every direction.
+
+A second structure is a linear mix of independent sources,
+$X = A S + G$, with Gaussian noise $G$. Here the two sources follow a
+Gamma distribution with shape 3, and the noise has covariance
+$0.25 I$. `from_cf_sources()` estimates the mixing matrix from the
+characteristic function and fits each source in one dimension.
+
+```{r sources}
+A <- matrix(c(0.7, 0.3, 0, -0.7), 2L)
+cf_mix <- function(t) {
+  u <- t %*% A
+  (1 - 1i * u[, 1])^(-3) * (1 - 1i * u[, 2])^(-3) *
+    exp(-0.125 * rowSums(t^2))
+}
+fit_src <- from_cf_sources(cf_mix, n_dim = 2L, N = 3L, n_freq = 1024L,
+                           seed = 1L)
+fit_src
+```
+
+The bounds stored with each source refer to the separated coordinates
+$Z = \hat A^{-1} X$, not to $X$. With noise present, each coordinate of $Z$
+is a source plus part of the transformed noise, and the order, sign and
+scale of the coordinates are not identified. For a direction $a$,
+`project()` gives the mixture of $a^\top X$, and `gmm_cf_distance()` gives its bounds against the
+characteristic function of $a^\top X$, which is $\varphi(s a)$.
+
+```{r sources-project}
+a <- c(1, 1) / sqrt(2)
+along <- fit_src$project(a)
+bracket <- gmm_cf_distance(along, function(s) cf_mix(s %*% t(a)))
+c(lower = bracket$distance, upper = bracket$upper)
+```
+
+The target can be simulated here, so half a million exact draws of
+$a^\top X$ give one more check. Their largest distance from the mixture
+distribution function has a sampling error of about 0.0015.
+
+```{r sources-check}
+set.seed(3)
+n <- 5e5
+s_draws <- cbind(stats::rgamma(n, 3), stats::rgamma(n, 3))
+x_draws <- s_draws %*% t(A) + matrix(stats::rnorm(2 * n, sd = 0.5), n)
+y <- sort(as.vector(x_draws %*% a))
+p_mix <- pgmm(y, along)
+max(abs(p_mix - seq_len(n) / n), abs(p_mix - (seq_len(n) - 1) / n))
+```
+
+The distance from the draws agrees with the lower bound within that
+sampling error.
 
 ## One filtering step
 
@@ -168,7 +332,8 @@ A state $X_0$ follows the mixture below. One step later it is
 $X_1 = 0.9 X_0 + e$, where $e$ is Cauchy noise with scale 0.2, and $X_1$ is
 then observed with normal error of variance 0.25. The law of $X_1$ is a
 convolution with no closed-form density, but its characteristic function is
-the product of the two.
+the product of the two. The heavy-tail warning of `from_cf()` is expected
+here and is suppressed.
 
 ```{r filter-predict}
 prior <- gmm(weights = c(0.5, 0.5), means = list(-1, 2),
@@ -232,20 +397,32 @@ fit_sum@diagnostics$bracket
   error of the numerical integration, which is of the order of `1e-6`.
 * `upper` is an upper bound for it over the whole line. It holds when
   `truncation` and `cutoff_gap` are small, which they are here. Both measure
-  how much of the inversion integral was left out, and are large when the
-  target has a point mass or a characteristic function that decays very
-  slowly.
+  how much of the inversion integral (Gil-Pelaez, 1951) was left out, and
+  are large when the target has a point mass or a characteristic function
+  that decays very slowly.
 * The bounds compare distribution functions. They are not a
   Kullback-Leibler divergence, which needs a density of the target.
+* A mixture made from a fit by the operators of the package (a marginal,
+  a Bayes update, a convolution) carries the `cf_upper` of that fit, or the
+  largest over several fits. That value need not bound the new mixture: the
+  errors of a convolution, for one, can add up. `gmm_cf_distance()` against
+  the characteristic function of the result gives its own bounds.
 
-The bounds take little time next to the fit. `bracket = FALSE` skips them, and
-`gmm_cf_distance()` gives them for any other direction, grid or range of
-probabilities.
+`bracket = FALSE` skips the bounds, and `gmm_cf_distance()` gives them for
+any other direction, grid or range of probabilities.
 
 ## References
 
+Chambers, J. M., Mallows, C. L. and Stuck, B. W. (1976). A method for
+simulating stable random variables. *Journal of the American Statistical
+Association*, 71(354), 340-344. <https://doi.org/10.1080/01621459.1976.10480344>
+
 Gil-Pelaez, J. (1951). Note on the inversion theorem. *Biometrika*, 38(3-4),
 481-482. <https://doi.org/10.1093/biomet/38.3-4.481>
+
+Nolan, J. P. (1997). Numerical calculation of stable densities and
+distribution functions. *Communications in Statistics. Stochastic Models*,
+13(4), 759-774. <https://doi.org/10.1080/15326349708807450>
 
 van der Hoek, J. and Elliott, R. J. (2024). Mixtures of multivariate
 Gaussians. *Stochastic Analysis and Applications*.

@@ -23,7 +23,7 @@ reference:
   contents:
   - has_concept("targets")
 - title: Fitting regimes
-  desc: The three KL-optimal fitting regimes from Hoek and Elliott (2024), and fits to a characteristic function.
+  desc: The three KL-optimal fitting regimes of van der Hoek and Elliott (2024), and fits to a characteristic function with bounds on the Kolmogorov distance.
   contents:
   - has_concept("fitting")
 - title: Closed-form mixture operators

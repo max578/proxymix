@@ -201,8 +201,10 @@ ess_summary <- function(fit) {
 #'   adds `cf_heldout_rms`, `cf_distance` and `cf_upper`: the held-out
 #'   root mean square error of the characteristic function and the largest
 #'   lower and upper bounds for the Kolmogorov distance over the checked
-#'   directions (see [from_cf()]). A composite certificate carries the
-#'   largest `cf_upper` of its operands.
+#'   directions (see [from_cf()]). A mixture made from such a fit by an
+#'   operator carries the fit's `cf_upper`, or the largest over several fits
+#'   for a composite. That value need not bound the new mixture;
+#'   [gmm_cf_distance()] gives bounds for it directly.
 #' @family diagnostics
 #' @export
 #' @examples

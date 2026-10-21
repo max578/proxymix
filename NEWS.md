@@ -2,6 +2,17 @@
 
 ### New features
 
+* `fit_proxymix()` has a fourth regime, `"cf"`, for a target known only
+  through its characteristic function. `cf_target()` builds such a target
+  after checking the function, and `regime = "auto"` picks `"cf"` when the
+  target has a characteristic function and neither samples nor a
+  log-density. The other regimes choose as before.
+* Fits to a characteristic function (`from_cf()`, `from_cf_elliptical()`, and
+  each source of `from_cf_sources()`) now carry lower and upper bounds for the
+  Kolmogorov distance to the target along eight directions, reported by
+  `print()`, `glance()` and `gmm_fit_quality()` (`cf_distance`, `cf_upper`).
+  `bracket = FALSE` skips them. The bounds do not change the fit or the state
+  of the random number generator.
 * `fit_mppca_samples()` fits a mixture of probabilistic principal component
   analysers (Tipping and Bishop, 1999): each component covariance is a rank-`q`
   term plus equal noise in every direction. It can be fitted when a component
@@ -30,6 +41,18 @@
 
 ### Behaviour changes
 
+* `from_kde()` now defaults to `bandwidth = "plugin"`, the Sheather-Jones
+  plug-in bandwidth of each variable (`stats::bw.SJ()`), in place of
+  Silverman's rule. On the galaxy velocities the held-out log-likelihood of the
+  compressed estimate went from about 0.13 to about 0.06 nats below that of the
+  full `ks::kde()` estimate, and on two simulated two-dimensional mixtures the
+  Kullback-Leibler divergence to the truth fell by a factor of about three.
+  A variable with fewer distinct values than half the number of points keeps
+  Silverman's rule. `bandwidth = "silverman"` gives the 0.16.0 results.
+
+* `glance()` has three more columns, `cf_heldout_rms`, `cf_distance` and
+  `cf_upper`, which are `NA` outside regime `"cf"`.
+
 * `gmm_cf_variance()` and `gmm_cf_tail_prob()` now return the variance and the
   tail probability of a per-unit counterfactual law instead of an error. They
   rest on the same assumption as `gmm_cf_mean()`: the unit keeps its structural
@@ -38,6 +61,22 @@
 
 ### Corrections
 
+* The k-means start used by `fit_kld_em()`, `from_kde()` and the other
+  importance-sampling fits no longer passes on the "Quick-TRANSfer stage steps
+  exceeded" warning from one of its ten starts. If the start that is kept hit
+  that limit, the clustering is redone with MacQueen's algorithm.
+* Printing the result of `gmm_eos_test()`, `gmm_fit_ensemble()`,
+  `gmm_evidence()`, `select_N()` and the other functions with their own print
+  method now gives the short summary. In 0.16.0 these printed as raw lists,
+  because the method was not found when `print()` was called from outside the
+  package.
+* `gmm_impute()` with `censored()` could impute a value beyond the detection
+  limit when the limit lay far in the tail of a component's conditional
+  normal. Such draws now stay inside the limit. All other draws are unchanged.
+* `gmm_impute()` could stop with "the leading minor ... is not positive" when
+  choosing the number of components, if one candidate component held only a
+  few rows. Rounding in its conditional covariance is now removed, and the
+  output is unchanged when this does not occur.
 * The help for `gmm_counterfactual()`, `gmm_cf_mean()` and
   `proxy_retrospective_uplift()` no longer calls the per-unit counterfactual
   mean identified. It assumes the unit keeps its structural residual when the

@@ -79,9 +79,11 @@ packages.
 
 - `from_kde()` builds the kernel density estimate from a data matrix and
   compresses it into an `N`-component Gaussian mixture, a sum of `N` normal
-  distributions. Its `bandwidth` argument takes a rule of thumb by name
-  (`"silverman"` or `"scott"`, after Silverman, 1986, and Scott, 1992) or
-  numbers, a single number for all variables or one number per variable.
+  distributions. Its `bandwidth` argument takes a rule by name or numbers,
+  a single number for all variables or one number per variable. The default,
+  `"plugin"`, is the Sheather-Jones plug-in bandwidth of each variable
+  (Sheather and Jones, 1991). The rules of thumb `"silverman"` and `"scott"`
+  (Silverman, 1986, and Scott, 1992) smooth more.
 - `from_kde()` fits the proxy with the package's method for a density that
   can be evaluated but not sampled (van der Hoek and Elliott, 2024),
   described in *Fitting a proxy to a density you cannot sample*. It draws `is_size` trial points from a
@@ -692,6 +694,11 @@ Scrucca, L., Fop, M., Murphy, T. B. and Raftery, A. E. (2016). *mclust 5:
 Clustering, classification and density estimation using Gaussian finite
 mixture models.* The R Journal 8(1), 289--317.
 <https://doi.org/10.32614/RJ-2016-021>.
+
+Sheather, S. J. and Jones, M. C. (1991). A reliable data-based bandwidth
+selection method for kernel density estimation. *Journal of the Royal
+Statistical Society, Series B*, 53(3), 683--690.
+<https://doi.org/10.1111/j.2517-6161.1991.tb01857.x>
 
 Silverman, B. W. (1986). *Density Estimation for Statistics and Data
 Analysis.* Chapman and Hall.

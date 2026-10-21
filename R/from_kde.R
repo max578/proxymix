@@ -3,6 +3,8 @@
 ## target.
 
 ## Per-coordinate bandwidth selection.
+##   "plugin"     : stats::bw.SJ per coordinate; "silverman" for a coordinate
+##                  with fewer distinct values than half its length
 ##   "silverman"  : (4 / (p + 2))^(1 / (p + 4)) * n^(-1 / (p + 4)) * sd
 ##   "scott"      : n^(-1 / (p + 4)) * sd
 ##   numeric(1)   : absolute scalar h applied to every coordinate
@@ -15,7 +17,7 @@ choose_bandwidth <- function(samples, bandwidth) {
       cli::cli_abort("`bandwidth` must be length 1 if a string.")
     }
     bandwidth <- rlang::arg_match0(
-      bandwidth, c("silverman", "scott"), arg_nm = "bandwidth"
+      bandwidth, c("plugin", "silverman", "scott"), arg_nm = "bandwidth"
     )
     sigma <- apply(samples, 2L, stats::sd)
     if (any(sigma <= 0)) {
@@ -24,11 +26,16 @@ choose_bandwidth <- function(samples, bandwidth) {
         "i" = "Supply a numeric `bandwidth` explicitly."
       ))
     }
-    factor <- switch(bandwidth,
-      silverman = (4 / (p + 2))^(1 / (p + 4)) * n^(-1 / (p + 4)),
-      scott     =                              n^(-1 / (p + 4))
-    )
-    return(factor * sigma)
+    silverman <- (4 / (p + 2))^(1 / (p + 4)) * n^(-1 / (p + 4)) * sigma
+    if (bandwidth == "plugin") {
+      ## Sheather-Jones collapses towards zero on heavily tied data
+      tied <- apply(samples, 2L, function(x) length(unique(x)) < n / 2)
+      h <- silverman
+      h[!tied] <- apply(samples[, !tied, drop = FALSE], 2L, stats::bw.SJ)
+      return(h)
+    }
+    if (bandwidth == "silverman") return(silverman)
+    return(n^(-1 / (p + 4)) * sigma)
   }
   if (is.numeric(bandwidth)) {
     if (length(bandwidth) == 1L) {
@@ -102,10 +109,18 @@ make_kde_log_density <- function(samples, h, chunk = 256L) {
 #' @param samples An `n` by `p` numeric matrix of points. `n >= 5`,
 #'   `p <= 10`.
 #' @param N Number of mixture components in the proxy.
-#' @param bandwidth Either `"silverman"`, `"scott"`, a positive numeric
-#'   scalar (absolute bandwidth applied to every coordinate), or a
+#' @param bandwidth Either `"plugin"`, `"silverman"`, `"scott"`, a positive
+#'   numeric scalar (absolute bandwidth applied to every coordinate), or a
 #'   length-`p` positive numeric vector of per-coordinate absolute
-#'   bandwidths. Default `"silverman"`.
+#'   bandwidths. Default `"plugin"`: the Sheather-Jones plug-in bandwidth
+#'   ([stats::bw.SJ()]) of each coordinate. A coordinate with fewer distinct
+#'   values than half the number of points gets Silverman's rule instead,
+#'   because the plug-in bandwidth shrinks towards zero on heavily tied data.
+#'   Silverman's rule smooths more and can merge nearby modes. A diagonal
+#'   multivariate plug-in such as `sqrt(diag(ks::Hpi.diag(samples)))` can be
+#'   passed as a numeric vector. It did better than `"plugin"` on a
+#'   simulated two-dimensional mixture with three overlapping components,
+#'   and its cost grows with the square of the sample size.
 #' @param proposal Optional [is_proposal]. Default is a multivariate-t
 #'   centred at `colMeans(samples)`, scale = ridge(cov(samples)) +
 #'   diag(h^2), `df = 5`.
@@ -147,7 +162,7 @@ make_kde_log_density <- function(samples, h, chunk = 256L) {
 #' fit
 #' ess_summary(fit)
 from_kde <- function(samples, N = 3L,
-                     bandwidth = "silverman",
+                     bandwidth = "plugin",
                      proposal = NULL, is_size = NULL,
                      max_iter = 100L, tol = 1e-5,
                      ridge_eps = 1e-6, min_ess = 50L,

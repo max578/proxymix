@@ -57,7 +57,7 @@ test_that("from_kde refuses p > 10 and warns 5 < p <= 10", {
                regexp = "supports.*p <= 10")
   warn <- matrix(stats::rnorm(60L * 6L), ncol = 6L)
   expect_warning(
-    fit <- from_kde(warn, N = 1L, is_size = 400L,
+    fit <- from_kde(warn, N = 1L, bandwidth = "silverman", is_size = 400L,
                     max_iter = 8L, seed = 4L),
     regexp = "p <= 5"
   )
@@ -92,6 +92,11 @@ test_that("from_kde bandwidth selection: scalar, vector, silverman, scott", {
   fit_sc <- from_kde(x, N = 1L, bandwidth = "scott",
                      is_size = 400L, max_iter = 8L, seed = 5L)
   expect_equal(fit_sc@target@metadata$bandwidth_method, "scott")
+  ## plugin, the default
+  fit_pl <- from_kde(x, N = 1L, is_size = 400L, max_iter = 8L, seed = 5L)
+  expect_equal(fit_pl@target@metadata$bandwidth_method, "plugin")
+  expect_equal(fit_pl@target@metadata$bandwidth,
+               c(stats::bw.SJ(x[, 1]), stats::bw.SJ(x[, 2])))
   ## rejection
   expect_error(from_kde(x, N = 1L, bandwidth = c(0.4, 0.6, 0.8)),
                regexp = "length 1 or 2")
@@ -109,4 +114,14 @@ test_that("from_kde bandwidth sensitivity: larger h -> smoother proxy", {
   tr_small <- sum(diag(fits[[1L]]@covariances[[1L]]))
   tr_large <- sum(diag(fits[[2L]]@covariances[[1L]]))
   expect_gt(tr_large, tr_small)
+})
+
+test_that("the plug-in rule falls back to Silverman's on a heavily tied coordinate", {
+  x <- withr::with_seed(6L, cbind(stats::rnorm(200L), round(stats::rnorm(200L))))
+  h <- choose_bandwidth(x, "plugin")
+  silverman <- choose_bandwidth(x, "silverman")
+  expect_equal(h[1], stats::bw.SJ(x[, 1]))
+  expect_equal(h[2], silverman[2])
+  expect_gt(h[2], 10 * stats::bw.SJ(x[, 2]))
+  expect_error(choose_bandwidth(cbind(x[, 1], 1), "plugin"), "zero variance")
 })

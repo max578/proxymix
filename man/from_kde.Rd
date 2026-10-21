@@ -7,7 +7,7 @@
 from_kde(
   samples,
   N = 3L,
-  bandwidth = "silverman",
+  bandwidth = "plugin",
   proposal = NULL,
   is_size = NULL,
   max_iter = 100L,
@@ -28,10 +28,18 @@ from_kde(
 
 \item{N}{Number of mixture components in the proxy.}
 
-\item{bandwidth}{Either \code{"silverman"}, \code{"scott"}, a positive numeric
-scalar (absolute bandwidth applied to every coordinate), or a
+\item{bandwidth}{Either \code{"plugin"}, \code{"silverman"}, \code{"scott"}, a positive
+numeric scalar (absolute bandwidth applied to every coordinate), or a
 length-\code{p} positive numeric vector of per-coordinate absolute
-bandwidths. Default \code{"silverman"}.}
+bandwidths. Default \code{"plugin"}: the Sheather-Jones plug-in bandwidth
+(\code{\link[stats:bw.SJ]{stats::bw.SJ()}}) of each coordinate. A coordinate with fewer distinct
+values than half the number of points gets Silverman's rule instead,
+because the plug-in bandwidth shrinks towards zero on heavily tied data.
+Silverman's rule smooths more and can merge nearby modes. A diagonal
+multivariate plug-in such as \code{sqrt(diag(ks::Hpi.diag(samples)))} can be
+passed as a numeric vector. It did better than \code{"plugin"} on a
+simulated two-dimensional mixture with three overlapping components,
+and its cost grows with the square of the sample size.}
 
 \item{proposal}{Optional \link{is_proposal}. Default is a multivariate-t
 centred at \code{colMeans(samples)}, scale = ridge(cov(samples)) +

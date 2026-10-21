@@ -41,3 +41,19 @@ test_that("multi_start_best_of returns the higher-scoring fit", {
   )
   expect_s7_class(best, gmm_fit)
 })
+
+test_that("init_kmeans muffles only the Quick-TRANSfer step-limit warning", {
+  x <- matrix(c(rep(0, 5), rep(1, 5)), ncol = 1L)
+  msg <- gettextf("Quick-TRANSfer stage steps exceeded maximum (= %d)", 500L,
+                  domain = "R-stats")
+  local_mocked_bindings(
+    kmeans = function(...) {
+      warning(msg, call. = FALSE)
+      structure(list(cluster = rep(1:2, each = 5L), centers = matrix(c(0, 1), ncol = 1L),
+                     size = c(5L, 5L), ifault = 0L), class = "kmeans")
+    },
+    .package = "stats"
+  )
+  expect_no_warning(g <- init_kmeans(x, N = 2L))
+  expect_equal(unlist(g@means), c(0, 1))
+})

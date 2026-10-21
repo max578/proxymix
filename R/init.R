@@ -71,7 +71,22 @@ init_kmeans <- function(samples, N = 2L, ridge_eps = 1e-6, nstart = 10L) {
   }
   N <- as.integer(N)
   p <- ncol(samples)
-  km <- stats::kmeans(samples, centers = N, nstart = nstart)
+  ## Hartigan-Wong's Quick-TRANSfer limit (50 * n) is not set by `iter.max`;
+  ## if the kept start hit it, MacQueen's algorithm, which has no such stage,
+  ## is used instead
+  qtran_msg <- gettextf("Quick-TRANSfer stage steps exceeded maximum (= %d)",
+                        as.integer(min(.Machine$integer.max, 50 * nrow(samples))),
+                        domain = "R-stats")
+  km <- withCallingHandlers(
+    stats::kmeans(samples, centers = N, nstart = nstart),
+    warning = function(w) {
+      if (identical(conditionMessage(w), qtran_msg)) invokeRestart("muffleWarning")
+    }
+  )
+  if (identical(km$ifault, 4L)) {
+    km <- stats::kmeans(samples, centers = N, nstart = nstart,
+                        algorithm = "MacQueen", iter.max = 100L)
+  }
   weights <- as.numeric(km$size / sum(km$size))
   means <- lapply(seq_len(N), function(k) as.numeric(km$centers[k, ]))
   covs <- lapply(seq_len(N), function(k) {

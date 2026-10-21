@@ -192,6 +192,35 @@ test_that("from_cf is reproducible and leaves the RNG state untouched", {
 # from_cf: heavy tails and invalid input
 # ---------------------------------------------------------------------------
 
+test_that("a target far from the origin is centred on its mean", {
+  ## the principal phase at the differencing frequency wraps past pi near a
+  ## mean of 130 for a unit normal
+  for (mu in c(140, -3000)) {
+    fit <- from_cf(function(t) exp(1i * mu * t[, 1L] - 0.5 * t[, 1L]^2),
+                   1L, 1L, n_freq = 1024L, seed = 1L)
+    expect_equal(fit@means[[1L]], mu, tolerance = 1e-8)
+    expect_equal(fit@covariances[[1L]], matrix(1), tolerance = 1e-6)
+    expect_lt(gmm_fit_quality(fit)$cf_distance, 1e-6)
+  }
+  m <- c(300, -250)
+  S <- matrix(c(2, 0.6, 0.6, 1), 2L)
+  fit <- from_cf(function(t) exp(1i * drop(t %*% m) - 0.5 * rowSums((t %*% S) * t)),
+                 2L, 1L, n_freq = 1024L, seed = 1L)
+  expect_equal(fit@means[[1L]], m, tolerance = 1e-8)
+  expect_equal(fit@covariances[[1L]], S, tolerance = 1e-6)
+})
+
+test_that("a heavy-tailed target far from the origin is centred on its location", {
+  fit <- suppressWarnings(
+    from_cf(function(t) exp(1i * 500 * t[, 1L] - abs(t[, 1L])), 1L, 3L,
+            n_freq = 2048L, seed = 1L),
+    classes = "proxymix_cf_heavy_tail"
+  )
+  med <- stats::uniroot(function(x) pgmm(x, fit) - 0.5, c(400, 600))$root
+  expect_equal(med, 500, tolerance = 1e-3)
+  expect_lt(gmm_fit_quality(fit)$cf_distance, 0.02)
+})
+
 test_that("a Cauchy target raises the heavy-tail warning", {
   cf <- function(t) exp(-abs(t[, 1L]))
   expect_warning(

@@ -24,7 +24,8 @@ The most useful pass-throughs are \code{canonicalise} (whether to apply
 \code{validation_size} and \code{validation_proposal} (held-out IS validation
 for regime \code{"kld"}), \code{max_iter}, \code{tol}, \code{n_starts}, and \code{seed}. For
 regime \code{"cf"} the arguments of \code{\link[=from_cf]{from_cf()}} apply, among them \code{n_freq},
-\code{n_start}, \code{seed} and \code{bracket}.}
+\code{n_start}, \code{seed} and \code{bracket}; its fit is always returned in canonical
+order, and \code{canonicalise} is ignored.}
 }
 \value{
 A \link{gmm_fit}.

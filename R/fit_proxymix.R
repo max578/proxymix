@@ -30,7 +30,8 @@
 #'   `validation_size` and `validation_proposal` (held-out IS validation
 #'   for regime `"kld"`), `max_iter`, `tol`, `n_starts`, and `seed`. For
 #'   regime `"cf"` the arguments of [from_cf()] apply, among them `n_freq`,
-#'   `n_start`, `seed` and `bracket`.
+#'   `n_start`, `seed` and `bracket`; its fit is always returned in canonical
+#'   order, and `canonicalise` is ignored.
 #'
 #' @returns A [gmm_fit].
 #' @family interface
@@ -91,7 +92,9 @@ fit_proxymix <- function(target,
 }
 
 .fit_cf_target <- function(target, N, ...) {
-  fit <- from_cf(target@cf, target@n_dim, N, ...)
+  args <- list(...)
+  args$canonicalise <- NULL
+  fit <- do.call(from_cf, c(list(target@cf, target@n_dim, N), args))
   fit@target <- target
   fit
 }

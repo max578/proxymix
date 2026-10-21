@@ -51,6 +51,14 @@ test_that("fit_proxymix() picks regime cf for a cf-only target", {
   expect_equal(explicit@weights, direct@weights)
 })
 
+test_that("regime cf accepts and ignores canonicalise", {
+  tgt <- cf_target(gamma_noise_cf, n_dim = 1L)
+  fit <- fit_proxymix(tgt, N = 2L, regime = "cf", canonicalise = FALSE,
+                      n_freq = 1024L, seed = 1L)
+  direct <- from_cf(gamma_noise_cf, 1L, 2L, n_freq = 1024L, seed = 1L)
+  expect_equal(fit@means, direct@means)
+})
+
 test_that("regime cf needs a characteristic function", {
   expect_error(
     fit_proxymix(banana_target(), N = 2L, regime = "cf"),
@@ -113,6 +121,9 @@ test_that("the bracket contains the exact Kolmogorov distance for a Cauchy targe
   ## quantiles; the upper bound covers the whole line
   expect_lte(q$cf_distance, exact + 1e-6)
   expect_gte(q$cf_upper, exact)
+  ## and the bracket is narrow, so a trivial one would fail
+  expect_gt(q$cf_distance, 0.5 * exact)
+  expect_lt(q$cf_upper - q$cf_distance, 0.01)
 })
 
 test_that("glance() and print() report the bracket", {

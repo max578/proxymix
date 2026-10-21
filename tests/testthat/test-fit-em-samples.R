@@ -71,6 +71,23 @@ test_that("a component on fewer than p + 1 samples is flagged as collapsed", {
   expect_true(gmm_fit_quality(fit)$degenerate)
 })
 
+test_that("a point mass of many identical rows is flagged as collapsed", {
+  x <- withr::with_seed(1, rbind(
+    matrix(stats::rnorm(400), ncol = 2),
+    matrix(10, nrow = 30, ncol = 2)
+  ))
+  init <- gmm(weights = c(0.87, 0.13),
+              means = list(c(0, 0), c(10, 10)),
+              covariances = list(diag(2), diag(1e-8, 2)))
+  expect_warning(
+    fit <- fit_em_samples(gmm_target_from_samples(x), N = 2L, init = init,
+                          max_iter = 40L),
+    class = "proxymix_component_collapse"
+  )
+  expect_identical(fit@diagnostics$collapsed_components, 2L)
+  expect_true(gmm_fit_quality(fit)$degenerate)
+})
+
 test_that("a well-posed fit records no collapse and no decrease", {
   withr::with_seed(2026, {
     mt <- mixture_target(with_samples = TRUE, n = 500L, seed = 7L)

@@ -165,7 +165,9 @@ ess_summary <- function(fit) {
 #' Downstream verbs read the same certificate and raise a one-shot
 #' advisory (class `proxymix_low_quality`) when the source fit is flagged. A
 #' fit is flagged when it did not converge, when it is degenerate (fewer
-#' effective importance draws than `min_ess`), or when its held-out KL
+#' effective importance draws than `min_ess`, or, for an EM fit to samples,
+#' a component that collapsed onto a few samples; see [fit_em_samples()]), or
+#' when its held-out KL
 #' divergence `heldout_kld` exceeds 0.3 nats. A fit made with
 #' `validation_size = 0` has no held-out estimate, and is flagged when
 #' `kld_approx` exceeds 0.3. That fallback misses a proxy wider than the

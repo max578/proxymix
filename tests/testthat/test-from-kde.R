@@ -125,3 +125,9 @@ test_that("the plug-in rule falls back to Silverman's on a heavily tied coordina
   expect_gt(h[2], 10 * stats::bw.SJ(x[, 2]))
   expect_error(choose_bandwidth(cbind(x[, 1], 1), "plugin"), "zero variance")
 })
+
+test_that("the plug-in rule falls back to Silverman's when every coordinate is tied", {
+  x <- withr::with_seed(1L, matrix(sample(1:60, 100L, replace = TRUE), ncol = 1L))
+  expect_equal(choose_bandwidth(x, "plugin"), choose_bandwidth(x, "silverman"))
+  expect_no_error(from_kde(x, N = 2L, seed = 1L))
+})

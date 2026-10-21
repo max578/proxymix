@@ -63,7 +63,8 @@ used. The diagnostics also carry \code{loglik_max_drop}, the largest decrease
 of the log-likelihood between iterations, and \code{collapsed_components}, the
 components (in the returned order) that sit on fewer than \code{p + 1}
 effective samples, or whose smallest variance across the coordinates that
-are not constant within the component is below 100 times the ridge. A
+are not constant within the component is below 100 times the ridge, or
+in which every coordinate is constant (a point mass). A
 collapsed component marks the fit as degenerate in its quality
 certificate and raises a \code{proxymix_component_collapse} warning.
 Only the returned fit is checked, so a discarded start raises no warning.

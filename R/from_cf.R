@@ -431,6 +431,37 @@
   }, numeric(1L))
 }
 
+## Phase of the characteristic function at frequency `t` along axis `d`,
+## continued from zero so that it does not wrap at pi. Starting from a
+## frequency small enough for the principal value to be the phase, each
+## doubling uses psi(2s) = 2 psi(s) + Arg(cf(2s) / cf(s)^2); the last term
+## carries only the cumulants of order three and above, which stay well
+## inside (-pi, pi) below the half-height frequency.
+.cf_unwrapped_phase <- function(phi, p, d, t, n_double = 20L) {
+  at <- function(s) {
+    v <- numeric(p)
+    v[d] <- s
+    phi(matrix(v, 1L, p))
+  }
+  s <- t / 2^n_double
+  psi <- Arg(at(s))
+  for (k in seq_len(n_double)) {
+    psi <- 2 * psi + Arg(at(2 * s) / at(s)^2)
+    s <- 2 * s
+  }
+  psi
+}
+
+## Principal phase at `t` along axis `d`, shifted by the multiple of 2 pi
+## that matches the continued phase. Unchanged when no wrap occurred.
+.cf_phase_at <- function(phi, p, d, t) {
+  v <- numeric(p)
+  v[d] <- t
+  principal <- Arg(phi(matrix(v, 1L, p)))
+  turns <- round((.cf_unwrapped_phase(phi, p, d, t) - principal) / (2 * pi))
+  principal + 2 * pi * turns
+}
+
 ## Mean and covariance by differencing the log characteristic function at
 ## zero. Both must exist.
 .cf_moments <- function(phi, p, th) {
@@ -442,7 +473,11 @@
     v
   }
   mu <- vapply(seq_len(p), function(d) {
-    Im(lp(e(d)) - lp(-e(d))) / (2 * h[d])
+    m <- Im(lp(e(d)) - lp(-e(d))) / (2 * h[d])
+    psi <- .cf_phase_at(phi, p, d, h[d])
+    ## the principal logarithm wraps once mu * h passes pi
+    if (abs(psi - h[d] * m) > pi) m <- psi / h[d]
+    m
   }, numeric(1L))
   S <- matrix(0, p, p)
   for (d in seq_len(p)) {
@@ -500,9 +535,7 @@
     }
   }
   mu <- vapply(seq_len(p), function(d) {
-    v <- numeric(p)
-    v[d] <- th[d]
-    Arg(phi(matrix(v, 1L, p))) / th[d]
+    .cf_phase_at(phi, p, d, th[d]) / th[d]
   }, numeric(1L))
   list(mu = mu, A = diag(.cf_half_height / th, p), mean = NULL, cov = NULL)
 }

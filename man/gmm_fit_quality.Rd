@@ -55,7 +55,9 @@ chain of operations that produced it.
 Downstream verbs read the same certificate and raise a one-shot
 advisory (class \code{proxymix_low_quality}) when the source fit is flagged. A
 fit is flagged when it did not converge, when it is degenerate (fewer
-effective importance draws than \code{min_ess}), or when its held-out KL
+effective importance draws than \code{min_ess}, or, for an EM fit to samples,
+a component that collapsed onto a few samples; see \code{\link[=fit_em_samples]{fit_em_samples()}}), or
+when its held-out KL
 divergence \code{heldout_kld} exceeds 0.3 nats. A fit made with
 \code{validation_size = 0} has no held-out estimate, and is flagged when
 \code{kld_approx} exceeds 0.3. That fallback misses a proxy wider than the

@@ -21,7 +21,7 @@ set.seed(20260513)
 [![CRAN status](https://www.r-pkg.org/badges/version/proxymix)](https://CRAN.R-project.org/package=proxymix)
 [![R-CMD-check](https://github.com/max578/proxymix/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/max578/proxymix/actions/workflows/R-CMD-check.yaml)
 [![Codecov test coverage](https://codecov.io/gh/max578/proxymix/graph/badge.svg)](https://app.codecov.io/gh/max578/proxymix)
-[![r-universe](https://max578.r-universe.dev/badges/proxymix)](https://max578.r-universe.dev/proxymix)
+[![r-universe](https://max578.r-universe.dev/proxymix/badges/version)](https://max578.r-universe.dev/proxymix)
 [![pkgdown](https://github.com/max578/proxymix/actions/workflows/pkgdown.yaml/badge.svg)](https://max578.github.io/proxymix/)
 <!-- badges: end -->
 

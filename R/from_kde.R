@@ -31,7 +31,9 @@ choose_bandwidth <- function(samples, bandwidth) {
       ## Sheather-Jones collapses towards zero on heavily tied data
       tied <- apply(samples, 2L, function(x) length(unique(x)) < n / 2)
       h <- silverman
-      h[!tied] <- apply(samples[, !tied, drop = FALSE], 2L, stats::bw.SJ)
+      if (any(!tied)) {
+        h[!tied] <- apply(samples[, !tied, drop = FALSE], 2L, stats::bw.SJ)
+      }
       return(h)
     }
     if (bandwidth == "silverman") return(silverman)

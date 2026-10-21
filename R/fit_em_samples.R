@@ -42,7 +42,8 @@
 #'   of the log-likelihood between iterations, and `collapsed_components`, the
 #'   components (in the returned order) that sit on fewer than `p + 1`
 #'   effective samples, or whose smallest variance across the coordinates that
-#'   are not constant within the component is below 100 times the ridge. A
+#'   are not constant within the component is below 100 times the ridge, or
+#'   in which every coordinate is constant (a point mass). A
 #'   collapsed component marks the fit as degenerate in its quality
 #'   certificate and raises a `proxymix_component_collapse` warning.
 #'   Only the returned fit is checked, so a discarded start raises no warning.
@@ -154,7 +155,8 @@ fit_em_samples <- function(target, N = 2L,
   ridge_units <- if (all(ridge_vec > 0)) {
     vapply(fit@covariances, function(S) {
       keep <- diag(S) / ridge_vec >= 100
-      if (!any(keep)) return(Inf)
+      ## every coordinate held near the ridge: a point mass
+      if (!any(keep)) return(0)
       S_keep <- S[keep, keep, drop = FALSE] / sqrt(outer(ridge_vec[keep], ridge_vec[keep]))
       min(eigen(S_keep, symmetric = TRUE, only.values = TRUE)$values)
     }, numeric(1L))

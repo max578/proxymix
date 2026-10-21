@@ -41,6 +41,15 @@
 
 ### Behaviour changes
 
+* `fit_em_samples()` checks the fit it returns for a component that has
+  collapsed onto a few samples: fewer effective samples than the dimension
+  plus one, or a variance held up by the ridge. Such a fit is marked
+  degenerate in its quality record and raises a warning of class
+  `proxymix_component_collapse`. The log-likelihood decrease warning is now
+  raised only for the returned fit, not for a discarded start. `select_N()`
+  reports collapse per candidate in a `collapsed` column and warns only when
+  the chosen fit has collapsed.
+
 * `from_kde()` now defaults to `bandwidth = "plugin"`, the Sheather-Jones
   plug-in bandwidth of each variable (`stats::bw.SJ()`), in place of
   Silverman's rule. On the galaxy velocities the held-out log-likelihood of the

@@ -59,7 +59,14 @@ are sorted by descending weight and (as a tiebreaker) by descending
 \value{
 A \link{gmm_fit} with \code{regime = "sample"}. When \code{anneal = TRUE} the
 diagnostics list also carries \code{annealed = TRUE} and the \code{temp_schedule}
-used.
+used. The diagnostics also carry \code{loglik_max_drop}, the largest decrease
+of the log-likelihood between iterations, and \code{collapsed_components}, the
+components (in the returned order) that sit on fewer than \code{p + 1}
+effective samples, or whose smallest variance across the coordinates that
+are not constant within the component is below 100 times the ridge. A
+collapsed component marks the fit as degenerate in its quality
+certificate and raises a \code{proxymix_component_collapse} warning.
+Only the returned fit is checked, so a discarded start raises no warning.
 }
 \description{
 Implements regime (ii) of Hoek and Elliott (2024). Runs the textbook

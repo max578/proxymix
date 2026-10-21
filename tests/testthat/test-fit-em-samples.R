@@ -54,3 +54,40 @@ test_that("regime (ii) keeps small-scale coordinates when scales differ widely",
   ratio <- sqrt(diag(fit@covariances[[1L]])) / apply(x, 2L, stats::sd)
   expect_equal(ratio, rep(1, 5L), tolerance = 1e-3)
 })
+
+test_that("a component on fewer than p + 1 samples is flagged as collapsed", {
+  x <- withr::with_seed(3, rbind(
+    matrix(stats::rnorm(400), ncol = 2),
+    matrix(c(10, 10), nrow = 2, ncol = 2, byrow = TRUE) + 1e-4 * stats::rnorm(4)
+  ))
+  init <- gmm(weights = c(0.99, 0.01),
+              means = list(c(0, 0), c(10, 10)),
+              covariances = list(diag(2), diag(0.01, 2)))
+  expect_warning(
+    fit <- fit_em_samples(gmm_target_from_samples(x), N = 2L, init = init),
+    class = "proxymix_component_collapse"
+  )
+  expect_identical(fit@diagnostics$collapsed_components, 2L)
+  expect_true(gmm_fit_quality(fit)$degenerate)
+})
+
+test_that("a well-posed fit records no collapse and no decrease", {
+  withr::with_seed(2026, {
+    mt <- mixture_target(with_samples = TRUE, n = 500L, seed = 7L)
+    expect_no_warning(fit <- fit_em_samples(mt, N = 3L, max_iter = 50L, n_starts = 2L))
+  })
+  expect_identical(fit@diagnostics$collapsed_components, integer(0L))
+  expect_false(fit@diagnostics$nonmonotone)
+  expect_gte(fit@diagnostics$loglik_max_drop, 0)
+  expect_false(gmm_fit_quality(fit)$degenerate)
+})
+
+test_that("select_N reports collapse per candidate and warns only for the chosen fit", {
+  x <- withr::with_seed(5, rbind(
+    matrix(stats::rnorm(300, mean = -4), ncol = 2),
+    matrix(stats::rnorm(300, mean = 4), ncol = 2)
+  ))
+  expect_no_warning(sel <- select_N(gmm_target_from_samples(x), candidates = 1:6))
+  expect_true("collapsed" %in% names(sel$table))
+  expect_false(sel$table$collapsed[sel$table$chosen])
+})

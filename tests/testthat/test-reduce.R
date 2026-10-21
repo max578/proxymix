@@ -154,7 +154,11 @@ test_that("gmm_reduce accepts a gmm_fit and preserves its moments", {
     matrix(stats::rnorm(200, -4), ncol = 2L),
     matrix(stats::rnorm(200, 4), ncol = 2L)
   ))
-  fit <- fit_em_samples(gmm_target_from_samples(x), N = 5L, max_iter = 60L)
+  ## N = 5 on two clusters leaves a component on a few samples.
+  fit <- suppressWarnings(
+    fit_em_samples(gmm_target_from_samples(x), N = 5L, max_iter = 60L),
+    classes = "proxymix_component_collapse"
+  )
   o <- .mix_moments(fit)
   r <- gmm_reduce(fit, 2L)
   expect_true(S7::S7_inherits(r, gmm))

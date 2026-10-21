@@ -27,7 +27,8 @@
 #'
 #' @returns A list of class `proxymix_selection`: `best_n` (the chosen
 #'   count), `best_fit` (its [gmm_fit]), and `table` (one row per
-#'   candidate with the criterion values).
+#'   candidate with the criterion values; for regime `"sample"` also a
+#'   `collapsed` column marking fits with a collapsed component).
 #' @family fitting
 #' @export
 #' @examples
@@ -55,13 +56,27 @@ select_N <- function(target, candidates = 1:6,
       cli::cli_abort("regime {.val sample} requires the target to carry samples.")
     }
     fits <- lapply(candidates, function(N) {
-      fit_em_samples(target, N = N, seed = seed, ...)
+      withCallingHandlers(
+        fit_em_samples(target, N = N, seed = seed, ...),
+        proxymix_component_collapse = function(w) invokeRestart("muffleWarning")
+      )
     })
     bics <- vapply(fits, function(f) f@diagnostics$bic, numeric(1L))
     icls <- vapply(fits, function(f) bic_aic(f)$icl, numeric(1L))
+    collapsed <- vapply(fits, function(f) {
+      length(f@diagnostics$collapsed_components) > 0L
+    }, logical(1L))
     best <- which.min(bics)
     tab <- data.frame(N = candidates, bic = bics, icl = icls,
+                      collapsed = collapsed,
                       chosen = seq_along(candidates) == best)
+    if (collapsed[best]) {
+      cli::cli_warn(
+        c("The selected fit (N = {candidates[best]}) has a collapsed mixture component; it is flagged as degenerate.",
+          "i" = "Consider a smaller candidate range or {.code anneal = TRUE}."),
+        class = "proxymix_component_collapse"
+      )
+    }
   } else {
     if (is.null(target@log_density)) {
       cli::cli_abort("regime {.val kld} requires the target to carry a log-density.")

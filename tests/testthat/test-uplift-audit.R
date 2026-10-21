@@ -114,8 +114,12 @@ test_that("regime segments report K rows that sum to a valid mixture", {
     y <- 1 + (0.5 + x) * t + stats::rnorm(n, sd = 0.5)
     data.frame(y = y, t = t, x = x)
   })
-  m <- fit_uplift(dat, "y", "t", "x", N = 3L, regime = "sample",
-                  max_iter = 100L, seed = 1L)
+  ## N = 3 on two regimes: the third component sits on about 7 samples.
+  m <- suppressWarnings(
+    fit_uplift(dat, "y", "t", "x", N = 3L, regime = "sample",
+               max_iter = 100L, seed = 1L),
+    classes = "proxymix_component_collapse"
+  )
   expect_warning(
     seg <- proxy_regime_segments(m),
     class = "proxymix_constant_treatment"

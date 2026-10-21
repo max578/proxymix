@@ -38,7 +38,14 @@
 #'
 #' @returns A [gmm_fit] with `regime = "sample"`. When `anneal = TRUE` the
 #'   diagnostics list also carries `annealed = TRUE` and the `temp_schedule`
-#'   used.
+#'   used. The diagnostics also carry `loglik_max_drop`, the largest decrease
+#'   of the log-likelihood between iterations, and `collapsed_components`, the
+#'   components (in the returned order) that sit on fewer than `p + 1`
+#'   effective samples, or whose smallest variance across the coordinates that
+#'   are not constant within the component is below 100 times the ridge. A
+#'   collapsed component marks the fit as degenerate in its quality
+#'   certificate and raises a `proxymix_component_collapse` warning.
+#'   Only the returned fit is checked, so a discarded start raises no warning.
 #' @family fitting
 #' @export
 #' @examples
@@ -80,14 +87,14 @@ fit_em_samples <- function(target, N = 2L,
                               call = match.call())
     fit@diagnostics[["annealed"]] <- TRUE
     fit@diagnostics[["temp_schedule"]] <- warm@metadata$temp_schedule
-    return(if (isTRUE(canonicalise)) gmm_canonicalise(fit) else fit)
+    return(.finish_em_samples(fit, samples, ridge_eps, canonicalise))
   }
 
   if (!is.null(init)) {
     fit <- em_samples_one_run(samples, init, target,
                               max_iter, tol, ridge_eps,
                               call = match.call())
-    return(if (isTRUE(canonicalise)) gmm_canonicalise(fit) else fit)
+    return(.finish_em_samples(fit, samples, ridge_eps, canonicalise))
   }
 
   ## Multi-start: kmeans + (n_starts - 1) random restarts. A supplied `seed`
@@ -130,7 +137,51 @@ fit_em_samples <- function(target, N = 2L,
   scores <- vapply(fits, function(f) f@diagnostics$loglik_final,
                    FUN.VALUE = numeric(1L))
   best <- fits[[which.max(scores)]]
-  if (isTRUE(canonicalise)) gmm_canonicalise(best) else best
+  .finish_em_samples(best, samples, ridge_eps, canonicalise)
+}
+
+## Collapse and decrease checks on the returned fit only. Near a collapsed
+## component the ridged M-step stops being an exact maximiser, which is what
+## makes the log-likelihood fall, so the collapse warning takes precedence.
+.finish_em_samples <- function(fit, samples, ridge_eps, canonicalise) {
+  if (isTRUE(canonicalise)) fit <- gmm_canonicalise(fit)
+  n <- nrow(samples)
+  p <- ncol(samples)
+  ridge_vec <- .data_scaled_eps(ridge_eps, diag(stats::cov(samples)))
+  comp_n <- fit@weights * n
+  ## coordinates constant within a component (a binary column the mixture
+  ## splits on) are left out of the smallest-variance check
+  ridge_units <- if (all(ridge_vec > 0)) {
+    vapply(fit@covariances, function(S) {
+      keep <- diag(S) / ridge_vec >= 100
+      if (!any(keep)) return(Inf)
+      S_keep <- S[keep, keep, drop = FALSE] / sqrt(outer(ridge_vec[keep], ridge_vec[keep]))
+      min(eigen(S_keep, symmetric = TRUE, only.values = TRUE)$values)
+    }, numeric(1L))
+  } else {
+    rep(Inf, length(comp_n))
+  }
+  collapsed <- which(comp_n < p + 1L | ridge_units < 100)
+  fit@diagnostics[["collapsed_components"]] <- collapsed
+  if (length(collapsed) > 0L) {
+    q <- fit@metadata$quality
+    q$degenerate <- TRUE
+    fit@metadata$quality <- q
+    n_small <- signif(min(comp_n[collapsed]), 3)
+    cli::cli_warn(
+      c("{length(collapsed)} mixture component{?s} collapsed onto a few samples; the fit is flagged as degenerate.",
+        "i" = "Component index (returned order): {collapsed}. Smallest effective size {n_small} in dimension {p}.",
+        "i" = "Consider a smaller {.arg N}, more starts, or {.code anneal = TRUE}."),
+      class = "proxymix_component_collapse"
+    )
+  } else if (isTRUE(fit@diagnostics$nonmonotone)) {
+    cli::cli_warn(
+      c("The EM log-likelihood decreased by {signif(fit@diagnostics$loglik_max_drop, 3)} during fitting.",
+        "i" = "This usually signals ridge regularisation interacting with a near-singular component."),
+      class = "proxymix_nonmonotone"
+    )
+  }
+  fit
 }
 
 ## Single EM run, given a fully-formed initialisation.
@@ -202,16 +253,13 @@ em_samples_one_run <- function(samples, init, target,
   ## the objective before recovering, so the invariant is only asserted for
   ## reseed-free runs; reseed counts are recorded in the diagnostics either
   ## way.
-  if (n_reseeds == 0L && length(loglik_trace) > 2L) {
-    worst_drop <- min(diff(loglik_trace))
-    if (worst_drop < -1e-6 * max(1, abs(loglik_trace[1L]))) {
-      cli::cli_warn(
-        c("The EM log-likelihood decreased by {signif(-worst_drop, 3)} during fitting.",
-          "i" = "This usually signals ridge regularisation interacting with a near-singular component."),
-        class = "proxymix_nonmonotone"
-      )
-    }
+  loglik_max_drop <- if (length(loglik_trace) > 1L) {
+    max(0, -min(diff(loglik_trace)))
+  } else {
+    0
   }
+  nonmonotone <- n_reseeds == 0L && length(loglik_trace) > 2L &&
+    loglik_max_drop > 1e-6 * max(1, abs(loglik_trace[1L]))
 
   ## Number of free parameters for BIC/AIC:
   ##   N - 1 (weights) + N * p (means) + N * p * (p + 1) / 2 (covariances).
@@ -232,6 +280,8 @@ em_samples_one_run <- function(samples, init, target,
       n_used = n,
       n_params = n_params,
       n_reseeds = n_reseeds,
+      loglik_max_drop = loglik_max_drop,
+      nonmonotone = nonmonotone,
       bic = bic,
       aic = aic
     ),

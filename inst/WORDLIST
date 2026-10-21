@@ -7,7 +7,6 @@ A2
 AER
 APSIM
 AdMit
-Adelie
 Aliferis
 Alspach
 Arabie
@@ -35,6 +34,7 @@ Buuren
 Bühlmann
 C0
 CATE
+CMD
 CRC
 CUSUM
 Canonicalise
@@ -44,6 +44,7 @@ Celeux
 Chauveau
 Chernozhukov
 CmdStan
+Codecov
 Cornuet
 Crump
 DEoptim
@@ -147,13 +148,13 @@ Leibler
 Leisch
 Leonenko
 Levenberg
+Lifecycle
 Liu
 M0
-M1
-M2
 MBIC
 MNAR
 Maathuis
+MacQueen's
 Malik
 Marquardt
 Martino
@@ -211,6 +212,7 @@ Schwarz
 Scrucca
 Sejdinovic
 Sekhon
+Sheather
 Silverman
 Silverman's
 Singmann
@@ -220,6 +222,7 @@ Springer
 Stögbauer
 Suomela
 SuperLearner
+TRANSfer
 Technometrics
 Therneau
 Tibshirani
@@ -248,6 +251,7 @@ Zeileis
 Zhao
 Zhou
 al
+analyzers
 analyzing
 atanh
 binom
@@ -324,6 +328,7 @@ langle
 ldots
 leq
 linearised
+lintr
 mathbb
 mathcal
 mathrm
@@ -379,7 +384,6 @@ runnable
 sampleSelection
 stan
 strucchange
-strucchange's
 symmetrisation
 ter
 tfrac
@@ -400,6 +404,7 @@ validator
 validators
 varepsilon
 variational
+varphi
 vectorisation
 x2
 xy

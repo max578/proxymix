@@ -35,9 +35,9 @@ bandwidths. Default \code{"plugin"}: the Sheather-Jones plug-in bandwidth
 (\code{\link[stats:bw.SJ]{stats::bw.SJ()}}) of each coordinate. A coordinate with fewer distinct
 values than half the number of points gets Silverman's rule instead,
 because the plug-in bandwidth shrinks towards zero on heavily tied data.
-Silverman's rule smooths more and can merge nearby modes. A diagonal
-multivariate plug-in such as \code{sqrt(diag(ks::Hpi.diag(samples)))} can be
-passed as a numeric vector. It did better than \code{"plugin"} on a
+Silverman's rule smooths more and can merge nearby modes. The diagonal
+multivariate plug-in \code{sqrt(diag(ks::Hpi.diag(samples)))} can be passed
+as a numeric vector. It did better than \code{"plugin"} on a
 simulated two-dimensional mixture with three overlapping components,
 and its cost grows with the square of the sample size.}
 

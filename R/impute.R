@@ -128,8 +128,15 @@
             reg <- S[[k]][mv, o, drop = FALSE] %*% Sooi
             cmean <- sweep(Xo, 2L, mu[[k]][o]) %*% t(reg)
             Xc[, mv] <- sweep(cmean, 2L, mu[[k]][mv], "+")
-            Cc[mv, mv] <- S[[k]][mv, mv, drop = FALSE] -
+            Cmm <- S[[k]][mv, mv, drop = FALSE] -
               reg %*% S[[k]][o, mv, drop = FALSE]
+            ## for a near-singular component the subtraction can round to a
+            ## negative eigenvalue larger than the ridge; floor it at 0
+            ev <- eigen(symmetrise(Cmm), symmetric = TRUE)
+            if (min(ev$values) < 0) {
+              Cmm <- ev$vectors %*% (pmax(ev$values, 0) * t(ev$vectors))
+            }
+            Cc[mv, mv] <- Cmm
           } else {
             Xc[, mv] <- matrix(mu[[k]][mv], length(rows), length(mv), byrow = TRUE)
             Cc[mv, mv] <- S[[k]][mv, mv, drop = FALSE]

@@ -349,8 +349,29 @@
 
 ## Inverse-CDF draw from N(mu, sd^2) truncated to [L, U].
 .draw_trunc <- function(mu, sdv, L, U) {
-  pL <- stats::pnorm((L - mu) / sdv)
-  pU <- stats::pnorm((U - mu) / sdv)
-  u <- pL + stats::runif(length(mu)) * (pU - pL)
-  mu + sdv * stats::qnorm(pmin(pmax(u, 1e-12), 1 - 1e-12))
+  a <- (L - mu) / sdv
+  b <- (U - mu) / sdv
+  pL <- stats::pnorm(a)
+  pU <- stats::pnorm(b)
+  r <- stats::runif(length(mu))
+  u <- pL + r * (pU - pL)
+  z <- stats::qnorm(pmin(pmax(u, 1e-12), 1 - 1e-12))
+  ## far in a tail the probabilities above lose all precision; there, draw
+  ## by the log upper-tail probability on the side away from the bulk
+  tail <- pU < 1e-8 | pL > 1 - 1e-8
+  if (any(tail)) {
+    a <- rep_len(a, length(mu))[tail]
+    b <- rep_len(b, length(mu))[tail]
+    flip <- b < -a
+    lo <- ifelse(flip, -b, a)
+    hi <- ifelse(flip, -a, b)
+    s_lo <- stats::pnorm(lo, lower.tail = FALSE, log.p = TRUE)
+    s_hi <- stats::pnorm(hi, lower.tail = FALSE, log.p = TRUE)
+    rt <- r[tail]
+    zt <- stats::qnorm(s_lo + log(rt + (1 - rt) * exp(s_hi - s_lo)),
+                       lower.tail = FALSE, log.p = TRUE)
+    zt <- pmin(pmax(zt, lo), hi)
+    z[tail] <- ifelse(flip, -zt, zt)
+  }
+  mu + sdv * z
 }

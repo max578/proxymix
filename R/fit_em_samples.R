@@ -141,9 +141,8 @@ fit_em_samples <- function(target, N = 2L,
   .finish_em_samples(best, samples, ridge_eps, canonicalise)
 }
 
-## Collapse and decrease checks on the returned fit only. Near a collapsed
-## component the ridged M-step stops being an exact maximiser, which is what
-## makes the log-likelihood fall, so the collapse warning takes precedence.
+## Near a collapsed component the ridged M-step is not an exact maximiser and
+## the log-likelihood can fall, so the collapse warning takes precedence.
 .finish_em_samples <- function(fit, samples, ridge_eps, canonicalise) {
   if (isTRUE(canonicalise)) fit <- gmm_canonicalise(fit)
   n <- nrow(samples)

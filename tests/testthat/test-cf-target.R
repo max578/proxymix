@@ -1,7 +1,4 @@
-## cf_target() builds a target known through its characteristic function;
-## fit_proxymix() fits it with regime "cf"; from_cf() reports Kolmogorov
-## bounds by default. Expected values are exact: the Cauchy distribution
-## function is closed form.
+## Expected values are exact: the Cauchy distribution function is closed form.
 
 gamma_noise_cf <- function(t) (1 - 1i * t[, 1L])^(-3) * exp(-0.125 * t[, 1L]^2)
 

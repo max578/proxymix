@@ -27,7 +27,6 @@
   }
 }
 
-## `S7::method(print, cls) <- f` leaves a copy of base::print in the
-## namespace, and the S3 print methods in NAMESPACE would then register
-## against that copy, out of reach of print() called by users.
+## `S7::method(print, cls) <- f` leaves a copy of base::print in the namespace;
+## the NAMESPACE S3 print methods would register against it, not base::print.
 rm("print")

@@ -72,8 +72,7 @@ init_kmeans <- function(samples, N = 2L, ridge_eps = 1e-6, nstart = 10L) {
   N <- as.integer(N)
   p <- ncol(samples)
   ## Hartigan-Wong's Quick-TRANSfer limit (50 * n) is not set by `iter.max`;
-  ## if the kept start hit it, MacQueen's algorithm, which has no such stage,
-  ## is used instead
+  ## `ifault` 4 means the kept start hit it.
   qtran_msg <- gettextf("Quick-TRANSfer stage steps exceeded maximum (= %d)",
                         as.integer(min(.Machine$integer.max, 50 * nrow(samples))),
                         domain = "R-stats")

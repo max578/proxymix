@@ -1,7 +1,5 @@
-## Two rare failures of gmm_impute() under a detection limit: draws far in a
-## tail of the truncated normal, and a near-singular component in the
-## missing-at-random EM that selects the number of components. The expected
-## truncated means are integrated numerically.
+## gmm_impute() under a detection limit. Expected truncated means are
+## integrated numerically.
 
 test_that("truncated draws far in a tail stay inside the interval", {
   cases <- list(c(29.2, 1, -0.98), c(0, 1, -40), c(10, 2, -5))

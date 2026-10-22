@@ -431,12 +431,8 @@
   }, numeric(1L))
 }
 
-## Phase of the characteristic function at frequency `t` along axis `d`,
-## continued from zero so that it does not wrap at pi. Starting from a
-## frequency small enough for the principal value to be the phase, each
-## doubling uses psi(2s) = 2 psi(s) + Arg(cf(2s) / cf(s)^2); the last term
-## carries only the cumulants of order three and above, which stay well
-## inside (-pi, pi) below the half-height frequency.
+## Phase of the characteristic function at `t` along axis `d`, unwrapped by
+## doubling from a small frequency: psi(2s) = 2 psi(s) + Arg(cf(2s) / cf(s)^2).
 .cf_unwrapped_phase <- function(phi, p, d, t, n_double = 20L) {
   at <- function(s) {
     v <- numeric(p)
@@ -905,9 +901,7 @@ from_cf <- function(
   invisible(NULL)
 }
 
-## Directions for the Kolmogorov bounds of a fit: the first min(p, 8)
-## coordinate axes, then random unit directions up to eight, drawn under
-## `seed` when given; the generator state is left unchanged either way.
+## Directions for the Kolmogorov bounds of a fit.
 .cf_bracket_directions <- function(p, seed = NULL) {
   axes <- diag(p)[seq_len(min(p, 8L)), , drop = FALSE]
   if (p == 1L || p >= 8L) return(axes)

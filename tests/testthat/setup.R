@@ -1,7 +1,6 @@
 withr::local_seed(20260513, .local_envir = teardown_env())
 
-## One BLAS thread and one data.table thread per test process. A
-## multithreaded BLAS (OpenBLAS on some Linux check machines) otherwise takes
+## A multithreaded BLAS (OpenBLAS on some Linux check machines) otherwise uses
 ## more CPU time than elapsed time in the characteristic-function fits.
 if (requireNamespace("RhpcBLASctl", quietly = TRUE)) {
   blas_threads <- RhpcBLASctl::blas_get_num_procs()

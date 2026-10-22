@@ -16,7 +16,7 @@
 #' The `fb_log_posterior` producer interface
 #'
 #' Materialises the posterior-producer contract as a small, validated
-#' specification object that [from_fb_posterior()] consumes. It is the single
+#' specification object that `from_fb_posterior()` consumes. It is the single
 #' seam between proxymix (the consumer) and an external Bayesian fitting
 #' package (the producer): any object that satisfies the interface described
 #' here can be compressed into a Gaussian-mixture proxy without proxymix ever
@@ -79,8 +79,8 @@
 #'   `parameter_names`, `log_normalizer`, `support_lower`, `support_upper`,
 #'   `draws`, and `name`.
 #' @family interop
-#' @seealso [from_fb_posterior()] for the consumer verb, [mock_fb_posterior()]
-#'   for a synthetic producer, [fb_producer_available()] for the capability
+#' @seealso `from_fb_posterior()` for the consumer verb, `mock_fb_posterior()`
+#'   for a synthetic producer, `fb_producer_available()` for the capability
 #'   probe.
 #' @noRd
 #' @keywords internal
@@ -153,8 +153,8 @@ print.fb_log_posterior_spec <- function(x, ...) {
 #' Capability probe for the posterior-producer seam. Returns `TRUE` only when
 #' the package named by `getOption("proxymix.producer_package")` is installed
 #' and exports the `fb_log_posterior` generic. When no producer package is
-#' named or installed, the probe returns `FALSE`, and [from_fb_posterior()]
-#' still works against a bare callable or the synthetic [mock_fb_posterior()]
+#' named or installed, the probe returns `FALSE`, and `from_fb_posterior()`
+#' still works against a bare callable or the synthetic `mock_fb_posterior()`
 #' -- the probe lets a caller branch on whether a fitted model object can be
 #' compressed directly.
 #'
@@ -167,7 +167,7 @@ print.fb_log_posterior_spec <- function(x, ...) {
 #' @returns A logical scalar: `TRUE` when an installed producer package
 #'   exports `fb_log_posterior`, `FALSE` otherwise.
 #' @family interop
-#' @seealso [from_fb_posterior()], [fb_log_posterior_spec()].
+#' @seealso `from_fb_posterior()`, `fb_log_posterior_spec()`.
 #' @noRd
 #' @keywords internal
 #' @examples
@@ -201,7 +201,7 @@ fb_producer_available <- function() {
 #' Returns a conforming `fb_log_posterior_spec` whose log-density is a known
 #' target, so the consumer path can be exercised end-to-end with no producer
 #' package installed. It is the stand-in for a fitted model object: the spec
-#' it returns is byte-for-byte the shape [from_fb_posterior()] expects from a
+#' it returns is byte-for-byte the shape `from_fb_posterior()` expects from a
 #' real producer.
 #'
 #' Two shapes are provided. `"gaussian"` is an isotropic `n_dim`-dimensional
@@ -222,7 +222,7 @@ fb_producer_available <- function() {
 #'
 #' @returns An `fb_log_posterior_spec`.
 #' @family interop
-#' @seealso [from_fb_posterior()], [fb_log_posterior_spec()].
+#' @seealso `from_fb_posterior()`, `fb_log_posterior_spec()`.
 #' @noRd
 #' @keywords internal
 #' @examples
@@ -285,7 +285,7 @@ mock_fb_posterior <- function(shape = c("gaussian", "banana"),
 #'
 #' The consumer entry point of the posterior-producer seam. Takes a producer
 #' -- a fitted model object from a producer package, a bare unnormalised
-#' log-posterior callable, or a pre-built [fb_log_posterior_spec()] -- and
+#' log-posterior callable, or a pre-built `fb_log_posterior_spec()` -- and
 #' returns a closed-form `N`-component Gaussian-mixture proxy that compresses
 #' it, via importance-sampled KLD-EM ([fit_kld_em()], regime (iii)).
 #'
@@ -299,9 +299,9 @@ mock_fb_posterior <- function(shape = c("gaussian", "banana"),
 #' posterior.
 #'
 #' The fitted-object path activates when an installed producer package
-#' exports the `fb_log_posterior` generic (see [fb_producer_available()]).
+#' exports the `fb_log_posterior` generic (see `fb_producer_available()`).
 #' Otherwise a fitted model object raises an informative seam error; the
-#' bare-callable and [mock_fb_posterior()] paths work with no producer
+#' bare-callable and `mock_fb_posterior()` paths work with no producer
 #' installed. proxymix never depends on a producer package at runtime.
 #'
 #' Dimensional scope. As with [from_kde()], importance-sampled KLD-EM loses
@@ -310,14 +310,14 @@ mock_fb_posterior <- function(shape = c("gaussian", "banana"),
 #' `n_dim > 10` (rejected). Inspect [ess_summary()] on the result.
 #'
 #' @param producer A fitted model object from a producer package, a bare
-#'   callable satisfying the [fb_log_posterior_spec()] contract, or an
+#'   callable satisfying the `fb_log_posterior_spec()` contract, or an
 #'   `fb_log_posterior_spec`.
 #' @param N Number of mixture components in the proxy.
 #' @param parameter_names Character vector of parameter names, forwarded to
-#'   [fb_log_posterior_spec()] for the bare-callable form. Ignored when
+#'   `fb_log_posterior_spec()` for the bare-callable form. Ignored when
 #'   `producer` is already a spec.
 #' @param log_normalizer Numeric scalar `log Z`, the log of the integral of
-#'   `exp()` of the log-posterior, forwarded to [fb_log_posterior_spec()].
+#'   `exp()` of the log-posterior, forwarded to `fb_log_posterior_spec()`.
 #'   Default `NA_real_`.
 #' @param proposal Optional [is_proposal] for the importance-sampling draws.
 #'   The default is a multivariate-t (`df = 5`) centred and scaled from the
@@ -346,9 +346,9 @@ mock_fb_posterior <- function(shape = c("gaussian", "banana"),
 #'   `parameter_names`, and `log_normalizer`).
 #' @family fitting
 #' @family interop
-#' @seealso [fb_log_posterior_spec()] for the producer interface,
-#'   [mock_fb_posterior()] for a synthetic producer,
-#'   [fb_producer_available()] for the capability probe.
+#' @seealso `fb_log_posterior_spec()` for the producer interface,
+#'   `mock_fb_posterior()` for a synthetic producer,
+#'   `fb_producer_available()` for the capability probe.
 #' @noRd
 #' @keywords internal
 #' @examples

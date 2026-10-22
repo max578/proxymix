@@ -134,7 +134,7 @@
 #'   the proxy concentrates on the maxima.
 #' @param temperature Optional control of the cooling ladder. `NULL` (the
 #'   default) derives a ladder from the range `r` of `objective` over a
-#'   uniform probe of the box: from `r / 2` down to `r / 80` when
+#'   uniform probe of the box: from `r/2` down to `r/80` when
 #'   `scale = "objective"`, and from `max(r / 2, 1)` down to 1 when
 #'   `scale = "loglik"`. A positive scalar sets the final (lowest)
 #'   temperature; a length-2 numeric `c(high, low)` sets both ends

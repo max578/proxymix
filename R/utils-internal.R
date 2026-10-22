@@ -87,14 +87,16 @@ ridge <- function(S, epsilon = 1e-6) {
 ## Force a covariance to be symmetric (numerical hygiene after EM updates).
 symmetrise <- function(S) 0.5 * (S + t(S))
 
-## Single metadata policy for the closed-form operators: every operator
-## result carries (a) the source fit's quality certificate, unchanged, and
-## (b) a `provenance` character vector with one entry per operation, plus
-## any operator-specific extras. Nothing else is merged forward, so stale
-## keys from earlier operations cannot masquerade as current.
+## The characteristic-function bounds are set to `NA` on an operator result:
+## they hold for the fitted mixture, not for what an operator makes of it.
 .op_result_meta <- function(g, op, extra = list()) {
   meta <- list()
-  if (!is.null(g@metadata$quality)) meta$quality <- g@metadata$quality
+  if (!is.null(g@metadata$quality)) {
+    meta$quality <- g@metadata$quality
+    for (field in c("cf_upper", "cf_distance", "cf_heldout_rms")) {
+      if (!is.null(meta$quality[[field]])) meta$quality[[field]] <- NA_real_
+    }
+  }
   meta$provenance <- c(g@metadata$provenance %||% character(0L), op)
   utils::modifyList(meta, extra)
 }
@@ -133,7 +135,7 @@ symmetrise <- function(S) 0.5 * (S + t(S))
       kld_approx        = worst("kld_approx", max),
       validation_gap    = worst("validation_gap", max, abs),
       heldout_kld       = worst("heldout_kld", max),
-      cf_upper          = worst("cf_upper", max),
+      cf_upper          = NA_real_,
       quality_sources   = lapply(gs, function(g) {
         list(name = g@name, quality = g@metadata$quality)
       })

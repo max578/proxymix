@@ -161,3 +161,20 @@ test_that("the structured fits carry the bracket", {
   expect_null(src_off$sources[[1L]]@diagnostics$bracket)
   expect_equal(src_off$mixing, src$mixing)
 })
+
+test_that("operator results do not carry the bounds of the fit", {
+  fit <- from_cf(gamma_noise_cf, 1L, 2L, n_freq = 1024L, seed = 1L)
+  fit2 <- from_cf(gamma_noise_cf, 1L, 2L, n_freq = 1024L, seed = 2L)
+  q_fit <- gmm_fit_quality(fit)
+  expect_true(is.finite(q_fit$cf_upper))
+  q <- gmm_fit_quality(gmm_marginalise(fit, keep = 1L))
+  expect_identical(q$regime, "cf")
+  expect_identical(q$cf_upper, NA_real_)
+  expect_identical(q$cf_distance, NA_real_)
+  expect_identical(q$cf_heldout_rms, NA_real_)
+  qp <- gmm_fit_quality(gmm_product(fit, fit2))
+  expect_identical(qp$cf_upper, NA_real_)
+  expect_identical(qp$quality_sources[[1L]]$quality$cf_upper, q_fit$cf_upper)
+  expect_identical(qp$quality_sources[[2L]]$quality$cf_upper,
+                   gmm_fit_quality(fit2)$cf_upper)
+})

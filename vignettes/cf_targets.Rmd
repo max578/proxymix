@@ -402,11 +402,12 @@ fit_sum@diagnostics$bracket
   that decays very slowly.
 * The bounds compare distribution functions. They are not a
   Kullback-Leibler divergence, which needs a density of the target.
-* A mixture made from a fit by the operators of the package (a marginal,
-  a Bayes update, a convolution) carries the `cf_upper` of that fit, or the
-  largest over several fits. That value need not bound the new mixture: the
-  errors of a convolution, for one, can add up. `gmm_cf_distance()` against
-  the characteristic function of the result gives its own bounds.
+* On a mixture made from a fit by the operators of the package (a marginal,
+  a Bayes update, a convolution), `cf_distance`, `cf_upper` and
+  `cf_heldout_rms` are `NA`. The bounds of the fit need not hold for the new
+  mixture: the errors of a convolution, for one, can add up.
+  `gmm_cf_distance()` against the characteristic function of the result
+  gives its own bounds.
 
 `bracket = FALSE` skips the bounds, and `gmm_cf_distance()` gives them for
 any other direction, grid or range of probabilities.

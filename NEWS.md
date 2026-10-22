@@ -30,6 +30,11 @@
   `glance()` and `gmm_fit_quality()` report them (`cf_distance`,
   `cf_upper`). `bracket = FALSE` skips them. The bounds do not change the fit
   or the state of the random number generator.
+* A mixture made from such a fit by an operator (`gmm_marginalise()`,
+  `gmm_product()` and the others) has `cf_heldout_rms`, `cf_distance` and
+  `cf_upper` set to `NA` in its quality record, since the bounds of the fit
+  need not hold for it. A composite keeps each operand's own values under
+  `quality_sources`.
 * `gmm_cf_distance()` returns the same bounds between a characteristic-function
   target and any mixture along a chosen direction. The upper bound needs a
   target whose projected characteristic function is integrable.

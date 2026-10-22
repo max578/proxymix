@@ -2,8 +2,8 @@
 ## convolution, mixing, and the one-dimensional distribution/quantile
 ## functions. Every operation here is exact (no Monte Carlo) and follows
 ## the operator metadata policy (`.op_result_meta()`): the source fit's
-## quality certificate travels, and each operation appends to the
-## provenance chain.
+## quality certificate travels, its characteristic-function bounds set to
+## `NA`, and each operation appends to the provenance chain.
 
 #' Mean and covariance of a Gaussian mixture
 #'

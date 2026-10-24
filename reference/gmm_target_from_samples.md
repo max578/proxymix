@@ -32,6 +32,7 @@ object.
 
 Other targets:
 [`banana_target()`](https://max578.github.io/proxymix/reference/banana_target.md),
+[`cf_target()`](https://max578.github.io/proxymix/reference/cf_target.md),
 [`donut_target()`](https://max578.github.io/proxymix/reference/donut_target.md),
 [`epanechnikov_target()`](https://max578.github.io/proxymix/reference/epanechnikov_target.md),
 [`maxent_target()`](https://max578.github.io/proxymix/reference/maxent_target.md),

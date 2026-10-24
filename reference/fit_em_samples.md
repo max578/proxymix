@@ -94,13 +94,26 @@ fit_em_samples(
 
 A [gmm_fit](https://max578.github.io/proxymix/reference/gmm_fit.md) with
 `regime = "sample"`. When `anneal = TRUE` the diagnostics list also
-carries `annealed = TRUE` and the `temp_schedule` used.
+carries `annealed = TRUE` and the `temp_schedule` used. The diagnostics
+also carry `loglik_max_drop`, the largest decrease of the log-likelihood
+between iterations, and `collapsed_components`, the components (in the
+returned order) that sit on fewer than `p + 1` effective samples, or
+whose smallest variance across the coordinates that are not constant
+within the component is below 100 times the ridge, or in which every
+coordinate is constant (a point mass). A collapsed component marks the
+fit as degenerate in its quality certificate and raises a
+`proxymix_component_collapse` warning. Only the returned fit is checked,
+so a discarded start raises no warning.
 
 ## See also
 
 Other fitting:
 [`fit_kld_em()`](https://max578.github.io/proxymix/reference/fit_kld_em.md),
 [`fit_moment_match()`](https://max578.github.io/proxymix/reference/fit_moment_match.md),
+[`fit_mppca_samples()`](https://max578.github.io/proxymix/reference/fit_mppca_samples.md),
+[`from_cf()`](https://max578.github.io/proxymix/reference/from_cf.md),
+[`from_cf_elliptical()`](https://max578.github.io/proxymix/reference/from_cf_elliptical.md),
+[`from_cf_sources()`](https://max578.github.io/proxymix/reference/from_cf_sources.md),
 [`from_kde()`](https://max578.github.io/proxymix/reference/from_kde.md),
 [`from_objective()`](https://max578.github.io/proxymix/reference/from_objective.md),
 [`select_N()`](https://max578.github.io/proxymix/reference/select_N.md)

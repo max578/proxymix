@@ -1,10 +1,14 @@
 # Choosing between the three fitting regimes
 
-\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`
+``` r
 
-\
-`has_ggplot2`` ``<-`` `[`requireNamespace`](https://rdrr.io/r/base/ns-load.html)`(``"ggplot2"``, quietly ``=`` ``TRUE``)`
+library(proxymix)
+```
+
+``` r
+
+has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
+```
 
 ## The problem
 
@@ -57,14 +61,16 @@ distributions. Its density formula is known exactly, and exact samples
 are easy to draw. All three methods can therefore be run on the same
 target.
 
-\
-`tgt`` ``<-`` `[`mixture_target`](https://max578.github.io/proxymix/reference/mixture_target.md)`(``with_samples ``=`` ``TRUE``, n ``=`` ``1500L``, seed ``=`` ``1L``)`\
-`tgt`\
-`#> <gmm_target>: "three_mixture" in p = 2 dimensions`\
-`#>   log_density : supplied`\
-`#>   samples     : 1500 x 2 matrix`\
-`#>   normalised  : TRUE`\
-`#>   log Z(f)    : 0`
+``` r
+
+tgt <- mixture_target(with_samples = TRUE, n = 1500L, seed = 1L)
+tgt
+#> <gmm_target>: "three_mixture" in p = 2 dimensions
+#>   log_density : supplied
+#>   samples     : 1500 x 2 matrix
+#>   normalised  : TRUE
+#>   log Z(f)    : 0
+```
 
 ### Method (i): one normal distribution with the sample’s mean and spread
 
@@ -74,14 +80,16 @@ measured by the Kullback-Leibler (KL) divergence, which is zero when two
 distributions match and grows as they differ. Method (i) computes the
 mean and covariance of the sample in one step, with no iteration.
 
-\
-`m_fit`` ``<-`` `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(``tgt``, N ``=`` ``1L``, regime ``=`` ``"moment"``)`\
-`m_fit`\
-`#> <gmm_fit>: regime = "moment", K = 1, p = 2`\
-`#>   target     : three_mixture`\
-`#>   iterations : 0`\
-`#>   converged  : TRUE`\
-`#>   [1] w = 1.0000, |mu| = 0.0328, tr(Sigma) = 5.6029`
+``` r
+
+m_fit <- fit_proxymix(tgt, N = 1L, regime = "moment")
+m_fit
+#> <gmm_fit>: regime = "moment", K = 1, p = 2
+#>   target     : three_mixture
+#>   iterations : 0
+#>   converged  : TRUE
+#>   [1] w = 1.0000, |mu| = 0.0328, tr(Sigma) = 5.6029
+```
 
 The fitted mean and covariance equal those of the sample. The only
 difference is a small constant, set by `ridge_eps`, that is added to the
@@ -89,17 +97,19 @@ diagonal of the covariance matrix, which stops the fit failing when the
 matrix is close to singular. With `ridge_eps = 0` the difference
 disappears.
 
-\
-`m_fit_bare`` ``<-`` `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(``tgt``, N ``=`` ``1L``, regime ``=`` ``"moment"``, ridge_eps ``=`` ``0``)`\
-`moment_gap`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(`\
-`  mean ``=`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``m_fit``@``means``[[``1L``]``]`` ``-`` `[`colMeans`](https://rdrr.io/pkg/Matrix/man/colSums-methods.html)`(``tgt``@``samples``)``)``)``,`\
-`  covariance ``=`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``m_fit``@``covariances``[[``1L``]``]`` ``-`` `[`cov`](https://rdrr.io/r/stats/cor.html)`(``tgt``@``samples``)``)``)``,`\
-`  covariance_no_ridge ``=`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``m_fit_bare``@``covariances``[[``1L``]``]`` ``-`\
-`                                  `[`cov`](https://rdrr.io/r/stats/cor.html)`(``tgt``@``samples``)``)``)`\
-`)`\
-[`signif`](https://rdrr.io/r/base/Round.html)`(``moment_gap``, ``3L``)`\
-`#>                mean          covariance covariance_no_ridge `\
-`#>               0e+00               1e-06               0e+00`
+``` r
+
+m_fit_bare <- fit_proxymix(tgt, N = 1L, regime = "moment", ridge_eps = 0)
+moment_gap <- c(
+  mean = max(abs(m_fit@means[[1L]] - colMeans(tgt@samples))),
+  covariance = max(abs(m_fit@covariances[[1L]] - cov(tgt@samples))),
+  covariance_no_ridge = max(abs(m_fit_bare@covariances[[1L]] -
+                                  cov(tgt@samples)))
+)
+signif(moment_gap, 3L)
+#>                mean          covariance covariance_no_ridge 
+#>               0e+00               1e-06               0e+00
+```
 
 One normal distribution cannot describe a target with three peaks. It
 is, however, the closest single normal distribution to the target.
@@ -117,17 +127,19 @@ measure of how well the mixture fits it, changes by less than the
 tolerance `tol`. `n_starts = 4L` runs the algorithm from four starting
 points and keeps the best fit.
 
-\
-`s_fit`` ``<-`` `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(``tgt``, N ``=`` ``3L``, regime ``=`` ``"sample"``,`\
-`                      max_iter ``=`` ``200L``, n_starts ``=`` ``4L``, seed ``=`` ``1L``)`\
-`s_fit`\
-`#> <gmm_fit>: regime = "sample", K = 3, p = 2`\
-`#>   target     : three_mixture`\
-`#>   iterations : 17`\
-`#>   converged  : TRUE`\
-`#>   [1] w = 0.4061, |mu| = 0.0336, tr(Sigma) = 0.9343`\
-`#>   [2] w = 0.3032, |mu| = 2.7588, tr(Sigma) = 1.2155`\
-`#>   [3] w = 0.2907, |mu| = 2.8186, tr(Sigma) = 0.8084`
+``` r
+
+s_fit <- fit_proxymix(tgt, N = 3L, regime = "sample",
+                      max_iter = 200L, n_starts = 4L, seed = 1L)
+s_fit
+#> <gmm_fit>: regime = "sample", K = 3, p = 2
+#>   target     : three_mixture
+#>   iterations : 17
+#>   converged  : TRUE
+#>   [1] w = 0.4061, |mu| = 0.0336, tr(Sigma) = 0.9343
+#>   [2] w = 0.3032, |mu| = 2.7588, tr(Sigma) = 1.2155
+#>   [3] w = 0.2907, |mu| = 2.8186, tr(Sigma) = 0.8084
+```
 
 ### Method (iii): several normal distributions fitted to the formula
 
@@ -142,59 +154,65 @@ target. The proposal here is a Student-t distribution, a relative of the
 normal with heavier tails. Its degrees of freedom, `df = 5`, set how
 heavy the tails are: the fewer, the heavier.
 
-\
-`k_fit`` ``<-`` `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(``tgt``, N ``=`` ``3L``, regime ``=`` ``"kld"``,`\
-`                      proposal ``=`` `[`proposal_mvt`](https://max578.github.io/proxymix/reference/proposal_uniform.md)`(``n_dim ``=`` ``2L``,`\
-`                                              mean ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)``,`\
-`                                              sigma ``=`` ``6`` ``*`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``,`\
-`                                              df ``=`` ``5``)``,`\
-`                      is_size ``=`` ``3000L``,`\
-`                      max_iter ``=`` ``60L``,`\
-`                      seed ``=`` ``1L``)`\
-`k_fit`\
-`#> <gmm_fit>: regime = "kld", K = 3, p = 2`\
-`#>   target     : three_mixture`\
-`#>   iterations : 10`\
-`#>   converged  : TRUE`\
-`#>   [1] w = 0.4164, |mu| = 0.0300, tr(Sigma) = 0.8377`\
-`#>   [2] w = 0.3069, |mu| = 2.7545, tr(Sigma) = 1.2249`\
-`#>   [3] w = 0.2767, |mu| = 2.7562, tr(Sigma) = 0.8740`
+``` r
+
+k_fit <- fit_proxymix(tgt, N = 3L, regime = "kld",
+                      proposal = proposal_mvt(n_dim = 2L,
+                                              mean = c(0, 0),
+                                              sigma = 6 * diag(2),
+                                              df = 5),
+                      is_size = 3000L,
+                      max_iter = 60L,
+                      seed = 1L)
+k_fit
+#> <gmm_fit>: regime = "kld", K = 3, p = 2
+#>   target     : three_mixture
+#>   iterations : 10
+#>   converged  : TRUE
+#>   [1] w = 0.4164, |mu| = 0.0300, tr(Sigma) = 0.8377
+#>   [2] w = 0.3069, |mu| = 2.7545, tr(Sigma) = 1.2249
+#>   [3] w = 0.2767, |mu| = 2.7562, tr(Sigma) = 0.8740
+```
 
 ### The three fits side by side
 
-\
-`grid_x`` ``<-`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``4.5``, ``4.5``, length.out ``=`` ``100L``)`\
-`grid_base`` ``<-`` `[`expand.grid`](https://rdrr.io/r/base/expand.grid.html)`(``x1 ``=`` ``grid_x``, x2 ``=`` ``grid_x``)`\
-`grid_mat`` ``<-`` `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(``grid_base``)`\
-`target_d`` ``<-`` `[`exp`](https://rdrr.io/r/base/Log.html)`(``tgt``@``log_density``(``grid_mat``)``)`\
-`panel_of`` ``<-`` ``function``(``fit``, ``label``)`` ``{`\
-`  `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(`\
-`    x1 ``=`` ``grid_base``$``x1``, x2 ``=`` ``grid_base``$``x2``,`\
-`    target ``=`` ``target_d``,`\
-`    proxy ``=`` `[`dgmm`](https://max578.github.io/proxymix/reference/dgmm.md)`(``grid_mat``, ``fit``)``,`\
-`    regime ``=`` ``label``,`\
-`    stringsAsFactors ``=`` ``FALSE`\
-`  ``)`\
-`}`\
-`overlay_df`` ``<-`` `[`rbind`](https://amices.org/mice/reference/cbind.html)`(`\
-`  ``panel_of``(``m_fit``, ``"(i) moment, N = 1"``)``,`\
-`  ``panel_of``(``s_fit``, ``"(ii) sample EM, N = 3"``)``,`\
-`  ``panel_of``(``k_fit``, ``"(iii) KLD-EM, N = 3"``)`\
-`)`\
-`overlay_df``$``regime`` ``<-`` `[`factor`](https://rdrr.io/r/base/factor.html)`(``overlay_df``$``regime``,`\
-`                            levels ``=`` `[`unique`](https://rdrr.io/r/base/unique.html)`(``overlay_df``$``regime``)``)`
+``` r
 
-\
-`ggplot2``::`[`ggplot`](https://ggplot2.tidyverse.org/reference/ggplot.html)`(``overlay_df``, ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``x1``, ``x2``)``)`` ``+`\
-`  ``ggplot2``::`[`geom_contour_filled`](https://ggplot2.tidyverse.org/reference/geom_contour.html)`(``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``z ``=`` ``target``)``, bins ``=`` ``10L``,`\
-`                               alpha ``=`` ``0.85``)`` ``+`\
-`  ``ggplot2``::`[`geom_contour`](https://ggplot2.tidyverse.org/reference/geom_contour.html)`(``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``z ``=`` ``proxy``)``, colour ``=`` ``"white"``,`\
-`                        linetype ``=`` ``"dashed"``, linewidth ``=`` ``0.4``, bins ``=`` ``5L``)`` ``+`\
-`  ``ggplot2``::`[`scale_fill_viridis_d`](https://ggplot2.tidyverse.org/reference/scale_viridis.html)`(``option ``=`` ``"mako"``, guide ``=`` ``"none"``)`` ``+`\
-`  ``ggplot2``::`[`facet_wrap`](https://ggplot2.tidyverse.org/reference/facet_wrap.html)`(``~`` ``regime``)`` ``+`\
-`  ``ggplot2``::`[`coord_equal`](https://ggplot2.tidyverse.org/reference/coord_fixed.html)`(``)`` ``+`\
-`  ``ggplot2``::`[`labs`](https://ggplot2.tidyverse.org/reference/labs.html)`(``x ``=`` `[`expression`](https://rdrr.io/r/base/expression.html)`(``x``[``1``]``)``, y ``=`` `[`expression`](https://rdrr.io/r/base/expression.html)`(``x``[``2``]``)``)`` ``+`\
-`  ``ggplot2``::`[`theme_minimal`](https://ggplot2.tidyverse.org/reference/ggtheme.html)`(``base_size ``=`` ``11``)`
+grid_x <- seq(-4.5, 4.5, length.out = 100L)
+grid_base <- expand.grid(x1 = grid_x, x2 = grid_x)
+grid_mat <- as.matrix(grid_base)
+target_d <- exp(tgt@log_density(grid_mat))
+panel_of <- function(fit, label) {
+  data.frame(
+    x1 = grid_base$x1, x2 = grid_base$x2,
+    target = target_d,
+    proxy = dgmm(grid_mat, fit),
+    regime = label,
+    stringsAsFactors = FALSE
+  )
+}
+overlay_df <- rbind(
+  panel_of(m_fit, "(i) moment, N = 1"),
+  panel_of(s_fit, "(ii) sample EM, N = 3"),
+  panel_of(k_fit, "(iii) KLD-EM, N = 3")
+)
+overlay_df$regime <- factor(overlay_df$regime,
+                            levels = unique(overlay_df$regime))
+```
+
+``` r
+
+ggplot2::ggplot(overlay_df, ggplot2::aes(x1, x2)) +
+  ggplot2::geom_contour_filled(ggplot2::aes(z = target), bins = 10L,
+                               alpha = 0.85) +
+  ggplot2::geom_contour(ggplot2::aes(z = proxy), colour = "white",
+                        linetype = "dashed", linewidth = 0.4, bins = 5L) +
+  ggplot2::scale_fill_viridis_d(option = "mako", guide = "none") +
+  ggplot2::facet_wrap(~ regime) +
+  ggplot2::coord_equal() +
+  ggplot2::labs(x = expression(x[1]), y = expression(x[2])) +
+  ggplot2::theme_minimal(base_size = 11)
+```
 
 ![Three side-by-side contour panels of the same three-peak target,
 overlaid with the single-normal moment fit, the sample-EM fit and the
@@ -212,30 +230,34 @@ Methods (ii) and (iii) aim at different quantities. Method (ii) raises
 the log-likelihood of the sample. Method (iii) lowers an estimate of the
 KL divergence from the target, computed on the weighted trial points.
 
-\
-`trace_df`` ``<-`` `[`rbind`](https://amices.org/mice/reference/cbind.html)`(`\
-`  `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(`\
-`    iteration ``=`` `[`seq_along`](https://rdrr.io/r/base/seq.html)`(``s_fit``@``diagnostics``$``loglik_trace``)``,`\
-`    value ``=`` ``s_fit``@``diagnostics``$``loglik_trace``,`\
-`    panel ``=`` ``"(ii) sample EM: log-likelihood (up)"``,`\
-`    stringsAsFactors ``=`` ``FALSE`\
-`  ``)``,`\
-`  `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(`\
-`    iteration ``=`` `[`seq_along`](https://rdrr.io/r/base/seq.html)`(`[`kld_trace`](https://max578.github.io/proxymix/reference/kld_trace.md)`(``k_fit``)``)``,`\
-`    value ``=`` `[`kld_trace`](https://max578.github.io/proxymix/reference/kld_trace.md)`(``k_fit``)``,`\
-`    panel ``=`` ``"(iii) KLD-EM: KL on the fitting draws (down)"``,`\
-`    stringsAsFactors ``=`` ``FALSE`\
-`  ``)`\
-`)`
+``` r
 
-\
-`ggplot2``::`[`ggplot`](https://ggplot2.tidyverse.org/reference/ggplot.html)`(``trace_df``, ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``iteration``, ``value``)``)`` ``+`\
-`  ``ggplot2``::`[`geom_line`](https://ggplot2.tidyverse.org/reference/geom_path.html)`(``colour ``=`` ``"#0072B2"``, linewidth ``=`` ``0.8``)`` ``+`\
-`  ``ggplot2``::`[`geom_point`](https://ggplot2.tidyverse.org/reference/geom_point.html)`(``colour ``=`` ``"#0072B2"``, size ``=`` ``1.1``)`` ``+`\
-`  ``ggplot2``::`[`facet_wrap`](https://ggplot2.tidyverse.org/reference/facet_wrap.html)`(``~`` ``panel``, scales ``=`` ``"free"``)`` ``+`\
-`  ``ggplot2``::`[`scale_x_continuous`](https://ggplot2.tidyverse.org/reference/scale_continuous.html)`(``breaks ``=`` ``function``(``lim``)`` `[`unique`](https://rdrr.io/r/base/unique.html)`(`[`floor`](https://rdrr.io/r/base/Round.html)`(`[`pretty`](https://rdrr.io/r/base/pretty.html)`(``lim``)``)``)``)`` ``+`\
-`  ``ggplot2``::`[`labs`](https://ggplot2.tidyverse.org/reference/labs.html)`(``x ``=`` ``"round"``, y ``=`` ``"value"``)`` ``+`\
-`  ``ggplot2``::`[`theme_minimal`](https://ggplot2.tidyverse.org/reference/ggtheme.html)`(``base_size ``=`` ``11``)`
+trace_df <- rbind(
+  data.frame(
+    iteration = seq_along(s_fit@diagnostics$loglik_trace),
+    value = s_fit@diagnostics$loglik_trace,
+    panel = "(ii) sample EM: log-likelihood (up)",
+    stringsAsFactors = FALSE
+  ),
+  data.frame(
+    iteration = seq_along(kld_trace(k_fit)),
+    value = kld_trace(k_fit),
+    panel = "(iii) KLD-EM: KL on the fitting draws (down)",
+    stringsAsFactors = FALSE
+  )
+)
+```
+
+``` r
+
+ggplot2::ggplot(trace_df, ggplot2::aes(iteration, value)) +
+  ggplot2::geom_line(colour = "#0072B2", linewidth = 0.8) +
+  ggplot2::geom_point(colour = "#0072B2", size = 1.1) +
+  ggplot2::facet_wrap(~ panel, scales = "free") +
+  ggplot2::scale_x_continuous(breaks = function(lim) unique(floor(pretty(lim)))) +
+  ggplot2::labs(x = "round", y = "value") +
+  ggplot2::theme_minimal(base_size = 11)
+```
 
 ![Two panels of iteration traces: an increasing log-likelihood curve for
 sample EM and a decreasing Kullback-Leibler curve for
@@ -259,17 +281,19 @@ $`(0, 0)`$. The variance of $`x_1`$ is 1, the variance of $`x_2`$ is
 $`1 + 2/4 = 3/2`$, and the trace of the covariance, the sum of the two
 variances, is exactly $`5/2`$.
 
-\
-`banana`` ``<-`` `[`banana_target`](https://max578.github.io/proxymix/reference/banana_target.md)`(``with_samples ``=`` ``TRUE``, n ``=`` ``2000L``, seed ``=`` ``1L``)`\
-`m_b`` ``<-`` `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(``banana``, N ``=`` ``1L``, regime ``=`` ``"moment"``)`\
-`k_b`` ``<-`` `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(``banana``, N ``=`` ``1L``, regime ``=`` ``"kld"``,`\
-`                    proposal ``=`` `[`proposal_mvt`](https://max578.github.io/proxymix/reference/proposal_uniform.md)`(``n_dim ``=`` ``2L``,`\
-`                                            sigma ``=`` ``4`` ``*`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``,`\
-`                                            df ``=`` ``5``)``,`\
-`                    is_size ``=`` ``3000L``, max_iter ``=`` ``50L``, seed ``=`` ``1L``)`\
-`tr_of`` ``<-`` ``function``(``f``)`` `[`sum`](https://rdrr.io/r/base/sum.html)`(`[`diag`](https://rdrr.io/r/base/diag.html)`(``f``@``covariances``[[``1L``]``]``)``)`\
-`sample_trace`` ``<-`` `[`sum`](https://rdrr.io/r/base/sum.html)`(`[`diag`](https://rdrr.io/r/base/diag.html)`(`[`cov`](https://rdrr.io/r/stats/cor.html)`(``banana``@``samples``)``)``)`\
-`exact_trace`` ``<-`` ``1`` ``+`` ``(``1`` ``+`` ``2`` ``*`` ``0.5``^``2``)`
+``` r
+
+banana <- banana_target(with_samples = TRUE, n = 2000L, seed = 1L)
+m_b <- fit_proxymix(banana, N = 1L, regime = "moment")
+k_b <- fit_proxymix(banana, N = 1L, regime = "kld",
+                    proposal = proposal_mvt(n_dim = 2L,
+                                            sigma = 4 * diag(2),
+                                            df = 5),
+                    is_size = 3000L, max_iter = 50L, seed = 1L)
+tr_of <- function(f) sum(diag(f@covariances[[1L]]))
+sample_trace <- sum(diag(cov(banana@samples)))
+exact_trace <- 1 + (1 + 2 * 0.5^2)
+```
 
 | Source | Uses | Trace of covariance | Error |
 |:---|:---|---:|---:|
@@ -285,28 +309,30 @@ negative error means the spread is understated. {.table}
 The sample and the trial points are each one random draw. Repeating both
 with fresh seeds shows how far each trace moves by chance.
 
-\
-`sample_traces`` ``<-`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``500L``)``, ``function``(``s``)`` ``{`\
-`  `[`sum`](https://rdrr.io/r/base/sum.html)`(`[`diag`](https://rdrr.io/r/base/diag.html)`(`[`cov`](https://rdrr.io/r/stats/cor.html)`(`[`banana_target`](https://max578.github.io/proxymix/reference/banana_target.md)`(``with_samples ``=`` ``TRUE``, n ``=`` ``2000L``,`\
-`                             seed ``=`` ``s``)``@``samples``)``)``)`\
-`}``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)`\
-`kld_traces`` ``<-`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``100L``)``, ``function``(``s``)`` ``{`\
-`  ``tr_of``(`[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(``banana``, N ``=`` ``1L``, regime ``=`` ``"kld"``,`\
-`                     proposal ``=`` `[`proposal_mvt`](https://max578.github.io/proxymix/reference/proposal_uniform.md)`(``n_dim ``=`` ``2L``,`\
-`                                             sigma ``=`` ``4`` ``*`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``,`\
-`                                             df ``=`` ``5``)``,`\
-`                     is_size ``=`` ``3000L``, max_iter ``=`` ``50L``, seed ``=`` ``s``)``)`\
-`}``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)`\
-`spread`` ``<-`` `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(`\
-`  seeds ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(`[`length`](https://rdrr.io/r/base/length.html)`(``sample_traces``)``, `[`length`](https://rdrr.io/r/base/length.html)`(``kld_traces``)``)``,`\
-`  mean ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(`[`mean`](https://rdrr.io/r/base/mean.html)`(``sample_traces``)``, `[`mean`](https://rdrr.io/r/base/mean.html)`(``kld_traces``)``)``,`\
-`  sd ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(`[`sd`](https://rdrr.io/r/stats/sd.html)`(``sample_traces``)``, `[`sd`](https://rdrr.io/r/stats/sd.html)`(``kld_traces``)``)``,`\
-`  row.names ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"trace of a 2000-point sample"``, ``"method (iii) trace"``)`\
-`)`\
-[`round`](https://rdrr.io/r/base/Round.html)`(``spread``, ``3L``)`\
-`#>                              seeds  mean    sd`\
-`#> trace of a 2000-point sample   500 2.496 0.085`\
-`#> method (iii) trace             100 2.488 0.073`
+``` r
+
+sample_traces <- vapply(seq_len(500L), function(s) {
+  sum(diag(cov(banana_target(with_samples = TRUE, n = 2000L,
+                             seed = s)@samples)))
+}, numeric(1L))
+kld_traces <- vapply(seq_len(100L), function(s) {
+  tr_of(fit_proxymix(banana, N = 1L, regime = "kld",
+                     proposal = proposal_mvt(n_dim = 2L,
+                                             sigma = 4 * diag(2),
+                                             df = 5),
+                     is_size = 3000L, max_iter = 50L, seed = s))
+}, numeric(1L))
+spread <- data.frame(
+  seeds = c(length(sample_traces), length(kld_traces)),
+  mean = c(mean(sample_traces), mean(kld_traces)),
+  sd = c(sd(sample_traces), sd(kld_traces)),
+  row.names = c("trace of a 2000-point sample", "method (iii) trace")
+)
+round(spread, 3L)
+#>                              seeds  mean    sd
+#> trace of a 2000-point sample   500 2.496 0.085
+#> method (iii) trace             100 2.488 0.073
+```
 
 ### Comparison with mclust, mixtools and flexmix
 
@@ -329,11 +355,11 @@ criterion (BIC), a score that balances fit against the number of
 parameters. `flexmix` (Leisch, 2004; Grün and Leisch, 2008) kept the
 best of five random starts, the number proxymix uses by default for
 method (ii) as well. One `mixtools` (Benaglia et al., 2009) fit to 1,000
-points took 41 s, so `mixtools` was left out of the simulation.
+points took 22 s, so `mixtools` was left out of the simulation.
 
 | Package | Old Faithful: held-out log-likelihood | Mean KL, 200 points | Mean KL, 1,000 points | Misfits, 200 points | Misfits, 1,000 points |
 |:---|---:|---:|---:|---:|---:|
-| proxymix, method (ii) | -4.311 | 0.0527 | 0.0092 | 15 | 0 |
+| proxymix, method (ii) | -4.312 | 0.0527 | 0.0092 | 15 | 0 |
 | mclust | -4.318 | 0.0583 | 0.0117 | 7 | 0 |
 | mixtools | -4.312 | not run | not run | not run | not run |
 | flexmix | -4.308 | 0.0955 | 0.0647 | 108 | 80 |
@@ -354,9 +380,9 @@ than proxymix, 7 against 15. At 1,000 points neither had any. `flexmix`
 produced misfits in 36 per cent of the 200-point datasets and 27 per
 cent of the 1,000-point ones.
 
-At 200 points, proxymix took 0.039 s per fit on average, 2.5 times as
-long as `mclust` (0.016 s), and `flexmix` took 0.65 s. At 1,000 points,
-proxymix took 0.09 s, `mclust` 0.23 s and `flexmix` 0.97 s.
+At 200 points, proxymix took 0.023 s per fit on average, 2.4 times as
+long as `mclust` (0.010 s), and `flexmix` took 0.36 s. At 1,000 points,
+proxymix took 0.05 s, `mclust` 0.14 s and `flexmix` 0.52 s.
 
 The code below runs the Old Faithful check with all four packages. It
 converts each package’s fit to a proxymix mixture, so that
@@ -364,57 +390,59 @@ converts each package’s fit to a proxymix mixture, so that
 every fit in the same way. It needs `mclust`, `mixtools` and `flexmix`,
 all on CRAN, and it is not run when this vignette is built.
 
-\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`mclust`](https://mclust-org.github.io/mclust/)`)`\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`mixtools`](https://github.com/dsy109/mixtools)`)`\
-[`library`](https://rdrr.io/r/base/library.html)`(``flexmix``)`\
-\
-`# split the Old Faithful eruptions into a training half and a held-out half`\
-`faithful_mat`` ``<-`` `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(``datasets``::`[`faithful`](https://rdrr.io/r/datasets/faithful.html)`)`\
-[`set.seed`](https://rdrr.io/r/base/Random.html)`(``20260925``)`\
-`i_train`` ``<-`` `[`sort`](https://rdrr.io/r/base/sort.html)`(`[`sample.int`](https://rdrr.io/r/base/sample.html)`(`[`nrow`](https://rdrr.io/r/base/nrow.html)`(``faithful_mat``)``, `[`nrow`](https://rdrr.io/r/base/nrow.html)`(``faithful_mat``)`` ``/`` ``2L``)``)`\
-`train`` ``<-`` ``faithful_mat``[``i_train``, ``]`\
-`test`` ``<-`` ``faithful_mat``[``-``i_train``, ``]`\
-`train_df`` ``<-`` `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``eruptions ``=`` ``train``[``, ``1L``]``, waiting ``=`` ``train``[``, ``2L``]``)`\
-\
-`# convert each package's fit to a proxymix mixture, so dgmm() scores all four`\
-`as_gmm_mclust`` ``<-`` ``function``(``fit``)`` ``{`\
-`  `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(`\
-`    weights ``=`` ``fit``$``parameters``$``pro``,`\
-`    means ``=`` `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``fit``$``G``)``, ``function``(``k``)`` ``fit``$``parameters``$``mean``[``, ``k``]``)``,`\
-`    covariances ``=`` `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``fit``$``G``)``, ``function``(``k``)`` ``{`\
-`      ``fit``$``parameters``$``variance``$``sigma``[``, , ``k``]`\
-`    ``}``)`\
-`  ``)`\
-`}`\
-`as_gmm_mixtools`` ``<-`` ``function``(``fit``)`` ``{`\
-`  `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(``weights ``=`` ``fit``$``lambda``, means ``=`` ``fit``$``mu``, covariances ``=`` ``fit``$``sigma``)`\
-`}`\
-`as_gmm_flexmix`` ``<-`` ``function``(``fit``)`` ``{`\
-`  ``comps`` ``<-`` `[`lapply`](https://rdrr.io/r/base/lapply.html)`(``fit``@``components``, ``function``(``cc``)`` ``cc``[[``1L``]``]``@``parameters``)`\
-`  `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(`\
-`    weights ``=`` `[`prior`](https://rdrr.io/pkg/modeltools/man/Generics.html)`(``fit``)``,`\
-`    means ``=`` `[`lapply`](https://rdrr.io/r/base/lapply.html)`(``comps``, ``function``(``p``)`` `[`unname`](https://rdrr.io/r/base/unname.html)`(``p``$``center``)``)``,`\
-`    covariances ``=`` `[`lapply`](https://rdrr.io/r/base/lapply.html)`(``comps``, ``function``(``p``)`` `[`unname`](https://rdrr.io/r/base/unname.html)`(``p``$``cov``)``)`\
-`  ``)`\
-`}`\
-\
-`# two-component fits to the training half`\
-[`set.seed`](https://rdrr.io/r/base/Random.html)`(``1L``)`\
-`fits`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(`\
-`  proxymix ``=`` `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(`[`gmm_target_from_samples`](https://max578.github.io/proxymix/reference/gmm_target_from_samples.md)`(``train``)``, N ``=`` ``2L``,`\
-`                          regime ``=`` ``"sample"``)``,`\
-`  mclust ``=`` ``as_gmm_mclust``(`[`Mclust`](https://mclust-org.github.io/mclust/reference/Mclust.html)`(``train``, G ``=`` ``2L``, verbose ``=`` ``FALSE``)``)``,`\
-`  mixtools ``=`` ``as_gmm_mixtools``(`[`mvnormalmixEM`](https://rdrr.io/pkg/mixtools/man/mvnormalmixEM.html)`(``train``, k ``=`` ``2L``, verb ``=`` ``FALSE``)``)``,`\
-`  flexmix ``=`` ``as_gmm_flexmix``(`[`stepFlexmix`](https://rdrr.io/pkg/flexmix/man/stepFlexmix.html)`(`\
-`    `[`cbind`](https://amices.org/mice/reference/cbind.html)`(``eruptions``, ``waiting``)`` ``~`` ``1``, data ``=`` ``train_df``, k ``=`` ``2L``, nrep ``=`` ``5L``,`\
-`    model ``=`` `[`FLXMCmvnorm`](https://rdrr.io/pkg/flexmix/man/FLXmclust.html)`(``diagonal ``=`` ``FALSE``)``, verbose ``=`` ``FALSE`\
-`  ``)``)`\
-`)`\
-\
-`# mean log-likelihood of the held-out eruptions under each fit`\
-[`vapply`](https://rdrr.io/r/base/lapply.html)`(``fits``, ``function``(``g``)`` `[`mean`](https://rdrr.io/r/base/mean.html)`(`[`dgmm`](https://max578.github.io/proxymix/reference/dgmm.md)`(``test``, ``g``, log ``=`` ``TRUE``)``)``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)`
+``` r
+
+library(proxymix)
+library(mclust)
+library(mixtools)
+library(flexmix)
+
+# split the Old Faithful eruptions into a training half and a held-out half
+faithful_mat <- as.matrix(datasets::faithful)
+set.seed(20260925)
+i_train <- sort(sample.int(nrow(faithful_mat), nrow(faithful_mat) / 2L))
+train <- faithful_mat[i_train, ]
+test <- faithful_mat[-i_train, ]
+train_df <- data.frame(eruptions = train[, 1L], waiting = train[, 2L])
+
+# convert each package's fit to a proxymix mixture, so dgmm() scores all four
+as_gmm_mclust <- function(fit) {
+  gmm(
+    weights = fit$parameters$pro,
+    means = lapply(seq_len(fit$G), function(k) fit$parameters$mean[, k]),
+    covariances = lapply(seq_len(fit$G), function(k) {
+      fit$parameters$variance$sigma[, , k]
+    })
+  )
+}
+as_gmm_mixtools <- function(fit) {
+  gmm(weights = fit$lambda, means = fit$mu, covariances = fit$sigma)
+}
+as_gmm_flexmix <- function(fit) {
+  comps <- lapply(fit@components, function(cc) cc[[1L]]@parameters)
+  gmm(
+    weights = prior(fit),
+    means = lapply(comps, function(p) unname(p$center)),
+    covariances = lapply(comps, function(p) unname(p$cov))
+  )
+}
+
+# two-component fits to the training half
+set.seed(1L)
+fits <- list(
+  proxymix = fit_proxymix(gmm_target_from_samples(train), N = 2L,
+                          regime = "sample"),
+  mclust = as_gmm_mclust(Mclust(train, G = 2L, verbose = FALSE)),
+  mixtools = as_gmm_mixtools(mvnormalmixEM(train, k = 2L, verb = FALSE)),
+  flexmix = as_gmm_flexmix(stepFlexmix(
+    cbind(eruptions, waiting) ~ 1, data = train_df, k = 2L, nrep = 5L,
+    model = FLXMCmvnorm(diagonal = FALSE), verbose = FALSE
+  ))
+)
+
+# mean log-likelihood of the held-out eruptions under each fit
+vapply(fits, function(g) mean(dgmm(test, g, log = TRUE)), numeric(1L))
+```
 
 The [extended version of this
 article](https://max578.github.io/proxymix/articles/extended/three_regimes.html)
@@ -544,46 +572,50 @@ The target’s sample is drawn with `seed = 1L`, and each fit that uses
 random numbers is given `seed = 1L`. The repeated banana draws use seeds
 1 to 500 for the samples and 1 to 100 for the trial points. The
 comparison is read from stored results. The simulation ran under
-proxymix 0.16.0, `mclust` 6.1.3 and `flexmix` 2.3-21, and took about 15
+proxymix 0.17.0, `mclust` 6.1.3 and `flexmix` 2.3-21, and took about 8
 minutes on one core. The Old Faithful fits ran under `mixtools` 2.0.0.1
 and the same versions of the other packages.
 
-\
-[`sessionInfo`](https://rdrr.io/r/utils/sessionInfo.html)`(``)`
+``` r
 
+sessionInfo()
 ```
+
+``` session-info
 #> R version 4.6.1 (2026-06-24)
-#> Platform: aarch64-apple-darwin23
-#> Running under: macOS Tahoe 26.6.2
+#> Platform: x86_64-pc-linux-gnu
+#> Running under: Ubuntu 24.04.5 LTS
 #> 
 #> Matrix products: default
-#> BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib 
-#> LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1
+#> BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 
+#> LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.26.so;  LAPACK version 3.12.0
 #> 
 #> locale:
-#> [1] en_AU.UTF-8/en_AU.UTF-8/en_AU.UTF-8/C/en_AU.UTF-8/en_AU.UTF-8
+#>  [1] LC_CTYPE=C.UTF-8       LC_NUMERIC=C           LC_TIME=C.UTF-8       
+#>  [4] LC_COLLATE=C.UTF-8     LC_MONETARY=C.UTF-8    LC_MESSAGES=C.UTF-8   
+#>  [7] LC_PAPER=C.UTF-8       LC_NAME=C              LC_ADDRESS=C          
+#> [10] LC_TELEPHONE=C         LC_MEASUREMENT=C.UTF-8 LC_IDENTIFICATION=C   
 #> 
-#> time zone: Australia/Adelaide
-#> tzcode source: internal
+#> time zone: UTC
+#> tzcode source: system (glibc)
 #> 
 #> attached base packages:
 #> [1] stats     graphics  grDevices utils     datasets  methods   base     
 #> 
 #> other attached packages:
-#> [1] proxymix_0.16.0
+#> [1] proxymix_0.17.0
 #> 
 #> loaded via a namespace (and not attached):
 #>  [1] mvnfast_0.2.8      gtable_0.3.6       jsonlite_2.0.0     dplyr_1.2.1       
-#>  [5] compiler_4.6.1     Rcpp_1.1.2         tidyselect_1.2.1   dichromat_2.0-1   
-#>  [9] jquerylib_0.1.4    systemfonts_1.3.2  scales_1.4.0       textshaping_1.0.5 
-#> [13] yaml_2.3.12        fastmap_1.2.0      ggplot2_4.0.3      R6_2.6.1          
-#> [17] labeling_0.4.3     generics_0.1.4     isoband_0.3.0      knitr_1.51        
-#> [21] htmlwidgets_1.6.4  tibble_3.3.1       desc_1.4.3         bslib_0.12.0      
-#> [25] pillar_1.11.1      RColorBrewer_1.1-3 rlang_1.3.0        cachem_1.1.0      
-#> [29] xfun_0.60          fs_2.1.0           sass_0.4.10        S7_0.2.2          
-#> [33] otel_0.2.0         viridisLite_0.4.3  cli_3.6.6          pkgdown_2.2.1     
-#> [37] withr_3.0.3        magrittr_2.0.5     digest_0.6.39      grid_4.6.1        
-#> [41] lifecycle_1.0.5    vctrs_0.7.3        evaluate_1.0.5     glue_1.8.1        
-#> [45] farver_2.1.2       ragg_1.5.2         rmarkdown_2.32     tools_4.6.1       
-#> [49] pkgconfig_2.0.3    htmltools_0.5.9
+#>  [5] compiler_4.6.1     tidyselect_1.2.1   Rcpp_1.1.2         jquerylib_0.1.4   
+#>  [9] systemfonts_1.3.2  scales_1.4.0       textshaping_1.0.5  yaml_2.3.12       
+#> [13] fastmap_1.2.0      ggplot2_4.0.3      R6_2.6.1           labeling_0.4.3    
+#> [17] generics_0.1.4     isoband_0.3.0      knitr_1.52         tibble_3.3.1      
+#> [21] desc_1.4.3         bslib_0.12.0       pillar_1.11.1      RColorBrewer_1.1-3
+#> [25] rlang_1.3.0        cachem_1.1.0       xfun_0.62          fs_2.1.0          
+#> [29] sass_0.4.10        S7_0.2.2           otel_0.2.0         viridisLite_0.4.3 
+#> [33] cli_3.6.6          pkgdown_2.2.1      withr_3.0.3        magrittr_2.0.5    
+#> [37] digest_0.6.39      grid_4.6.1         lifecycle_1.0.5    vctrs_0.7.3       
+#> [41] evaluate_1.0.5     glue_1.8.1         farver_2.1.2       ragg_1.5.2        
+#> [45] rmarkdown_2.32     tools_4.6.1        pkgconfig_2.0.3    htmltools_0.5.9
 ```

@@ -260,6 +260,10 @@ Owen, A. and Zhou, Y. (2000) Safe and effective importance sampling.
 Other fitting:
 [`fit_em_samples()`](https://max578.github.io/proxymix/reference/fit_em_samples.md),
 [`fit_moment_match()`](https://max578.github.io/proxymix/reference/fit_moment_match.md),
+[`fit_mppca_samples()`](https://max578.github.io/proxymix/reference/fit_mppca_samples.md),
+[`from_cf()`](https://max578.github.io/proxymix/reference/from_cf.md),
+[`from_cf_elliptical()`](https://max578.github.io/proxymix/reference/from_cf_elliptical.md),
+[`from_cf_sources()`](https://max578.github.io/proxymix/reference/from_cf_sources.md),
 [`from_kde()`](https://max578.github.io/proxymix/reference/from_kde.md),
 [`from_objective()`](https://max578.github.io/proxymix/reference/from_objective.md),
 [`select_N()`](https://max578.github.io/proxymix/reference/select_N.md)

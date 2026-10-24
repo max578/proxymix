@@ -14,6 +14,8 @@
   mixture](https://max578.github.io/proxymix/articles/operator_calculus.md):
 - [Compressing a kernel density estimate into a
   mixture](https://max578.github.io/proxymix/articles/from_kde.md):
+- [Fitting a mixture to a characteristic
+  function](https://max578.github.io/proxymix/articles/cf_targets.md):
 - [One mixture, many
   methods](https://max578.github.io/proxymix/articles/many_methods.md):
 - [Reading the entropy of a fitted

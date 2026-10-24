@@ -13,7 +13,7 @@ root-finding. Together with dgmm() and rgmm() these complete the
 usual d/p/q/r quartet for the one-dimensional case; for tail
 probabilities of a multivariate mixture, marginalise first
 (gmm_marginalise()) or push through the relevant linear functional
-(gmm_affine())."></head><body>
+(gmm_affine())."><meta property="og:image" content="https://max578.github.io/proxymix/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -21,7 +21,7 @@ probabilities of a multivariate mixture, marginalise first
 
     <a class="navbar-brand me-2" href="../index.html">proxymix</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.16.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.17.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -38,6 +38,7 @@ probabilities of a multivariate mixture, marginalise first
     <li><a class="dropdown-item" href="../articles/density_shapes.html">How well a mixture proxies four awkward shapes</a></li>
     <li><a class="dropdown-item" href="../articles/operator_calculus.html">The closed-form operator calculus on a mixture</a></li>
     <li><a class="dropdown-item" href="../articles/from_kde.html">Compressing a kernel density estimate into a mixture</a></li>
+    <li><a class="dropdown-item" href="../articles/cf_targets.html">Fitting a mixture to a characteristic function</a></li>
     <li><a class="dropdown-item" href="../articles/many_methods.html">One mixture, many methods</a></li>
     <li><a class="dropdown-item" href="../articles/entropy.html">Reading the entropy of a fitted mixture</a></li>
     <li><a class="dropdown-item" href="../articles/calibration.html">Mapping the optima of an objective</a></li>
@@ -58,9 +59,8 @@ probabilities of a multivariate mixture, marginalise first
 </nav><div class="container template-reference-topic">
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Distribution and quantile functions of a one-dimensional mixture</h1>
-      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/HEAD/R/algebra.R" class="external-link"><code>R/algebra.R</code></a></small>
+      <img src="../logo.png" class="logo" alt=""><h1>Distribution and quantile functions of a one-dimensional mixture</h1>
+      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/main/R/algebra.R" class="external-link"><code>R/algebra.R</code></a></small>
       <div class="d-none name"><code>pgmm.Rd</code></div>
     </div>
 
@@ -112,6 +112,7 @@ probabilities of a multivariate mixture, marginalise first
     <div class="dont-index"><p>Other ops:
 <code><a href="dgmm.html">dgmm()</a></code>,
 <code><a href="gmm_canonicalise.html">gmm_canonicalise()</a></code>,
+<code><a href="gmm_cf.html">gmm_cf()</a></code>,
 <code><a href="gmm_conditionalise.html">gmm_conditionalise()</a></code>,
 <code><a href="gmm_divergence.html">gmm_divergence()</a></code>,
 <code><a href="gmm_kld.html">gmm_kld()</a></code>,

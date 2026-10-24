@@ -5,7 +5,7 @@ count, and the regime's headline fit statistics. Available as
 generics::glance(fit) when the generics package is installed."><meta property="og:description" content="A broom-style glance() method: a one-row summary of a gmm_fit with
 the regime, the component count and dimension, convergence, iteration
 count, and the regime's headline fit statistics. Available as
-generics::glance(fit) when the generics package is installed."></head><body>
+generics::glance(fit) when the generics package is installed."><meta property="og:image" content="https://max578.github.io/proxymix/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -13,7 +13,7 @@ generics::glance(fit) when the generics package is installed."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">proxymix</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.16.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.17.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -30,6 +30,7 @@ generics::glance(fit) when the generics package is installed."></head><body>
     <li><a class="dropdown-item" href="../articles/density_shapes.html">How well a mixture proxies four awkward shapes</a></li>
     <li><a class="dropdown-item" href="../articles/operator_calculus.html">The closed-form operator calculus on a mixture</a></li>
     <li><a class="dropdown-item" href="../articles/from_kde.html">Compressing a kernel density estimate into a mixture</a></li>
+    <li><a class="dropdown-item" href="../articles/cf_targets.html">Fitting a mixture to a characteristic function</a></li>
     <li><a class="dropdown-item" href="../articles/many_methods.html">One mixture, many methods</a></li>
     <li><a class="dropdown-item" href="../articles/entropy.html">Reading the entropy of a fitted mixture</a></li>
     <li><a class="dropdown-item" href="../articles/calibration.html">Mapping the optima of an objective</a></li>
@@ -50,9 +51,8 @@ generics::glance(fit) when the generics package is installed."></head><body>
 </nav><div class="container template-reference-topic">
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Glance at a fitted Gaussian-mixture proxy</h1>
-      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/HEAD/R/accessors.R" class="external-link"><code>R/accessors.R</code></a></small>
+      <img src="../logo.png" class="logo" alt=""><h1>Glance at a fitted Gaussian-mixture proxy</h1>
+      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/main/R/accessors.R" class="external-link"><code>R/accessors.R</code></a></small>
       <div class="d-none name"><code>glance.gmm_fit.Rd</code></div>
     </div>
 
@@ -68,7 +68,8 @@ count, and the regime's headline fit statistics. Available as
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A one-row data frame with columns <code>regime</code>, <code>n_components</code>,
 <code>dim</code>, <code>converged</code>, <code>iterations</code>, <code>ess</code>, <code>kld_final</code>, <code>validation_kld</code>,
-<code>loglik_final</code> and <code>bic</code> (<code>NA</code> where not applicable to the regime).</p>
+<code>loglik_final</code>, <code>bic</code>, <code>cf_heldout_rms</code>, <code>cf_distance</code> and <code>cf_upper</code>
+(<code>NA</code> where not applicable to the regime).</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -77,6 +78,12 @@ draws the fit was tuned to, so it reads low and can be negative.
 <code>validation_kld</code> is the estimate on an independent draw and is the one to
 quote as the fit's accuracy; it is <code>NA</code> when the fit was made with
 <code>validation_size = 0</code>.</p>
+<p>For a fit to a characteristic function (regime <code>"cf"</code>), <code>cf_heldout_rms</code>
+is the root mean square error of the characteristic function on
+frequencies the fit did not use, and <code>cf_distance</code> and <code>cf_upper</code> are the
+largest lower and upper bounds for the Kolmogorov distance over the
+checked directions (<code><a href="from_cf.html">from_cf()</a></code>, <em>Checking a fit</em>). They are <code>NA</code> when the
+fit was made with <code>bracket = FALSE</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
@@ -107,8 +114,8 @@ is ignored.</p>
 <span class="r-in"><span><span class="fu">generics</span><span class="fu">::</span><span class="fu"><a href="https://generics.r-lib.org/reference/glance.html" class="external-link">glance</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   regime n_components dim converged iterations      ess kld_final</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1    kld            2   2      TRUE         10 706.9948 0.1123726</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   validation_kld loglik_final bic</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1      0.1475466           NA  NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   validation_kld loglik_final bic cf_heldout_rms cf_distance cf_upper</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      0.1475466           NA  NA             NA          NA       NA</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

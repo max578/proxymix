@@ -1,10 +1,14 @@
 # Compressing a kernel density estimate into a mixture
 
-\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`
+``` r
 
-\
-`has_ggplot2`` ``<-`` `[`requireNamespace`](https://rdrr.io/r/base/ns-load.html)`(``"ggplot2"``, quietly ``=`` ``TRUE``)`
+library(proxymix)
+```
+
+``` r
+
+has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
+```
 
 ## The problem
 
@@ -34,10 +38,12 @@ other R packages.
 - [`from_kde()`](https://max578.github.io/proxymix/reference/from_kde.md)
   builds the kernel density estimate from a data matrix and compresses
   it into an `N`-component Gaussian mixture, a sum of `N` normal
-  distributions. Its `bandwidth` argument takes a rule of thumb by name
-  (`"silverman"` or `"scott"`, after Silverman, 1986, and Scott, 1992)
-  or numbers, a single number for all variables or one number per
-  variable.
+  distributions. Its `bandwidth` argument takes a rule by name or
+  numbers, a single number for all variables or one number per variable.
+  The default, `"plugin"`, is the Sheather-Jones plug-in bandwidth of
+  each variable (Sheather and Jones, 1991). The rules of thumb
+  `"silverman"` and `"scott"` (Silverman, 1986, and Scott, 1992) smooth
+  more.
 - [`from_kde()`](https://max578.github.io/proxymix/reference/from_kde.md)
   fits the proxy with the package’s method for a density that can be
   evaluated but not sampled (van der Hoek and Elliott, 2024), described
@@ -81,42 +87,46 @@ correlation. The call fits a proxy with two components and uses
 Silverman’s rule for the bandwidth. It sets `is_size` and
 `validation_size` below their defaults to keep the vignette fast.
 
-\
-[`set.seed`](https://rdrr.io/r/base/Random.html)`(``20260601``)`\
-\
-`n_each`` ``<-`` ``150L`\
-`true_means`` ``<-`` `[`cbind`](https://rdrr.io/r/base/cbind.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``-``2``, ``0``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``2``, ``0``)``)`\
-`true_cov`` ``<-`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)`\
-`x`` ``<-`` `[`rbind`](https://rdrr.io/r/base/cbind.html)`(`\
-`  ``mvnfast``::`[`rmvn`](https://rdrr.io/pkg/mvnfast/man/rmvn.html)`(``n_each``, mu ``=`` ``true_means``[``, ``1L``]``, sigma ``=`` ``true_cov``)``,`\
-`  ``mvnfast``::`[`rmvn`](https://rdrr.io/pkg/mvnfast/man/rmvn.html)`(``n_each``, mu ``=`` ``true_means``[``, ``2L``]``, sigma ``=`` ``true_cov``)`\
-`)`\
-\
-`fit`` ``<-`` `[`from_kde`](https://max578.github.io/proxymix/reference/from_kde.md)`(`\
-`  ``x``, N ``=`` ``2L``,`\
-`  bandwidth ``=`` ``"silverman"``,`\
-`  is_size ``=`` ``2000L``, max_iter ``=`` ``60L``, seed ``=`` ``1L``,`\
-`  validation_size ``=`` ``2000L`\
-`)`\
-`fit`\
-`#> <gmm_fit>: regime = "kld", K = 2, p = 2`\
-`#>   target     : from_kde`\
-`#>   iterations : 10`\
-`#>   converged  : TRUE`\
-`#>   [1] w = 0.5225, |mu| = 2.0526, tr(Sigma) = 2.7785`\
-`#>   [2] w = 0.4775, |mu| = 1.9564, tr(Sigma) = 2.6586`
+``` r
+
+set.seed(20260601)
+
+n_each <- 150L
+true_means <- cbind(c(-2, 0), c(2, 0))
+true_cov <- diag(2)
+x <- rbind(
+  mvnfast::rmvn(n_each, mu = true_means[, 1L], sigma = true_cov),
+  mvnfast::rmvn(n_each, mu = true_means[, 2L], sigma = true_cov)
+)
+
+fit <- from_kde(
+  x, N = 2L,
+  bandwidth = "silverman",
+  is_size = 2000L, max_iter = 60L, seed = 1L,
+  validation_size = 2000L
+)
+fit
+#> <gmm_fit>: regime = "kld", K = 2, p = 2
+#>   target     : from_kde
+#>   iterations : 10
+#>   converged  : TRUE
+#>   [1] w = 0.5225, |mu| = 2.0526, tr(Sigma) = 2.7785
+#>   [2] w = 0.4775, |mu| = 1.9564, tr(Sigma) = 2.6586
+```
 
 ### The recovered groups
 
 Sorting the two fitted components by their first coordinate puts them in
 the same order as the true groups.
 
-\
-`mu_hat`` ``<-`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``fit``@``means``, ``function``(``mu``)`` ``mu``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``2L``)``)`\
-`comp_order`` ``<-`` `[`order`](https://rdrr.io/r/base/order.html)`(``mu_hat``[``1L``, ``]``)`\
-`mu_hat`` ``<-`` ``mu_hat``[``, ``comp_order``, drop ``=`` ``FALSE``]`\
-`weight_hat`` ``<-`` ``fit``@``weights``[``comp_order``]`\
-`mean_error`` ``<-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``mu_hat`` ``-`` ``true_means``)``)`
+``` r
+
+mu_hat <- vapply(fit@means, function(mu) mu, numeric(2L))
+comp_order <- order(mu_hat[1L, ])
+mu_hat <- mu_hat[, comp_order, drop = FALSE]
+weight_hat <- fit@weights[comp_order]
+mean_error <- max(abs(mu_hat - true_means))
+```
 
 | Component | Fitted $`x_1`$ | Fitted $`x_2`$ | True $`x_1`$ | True $`x_2`$ | Weight |
 |----------:|---------------:|---------------:|-------------:|-------------:|-------:|
@@ -136,20 +146,22 @@ random error due to the finite number of draws. The KL divergence on the
 draws used for fitting reads too low, because the fit was tuned to those
 draws.
 
-\
-`es`` ``<-`` `[`ess_summary`](https://max578.github.io/proxymix/reference/ess_summary.md)`(``fit``)`\
-[`print`](https://rdrr.io/r/base/print.html)`(`[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``is_size ``=`` ``es``$``is_size``, ess ``=`` `[`round`](https://rdrr.io/r/base/Round.html)`(``es``$``ess``, ``1``)``,`\
-`                 ess_relative ``=`` `[`round`](https://rdrr.io/r/base/Round.html)`(``es``$``ess_relative``, ``3``)``,`\
-`                 max_weight ``=`` `[`signif`](https://rdrr.io/r/base/Round.html)`(``es``$``max_weight``, ``3``)``)``,`\
-`      row.names ``=`` ``FALSE``)`\
-`#>  is_size  ess ess_relative max_weight`\
-`#>     2000 1538        0.769    0.00116`\
-[`print`](https://rdrr.io/r/base/print.html)`(`[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``validation_size ``=`` ``es``$``validation_size``,`\
-`                 validation_kld ``=`` `[`signif`](https://rdrr.io/r/base/Round.html)`(``es``$``validation_kld``, ``3``)``,`\
-`                 validation_se ``=`` `[`signif`](https://rdrr.io/r/base/Round.html)`(``fit``@``diagnostics``$``validation_mc_se``, ``3``)``)``,`\
-`      row.names ``=`` ``FALSE``)`\
-`#>  validation_size validation_kld validation_se`\
-`#>             2000          0.016       0.00449`
+``` r
+
+es <- ess_summary(fit)
+print(data.frame(is_size = es$is_size, ess = round(es$ess, 1),
+                 ess_relative = round(es$ess_relative, 3),
+                 max_weight = signif(es$max_weight, 3)),
+      row.names = FALSE)
+#>  is_size  ess ess_relative max_weight
+#>     2000 1538        0.769    0.00116
+print(data.frame(validation_size = es$validation_size,
+                 validation_kld = signif(es$validation_kld, 3),
+                 validation_se = signif(fit@diagnostics$validation_mc_se, 3)),
+      row.names = FALSE)
+#>  validation_size validation_kld validation_se
+#>             2000          0.016       0.00449
+```
 
 ### What the compression loses
 
@@ -160,72 +172,76 @@ difference between the probabilities that the two densities give to any
 region. The squared Hellinger distance comes from 10,000 fresh draws
 from the proxy.
 
-\
-`g1`` ``<-`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``6``, ``6``, length.out ``=`` ``160L``)`\
-`g2`` ``<-`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``5``, ``5``, length.out ``=`` ``140L``)`\
-`grid`` ``<-`` `[`expand.grid`](https://rdrr.io/r/base/expand.grid.html)`(``x1 ``=`` ``g1``, x2 ``=`` ``g2``)`\
-`gm`` ``<-`` `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(``grid``)`\
-`cell`` ``<-`` ``(``g1``[``2L``]`` ``-`` ``g1``[``1L``]``)`` ``*`` ``(``g2``[``2L``]`` ``-`` ``g2``[``1L``]``)`\
-\
-`grid``$``kde`` ``<-`` `[`exp`](https://rdrr.io/r/base/Log.html)`(``fit``@``target``@``log_density``(``gm``)``)`\
-`grid``$``proxy`` ``<-`` `[`dgmm`](https://max578.github.io/proxymix/reference/dgmm.md)`(``gm``, ``fit``)`\
-\
-`total_variation`` ``<-`` ``0.5`` ``*`` `[`sum`](https://rdrr.io/r/base/sum.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``grid``$``kde`` ``-`` ``grid``$``proxy``)``)`` ``*`` ``cell`\
-`hell`` ``<-`` `[`hellinger_mc`](https://max578.github.io/proxymix/reference/hellinger_mc.md)`(``fit``, n_mc ``=`` ``10000L``, seed ``=`` ``1L``)`\
-[`c`](https://rdrr.io/r/base/c.html)`(``total_variation ``=`` `[`signif`](https://rdrr.io/r/base/Round.html)`(``total_variation``, ``3``)``,`\
-`  hellinger_sq ``=`` `[`signif`](https://rdrr.io/r/base/Round.html)`(``hell``$``h2``, ``3``)``, hellinger_se ``=`` `[`signif`](https://rdrr.io/r/base/Round.html)`(``hell``$``se``, ``3``)``)`\
-`#> total_variation    hellinger_sq    hellinger_se `\
-`#>         0.06250         0.00373         0.00090`
+``` r
+
+g1 <- seq(-6, 6, length.out = 160L)
+g2 <- seq(-5, 5, length.out = 140L)
+grid <- expand.grid(x1 = g1, x2 = g2)
+gm <- as.matrix(grid)
+cell <- (g1[2L] - g1[1L]) * (g2[2L] - g2[1L])
+
+grid$kde <- exp(fit@target@log_density(gm))
+grid$proxy <- dgmm(gm, fit)
+
+total_variation <- 0.5 * sum(abs(grid$kde - grid$proxy)) * cell
+hell <- hellinger_mc(fit, n_mc = 10000L, seed = 1L)
+c(total_variation = signif(total_variation, 3),
+  hellinger_sq = signif(hell$h2, 3), hellinger_se = signif(hell$se, 3))
+#> total_variation    hellinger_sq    hellinger_se 
+#>         0.06250         0.00373         0.00090
+```
 
 The figure shows where the two densities differ. Both are drawn on the
 log scale with the same contour levels.
 
-\
-`plot_grid`` ``<-`` `[`expand.grid`](https://rdrr.io/r/base/expand.grid.html)`(`\
-`  x1 ``=`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``5``, ``5``, length.out ``=`` ``80L``)``,`\
-`  x2 ``=`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``4``, ``4``, length.out ``=`` ``60L``)`\
-`)`\
-`pm`` ``<-`` `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(``plot_grid``)`\
-`plot_grid``$``kde`` ``<-`` ``fit``@``target``@``log_density``(``pm``)`\
-`plot_grid``$``proxy`` ``<-`` `[`log`](https://rdrr.io/r/base/Log.html)`(`[`dgmm`](https://max578.github.io/proxymix/reference/dgmm.md)`(``pm``, ``fit``)``)`\
-\
-`## Shared contour levels so the two log-densities are directly comparable.`\
-`brks`` ``<-`` `[`pretty`](https://rdrr.io/r/base/pretty.html)`(`[`range`](https://rdrr.io/r/base/range.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``plot_grid``$``kde``, ``plot_grid``$``proxy``)``, finite ``=`` ``TRUE``)``, ``9L``)`\
-`sample_df`` ``<-`` `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``x1 ``=`` ``x``[``, ``1L``]``, x2 ``=`` ``x``[``, ``2L``]``)`\
-\
-`ggplot2``::`[`ggplot`](https://ggplot2.tidyverse.org/reference/ggplot.html)`(``)`` ``+`\
-`  ``ggplot2``::`[`geom_point`](https://ggplot2.tidyverse.org/reference/geom_point.html)`(``data ``=`` ``sample_df``, ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``x1``, ``x2``)``,`\
-`                      colour ``=`` ``"grey60"``, alpha ``=`` ``0.25``, size ``=`` ``0.5``)`` ``+`\
-`  ``ggplot2``::`[`geom_contour`](https://ggplot2.tidyverse.org/reference/geom_contour.html)`(`\
-`    data ``=`` ``plot_grid``,`\
-`    ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``x1``, ``x2``, z ``=`` ``kde``, colour ``=`` ``"Kernel estimate"``,`\
-`                 linetype ``=`` ``"Kernel estimate"``)``,`\
-`    breaks ``=`` ``brks``, linewidth ``=`` ``0.45`\
-`  ``)`` ``+`\
-`  ``ggplot2``::`[`geom_contour`](https://ggplot2.tidyverse.org/reference/geom_contour.html)`(`\
-`    data ``=`` ``plot_grid``,`\
-`    ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``x1``, ``x2``, z ``=`` ``proxy``, colour ``=`` ``"Mixture proxy"``,`\
-`                 linetype ``=`` ``"Mixture proxy"``)``,`\
-`    breaks ``=`` ``brks``, linewidth ``=`` ``0.55`\
-`  ``)`` ``+`\
-`  ``ggplot2``::`[`scale_colour_manual`](https://ggplot2.tidyverse.org/reference/scale_manual.html)`(`\
-`    name ``=`` ``NULL``,`\
-`    values ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"Kernel estimate"`` ``=`` ``"#0072B2"``, ``"Mixture proxy"`` ``=`` ``"#D55E00"``)`\
-`  ``)`` ``+`\
-`  ``ggplot2``::`[`scale_linetype_manual`](https://ggplot2.tidyverse.org/reference/scale_manual.html)`(`\
-`    name ``=`` ``NULL``,`\
-`    values ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"Kernel estimate"`` ``=`` ``"solid"``, ``"Mixture proxy"`` ``=`` ``"dashed"``)`\
-`  ``)`` ``+`\
-`  ``ggplot2``::`[`coord_equal`](https://ggplot2.tidyverse.org/reference/coord_fixed.html)`(``expand ``=`` ``FALSE``)`` ``+`\
-`  ``ggplot2``::`[`labs`](https://ggplot2.tidyverse.org/reference/labs.html)`(`\
-`    title ``=`` ``"Kernel estimate and two-component proxy"``,`\
-`    subtitle ``=`` ``"log-density contours on shared levels"``,`\
-`    x ``=`` `[`expression`](https://rdrr.io/r/base/expression.html)`(``x``[``1``]``)``, y ``=`` `[`expression`](https://rdrr.io/r/base/expression.html)`(``x``[``2``]``)`\
-`  ``)`` ``+`\
-`  ``ggplot2``::`[`theme_minimal`](https://ggplot2.tidyverse.org/reference/ggtheme.html)`(``base_size ``=`` ``11``)`` ``+`\
-`  ``ggplot2``::`[`theme`](https://ggplot2.tidyverse.org/reference/theme.html)`(``plot.title ``=`` ``ggplot2``::`[`element_text`](https://ggplot2.tidyverse.org/reference/element.html)`(``face ``=`` ``"bold"``)``,`\
-`                 legend.position ``=`` ``"top"``,`\
-`                 panel.grid.minor ``=`` ``ggplot2``::`[`element_blank`](https://ggplot2.tidyverse.org/reference/element.html)`(``)``)`
+``` r
+
+plot_grid <- expand.grid(
+  x1 = seq(-5, 5, length.out = 80L),
+  x2 = seq(-4, 4, length.out = 60L)
+)
+pm <- as.matrix(plot_grid)
+plot_grid$kde <- fit@target@log_density(pm)
+plot_grid$proxy <- log(dgmm(pm, fit))
+
+## Shared contour levels so the two log-densities are directly comparable.
+brks <- pretty(range(c(plot_grid$kde, plot_grid$proxy), finite = TRUE), 9L)
+sample_df <- data.frame(x1 = x[, 1L], x2 = x[, 2L])
+
+ggplot2::ggplot() +
+  ggplot2::geom_point(data = sample_df, ggplot2::aes(x1, x2),
+                      colour = "grey60", alpha = 0.25, size = 0.5) +
+  ggplot2::geom_contour(
+    data = plot_grid,
+    ggplot2::aes(x1, x2, z = kde, colour = "Kernel estimate",
+                 linetype = "Kernel estimate"),
+    breaks = brks, linewidth = 0.45
+  ) +
+  ggplot2::geom_contour(
+    data = plot_grid,
+    ggplot2::aes(x1, x2, z = proxy, colour = "Mixture proxy",
+                 linetype = "Mixture proxy"),
+    breaks = brks, linewidth = 0.55
+  ) +
+  ggplot2::scale_colour_manual(
+    name = NULL,
+    values = c("Kernel estimate" = "#0072B2", "Mixture proxy" = "#D55E00")
+  ) +
+  ggplot2::scale_linetype_manual(
+    name = NULL,
+    values = c("Kernel estimate" = "solid", "Mixture proxy" = "dashed")
+  ) +
+  ggplot2::coord_equal(expand = FALSE) +
+  ggplot2::labs(
+    title = "Kernel estimate and two-component proxy",
+    subtitle = "log-density contours on shared levels",
+    x = expression(x[1]), y = expression(x[2])
+  ) +
+  ggplot2::theme_minimal(base_size = 11) +
+  ggplot2::theme(plot.title = ggplot2::element_text(face = "bold"),
+                 legend.position = "top",
+                 panel.grid.minor = ggplot2::element_blank())
+```
 
 ![Contour plot of the kernel-density log-density and the
 Gaussian-mixture proxy log-density on a planar grid, with sample points
@@ -248,13 +264,15 @@ result is a mixture with the proxy’s two components, and
 [`rgmm()`](https://max578.github.io/proxymix/reference/rgmm.md) draws
 from it in one call.
 
-\
-`slice`` ``<-`` `[`gmm_conditionalise`](https://max578.github.io/proxymix/reference/gmm_conditionalise.md)`(``fit``, given ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``NA``, ``0``)``)`\
-`draws`` ``<-`` `[`rgmm`](https://max578.github.io/proxymix/reference/rgmm.md)`(``200L``, ``slice``)`\
-[`c`](https://rdrr.io/r/base/c.html)`(``components ``=`` `[`gmm_n_components`](https://max578.github.io/proxymix/reference/gmm_n_components.md)`(``slice``)``, dimension ``=`` `[`gmm_dim`](https://max578.github.io/proxymix/reference/gmm_dim.md)`(``slice``)``,`\
-`  draws ``=`` `[`nrow`](https://rdrr.io/r/base/nrow.html)`(``draws``)``)`\
-`#> components  dimension      draws `\
-`#>          2          1        200`
+``` r
+
+slice <- gmm_conditionalise(fit, given = c(NA, 0))
+draws <- rgmm(200L, slice)
+c(components = gmm_n_components(slice), dimension = gmm_dim(slice),
+  draws = nrow(draws))
+#> components  dimension      draws 
+#>          2          1        200
+```
 
 ### The effect of the bandwidth
 
@@ -265,19 +283,21 @@ the standard error of the KL divergence is at most a tenth of the
 estimate, or at most 0.001 when the estimate is below 0.01, up to ten
 times `is_size` draws.
 
-\
-`bandwidth_grid`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``0.2``, ``0.5``, ``1.0``)`\
-`fits`` ``<-`` `[`lapply`](https://rdrr.io/r/base/lapply.html)`(``bandwidth_grid``, ``function``(``h``)`` ``{`\
-`  `[`from_kde`](https://max578.github.io/proxymix/reference/from_kde.md)`(``x``, N ``=`` ``2L``, bandwidth ``=`` ``h``,`\
-`           is_size ``=`` ``1500L``, max_iter ``=`` ``40L``, seed ``=`` ``1L``)`\
-`}``)`\
-`sweep_is`` ``<-`` ``fits``[[``1L``]``]``@``diagnostics``$``is_size`\
-`sweep_vs`` ``<-`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``fits``, ``function``(``f``)`` ``f``@``diagnostics``$``validation_size``,`\
-`                   `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)`\
-`sweep_val`` ``<-`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``fits``, ``function``(``f``)`` ``f``@``diagnostics``$``validation_kld``,`\
-`                    `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)`\
-`sweep_se`` ``<-`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(``fits``, ``function``(``f``)`` ``f``@``diagnostics``$``validation_mc_se``,`\
-`                   `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)`
+``` r
+
+bandwidth_grid <- c(0.2, 0.5, 1.0)
+fits <- lapply(bandwidth_grid, function(h) {
+  from_kde(x, N = 2L, bandwidth = h,
+           is_size = 1500L, max_iter = 40L, seed = 1L)
+})
+sweep_is <- fits[[1L]]@diagnostics$is_size
+sweep_vs <- vapply(fits, function(f) f@diagnostics$validation_size,
+                   numeric(1L))
+sweep_val <- vapply(fits, function(f) f@diagnostics$validation_kld,
+                    numeric(1L))
+sweep_se <- vapply(fits, function(f) f@diagnostics$validation_mc_se,
+                   numeric(1L))
+```
 
 | Bandwidth | Effective sample size | Largest weight | Spread of left component | Fresh draws | KL, fresh draws | Standard error |
 |---:|---:|---:|---:|---:|---:|---:|
@@ -287,7 +307,7 @@ times `is_size` draws.
 
 The same sample compressed with three bandwidths, at 1500 weighted
 draws. The spread of the left-hand component is the sum of its two
-variances. {.table style="width:99%;"}
+variances. {.table style="width:100%;"}
 
 ### Comparison with ks, np, KernSmooth, mclust and mixtools
 
@@ -313,14 +333,14 @@ perfect estimate.
 
 | Method                    |         Error | Difference from ks | Seconds per fit |
 |:--------------------------|--------------:|-------------------:|----------------:|
-| ks                        | 1.689 (0.042) |                    |           0.197 |
-| KernSmooth                | 1.689 (0.042) |   -0.0004 (0.0002) |           0.011 |
-| np                        | 1.666 (0.042) |   -0.0227 (0.0089) |           0.256 |
-| proxymix, 3 components    | 1.315 (0.037) |   -0.3742 (0.0209) |           1.007 |
-| proxymix, 5 components    | 1.525 (0.040) |   -0.1637 (0.0190) |           1.180 |
-| proxymix, 8 components    | 1.692 (0.046) |    0.0028 (0.0163) |           1.549 |
-| mclust, components by BIC | 0.969 (0.043) |   -0.7197 (0.0468) |           0.629 |
-| mixtools, 3 components    | 0.776 (0.108) |   -0.9127 (0.1164) |           9.333 |
+| ks                        | 1.689 (0.042) |                    |           0.121 |
+| KernSmooth                | 1.689 (0.042) |   -0.0004 (0.0002) |           0.008 |
+| np                        | 1.666 (0.042) |   -0.0227 (0.0089) |           0.165 |
+| proxymix, 3 components    | 1.315 (0.037) |   -0.3742 (0.0209) |           0.587 |
+| proxymix, 5 components    | 1.525 (0.040) |   -0.1637 (0.0190) |           0.741 |
+| proxymix, 8 components    | 1.692 (0.046) |    0.0028 (0.0163) |           0.931 |
+| mclust, components by BIC | 0.969 (0.043) |   -0.7197 (0.0468) |           0.392 |
+| mixtools, 3 components    | 0.776 (0.108) |   -0.9127 (0.1164) |           5.612 |
 
 Integrated squared error against the true density, in thousandths,
 averaged over 100 simulated datasets of 500 points, with its standard
@@ -340,19 +360,19 @@ of components. The true density in this design is itself a mixture of
 three normal distributions, which favours every method that fits a
 mixture.
 
-proxymix took 1.01 to 1.55 seconds per fit, slower than ks (0.20), np
-(0.26), KernSmooth (0.011) and mclust (0.63), and faster than mixtools
-(9.3). Query times were measured on the Old Faithful data (Azzalini and
+proxymix took 0.59 to 0.93 seconds per fit, slower than ks (0.12), np
+(0.17), KernSmooth (0.008) and mclust (0.39), and faster than mixtools
+(5.6). Query times were measured on the Old Faithful data (Azzalini and
 Bowman, 1990) and the Palmer penguins data (Gorman et al., 2014; Horst
 et al., 2022), as the median of five timings on one computer, averaged
 over the two datasets. A query here is the conditional mean and the 90%
 conditional quantile of one variable given the other. On the
-three-component proxy a query took 0.46 milliseconds (ms). That is about
-32 times faster than the 14.8 ms for the ks estimate evaluated on a grid
-of 401 points, and about 19 times slower than the 0.025 ms for the
+three-component proxy a query took 0.34 milliseconds (ms). That is about
+34 times faster than the 11.6 ms for the ks estimate evaluated on a grid
+of 401 points, and about 17 times slower than the 0.020 ms for the
 KernSmooth grid. Queries on the mixtures from mclust and from mixtools,
-here with two components, took 0.44 and 0.37 ms, and queries on np took
-1.67 ms.
+here with two components, took 0.34 and 0.28 ms, and queries on np took
+1.30 ms.
 
 The code below fits one simulated dataset with all six packages and
 computes the integrated squared error of each. It repeats the simulation
@@ -360,64 +380,66 @@ code for a single dataset. It needs ks, np, mclust and mixtools from
 CRAN (KernSmooth ships with R), and it is not run when this vignette is
 built.
 
-\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`mclust`](https://mclust-org.github.io/mclust/)`)`\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`mixtools`](https://github.com/dsy109/mixtools)`)`\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`np`](https://github.com/JeffreyRacine/R-Package-np)`)`\
-[`options`](https://rdrr.io/r/base/options.html)`(``np.messages ``=`` ``FALSE``)`\
-\
-`# one dataset of 500 points from a mixture of three normal distributions`\
-`truth`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(`\
-`  weights ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``0.35``, ``0.35``, ``0.30``)``,`\
-`  means ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``-``2``, ``0``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``2``, ``1``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``4``)``)``,`\
-`  covs ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``, `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``1``, ``0.5``, ``0.5``, ``1``)``, ``2L``)``, ``0.6`` ``*`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``)`\
-`)`\
-[`set.seed`](https://rdrr.io/r/base/Random.html)`(``1L``)`\
-`n`` ``<-`` ``500L`\
-`k`` ``<-`` `[`sample.int`](https://rdrr.io/r/base/sample.html)`(``3L``, ``n``, replace ``=`` ``TRUE``, prob ``=`` ``truth``$``weights``)`\
-`x`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``NA_real_``, ``n``, ``2L``)`\
-`for`` ``(``j`` ``in`` `[`seq_len`](https://rdrr.io/r/base/seq.html)`(``3L``)``)`` ``{`\
-`  ``s`` ``<-`` ``k`` ``==`` ``j`\
-`  ``x``[``s``, ``]`` ``<-`` ``mvnfast``::`[`rmvn`](https://rdrr.io/pkg/mvnfast/man/rmvn.html)`(`[`sum`](https://rdrr.io/r/base/sum.html)`(``s``)``, ``truth``$``means``[[``j``]``]``, ``truth``$``covs``[[``j``]``]``)`\
-`}`\
-\
-`# integrated squared error against the true density, on a grid`\
-`g1`` ``<-`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``6``, ``6``, length.out ``=`` ``121L``)`\
-`g2`` ``<-`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``4``, ``8``, length.out ``=`` ``121L``)`\
-`grid`` ``<-`` `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(`[`expand.grid`](https://rdrr.io/r/base/expand.grid.html)`(``x1 ``=`` ``g1``, x2 ``=`` ``g2``)``)`\
-`cell`` ``<-`` ``(``g1``[``2L``]`` ``-`` ``g1``[``1L``]``)`` ``*`` ``(``g2``[``2L``]`` ``-`` ``g2``[``1L``]``)`\
-`f_true`` ``<-`` `[`Reduce`](https://rdrr.io/r/base/funprog.html)`(``` `+` ```, `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``3L``)``, ``function``(``j``)`` ``{`\
-`  ``truth``$``weights``[``j``]`` ``*`` ``mvnfast``::`[`dmvn`](https://rdrr.io/pkg/mvnfast/man/dmvn.html)`(``grid``, ``truth``$``means``[[``j``]``]``, ``truth``$``covs``[[``j``]``]``)`\
-`}``)``)`\
-`ise`` ``<-`` ``function``(``f_hat``)`` `[`sum`](https://rdrr.io/r/base/sum.html)`(``(``f_hat`` ``-`` ``f_true``)``^``2``)`` ``*`` ``cell`\
-`as_gmm`` ``<-`` ``function``(``w``, ``mu``, ``sigma``)`` ``{`\
-`  `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(``weights ``=`` ``w``, means ``=`` ``mu``, covariances ``=`` ``sigma``)`\
-`}`\
-\
-`# ks with its diagonal plug-in bandwidth, and proxymix compressing the same estimate`\
-`h`` ``<-`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(`[`diag`](https://rdrr.io/r/base/diag.html)`(``ks``::`[`Hpi.diag`](https://mvstat.net/ks/reference/Hpi.html)`(``x``)``)``)`\
-`kd`` ``<-`` ``ks``::`[`kde`](https://mvstat.net/ks/reference/kde.html)`(``x``, H ``=`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``h``^``2``)``, eval.points ``=`` ``grid``)`\
-`f`` ``<-`` `[`from_kde`](https://max578.github.io/proxymix/reference/from_kde.md)`(``x``, N ``=`` ``3L``, bandwidth ``=`` ``h``, is_size ``=`` ``20000L``, seed ``=`` ``1L``)`\
-\
-`mc`` ``<-`` `[`Mclust`](https://mclust-org.github.io/mclust/reference/Mclust.html)`(``x``, verbose ``=`` ``FALSE``)`\
-`g_mc`` ``<-`` ``as_gmm``(`\
-`  ``mc``$``parameters``$``pro``,`\
-`  `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``mc``$``G``)``, ``function``(``j``)`` ``mc``$``parameters``$``mean``[``, ``j``]``)``,`\
-`  `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``mc``$``G``)``, ``function``(``j``)`` ``mc``$``parameters``$``variance``$``sigma``[``, , ``j``]``)`\
-`)`\
-`mt`` ``<-`` `[`mvnormalmixEM`](https://rdrr.io/pkg/mixtools/man/mvnormalmixEM.html)`(``x``, k ``=`` ``3L``)`\
-`nd`` ``<-`` `[`npudens`](https://rdrr.io/pkg/np/man/np.density.html)`(`[`npudensbw`](https://rdrr.io/pkg/np/man/np.density.bw.html)`(``x``)``)`\
-`f_np`` ``<-`` `[`predict`](https://rdrr.io/r/stats/predict.html)`(``nd``, newdata ``=`` `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``grid``)``)`\
-`bk`` ``<-`` ``KernSmooth``::`[`bkde2D`](https://rdrr.io/pkg/KernSmooth/man/bkde2D.html)`(``x``, bandwidth ``=`` ``h``, gridsize ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``121L``, ``121L``)``,`\
-`                         range.x ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`range`](https://rdrr.io/r/base/range.html)`(``g1``)``, `[`range`](https://rdrr.io/r/base/range.html)`(``g2``)``)``)`\
-\
-`1000`` ``*`` `[`c`](https://rdrr.io/r/base/c.html)`(``ks ``=`` ``ise``(``kd``$``estimate``)``,`\
-`         proxymix ``=`` ``ise``(`[`dgmm`](https://max578.github.io/proxymix/reference/dgmm.md)`(``grid``, ``f``)``)``,`\
-`         mclust ``=`` ``ise``(`[`dgmm`](https://max578.github.io/proxymix/reference/dgmm.md)`(``grid``, ``g_mc``)``)``,`\
-`         mixtools ``=`` ``ise``(`[`dgmm`](https://max578.github.io/proxymix/reference/dgmm.md)`(``grid``, ``as_gmm``(``mt``$``lambda``, ``mt``$``mu``, ``mt``$``sigma``)``)``)``,`\
-`         np ``=`` ``ise``(``f_np``)``,`\
-`         KernSmooth ``=`` ``ise``(`[`as.vector`](https://rdrr.io/r/base/vector.html)`(``bk``$``fhat``)``)``)`
+``` r
+
+library(proxymix)
+library(mclust)
+library(mixtools)
+library(np)
+options(np.messages = FALSE)
+
+# one dataset of 500 points from a mixture of three normal distributions
+truth <- list(
+  weights = c(0.35, 0.35, 0.30),
+  means = list(c(-2, 0), c(2, 1), c(0, 4)),
+  covs = list(diag(2), matrix(c(1, 0.5, 0.5, 1), 2L), 0.6 * diag(2))
+)
+set.seed(1L)
+n <- 500L
+k <- sample.int(3L, n, replace = TRUE, prob = truth$weights)
+x <- matrix(NA_real_, n, 2L)
+for (j in seq_len(3L)) {
+  s <- k == j
+  x[s, ] <- mvnfast::rmvn(sum(s), truth$means[[j]], truth$covs[[j]])
+}
+
+# integrated squared error against the true density, on a grid
+g1 <- seq(-6, 6, length.out = 121L)
+g2 <- seq(-4, 8, length.out = 121L)
+grid <- as.matrix(expand.grid(x1 = g1, x2 = g2))
+cell <- (g1[2L] - g1[1L]) * (g2[2L] - g2[1L])
+f_true <- Reduce(`+`, lapply(seq_len(3L), function(j) {
+  truth$weights[j] * mvnfast::dmvn(grid, truth$means[[j]], truth$covs[[j]])
+}))
+ise <- function(f_hat) sum((f_hat - f_true)^2) * cell
+as_gmm <- function(w, mu, sigma) {
+  gmm(weights = w, means = mu, covariances = sigma)
+}
+
+# ks with its diagonal plug-in bandwidth, and proxymix compressing the same estimate
+h <- sqrt(diag(ks::Hpi.diag(x)))
+kd <- ks::kde(x, H = diag(h^2), eval.points = grid)
+f <- from_kde(x, N = 3L, bandwidth = h, is_size = 20000L, seed = 1L)
+
+mc <- Mclust(x, verbose = FALSE)
+g_mc <- as_gmm(
+  mc$parameters$pro,
+  lapply(seq_len(mc$G), function(j) mc$parameters$mean[, j]),
+  lapply(seq_len(mc$G), function(j) mc$parameters$variance$sigma[, , j])
+)
+mt <- mvnormalmixEM(x, k = 3L)
+nd <- npudens(npudensbw(x))
+f_np <- predict(nd, newdata = data.frame(grid))
+bk <- KernSmooth::bkde2D(x, bandwidth = h, gridsize = c(121L, 121L),
+                         range.x = list(range(g1), range(g2)))
+
+1000 * c(ks = ise(kd$estimate),
+         proxymix = ise(dgmm(grid, f)),
+         mclust = ise(dgmm(grid, g_mc)),
+         mixtools = ise(dgmm(grid, as_gmm(mt$lambda, mt$mu, mt$sigma))),
+         np = ise(f_np),
+         KernSmooth = ise(as.vector(bk$fhat)))
+```
 
 The [extended version of this
 article](https://max578.github.io/proxymix/articles/extended/from_kde.html)
@@ -555,6 +577,11 @@ Scrucca, L., Fop, M., Murphy, T. B. and Raftery, A. E. (2016). *mclust
 finite mixture models.* The R Journal 8(1), 289–317.
 <https://doi.org/10.32614/RJ-2016-021>.
 
+Sheather, S. J. and Jones, M. C. (1991). A reliable data-based bandwidth
+selection method for kernel density estimation. *Journal of the Royal
+Statistical Society, Series B*, 53(3), 683–690.
+<https://doi.org/10.1111/j.2517-6161.1991.tb01857.x>
+
 Silverman, B. W. (1986). *Density Estimation for Statistics and Data
 Analysis.* Chapman and Hall.
 
@@ -568,46 +595,50 @@ The data are generated with seed `20260601`, and every
 call passes `seed = 1L`, so the weighted draws are reproducible.
 [`hellinger_mc()`](https://max578.github.io/proxymix/reference/hellinger_mc.md)
 uses its own `seed = 1L`. The comparison is read from stored results of
-a simulation run under proxymix 0.16.0, ks 1.15.3, np 0.70-5, KernSmooth
-2.23-27, mclust 6.1.3 and mixtools 2.0.0.1, which took about 26 minutes
+a simulation run under proxymix 0.17.0, ks 1.15.3, np 0.70-5, KernSmooth
+2.23-27, mclust 6.1.3 and mixtools 2.0.0.1, which took about 16 minutes
 on one core.
 
-\
-[`sessionInfo`](https://rdrr.io/r/utils/sessionInfo.html)`(``)`
+``` r
 
+sessionInfo()
 ```
+
+``` session-info
 #> R version 4.6.1 (2026-06-24)
-#> Platform: aarch64-apple-darwin23
-#> Running under: macOS Tahoe 26.6.2
+#> Platform: x86_64-pc-linux-gnu
+#> Running under: Ubuntu 24.04.5 LTS
 #> 
 #> Matrix products: default
-#> BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib 
-#> LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1
+#> BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 
+#> LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.26.so;  LAPACK version 3.12.0
 #> 
 #> locale:
-#> [1] en_AU.UTF-8/en_AU.UTF-8/en_AU.UTF-8/C/en_AU.UTF-8/en_AU.UTF-8
+#>  [1] LC_CTYPE=C.UTF-8       LC_NUMERIC=C           LC_TIME=C.UTF-8       
+#>  [4] LC_COLLATE=C.UTF-8     LC_MONETARY=C.UTF-8    LC_MESSAGES=C.UTF-8   
+#>  [7] LC_PAPER=C.UTF-8       LC_NAME=C              LC_ADDRESS=C          
+#> [10] LC_TELEPHONE=C         LC_MEASUREMENT=C.UTF-8 LC_IDENTIFICATION=C   
 #> 
-#> time zone: Australia/Adelaide
-#> tzcode source: internal
+#> time zone: UTC
+#> tzcode source: system (glibc)
 #> 
 #> attached base packages:
 #> [1] stats     graphics  grDevices utils     datasets  methods   base     
 #> 
 #> other attached packages:
-#> [1] proxymix_0.16.0
+#> [1] proxymix_0.17.0
 #> 
 #> loaded via a namespace (and not attached):
 #>  [1] mvnfast_0.2.8      gtable_0.3.6       jsonlite_2.0.0     dplyr_1.2.1       
-#>  [5] compiler_4.6.1     Rcpp_1.1.2         tidyselect_1.2.1   dichromat_2.0-1   
-#>  [9] jquerylib_0.1.4    systemfonts_1.3.2  scales_1.4.0       textshaping_1.0.5 
-#> [13] yaml_2.3.12        fastmap_1.2.0      ggplot2_4.0.3      R6_2.6.1          
-#> [17] labeling_0.4.3     generics_0.1.4     isoband_0.3.0      knitr_1.51        
-#> [21] htmlwidgets_1.6.4  tibble_3.3.1       desc_1.4.3         bslib_0.12.0      
-#> [25] pillar_1.11.1      RColorBrewer_1.1-3 rlang_1.3.0        cachem_1.1.0      
-#> [29] xfun_0.60          fs_2.1.0           sass_0.4.10        S7_0.2.2          
-#> [33] otel_0.2.0         cli_3.6.6          withr_3.0.3        pkgdown_2.2.1     
-#> [37] magrittr_2.0.5     digest_0.6.39      grid_4.6.1         lifecycle_1.0.5   
-#> [41] vctrs_0.7.3        evaluate_1.0.5     glue_1.8.1         farver_2.1.2      
-#> [45] ragg_1.5.2         rmarkdown_2.32     tools_4.6.1        pkgconfig_2.0.3   
-#> [49] htmltools_0.5.9
+#>  [5] compiler_4.6.1     tidyselect_1.2.1   Rcpp_1.1.2         jquerylib_0.1.4   
+#>  [9] systemfonts_1.3.2  scales_1.4.0       textshaping_1.0.5  yaml_2.3.12       
+#> [13] fastmap_1.2.0      ggplot2_4.0.3      R6_2.6.1           labeling_0.4.3    
+#> [17] generics_0.1.4     isoband_0.3.0      knitr_1.52         tibble_3.3.1      
+#> [21] desc_1.4.3         bslib_0.12.0       pillar_1.11.1      RColorBrewer_1.1-3
+#> [25] rlang_1.3.0        cachem_1.1.0       xfun_0.62          fs_2.1.0          
+#> [29] sass_0.4.10        S7_0.2.2           otel_0.2.0         cli_3.6.6         
+#> [33] pkgdown_2.2.1      withr_3.0.3        magrittr_2.0.5     digest_0.6.39     
+#> [37] grid_4.6.1         lifecycle_1.0.5    vctrs_0.7.3        evaluate_1.0.5    
+#> [41] glue_1.8.1         farver_2.1.2       ragg_1.5.2         rmarkdown_2.32    
+#> [45] tools_4.6.1        pkgconfig_2.0.3    htmltools_0.5.9
 ```

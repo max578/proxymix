@@ -2,8 +2,8 @@
 
 An S7 representation of a target density that `proxymix` is asked to
 approximate. A target may carry an evaluable `log_density`, a matrix of
-i.i.d. `samples`, or both. Each of the three fitting regimes consumes a
-different subset:
+i.i.d. `samples`, a characteristic function `cf`, or several of these.
+Each of the four fitting regimes consumes a different subset:
 
 ## Usage
 
@@ -16,7 +16,8 @@ gmm_target(
   normalised = NA,
   log_normalizer = NA_real_,
   name = "gmm_target",
-  metadata = list()
+  metadata = list(),
+  cf = NULL
 )
 ```
 
@@ -70,6 +71,15 @@ gmm_target(
 
   Optional list of additional descriptors.
 
+- cf:
+
+  Optional characteristic function of the target, as in
+  [`from_cf()`](https://max578.github.io/proxymix/reference/from_cf.md):
+  a function of an `n` by `p` matrix of frequencies returning `n`
+  complex values.
+  [`cf_target()`](https://max578.github.io/proxymix/reference/cf_target.md)
+  checks it before building the target.
+
 ## Value
 
 An S7 object of class `gmm_target`.
@@ -80,10 +90,14 @@ An S7 object of class `gmm_target`.
 
 - regime `"sample"` needs samples;
 
-- regime `"kld"` needs the log-density.
+- regime `"kld"` needs the log-density;
 
-Use `gmm_target()` or
+- regime `"cf"` needs the characteristic function.
+
+Use `gmm_target()`,
 [`gmm_target_from_samples()`](https://max578.github.io/proxymix/reference/gmm_target_from_samples.md)
+or
+[`cf_target()`](https://max578.github.io/proxymix/reference/cf_target.md)
 to construct.
 
 Importance-sampled KLD-EM (regime `"kld"`) only requires `log_density`

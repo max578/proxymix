@@ -82,6 +82,6 @@ proxy_identification_report(m, data.frame(x = stats::rnorm(100)))
 #>   Confounding gap (value at risk if a latent regime confounds):
 #>                mean |Delta| = 2.336, max |Delta| = 2.41
 #>   NOT identified : the individual counterfactual law
-#>                    (its variance and tail probabilities).
+#>                    (per-unit means assume a kept residual).
 #> ===========================================================
 ```

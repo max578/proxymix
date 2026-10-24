@@ -62,11 +62,11 @@ from_objective(
 
   Optional control of the cooling ladder. `NULL` (the default) derives a
   ladder from the range `r` of `objective` over a uniform probe of the
-  box: from `r / 2` down to `r / 80` when `scale = "objective"`, and
-  from `max(r / 2, 1)` down to 1 when `scale = "loglik"`. A positive
-  scalar sets the final (lowest) temperature; a length-2 numeric
-  `c(high, low)` sets both ends explicitly. A supplied `temperature` is
-  used as given, whatever `scale` is.
+  box: from `r/2` down to `r/80` when `scale = "objective"`, and from
+  `max(r / 2, 1)` down to 1 when `scale = "loglik"`. A positive scalar
+  sets the final (lowest) temperature; a length-2 numeric `c(high, low)`
+  sets both ends explicitly. A supplied `temperature` is used as given,
+  whatever `scale` is.
 
 - n_steps:
 
@@ -168,6 +168,10 @@ Other fitting:
 [`fit_em_samples()`](https://max578.github.io/proxymix/reference/fit_em_samples.md),
 [`fit_kld_em()`](https://max578.github.io/proxymix/reference/fit_kld_em.md),
 [`fit_moment_match()`](https://max578.github.io/proxymix/reference/fit_moment_match.md),
+[`fit_mppca_samples()`](https://max578.github.io/proxymix/reference/fit_mppca_samples.md),
+[`from_cf()`](https://max578.github.io/proxymix/reference/from_cf.md),
+[`from_cf_elliptical()`](https://max578.github.io/proxymix/reference/from_cf_elliptical.md),
+[`from_cf_sources()`](https://max578.github.io/proxymix/reference/from_cf_sources.md),
 [`from_kde()`](https://max578.github.io/proxymix/reference/from_kde.md),
 [`select_N()`](https://max578.github.io/proxymix/reference/select_N.md)
 

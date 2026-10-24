@@ -1,10 +1,14 @@
 # Fitting a proxy to a density you cannot sample
 
-\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`
+``` r
 
-\
-`has_ggplot2`` ``<-`` `[`requireNamespace`](https://rdrr.io/r/base/ns-load.html)`(``"ggplot2"``, quietly ``=`` ``TRUE``)`
+library(proxymix)
+```
+
+``` r
+
+has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
+```
 
 ## The problem
 
@@ -42,7 +46,7 @@ This vignette works through one example from start to finish.
   [`banana_target()`](https://max578.github.io/proxymix/reference/banana_target.md)
   is a ready-made target in two variables, shaped like a curved banana.
 - [`fit_proxymix()`](https://max578.github.io/proxymix/reference/fit_proxymix.md)
-  fits the proxy. It chooses one of three fitting methods from what you
+  fits the proxy. It chooses one of four fitting methods from what you
   supply.
 - [`proposal_mvt()`](https://max578.github.io/proxymix/reference/proposal_uniform.md)
   sets up a wide distribution that is easy to sample, from which the
@@ -63,8 +67,9 @@ This vignette works through one example from start to finish.
 
 ### Which fitting method applies
 
-The package has three ways of fitting the bell curves, described by van
-der Hoek and Elliott (2024).
+The package has four ways of fitting the bell curves. The first three
+are described by van der Hoek and Elliott (2024), and the fourth is for
+a distribution known only through its characteristic function.
 [`fit_proxymix()`](https://max578.github.io/proxymix/reference/fit_proxymix.md)
 picks one according to what you supply.
 
@@ -73,6 +78,7 @@ picks one according to what you supply.
 | Data, and you want one bell curve | Fits one bell curve with the same centre and spread as the data | `"moment"` |
 | Data, and you want several bell curves | Moves and reshapes the bell curves, step by step, until together they match the data | `"sample"` |
 | Only the formula, no data | Draws trial points, weights each one by the formula, then fits the bell curves to the weighted points | `"kld"` |
+| Only the characteristic function, as for a stable law | Matches the characteristic function of the bell curves to the target’s at many frequencies | `"cf"` |
 
 How
 [`fit_proxymix()`](https://max578.github.io/proxymix/reference/fit_proxymix.md)
@@ -89,14 +95,16 @@ third method applies. The package was built for this case.
 The banana target has an exact density formula and no sample, so only
 the third method applies.
 
-\
-`tgt`` ``<-`` `[`banana_target`](https://max578.github.io/proxymix/reference/banana_target.md)`(``)`\
-`tgt`\
-`#> <gmm_target>: "banana" in p = 2 dimensions`\
-`#>   log_density : supplied`\
-`#>   samples     : <absent>`\
-`#>   normalised  : TRUE`\
-`#>   log Z(f)    : 0`
+``` r
+
+tgt <- banana_target()
+tgt
+#> <gmm_target>: "banana" in p = 2 dimensions
+#>   log_density : supplied
+#>   samples     : <absent>
+#>   normalised  : TRUE
+#>   log Z(f)    : 0
+```
 
 ### Fit the proxy
 
@@ -116,22 +124,24 @@ match and increases as they become more different.
 The call below asks for a proxy with three components and sets a seed so
 the result is reproducible.
 
-\
-`proposal`` ``<-`` `[`proposal_mvt`](https://max578.github.io/proxymix/reference/proposal_uniform.md)`(``n_dim ``=`` ``2L``, mean ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)``,`\
-`                         sigma ``=`` ``4`` ``*`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``, df ``=`` ``5``)`\
-`fit`` ``<-`` `[`fit_proxymix`](https://max578.github.io/proxymix/reference/fit_proxymix.md)`(``tgt``, N ``=`` ``3L``, regime ``=`` ``"kld"``,`\
-`                    proposal ``=`` ``proposal``,`\
-`                    is_size ``=`` ``2000L``,`\
-`                    max_iter ``=`` ``60L``,`\
-`                    seed ``=`` ``1L``)`\
-`fit`\
-`#> <gmm_fit>: regime = "kld", K = 3, p = 2`\
-`#>   target     : banana`\
-`#>   iterations : 38`\
-`#>   converged  : TRUE`\
-`#>   [1] w = 0.5345, |mu| = 0.3018, tr(Sigma) = 1.3502`\
-`#>   [2] w = 0.3173, |mu| = 0.9255, tr(Sigma) = 2.0299`\
-`#>   [3] w = 0.1483, |mu| = 1.5183, tr(Sigma) = 3.1396`
+``` r
+
+proposal <- proposal_mvt(n_dim = 2L, mean = c(0, 0),
+                         sigma = 4 * diag(2), df = 5)
+fit <- fit_proxymix(tgt, N = 3L, regime = "kld",
+                    proposal = proposal,
+                    is_size = 2000L,
+                    max_iter = 60L,
+                    seed = 1L)
+fit
+#> <gmm_fit>: regime = "kld", K = 3, p = 2
+#>   target     : banana
+#>   iterations : 38
+#>   converged  : TRUE
+#>   [1] w = 0.5345, |mu| = 0.3018, tr(Sigma) = 1.3502
+#>   [2] w = 0.3173, |mu| = 0.9255, tr(Sigma) = 2.0299
+#>   [3] w = 0.1483, |mu| = 1.5183, tr(Sigma) = 3.1396
+```
 
 ### Check the fit before using it
 
@@ -142,8 +152,10 @@ trial points carry most of the weight.
 [`gmm_fit_quality()`](https://max578.github.io/proxymix/reference/gmm_fit_quality.md)
 checks for this and for other signs of a poor fit.
 
-\
-`quality`` ``<-`` `[`gmm_fit_quality`](https://max578.github.io/proxymix/reference/gmm_fit_quality.md)`(``fit``)`
+``` r
+
+quality <- gmm_fit_quality(fit)
+```
 
 | Check | Value |
 |:---|:---|
@@ -176,26 +188,30 @@ only a rough check.
 
 With two variables, the quickest check is a plot.
 
-\
-`grid_x`` ``<-`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``3``, ``3``, length.out ``=`` ``120L``)`\
-`grid_g`` ``<-`` `[`expand.grid`](https://rdrr.io/r/base/expand.grid.html)`(``x1 ``=`` ``grid_x``, x2 ``=`` ``grid_x``)`\
-`grid_mat`` ``<-`` `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(``grid_g``)`\
-`grid_g``$``target`` ``<-`` `[`exp`](https://rdrr.io/r/base/Log.html)`(``tgt``@``log_density``(``grid_mat``)``)`\
-`grid_g``$``proxy`` ``<-`` `[`dgmm`](https://max578.github.io/proxymix/reference/dgmm.md)`(``grid_mat``, ``fit``)`
+``` r
 
-\
-`ggplot2``::`[`ggplot`](https://ggplot2.tidyverse.org/reference/ggplot.html)`(``grid_g``, ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``x1``, ``x2``)``)`` ``+`\
-`  ``ggplot2``::`[`geom_contour_filled`](https://ggplot2.tidyverse.org/reference/geom_contour.html)`(``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``z ``=`` ``target``)``, bins ``=`` ``10L``,`\
-`                               alpha ``=`` ``0.85``)`` ``+`\
-`  ``ggplot2``::`[`geom_contour`](https://ggplot2.tidyverse.org/reference/geom_contour.html)`(``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``z ``=`` ``proxy``)``, colour ``=`` ``"white"``,`\
-`                        linetype ``=`` ``"dashed"``, linewidth ``=`` ``0.45``, bins ``=`` ``8L``)`` ``+`\
-`  ``ggplot2``::`[`scale_fill_viridis_d`](https://ggplot2.tidyverse.org/reference/scale_viridis.html)`(``option ``=`` ``"mako"``, guide ``=`` ``"none"``)`` ``+`\
-`  ``ggplot2``::`[`coord_equal`](https://ggplot2.tidyverse.org/reference/coord_fixed.html)`(``)`` ``+`\
-`  ``ggplot2``::`[`labs`](https://ggplot2.tidyverse.org/reference/labs.html)`(`\
-`    title ``=`` ``"Target (filled) and fitted proxy (dashed)"``,`\
-`    x ``=`` `[`expression`](https://rdrr.io/r/base/expression.html)`(``x``[``1``]``)``, y ``=`` `[`expression`](https://rdrr.io/r/base/expression.html)`(``x``[``2``]``)`\
-`  ``)`` ``+`\
-`  ``ggplot2``::`[`theme_minimal`](https://ggplot2.tidyverse.org/reference/ggtheme.html)`(``base_size ``=`` ``11``)`
+grid_x <- seq(-3, 3, length.out = 120L)
+grid_g <- expand.grid(x1 = grid_x, x2 = grid_x)
+grid_mat <- as.matrix(grid_g)
+grid_g$target <- exp(tgt@log_density(grid_mat))
+grid_g$proxy <- dgmm(grid_mat, fit)
+```
+
+``` r
+
+ggplot2::ggplot(grid_g, ggplot2::aes(x1, x2)) +
+  ggplot2::geom_contour_filled(ggplot2::aes(z = target), bins = 10L,
+                               alpha = 0.85) +
+  ggplot2::geom_contour(ggplot2::aes(z = proxy), colour = "white",
+                        linetype = "dashed", linewidth = 0.45, bins = 8L) +
+  ggplot2::scale_fill_viridis_d(option = "mako", guide = "none") +
+  ggplot2::coord_equal() +
+  ggplot2::labs(
+    title = "Target (filled) and fitted proxy (dashed)",
+    x = expression(x[1]), y = expression(x[2])
+  ) +
+  ggplot2::theme_minimal(base_size = 11)
+```
 
 ![Filled contour map of the curved banana density with dashed contours
 of the three-component Gaussian-mixture proxy following the same
@@ -216,24 +232,28 @@ distribution of the first variable when the second equals 0.5, with `NA`
 marking the variable left free. Neither call goes back to the target
 formula.
 
-\
-[`gmm_marginalise`](https://max578.github.io/proxymix/reference/gmm_marginalise.md)`(``fit``, keep ``=`` ``1L``)`\
-`#> <marginalise(kld_em[N=3] on banana)>: K = 3 components in p = 1 dimensions`\
-`#>   [1] w = 0.5345, |mu| = 0.1866, tr(Sigma) = 0.4417`\
-`#>   [2] w = 0.3173, |mu| = 0.9236, tr(Sigma) = 0.4325`\
-`#>   [3] w = 0.1483, |mu| = 1.3524, tr(Sigma) = 0.5179`\
-[`gmm_conditionalise`](https://max578.github.io/proxymix/reference/gmm_conditionalise.md)`(``fit``, given ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``NA``, ``0.5``)``)`\
-`#> <conditionalise(kld_em[N=3] on banana)>: K = 3 components in p = 1 dimensions`\
-`#>   [1] w = 0.5597, |mu| = 0.2553, tr(Sigma) = 0.4338`\
-`#>   [2] w = 0.3179, |mu| = 1.0803, tr(Sigma) = 0.2310`\
-`#>   [3] w = 0.1224, |mu| = 1.2816, tr(Sigma) = 0.1535`
+``` r
+
+gmm_marginalise(fit, keep = 1L)
+#> <marginalise(kld_em[N=3] on banana)>: K = 3 components in p = 1 dimensions
+#>   [1] w = 0.5345, |mu| = 0.1866, tr(Sigma) = 0.4417
+#>   [2] w = 0.3173, |mu| = 0.9236, tr(Sigma) = 0.4325
+#>   [3] w = 0.1483, |mu| = 1.3524, tr(Sigma) = 0.5179
+gmm_conditionalise(fit, given = c(NA, 0.5))
+#> <conditionalise(kld_em[N=3] on banana)>: K = 3 components in p = 1 dimensions
+#>   [1] w = 0.5597, |mu| = 0.2553, tr(Sigma) = 0.4338
+#>   [2] w = 0.3179, |mu| = 1.0803, tr(Sigma) = 0.2310
+#>   [3] w = 0.1224, |mu| = 1.2816, tr(Sigma) = 0.1535
+```
 
 Drawing from the proxy is fast.
 
-\
-`draws`` ``<-`` `[`rgmm`](https://max578.github.io/proxymix/reference/rgmm.md)`(``500L``, ``fit``)`\
-[`dim`](https://rdrr.io/r/base/dim.html)`(``draws``)`\
-`#> [1] 500   2`
+``` r
+
+draws <- rgmm(500L, fit)
+dim(draws)
+#> [1] 500   2
+```
 
 ### Comparison with the Laplace approximation, Stan and BayesianTools
 
@@ -263,11 +283,11 @@ is better for both.
 
 | Method | KL divergence, mean (sd) | Error in $`P(x_1 > 2)`$ | Seconds per run |
 |:---|---:|---:|---:|
-| proxymix | 0.0081 (0.0031) | 0.00350 | 0.70 |
-| NUTS draws, then mclust | 0.0139 (0.0046) | 0.00473 | 2.70 |
+| proxymix | 0.0081 (0.0031) | 0.00350 | 0.41 |
+| NUTS draws, then mclust | 0.0139 (0.0046) | 0.00473 | 1.82 |
 | Laplace approximation | 0.3749 (0.0000) | 0.00001 | \< 0.01 |
-| NUTS draws | – | 0.00460 | 1.04 |
-| DEzs draws | – | 0.00546 | 0.53 |
+| NUTS draws | – | 0.00460 | 0.74 |
+| DEzs draws | – | 0.00546 | 0.31 |
 
 Results over 200 runs of each method on the banana target. The KL
 divergence is averaged over the runs, with its standard deviation in
@@ -292,9 +312,9 @@ lies 2.4 standard deviations above the proxymix mean in the table, using
 the standard deviation across runs shown there in brackets.
 
 The Laplace approximation was also the fastest, at under 0.01 seconds
-per run. DEzs took 0.53 seconds per run and was slightly faster than
-proxymix at 0.70, while NUTS took 1.04 and NUTS followed by `mclust`
-took 2.70 (medians on one computer, with other programs running on it at
+per run. DEzs took 0.31 seconds per run and was slightly faster than
+proxymix at 0.41, while NUTS took 0.74 and NUTS followed by `mclust`
+took 1.82 (medians on one computer, with other programs running on it at
 the same time).
 
 The code below runs each method once and scores it against the grid. It
@@ -302,77 +322,79 @@ needs `mclust` and `BayesianTools` from CRAN, and `cmdstanr` from
 <https://stan-dev.r-universe.dev> with a CmdStan installation. It is not
 run when this vignette is built.
 
-\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`cmdstanr`](https://mc-stan.org/cmdstanr/)`)`\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`mclust`](https://mclust-org.github.io/mclust/)`)`\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`BayesianTools`](https://github.com/florianhartig/BayesianTools)`)`\
-\
-`tgt`` ``<-`` `[`banana_target`](https://max578.github.io/proxymix/reference/banana_target.md)`(``)`\
-\
-`# midpoint-rule quadrature; the target's mass outside the box is below 1e-5`\
-`h`` ``<-`` ``0.05`\
-`grid`` ``<-`` `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(`[`expand.grid`](https://rdrr.io/r/base/expand.grid.html)`(``x1 ``=`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``5`` ``+`` ``h`` ``/`` ``2``, ``5``, by ``=`` ``h``)``,`\
-`                              x2 ``=`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``5`` ``+`` ``h`` ``/`` ``2``, ``12``, by ``=`` ``h``)``)``)`\
-`log_f`` ``<-`` ``tgt``@``log_density``(``grid``)`\
-`f_grid`` ``<-`` `[`exp`](https://rdrr.io/r/base/Log.html)`(``log_f``)`\
-`tail_ref`` ``<-`` `[`sum`](https://rdrr.io/r/base/sum.html)`(``f_grid``[``grid``[``, ``1L``]`` ``>`` ``2``]``)`` ``*`` ``h``^``2`\
-`kl_of`` ``<-`` ``function``(``log_g``)`` `[`sum`](https://rdrr.io/r/base/sum.html)`(``f_grid`` ``*`` ``(``log_f`` ``-`` ``log_g``)``)`` ``*`` ``h``^``2`\
-\
-`# mass above x1 = 2 under a Gaussian mixture, from its x1 marginal`\
-`tail_of`` ``<-`` ``function``(``w``, ``mean1``, ``sd1``)`` ``{`\
-`  `[`sum`](https://rdrr.io/r/base/sum.html)`(``w`` ``*`` `[`pnorm`](https://rdrr.io/r/stats/Normal.html)`(``2``, ``mean1``, ``sd1``, lower.tail ``=`` ``FALSE``)``)`\
-`}`\
-\
-`# the same target as a Stan program`\
-`stan_file`` ``<-`` `[`file.path`](https://rdrr.io/r/base/file.path.html)`(`[`tempdir`](https://rdrr.io/r/base/tempfile.html)`(``)``, ``"banana.stan"``)`\
-[`writeLines`](https://rdrr.io/r/base/writeLines.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(`\
-`  ``"parameters {"``,`\
-`  ``"  vector[2] x;"``,`\
-`  ``"}"``,`\
-`  ``"model {"``,`\
-`  ``"  target += -0.5 * (square(x[1])"``,`\
-`  ``"                    + square(x[2] - 0.5 * (square(x[1]) - 1)));"``,`\
-`  ``"}"``)``, ``stan_file``)`\
-`banana_stan`` ``<-`` `[`cmdstan_model`](https://mc-stan.org/cmdstanr/reference/cmdstan_model.html)`(``stan_file``)`\
-\
-`box`` ``<-`` `[`createBayesianSetup`](https://rdrr.io/pkg/BayesianTools/man/createBayesianSetup.html)`(``likelihood ``=`` ``function``(``x``)`` ``tgt``@``log_density``(``x``)``,`\
-`                           lower ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``-``6``, ``-``6``)``, upper ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``6``, ``14``)``)`\
-\
-[`set.seed`](https://rdrr.io/r/base/Random.html)`(``1L``)`\
-`fit`` ``<-`` `[`select_N`](https://max578.github.io/proxymix/reference/select_N.md)`(``tgt``, seed ``=`` ``1L``)``$``best_fit`\
-`fit_1`` ``<-`` `[`gmm_marginalise`](https://max578.github.io/proxymix/reference/gmm_marginalise.md)`(``fit``, keep ``=`` ``1L``)`\
-\
-`la`` ``<-`` `[`optim`](https://rdrr.io/r/stats/optim.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)``, ``function``(``x``)`` ``-``tgt``@``log_density``(``x``)``,`\
-`            method ``=`` ``"BFGS"``, hessian ``=`` ``TRUE``)`\
-`la_mean`` ``<-`` ``la``$``par`\
-`la_cov`` ``<-`` `[`solve`](https://rdrr.io/pkg/Matrix/man/solve-methods.html)`(``la``$``hessian``)`\
-\
-`nuts`` ``<-`` ``banana_stan``$``sample``(``seed ``=`` ``1L``, refresh ``=`` ``0L``, show_messages ``=`` ``FALSE``)`\
-`draws`` ``<-`` ``nuts``$``draws``(``"x"``, format ``=`` ``"matrix"``)`\
-\
-`mc`` ``<-`` `[`Mclust`](https://mclust-org.github.io/mclust/reference/Mclust.html)`(``draws``, G ``=`` ``1``:``6``, modelNames ``=`` ``"VVV"``, verbose ``=`` ``FALSE``)`\
-`mc_par`` ``<-`` ``mc``$``parameters`\
-\
-`de`` ``<-`` `[`runMCMC`](https://rdrr.io/pkg/BayesianTools/man/runMCMC.html)`(``box``, sampler ``=`` ``"DEzs"``, settings ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``message ``=`` ``FALSE``)``)`\
-`de_draws`` ``<-`` `[`getSample`](https://rdrr.io/pkg/BayesianTools/man/getSample.html)`(``de``, start ``=`` ``1000L``)`\
-\
-`# KL divergence from the target, for the methods that return a density`\
-[`c`](https://rdrr.io/r/base/c.html)`(``proxymix ``=`` ``kl_of``(`[`dgmm`](https://max578.github.io/proxymix/reference/dgmm.md)`(``grid``, ``fit``, log ``=`` ``TRUE``)``)``,`\
-`  Laplace ``=`` ``kl_of``(`[`dmvnorm`](https://mclust-org.github.io/mclust/reference/dmvnorm.html)`(``grid``, ``la_mean``, ``la_cov``, log ``=`` ``TRUE``)``)``,`\
-`  ``"NUTS + mclust"`` ``=`` ``kl_of``(`[`dens`](https://mclust-org.github.io/mclust/reference/dens.html)`(``grid``, ``mc``$``modelName``, parameters ``=`` ``mc_par``,`\
-`                               logarithm ``=`` ``TRUE``)``)``)`\
-\
-`# error in the estimated probability that x1 > 2`\
-[`c`](https://rdrr.io/r/base/c.html)`(``proxymix ``=`` ``tail_of``(`[`gmm_weights`](https://max578.github.io/proxymix/reference/gmm_weights.md)`(``fit_1``)``,`\
-`                     `[`vapply`](https://rdrr.io/r/base/lapply.html)`(`[`gmm_means`](https://max578.github.io/proxymix/reference/gmm_weights.md)`(``fit_1``)``, ``` `[[` ```, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``, ``1L``)``,`\
-`                     `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(`[`vapply`](https://rdrr.io/r/base/lapply.html)`(`[`gmm_covariances`](https://max578.github.io/proxymix/reference/gmm_weights.md)`(``fit_1``)``, ``` `[[` ```,`\
-`                                 `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``, ``1L``)``)``)``,`\
-`  Laplace ``=`` `[`pnorm`](https://rdrr.io/r/stats/Normal.html)`(``2``, ``la_mean``[``1L``]``, `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(``la_cov``[``1L``, ``1L``]``)``, lower.tail ``=`` ``FALSE``)``,`\
-`  NUTS ``=`` `[`mean`](https://rdrr.io/r/base/mean.html)`(``draws``[``, ``1L``]`` ``>`` ``2``)``,`\
-`  ``"NUTS + mclust"`` ``=`` ``tail_of``(``mc_par``$``pro``, ``mc_par``$``mean``[``1L``, ``]``,`\
-`                            `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(``mc_par``$``variance``$``sigma``[``1L``, ``1L``, ``]``)``)``,`\
-`  DEzs ``=`` `[`mean`](https://rdrr.io/r/base/mean.html)`(``de_draws``[``, ``1L``]`` ``>`` ``2``)``)`` ``-`` ``tail_ref`
+``` r
+
+library(proxymix)
+library(cmdstanr)
+library(mclust)
+library(BayesianTools)
+
+tgt <- banana_target()
+
+# midpoint-rule quadrature; the target's mass outside the box is below 1e-5
+h <- 0.05
+grid <- as.matrix(expand.grid(x1 = seq(-5 + h / 2, 5, by = h),
+                              x2 = seq(-5 + h / 2, 12, by = h)))
+log_f <- tgt@log_density(grid)
+f_grid <- exp(log_f)
+tail_ref <- sum(f_grid[grid[, 1L] > 2]) * h^2
+kl_of <- function(log_g) sum(f_grid * (log_f - log_g)) * h^2
+
+# mass above x1 = 2 under a Gaussian mixture, from its x1 marginal
+tail_of <- function(w, mean1, sd1) {
+  sum(w * pnorm(2, mean1, sd1, lower.tail = FALSE))
+}
+
+# the same target as a Stan program
+stan_file <- file.path(tempdir(), "banana.stan")
+writeLines(c(
+  "parameters {",
+  "  vector[2] x;",
+  "}",
+  "model {",
+  "  target += -0.5 * (square(x[1])",
+  "                    + square(x[2] - 0.5 * (square(x[1]) - 1)));",
+  "}"), stan_file)
+banana_stan <- cmdstan_model(stan_file)
+
+box <- createBayesianSetup(likelihood = function(x) tgt@log_density(x),
+                           lower = c(-6, -6), upper = c(6, 14))
+
+set.seed(1L)
+fit <- select_N(tgt, seed = 1L)$best_fit
+fit_1 <- gmm_marginalise(fit, keep = 1L)
+
+la <- optim(c(0, 0), function(x) -tgt@log_density(x),
+            method = "BFGS", hessian = TRUE)
+la_mean <- la$par
+la_cov <- solve(la$hessian)
+
+nuts <- banana_stan$sample(seed = 1L, refresh = 0L, show_messages = FALSE)
+draws <- nuts$draws("x", format = "matrix")
+
+mc <- Mclust(draws, G = 1:6, modelNames = "VVV", verbose = FALSE)
+mc_par <- mc$parameters
+
+de <- runMCMC(box, sampler = "DEzs", settings = list(message = FALSE))
+de_draws <- getSample(de, start = 1000L)
+
+# KL divergence from the target, for the methods that return a density
+c(proxymix = kl_of(dgmm(grid, fit, log = TRUE)),
+  Laplace = kl_of(dmvnorm(grid, la_mean, la_cov, log = TRUE)),
+  "NUTS + mclust" = kl_of(dens(grid, mc$modelName, parameters = mc_par,
+                               logarithm = TRUE)))
+
+# error in the estimated probability that x1 > 2
+c(proxymix = tail_of(gmm_weights(fit_1),
+                     vapply(gmm_means(fit_1), `[[`, numeric(1L), 1L),
+                     sqrt(vapply(gmm_covariances(fit_1), `[[`,
+                                 numeric(1L), 1L))),
+  Laplace = pnorm(2, la_mean[1L], sqrt(la_cov[1L, 1L]), lower.tail = FALSE),
+  NUTS = mean(draws[, 1L] > 2),
+  "NUTS + mclust" = tail_of(mc_par$pro, mc_par$mean[1L, ],
+                            sqrt(mc_par$variance$sigma[1L, 1L, ])),
+  DEzs = mean(de_draws[, 1L] > 2)) - tail_ref
+```
 
 The [extended version of this
 article](https://max578.github.io/proxymix/articles/extended/quickstart.html)
@@ -440,6 +462,9 @@ exact operations shown above.
 *Compressing a Bayesian posterior you can evaluate but not sample*
 applies this workflow to the result of a Bayesian analysis.
 
+*Fitting a mixture to a characteristic function* covers the fourth
+method, for stable laws, sums of independent variables and filtering.
+
 ## References
 
 Carpenter, B., Gelman, A., Hoffman, M. D., Lee, D., Goodrich, B.,
@@ -480,42 +505,46 @@ Statistical Association 81(393), 82–86.
 Every fit is seeded (`seed = 1L`), so re-running this vignette
 reproduces the same numbers.
 
-\
-[`sessionInfo`](https://rdrr.io/r/utils/sessionInfo.html)`(``)`
+``` r
 
+sessionInfo()
 ```
+
+``` session-info
 #> R version 4.6.1 (2026-06-24)
-#> Platform: aarch64-apple-darwin23
-#> Running under: macOS Tahoe 26.6.2
+#> Platform: x86_64-pc-linux-gnu
+#> Running under: Ubuntu 24.04.5 LTS
 #> 
 #> Matrix products: default
-#> BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib 
-#> LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1
+#> BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 
+#> LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.26.so;  LAPACK version 3.12.0
 #> 
 #> locale:
-#> [1] en_AU.UTF-8/en_AU.UTF-8/en_AU.UTF-8/C/en_AU.UTF-8/en_AU.UTF-8
+#>  [1] LC_CTYPE=C.UTF-8       LC_NUMERIC=C           LC_TIME=C.UTF-8       
+#>  [4] LC_COLLATE=C.UTF-8     LC_MONETARY=C.UTF-8    LC_MESSAGES=C.UTF-8   
+#>  [7] LC_PAPER=C.UTF-8       LC_NAME=C              LC_ADDRESS=C          
+#> [10] LC_TELEPHONE=C         LC_MEASUREMENT=C.UTF-8 LC_IDENTIFICATION=C   
 #> 
-#> time zone: Australia/Adelaide
-#> tzcode source: internal
+#> time zone: UTC
+#> tzcode source: system (glibc)
 #> 
 #> attached base packages:
 #> [1] stats     graphics  grDevices utils     datasets  methods   base     
 #> 
 #> other attached packages:
-#> [1] proxymix_0.16.0
+#> [1] proxymix_0.17.0
 #> 
 #> loaded via a namespace (and not attached):
 #>  [1] mvnfast_0.2.8      gtable_0.3.6       jsonlite_2.0.0     dplyr_1.2.1       
-#>  [5] compiler_4.6.1     Rcpp_1.1.2         tidyselect_1.2.1   dichromat_2.0-1   
-#>  [9] jquerylib_0.1.4    systemfonts_1.3.2  scales_1.4.0       textshaping_1.0.5 
-#> [13] yaml_2.3.12        fastmap_1.2.0      ggplot2_4.0.3      R6_2.6.1          
-#> [17] labeling_0.4.3     generics_0.1.4     isoband_0.3.0      knitr_1.51        
-#> [21] htmlwidgets_1.6.4  tibble_3.3.1       desc_1.4.3         bslib_0.12.0      
-#> [25] pillar_1.11.1      RColorBrewer_1.1-3 rlang_1.3.0        cachem_1.1.0      
-#> [29] xfun_0.60          fs_2.1.0           sass_0.4.10        S7_0.2.2          
-#> [33] otel_0.2.0         viridisLite_0.4.3  cli_3.6.6          pkgdown_2.2.1     
-#> [37] withr_3.0.3        magrittr_2.0.5     digest_0.6.39      grid_4.6.1        
-#> [41] lifecycle_1.0.5    vctrs_0.7.3        evaluate_1.0.5     glue_1.8.1        
-#> [45] farver_2.1.2       ragg_1.5.2         rmarkdown_2.32     tools_4.6.1       
-#> [49] pkgconfig_2.0.3    htmltools_0.5.9
+#>  [5] compiler_4.6.1     tidyselect_1.2.1   Rcpp_1.1.2         jquerylib_0.1.4   
+#>  [9] systemfonts_1.3.2  scales_1.4.0       textshaping_1.0.5  yaml_2.3.12       
+#> [13] fastmap_1.2.0      ggplot2_4.0.3      R6_2.6.1           labeling_0.4.3    
+#> [17] generics_0.1.4     isoband_0.3.0      knitr_1.52         tibble_3.3.1      
+#> [21] desc_1.4.3         bslib_0.12.0       pillar_1.11.1      RColorBrewer_1.1-3
+#> [25] rlang_1.3.0        cachem_1.1.0       xfun_0.62          fs_2.1.0          
+#> [29] sass_0.4.10        S7_0.2.2           otel_0.2.0         viridisLite_0.4.3 
+#> [33] cli_3.6.6          pkgdown_2.2.1      withr_3.0.3        magrittr_2.0.5    
+#> [37] digest_0.6.39      grid_4.6.1         lifecycle_1.0.5    vctrs_0.7.3       
+#> [41] evaluate_1.0.5     glue_1.8.1         farver_2.1.2       ragg_1.5.2        
+#> [45] rmarkdown_2.32     tools_4.6.1        pkgconfig_2.0.3    htmltools_0.5.9
 ```

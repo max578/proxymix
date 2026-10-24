@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../../index.html">proxymix</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.16.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.17.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,6 +40,7 @@
     <li><a class="dropdown-item" href="../../articles/density_shapes.html">How well a mixture proxies four awkward shapes</a></li>
     <li><a class="dropdown-item" href="../../articles/operator_calculus.html">The closed-form operator calculus on a mixture</a></li>
     <li><a class="dropdown-item" href="../../articles/from_kde.html">Compressing a kernel density estimate into a mixture</a></li>
+    <li><a class="dropdown-item" href="../../articles/cf_targets.html">Fitting a mixture to a characteristic function</a></li>
     <li><a class="dropdown-item" href="../../articles/many_methods.html">One mixture, many methods</a></li>
     <li><a class="dropdown-item" href="../../articles/entropy.html">Reading the entropy of a fitted mixture</a></li>
     <li><a class="dropdown-item" href="../../articles/calibration.html">Mapping the optima of an objective</a></li>
@@ -69,11 +70,10 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Compressing a kernel density estimate into a mixture</h1>
+      <img src="../../logo.png" class="logo" alt=""><h1>Compressing a kernel density estimate into a mixture</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/HEAD/vignettes/articles/extended/from_kde.Rmd" class="external-link"><code>vignettes/articles/extended/from_kde.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/main/vignettes/articles/extended/from_kde.Rmd" class="external-link"><code>vignettes/articles/extended/from_kde.Rmd</code></a></small>
       <div class="d-none name"><code>from_kde.Rmd</code></div>
     </div>
 
@@ -484,6 +484,9 @@ conditional-density estimator and two mixture fitters.</p>
 <div class="section level2">
 <h2 id="numerical-illustration">Numerical illustration<a class="anchor" aria-label="anchor" href="#numerical-illustration"></a>
 </h2>
+<p>ks, np, mclust, mixtools, KernSmooth or the penguins data (R 4.5.0 or
+later) is not available on this build, so the real-data illustration is
+skipped.</p>
 <div class="section level3">
 <h3 id="conditionals-of-two-real-densities-from-six-packages">Conditionals of two real densities, from six packages<a class="anchor" aria-label="anchor" href="#conditionals-of-two-real-densities-from-six-packages"></a>
 </h3>
@@ -551,14 +554,14 @@ and the time per conditional query is recorded for every method.</p>
 <span><span class="op">}</span></span>
 <span></span>
 <span><span class="va">conditional_scores</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">xy</span>, <span class="va">label</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">h</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fu">ks</span><span class="fu">::</span><span class="fu"><a href="https://mvstat.net/ks/reference/Hpi.html" class="external-link">Hpi.diag</a></span><span class="op">(</span><span class="va">xy</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="va">h</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fu">ks</span><span class="fu">::</span><span class="fu">Hpi.diag</span><span class="op">(</span><span class="va">xy</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="va">x_eval</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">xy</span><span class="op">[</span>, <span class="fl">1L</span><span class="op">]</span>, probs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0.05</span>, <span class="fl">0.95</span>, length.out <span class="op">=</span> <span class="fl">20L</span><span class="op">)</span>,</span>
 <span>                     names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span>  <span class="va">y_grid</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="va">xy</span><span class="op">[</span>, <span class="fl">2L</span><span class="op">]</span><span class="op">)</span> <span class="op">-</span> <span class="fl">3</span> <span class="op">*</span> <span class="va">h</span><span class="op">[</span><span class="fl">2L</span><span class="op">]</span>, <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">xy</span><span class="op">[</span>, <span class="fl">2L</span><span class="op">]</span><span class="op">)</span> <span class="op">+</span> <span class="fl">3</span> <span class="op">*</span> <span class="va">h</span><span class="op">[</span><span class="fl">2L</span><span class="op">]</span>,</span>
 <span>                length.out <span class="op">=</span> <span class="fl">401L</span><span class="op">)</span></span>
 <span></span>
 <span>  <span class="va">kde_cond</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x0</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="va">f</span> <span class="op">&lt;-</span> <span class="fu">ks</span><span class="fu">::</span><span class="fu"><a href="https://mvstat.net/ks/reference/kde.html" class="external-link">kde</a></span><span class="op">(</span><span class="va">xy</span>, H <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">h</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span>, eval.points <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">x0</span>, <span class="va">y_grid</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="va">f</span> <span class="op">&lt;-</span> <span class="fu">ks</span><span class="fu">::</span><span class="fu">kde</span><span class="op">(</span><span class="va">xy</span>, H <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">h</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span>, eval.points <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">x0</span>, <span class="va">y_grid</span><span class="op">)</span><span class="op">)</span></span>
 <span>    <span class="fu">grid_summary</span><span class="op">(</span><span class="va">y_grid</span>, <span class="va">f</span><span class="op">$</span><span class="va">estimate</span><span class="op">)</span></span>
 <span>  <span class="op">}</span></span>
 <span>  <span class="va">reference</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">x_eval</span>, <span class="va">kde_cond</span>, <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">2L</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
@@ -576,10 +579,10 @@ and the time per conditional query is recorded for every method.</p>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">mc</span><span class="op">$</span><span class="va">G</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">j</span><span class="op">)</span> <span class="va">mc</span><span class="op">$</span><span class="va">parameters</span><span class="op">$</span><span class="va">variance</span><span class="op">$</span><span class="va">sigma</span><span class="op">[</span>, , <span class="va">j</span><span class="op">]</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
 <span>  <span class="co">## mvnormalmixEM() prints its iteration count, which is discarded</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/capture.output.html" class="external-link">capture.output</a></span><span class="op">(</span><span class="va">mt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/mixtools/man/mvnormalmixEM.html" class="external-link">mvnormalmixEM</a></span><span class="op">(</span><span class="va">xy</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/capture.output.html" class="external-link">capture.output</a></span><span class="op">(</span><span class="va">mt</span> <span class="op">&lt;-</span> <span class="fu">mvnormalmixEM</span><span class="op">(</span><span class="va">xy</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="va">fits</span><span class="op">[[</span><span class="st">"mixtools, k = 2"</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu">as_gmm</span><span class="op">(</span><span class="va">mt</span><span class="op">$</span><span class="va">lambda</span>, <span class="va">mt</span><span class="op">$</span><span class="va">mu</span>, <span class="va">mt</span><span class="op">$</span><span class="va">sigma</span><span class="op">)</span></span>
 <span></span>
-<span>  <span class="va">cd</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/np/man/np.condensity.html" class="external-link">npcdens</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/np/man/np.condensity.bw.html" class="external-link">npcdensbw</a></span><span class="op">(</span>xdat <span class="op">=</span> <span class="va">xy</span><span class="op">[</span>, <span class="fl">1L</span><span class="op">]</span>, ydat <span class="op">=</span> <span class="va">xy</span><span class="op">[</span>, <span class="fl">2L</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="va">cd</span> <span class="op">&lt;-</span> <span class="fu">npcdens</span><span class="op">(</span><span class="fu">npcdensbw</span><span class="op">(</span>xdat <span class="op">=</span> <span class="va">xy</span><span class="op">[</span>, <span class="fl">1L</span><span class="op">]</span>, ydat <span class="op">=</span> <span class="va">xy</span><span class="op">[</span>, <span class="fl">2L</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="va">np_cond</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x0</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    <span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">cd</span>, newdata <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>xdat <span class="op">=</span> <span class="va">x0</span>, ydat <span class="op">=</span> <span class="va">y_grid</span><span class="op">)</span><span class="op">)</span></span>
 <span>    <span class="fu">grid_summary</span><span class="op">(</span><span class="va">y_grid</span>, <span class="va">f</span><span class="op">)</span></span>
@@ -623,194 +626,6 @@ and the time per conditional query is recorded for every method.</p>
 <span>        ms <span class="op">=</span> <span class="va">ms_per_query</span><span class="op">)</span> <span class="op">~</span> <span class="va">data</span> <span class="op">+</span> <span class="va">method</span>,</span>
 <span>  data <span class="op">=</span> <span class="va">curves</span>, FUN <span class="op">=</span> <span class="va">mean</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<caption>Mean absolute error of the conditional mean (Mean) and of the
-90% conditional quantile (90%) of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>y</mi><annotation encoding="application/x-tex">y</annotation></semantics></math>
-given
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>
-over 20 values of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>,
-scored against the ks kernel estimate, on faithful (F, waiting time,
-minutes) and on penguins (P, flipper length, mm), and the time per
-conditional query averaged over the two datasets.</caption>
-<colgroup>
-<col width="29%">
-<col width="13%">
-<col width="11%">
-<col width="13%">
-<col width="11%">
-<col width="19%">
-</colgroup>
-<thead><tr class="header">
-<th align="left">Method</th>
-<th align="right">Mean (F)</th>
-<th align="right">90% (F)</th>
-<th align="right">Mean (P)</th>
-<th align="right">90% (P)</th>
-<th align="right">ms per query</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">proxymix, K = 3</td>
-<td align="right">0.36</td>
-<td align="right">0.62</td>
-<td align="right">0.65</td>
-<td align="right">0.93</td>
-<td align="right">0.40</td>
-</tr>
-<tr class="even">
-<td align="left">proxymix, K = 5</td>
-<td align="right">0.29</td>
-<td align="right">0.47</td>
-<td align="right">0.71</td>
-<td align="right">0.73</td>
-<td align="right">0.58</td>
-</tr>
-<tr class="odd">
-<td align="left">proxymix, K = 8</td>
-<td align="right">0.19</td>
-<td align="right">0.40</td>
-<td align="right">0.83</td>
-<td align="right">0.78</td>
-<td align="right">0.65</td>
-</tr>
-<tr class="even">
-<td align="left">mclust, G by BIC</td>
-<td align="right">0.42</td>
-<td align="right">0.84</td>
-<td align="right">1.04</td>
-<td align="right">1.03</td>
-<td align="right">0.50</td>
-</tr>
-<tr class="odd">
-<td align="left">mixtools, k = 2</td>
-<td align="right">0.41</td>
-<td align="right">0.82</td>
-<td align="right">1.63</td>
-<td align="right">1.35</td>
-<td align="right">0.40</td>
-</tr>
-<tr class="even">
-<td align="left">np, npcdens</td>
-<td align="right">0.32</td>
-<td align="right">0.37</td>
-<td align="right">0.43</td>
-<td align="right">0.54</td>
-<td align="right">2.03</td>
-</tr>
-<tr class="odd">
-<td align="left">KernSmooth, bkde2D</td>
-<td align="right">0.04</td>
-<td align="right">0.08</td>
-<td align="right">0.07</td>
-<td align="right">0.06</td>
-<td align="right">0.05</td>
-</tr>
-<tr class="even">
-<td align="left">ks, kde (reference)</td>
-<td align="right">0.00</td>
-<td align="right">0.00</td>
-<td align="right">0.00</td>
-<td align="right">0.00</td>
-<td align="right">15.25</td>
-</tr>
-</tbody>
-</table>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">show</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ks, kde (reference)"</span>, <span class="st">"proxymix, K = 3"</span>, <span class="st">"proxymix, K = 8"</span>,</span>
-<span>          <span class="st">"mclust, G by BIC"</span>, <span class="st">"np, npcdens"</span><span class="op">)</span></span>
-<span><span class="va">plot_df</span> <span class="op">&lt;-</span> <span class="va">curves</span><span class="op">[</span><span class="va">curves</span><span class="op">$</span><span class="va">data</span> <span class="op">==</span> <span class="st">"faithful"</span> <span class="op">&amp;</span> <span class="va">curves</span><span class="op">$</span><span class="va">method</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">show</span>, <span class="op">]</span></span>
-<span><span class="va">plot_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">plot_df</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"method"</span>, <span class="st">"x"</span><span class="op">)</span><span class="op">]</span>, what <span class="op">=</span> <span class="st">"conditional mean"</span>,</span>
-<span>             y <span class="op">=</span> <span class="va">plot_df</span><span class="op">$</span><span class="va">mean</span><span class="op">)</span>,</span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">plot_df</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"method"</span>, <span class="st">"x"</span><span class="op">)</span><span class="op">]</span>, what <span class="op">=</span> <span class="st">"90% conditional quantile"</span>,</span>
-<span>             y <span class="op">=</span> <span class="va">plot_df</span><span class="op">$</span><span class="va">q90</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">plot_df</span><span class="op">$</span><span class="va">method</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">plot_df</span><span class="op">$</span><span class="va">method</span>, levels <span class="op">=</span> <span class="va">show</span><span class="op">)</span></span>
-<span><span class="va">plot_df</span><span class="op">$</span><span class="va">what</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">plot_df</span><span class="op">$</span><span class="va">what</span>,</span>
-<span>                       levels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"conditional mean"</span>,</span>
-<span>                                  <span class="st">"90% conditional quantile"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">plot_df</span>, <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, colour <span class="op">=</span> <span class="va">method</span>,</span>
-<span>                                      linetype <span class="op">=</span> <span class="va">method</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span>linewidth <span class="op">=</span> <span class="fl">0.7</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span> <span class="va">what</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_manual.html" class="external-link">scale_colour_manual</a></span><span class="op">(</span></span>
-<span>    name <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>    values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"#000000"</span>, <span class="st">"#D55E00"</span>, <span class="st">"#E69F00"</span>, <span class="st">"#0072B2"</span>, <span class="st">"#009E73"</span><span class="op">)</span></span>
-<span>  <span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_manual.html" class="external-link">scale_linetype_manual</a></span><span class="op">(</span></span>
-<span>    name <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>    values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"solid"</span>, <span class="st">"dashed"</span>, <span class="st">"dotted"</span>, <span class="st">"solid"</span>, <span class="st">"solid"</span><span class="op">)</span></span>
-<span>  <span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"eruption duration, minutes"</span>,</span>
-<span>                y <span class="op">=</span> <span class="st">"waiting time, minutes"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span>base_size <span class="op">=</span> <span class="fl">11</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"top"</span><span class="op">)</span></span></code></pre></div>
-<div class="figure">
-<img src="from_kde_files/figure-html/fig-conditionals-1.png" class="r-plt" alt="Two panels of curves over eruption duration from 1.8 to 4.8 minutes. In each panel the reference kernel estimate, the three- and eight-component proxies, mclust and np all rise from about 55 to about 80 minutes across the middle of the range. In the conditional-mean panel the three-component proxy dips below the reference at the upper end of the jump; in the quantile panel mclust runs below the reference from the jump onwards." width="100%"><p class="caption">
-Conditional mean (left) and 90% conditional quantile (right) of waiting
-time given eruption duration on the faithful data, from the ks kernel
-estimate that is the reference, the proxy compressed from it at three
-and eight components, mclust fitted to the raw data and the np
-conditional-density estimate. The eight-component proxy stays within 0.5
-minutes of the reference in the conditional mean and within 0.9 minutes
-in the 90% quantile. In the conditional mean, mclust stays within 1.1
-minutes of the reference, and the three-component proxy falls up to 1.5
-minutes below it at a duration of 3.5 minutes, the upper end of the jump
-between the two groups. In the 90% quantile, mclust falls up to 3.0
-minutes below the reference from the jump to the long eruptions.
-</p>
-</div>
-<p>Compressing the faithful estimate to three components moves the
-conditional mean by 0.36 minutes on average and the 90 per cent quantile
-by 0.62 minutes, against a standard deviation of 13.6 minutes in waiting
-time. On faithful more components bring the proxy closer to the
-reference, to 0.19 and 0.40 minutes at eight. On penguins they do not:
-the smallest errors among the proxies are at
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>K</mi><mo>=</mo><mn>3</mn></mrow><annotation encoding="application/x-tex">K = 3</annotation></semantics></math>
-for the mean and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>K</mi><mo>=</mo><mn>5</mn></mrow><annotation encoding="application/x-tex">K = 5</annotation></semantics></math>
-for the quantile, and all three sit within a millimetre of the reference
-on average, against a standard deviation of 14.1 mm in flipper length.
-mclust chose 3 components on faithful and 3 on penguins. Its
-conditionals and those of mixtools at two components are further from
-the kernel reference than every proxy’s on both datasets, for both
-summaries: on faithful their 90 per cent quantiles are off by 0.84 and
-0.82 minutes, against 0.62 for the three-component proxy. That is the
-expected order: the proxies are fitted to the kernel estimate and the
-two mixture fitters to the raw data. np estimates the conditional
-density directly. On penguins it is closer to the reference than every
-proxy for both summaries. On faithful it is closer to the reference than
-the proxy at
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>K</mi><mo>=</mo><mn>3</mn></mrow><annotation encoding="application/x-tex">K = 3</annotation></semantics></math>
-for the mean and than every proxy for the quantile. The binned
-KernSmooth estimate has a mean absolute error of at most 0.08 minutes or
-millimetres against the reference, as a second implementation of the
-same estimator should.</p>
-<p>The time column is the other side of the answer, and it measures cost
-per query. A conditional of the reference, as computed here, evaluates
-all 272 or 342 kernels at 401 grid points. The same conditional also has
-a closed form, a mixture of 272 or 342 components, so its cost grows
-with
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>
-either way; a conditional of the proxy is a Schur complement over
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>
-components and a one-dimensional quantile. Averaged over the two
-datasets, a query on the three-component proxy took 0.40 ms against
-15.25 ms on the reference, about 38 times faster on this build. np’s
-query is cheaper than the reference, since its bandwidth search is done
-at fit time, and dearer than the mixtures. The binned KernSmooth grid is
-the cheapest of all, since a conditional is one interpolation between
-two stored grid rows. On faithful the figure shows the differences
-around the jump between the short and the long eruptions. There the
-three-component proxy’s conditional mean falls up to 1.5 minutes below
-the reference while the eight-component proxy stays within 0.5 minutes
-of it. mclust’s conditional mean stays within 1.1 minutes of the
-reference, and its 90 per cent quantile falls up to 3.0 minutes below
-the reference from the jump to the long eruptions. Two datasets are too
-few to rank the methods, so the simulation below repeats the comparison
-on data drawn from a known density.</p>
 </div>
 <div class="section level3">
 <h3 id="a-simulation-benchmark">A simulation benchmark<a class="anchor" aria-label="anchor" href="#a-simulation-benchmark"></a>
@@ -836,14 +651,14 @@ of each density against it, computed by quadrature on a 121 by 121 grid
 over
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">[</mo><mi>−</mi><mn>6</mn><mo>,</mo><mn>6</mn><mo stretchy="false" form="postfix">]</mo><mo>×</mo><mo stretchy="false" form="prefix">[</mo><mi>−</mi><mn>4</mn><mo>,</mo><mn>8</mn><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">[-6, 6] \times [-4, 8]</annotation></semantics></math>,
 and the seconds each fit took. The run uses 100 datasets, because each
-three-component mixtools fit took a median of 8 seconds and up to 81,
+three-component mixtools fit took a median of 5 seconds and up to 54,
 and the Monte Carlo standard error of each mean is reported beside it.
-This chunk is complete and runs as shown, but it took about 26 minutes
+This chunk is complete and runs as shown, but it took about 16 minutes
 on one core (R 4.6.1, Apple silicon); the results below are read from
 its stored output. For a quick reduced run, change the line
 <code>n_rep &lt;- 100L</code> to <code>n_rep &lt;- 5L</code>, which
-takes about 1.3 minutes.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+takes about 0.8 minutes.</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/max578/proxymix" class="external-link">proxymix</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mclust-org.github.io/mclust/" class="external-link">mclust</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/dsy109/mixtools" class="external-link">mixtools</a></span><span class="op">)</span></span>
@@ -889,10 +704,10 @@ takes about 1.3 minutes.</p>
 <span><span class="va">one_dataset</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">r</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="va">r</span><span class="op">)</span></span>
 <span>  <span class="va">x</span> <span class="op">&lt;-</span> <span class="fu">r_truth</span><span class="op">(</span><span class="va">n</span><span class="op">)</span></span>
-<span>  <span class="va">h</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fu">ks</span><span class="fu">::</span><span class="fu"><a href="https://mvstat.net/ks/reference/Hpi.html" class="external-link">Hpi.diag</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="va">h</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fu">ks</span><span class="fu">::</span><span class="fu">Hpi.diag</span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>  <span class="va">secs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span></span>
-<span>    <span class="va">kd</span> <span class="op">&lt;-</span> <span class="fu">ks</span><span class="fu">::</span><span class="fu"><a href="https://mvstat.net/ks/reference/kde.html" class="external-link">kde</a></span><span class="op">(</span><span class="va">x</span>, H <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">h</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span>, eval.points <span class="op">=</span> <span class="va">grid</span><span class="op">)</span></span>
+<span>    <span class="va">kd</span> <span class="op">&lt;-</span> <span class="fu">ks</span><span class="fu">::</span><span class="fu">kde</span><span class="op">(</span><span class="va">x</span>, H <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">h</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span>, eval.points <span class="op">=</span> <span class="va">grid</span><span class="op">)</span></span>
 <span>  <span class="op">)</span><span class="op">[[</span><span class="fl">3L</span><span class="op">]</span><span class="op">]</span></span>
 <span>  <span class="va">out</span><span class="op">[[</span><span class="st">"ks, kde"</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>ise <span class="op">=</span> <span class="fu">ise</span><span class="op">(</span><span class="va">kd</span><span class="op">$</span><span class="va">estimate</span><span class="op">)</span>, secs <span class="op">=</span> <span class="va">secs</span>, G <span class="op">=</span> <span class="cn">NA</span><span class="op">)</span></span>
 <span>  <span class="kw">for</span> <span class="op">(</span><span class="va">K</span> <span class="kw">in</span> <span class="va">K_grid</span><span class="op">)</span> <span class="op">{</span></span>
@@ -910,12 +725,12 @@ takes about 1.3 minutes.</p>
 <span>  <span class="op">)</span></span>
 <span>  <span class="va">out</span><span class="op">[[</span><span class="st">"mclust, G by BIC"</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>ise <span class="op">=</span> <span class="fu">ise</span><span class="op">(</span><span class="fu"><a href="../../reference/dgmm.html">dgmm</a></span><span class="op">(</span><span class="va">grid</span>, <span class="va">g_mc</span><span class="op">)</span><span class="op">)</span>, secs <span class="op">=</span> <span class="va">secs</span>,</span>
 <span>                                 G <span class="op">=</span> <span class="va">mc</span><span class="op">$</span><span class="va">G</span><span class="op">)</span></span>
-<span>  <span class="va">secs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">mt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/mixtools/man/mvnormalmixEM.html" class="external-link">mvnormalmixEM</a></span><span class="op">(</span><span class="va">x</span>, k <span class="op">=</span> <span class="fl">3L</span><span class="op">)</span><span class="op">)</span><span class="op">[[</span><span class="fl">3L</span><span class="op">]</span><span class="op">]</span></span>
+<span>  <span class="va">secs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">mt</span> <span class="op">&lt;-</span> <span class="fu">mvnormalmixEM</span><span class="op">(</span><span class="va">x</span>, k <span class="op">=</span> <span class="fl">3L</span><span class="op">)</span><span class="op">)</span><span class="op">[[</span><span class="fl">3L</span><span class="op">]</span><span class="op">]</span></span>
 <span>  <span class="va">out</span><span class="op">[[</span><span class="st">"mixtools, k = 3"</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>ise <span class="op">=</span> <span class="fu">ise</span><span class="op">(</span><span class="fu"><a href="../../reference/dgmm.html">dgmm</a></span><span class="op">(</span><span class="va">grid</span>, <span class="fu">as_gmm</span><span class="op">(</span><span class="va">mt</span><span class="op">$</span><span class="va">lambda</span>, <span class="va">mt</span><span class="op">$</span><span class="va">mu</span>, <span class="va">mt</span><span class="op">$</span><span class="va">sigma</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>      secs <span class="op">=</span> <span class="va">secs</span>, G <span class="op">=</span> <span class="fl">3L</span><span class="op">)</span></span>
 <span>  <span class="va">secs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="op">{</span></span>
-<span>    <span class="va">nd</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/np/man/np.density.html" class="external-link">npudens</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/np/man/np.density.bw.html" class="external-link">npudensbw</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="va">nd</span> <span class="op">&lt;-</span> <span class="fu">npudens</span><span class="op">(</span><span class="fu">npudensbw</span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span></span>
 <span>    <span class="va">f_np</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">nd</span>, newdata <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">grid</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="op">}</span><span class="op">)</span><span class="op">[[</span><span class="fl">3L</span><span class="op">]</span><span class="op">]</span></span>
 <span>  <span class="va">out</span><span class="op">[[</span><span class="st">"np, npudens"</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>ise <span class="op">=</span> <span class="fu">ise</span><span class="op">(</span><span class="va">f_np</span><span class="op">)</span>, secs <span class="op">=</span> <span class="va">secs</span>, G <span class="op">=</span> <span class="cn">NA</span><span class="op">)</span></span>
@@ -953,8 +768,8 @@ reach 0.969 and 0.776, below every proxy, as expected when the data come
 from the family being fitted. Paired over the same datasets, np’s error
 is 0.023 thousandths below that of ks, with a standard error of 0.009,
 or 2.6 standard errors. KernSmooth’s error is within 0.0004 thousandths
-of that of ks. mixtools took 9.3 seconds a fit against 1.01 to 1.55 for
-the proxies and 0.63 for mclust.</p>
+of that of ks. mixtools took 5.6 seconds a fit against 0.59 to 0.93 for
+the proxies and 0.39 for mclust.</p>
 <table class="table">
 <caption>Integrated squared error against the true three-component
 density, in thousandths, averaged over 100 simulated datasets of 500
@@ -971,43 +786,43 @@ fit.</caption>
 <td align="left">ks, kde</td>
 <td align="right">1.689</td>
 <td align="right">0.042</td>
-<td align="right">0.20</td>
+<td align="right">0.12</td>
 </tr>
 <tr class="even">
 <td align="left">proxymix, K = 3</td>
 <td align="right">1.315</td>
 <td align="right">0.037</td>
-<td align="right">1.01</td>
+<td align="right">0.59</td>
 </tr>
 <tr class="odd">
 <td align="left">proxymix, K = 5</td>
 <td align="right">1.525</td>
 <td align="right">0.040</td>
-<td align="right">1.18</td>
+<td align="right">0.74</td>
 </tr>
 <tr class="even">
 <td align="left">proxymix, K = 8</td>
 <td align="right">1.692</td>
 <td align="right">0.046</td>
-<td align="right">1.55</td>
+<td align="right">0.93</td>
 </tr>
 <tr class="odd">
 <td align="left">mclust, G by BIC</td>
 <td align="right">0.969</td>
 <td align="right">0.043</td>
-<td align="right">0.63</td>
+<td align="right">0.39</td>
 </tr>
 <tr class="even">
 <td align="left">mixtools, k = 3</td>
 <td align="right">0.776</td>
 <td align="right">0.108</td>
-<td align="right">9.33</td>
+<td align="right">5.61</td>
 </tr>
 <tr class="odd">
 <td align="left">np, npudens</td>
 <td align="right">1.666</td>
 <td align="right">0.042</td>
-<td align="right">0.26</td>
+<td align="right">0.17</td>
 </tr>
 <tr class="even">
 <td align="left">KernSmooth, bkde2D</td>
@@ -1017,21 +832,6 @@ fit.</caption>
 </tr>
 </tbody>
 </table>
-<p>In this run proxymix came out ahead of the three kernel estimators on
-integrated squared error at
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>
-= 3 and 5 and level with ks at
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>
-= 8, and a conditional query on the three-component proxy was about 38
-times faster, averaged over the two datasets, than one on the ks
-estimate it compresses, evaluated on a grid of 401 values. mclust and
-mixtools, fitted directly to the data, had lower integrated squared
-error than any proxy; np was closer to the kernel reference than every
-proxy on the penguins conditional means; and the binned KernSmooth grid
-answered conditional queries fastest and closest to the reference. One
-well-separated mixture at one sample size and one bandwidth rule were
-tried; heavier tails, overlapping components, higher dimensions and
-bandwidths chosen by cross-validation are not covered.</p>
 </div>
 </div>
 <div class="section level2">
@@ -1095,62 +895,57 @@ the ambient random-number state.</p>
 before the competitor fits on each dataset, fixing the random starts of
 np and mixtools. In the simulation each dataset follows
 <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> with its index, also its <code><a href="../../reference/from_kde.html">from_kde()</a></code>
-seed. The stored results come from the code shown, run on 27 September
-2026 with R 4.6.1, proxymix 0.16.0, ks 1.15.3, np 0.70-5, mclust 6.1.3,
-mixtools 2.0.0.1 and KernSmooth 2.23-27, and the run raised 0
+seed. The stored results come from the code shown, run on 21 October
+2026 with R 4.6.1, proxymix 0.17.0, ks 1.15.3, np 0.70.5, mclust 6.1.3,
+mixtools 2.0.0.1 and KernSmooth 2.23.27, and the run raised 0
 warnings.</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; R version 4.6.1 (2026-06-24)</span></span>
-<span><span class="co">#&gt; Platform: aarch64-apple-darwin23</span></span>
-<span><span class="co">#&gt; Running under: macOS Tahoe 26.6.2</span></span>
+<span><span class="co">#&gt; Platform: x86_64-pc-linux-gnu</span></span>
+<span><span class="co">#&gt; Running under: Ubuntu 24.04.5 LTS</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Matrix products: default</span></span>
-<span><span class="co">#&gt; BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/</span></span>
-<span><span class="co">#&gt;     libRblas.0.dylib </span></span>
-<span><span class="co">#&gt; LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/</span></span>
-<span><span class="co">#&gt;     libRlapack.dylib;  LAPACK version 3.12.1</span></span>
+<span><span class="co">#&gt; BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 </span></span>
+<span><span class="co">#&gt; LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/</span></span>
+<span><span class="co">#&gt;     libopenblasp-r0.3.26.so;  LAPACK version 3.12.0</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; locale:</span></span>
-<span><span class="co">#&gt; [1] en_AU.UTF-8/en_AU.UTF-8/en_AU.UTF-8/C/en_AU.UTF-8/en_AU.UTF-8</span></span>
+<span><span class="co">#&gt;  [1] LC_CTYPE=C.UTF-8       LC_NUMERIC=C          </span></span>
+<span><span class="co">#&gt;  [3] LC_TIME=C.UTF-8        LC_COLLATE=C.UTF-8    </span></span>
+<span><span class="co">#&gt;  [5] LC_MONETARY=C.UTF-8    LC_MESSAGES=C.UTF-8   </span></span>
+<span><span class="co">#&gt;  [7] LC_PAPER=C.UTF-8       LC_NAME=C             </span></span>
+<span><span class="co">#&gt;  [9] LC_ADDRESS=C           LC_TELEPHONE=C        </span></span>
+<span><span class="co">#&gt; [11] LC_MEASUREMENT=C.UTF-8 LC_IDENTIFICATION=C   </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; time zone: Australia/Adelaide</span></span>
-<span><span class="co">#&gt; tzcode source: internal</span></span>
+<span><span class="co">#&gt; time zone: UTC</span></span>
+<span><span class="co">#&gt; tzcode source: system (glibc)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; attached base packages:</span></span>
 <span><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods  </span></span>
 <span><span class="co">#&gt; [7] base     </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; other attached packages:</span></span>
-<span><span class="co">#&gt; [1] np_0.70-5        mixtools_2.0.0.1 mclust_6.1.3    </span></span>
-<span><span class="co">#&gt; [4] proxymix_0.16.0 </span></span>
+<span><span class="co">#&gt; [1] proxymix_0.17.0</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
-<span><span class="co">#&gt;  [1] gtable_0.3.6        xfun_0.60           bslib_0.12.0       </span></span>
-<span><span class="co">#&gt;  [4] ggplot2_4.0.3       htmlwidgets_1.6.4   ks_1.15.3          </span></span>
-<span><span class="co">#&gt;  [7] lattice_0.23-1      quadprog_1.5-8      vctrs_0.7.3        </span></span>
-<span><span class="co">#&gt; [10] tools_4.6.1         generics_0.1.4      tibble_3.3.1       </span></span>
-<span><span class="co">#&gt; [13] pkgconfig_2.0.3     Matrix_1.7-6        KernSmooth_2.23-27 </span></span>
-<span><span class="co">#&gt; [16] data.table_1.18.6.1 RColorBrewer_1.1-3  S7_0.2.2           </span></span>
-<span><span class="co">#&gt; [19] desc_1.4.3          lifecycle_1.0.5     cubature_2.1.4-1   </span></span>
-<span><span class="co">#&gt; [22] compiler_4.6.1      farver_2.1.2        MatrixModels_0.5-4 </span></span>
-<span><span class="co">#&gt; [25] textshaping_1.0.5   SparseM_1.84-2      quantreg_6.1       </span></span>
-<span><span class="co">#&gt; [28] htmltools_0.5.9     sass_0.4.10         yaml_2.3.12        </span></span>
-<span><span class="co">#&gt; [31] pracma_2.4.6        plotly_4.12.1       pillar_1.11.1      </span></span>
-<span><span class="co">#&gt; [34] pkgdown_2.2.1       jquerylib_0.1.4     tidyr_1.3.2        </span></span>
-<span><span class="co">#&gt; [37] MASS_7.3-66         cachem_1.1.0        boot_1.3-32        </span></span>
-<span><span class="co">#&gt; [40] nlme_3.1-171        tidyselect_1.2.1    digest_0.6.39      </span></span>
-<span><span class="co">#&gt; [43] mvtnorm_1.4-2       kernlab_0.9-33      dplyr_1.2.1        </span></span>
-<span><span class="co">#&gt; [46] purrr_1.2.2         labeling_0.4.3      splines_4.6.1      </span></span>
-<span><span class="co">#&gt; [49] fastmap_1.2.0       grid_4.6.1          cli_3.6.6          </span></span>
-<span><span class="co">#&gt; [52] magrittr_2.0.5      dichromat_2.0-1     survival_3.8-11    </span></span>
-<span><span class="co">#&gt; [55] withr_3.0.3         scales_1.4.0        segmented_2.2-1    </span></span>
-<span><span class="co">#&gt; [58] rmarkdown_2.32      httr_1.4.9          otel_0.2.0         </span></span>
-<span><span class="co">#&gt; [61] ragg_1.5.2          mvnfast_0.2.8       evaluate_1.0.5     </span></span>
-<span><span class="co">#&gt; [64] knitr_1.51          viridisLite_0.4.3   rlang_1.3.0        </span></span>
-<span><span class="co">#&gt; [67] Rcpp_1.1.2          isoband_0.3.0       glue_1.8.1         </span></span>
-<span><span class="co">#&gt; [70] jsonlite_2.0.0      R6_2.6.1            systemfonts_1.3.2  </span></span>
-<span><span class="co">#&gt; [73] fs_2.1.0</span></span></code></pre>
+<span><span class="co">#&gt;  [1] mvnfast_0.2.8      gtable_0.3.6       jsonlite_2.0.0    </span></span>
+<span><span class="co">#&gt;  [4] dplyr_1.2.1        compiler_4.6.1     tidyselect_1.2.1  </span></span>
+<span><span class="co">#&gt;  [7] Rcpp_1.1.2         jquerylib_0.1.4    systemfonts_1.3.2 </span></span>
+<span><span class="co">#&gt; [10] scales_1.4.0       textshaping_1.0.5  yaml_2.3.12       </span></span>
+<span><span class="co">#&gt; [13] fastmap_1.2.0      ggplot2_4.0.3      R6_2.6.1          </span></span>
+<span><span class="co">#&gt; [16] labeling_0.4.3     generics_0.1.4     isoband_0.3.0     </span></span>
+<span><span class="co">#&gt; [19] knitr_1.52         tibble_3.3.1       desc_1.4.3        </span></span>
+<span><span class="co">#&gt; [22] bslib_0.12.0       pillar_1.11.1      RColorBrewer_1.1-3</span></span>
+<span><span class="co">#&gt; [25] rlang_1.3.0        cachem_1.1.0       xfun_0.62         </span></span>
+<span><span class="co">#&gt; [28] fs_2.1.0           sass_0.4.10        S7_0.2.2          </span></span>
+<span><span class="co">#&gt; [31] otel_0.2.0         cli_3.6.6          pkgdown_2.2.1     </span></span>
+<span><span class="co">#&gt; [34] withr_3.0.3        magrittr_2.0.5     digest_0.6.39     </span></span>
+<span><span class="co">#&gt; [37] grid_4.6.1         mclust_6.1.3       lifecycle_1.0.5   </span></span>
+<span><span class="co">#&gt; [40] vctrs_0.7.3        KernSmooth_2.23-26 evaluate_1.0.5    </span></span>
+<span><span class="co">#&gt; [43] glue_1.8.1         farver_2.1.2       ragg_1.5.2        </span></span>
+<span><span class="co">#&gt; [46] rmarkdown_2.32     tools_4.6.1        pkgconfig_2.0.3   </span></span>
+<span><span class="co">#&gt; [49] htmltools_0.5.9</span></span></code></pre>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

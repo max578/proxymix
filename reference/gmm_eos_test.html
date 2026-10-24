@@ -9,7 +9,7 @@ linear-Gaussian state-space model fitted on the rest, in the regime where m
 is small (even m = 1) and smaller than the parameter count – where ordinary
 structural-break tests (Chow, sup-Wald) are undefined because the post-break
 parameters cannot be estimated. The statistic is the sum of the last m
-squared standardised one-step innovations from the filter; a break inflates it."></head><body>
+squared standardised one-step innovations from the filter; a break inflates it."><meta property="og:image" content="https://max578.github.io/proxymix/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -17,7 +17,7 @@ squared standardised one-step innovations from the filter; a break inflates it."
 
     <a class="navbar-brand me-2" href="../index.html">proxymix</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.16.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.17.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -34,6 +34,7 @@ squared standardised one-step innovations from the filter; a break inflates it."
     <li><a class="dropdown-item" href="../articles/density_shapes.html">How well a mixture proxies four awkward shapes</a></li>
     <li><a class="dropdown-item" href="../articles/operator_calculus.html">The closed-form operator calculus on a mixture</a></li>
     <li><a class="dropdown-item" href="../articles/from_kde.html">Compressing a kernel density estimate into a mixture</a></li>
+    <li><a class="dropdown-item" href="../articles/cf_targets.html">Fitting a mixture to a characteristic function</a></li>
     <li><a class="dropdown-item" href="../articles/many_methods.html">One mixture, many methods</a></li>
     <li><a class="dropdown-item" href="../articles/entropy.html">Reading the entropy of a fitted mixture</a></li>
     <li><a class="dropdown-item" href="../articles/calibration.html">Mapping the optima of an objective</a></li>
@@ -54,9 +55,8 @@ squared standardised one-step innovations from the filter; a break inflates it."
 </nav><div class="container template-reference-topic">
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>End-of-sample instability test on a Gaussian state-space filter</h1>
-      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/HEAD/R/end-of-sample.R" class="external-link"><code>R/end-of-sample.R</code></a></small>
+      <img src="../logo.png" class="logo" alt=""><h1>End-of-sample instability test on a Gaussian state-space filter</h1>
+      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/main/R/end-of-sample.R" class="external-link"><code>R/end-of-sample.R</code></a></small>
       <div class="d-none name"><code>gmm_eos_test.Rd</code></div>
     </div>
 
@@ -174,55 +174,8 @@ the model is estimated on little data. The subsampling p-value has a floor of
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">119</span><span class="op">)</span>, <span class="fl">6</span><span class="op">)</span>                <span class="co"># a stable series with a jump at the end</span></span></span>
 <span class="r-in"><span><span class="fu">gmm_eos_test</span><span class="op">(</span><span class="va">prior</span>, <span class="va">dyn</span>, <span class="va">meas</span>, <span class="va">y</span>, m <span class="op">=</span> <span class="fl">1L</span>, method <span class="op">=</span> <span class="st">"andrews"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $statistic</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 29.10382</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $p_value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.008333333</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $reject</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $method</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "andrews"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $m</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $alpha</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.05</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $df</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $in_sample_blocks</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   [1] 3.554750e-02 2.911332e-01 2.622507e-01 2.935641e+00 2.740067e-02</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   [6] 7.895244e-01 2.170989e-01 3.560326e-01 1.118222e-01 2.736059e-01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [11] 1.474811e+00 5.579593e-04 8.706621e-01 4.854571e+00 1.485184e+00</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [16] 3.742538e-03 5.791188e-04 7.207274e-01 3.412181e-01 7.431643e-02</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [21] 2.677158e-01 8.993352e-02 1.558138e-01 4.800755e+00 3.212741e-01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [26] 2.176074e-02 4.452547e-02 1.857312e+00 4.746573e-02 4.000792e-01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [31] 1.875224e+00 4.043256e-02 7.793913e-02 2.920177e-02 1.788863e+00</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [36] 5.051060e-02 2.733394e-02 2.813809e-02 1.407948e+00 4.448343e-01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [41] 8.603388e-02 1.027993e-01 3.569358e-01 1.312872e-01 6.894557e-01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [46] 4.858162e-01 1.594944e-01 4.797690e-01 5.285386e-02 5.052012e-01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [51] 2.102961e-02 6.326433e-01 4.458853e-02 1.340566e+00 1.878720e+00</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [56] 2.617749e+00 6.391465e-01 1.606209e+00 1.785440e-01 8.511620e-02</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [61] 4.230079e+00 2.750905e-01 5.297272e-02 1.683986e-01 1.069329e+00</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [66] 1.162422e-05 3.265654e+00 2.189644e+00 5.903947e-04 3.412866e+00</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [71] 5.214728e-04 1.191428e+00 9.073974e-02 1.325579e+00 1.518131e+00</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [76] 1.514492e-01 1.198558e-01 1.407395e-02 2.671228e-02 2.180238e-01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [81] 1.321657e-01 8.941230e-03 1.602585e+00 1.982918e+00 5.822228e-01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [86] 1.511109e-01 9.587286e-01 1.896176e-01 6.426711e-02 1.310650e-02</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [91] 4.082348e-01 1.125279e+00 6.820047e-01 6.754606e-02 1.030703e+00</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [96] 9.832867e-03 3.034342e+00 6.243341e-01 1.529166e+00 1.108467e-01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [101] 1.645748e-01 7.144235e-02 4.141931e-01 1.938593e-01 1.404771e-01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [106] 3.552470e+00 3.515232e-01 4.364804e-01 4.234652e-03 1.507889e+00</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [111] 1.192417e+00 5.428482e-01 1.233330e+00 9.516459e-01 1.582138e-01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [116] 2.436178e-01 1.144764e-01 5.765224e-02 2.531887e-01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"class")</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "gmm_eos_test"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> End-of-sample instability test (andrews), m = 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   statistic = 29.1038   p-value = 0.0083   REJECT (instability) at alpha = 0.05</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

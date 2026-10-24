@@ -3,14 +3,13 @@
 The return type of
 [`gmm_counterfactual()`](https://max578.github.io/proxymix/reference/gmm_counterfactual.md):
 a discrete law on `K` atoms (the per-component counterfactual outcomes)
-with abduction weights, plus the one identified summary – the
-counterfactual `mean`. The atom spread is regime (epistemic) uncertainty
-about which structural component generated the unit; it is **not** the
-counterfactual outcome's dispersion, which is unidentified. Accordingly
+with abduction weights, plus the counterfactual `mean`. All three assume
+the unit keeps its structural residual under the intervention, which the
+data cannot confirm. Under that assumption the atom spread is
+uncertainty about which component generated the unit, reported by
 [`gmm_cf_variance()`](https://max578.github.io/proxymix/reference/gmm_cf_variance.md)
 and
-[`gmm_cf_tail_prob()`](https://max578.github.io/proxymix/reference/gmm_cf_tail_prob.md)
-refuse to answer.
+[`gmm_cf_tail_prob()`](https://max578.github.io/proxymix/reference/gmm_cf_tail_prob.md).
 
 ## Usage
 
@@ -41,7 +40,7 @@ gmm_counterfactual_law(
 
 - mean:
 
-  Numeric scalar – the identified counterfactual mean.
+  Numeric scalar – the counterfactual mean.
 
 - query:
 

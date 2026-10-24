@@ -85,39 +85,9 @@ Other imputation:
 
 ``` r
 mar()
-#> $type
-#> [1] "mar"
-#> 
-#> attr(,"class")
-#> [1] "proxymix_mar"  "proxymix_gate"
+#> <proxymix gate>: missing at random
 censored("y", upper = 0.5)             # a lower detection limit at 0.5
-#> $type
-#> [1] "censored"
-#> 
-#> $coord
-#> [1] "y"
-#> 
-#> $lower
-#> [1] -Inf
-#> 
-#> $upper
-#> [1] 0.5
-#> 
-#> attr(,"class")
-#> [1] "proxymix_censored" "proxymix_gate"    
+#> <proxymix gate>: censored on y to [-Inf, 0.5]
 mnar("y", beta = 0.8)                  # larger y more likely missing
-#> $type
-#> [1] "mnar"
-#> 
-#> $coord
-#> [1] "y"
-#> 
-#> $beta
-#> [1] 0.8
-#> 
-#> $link
-#> [1] "logit"
-#> 
-#> attr(,"class")
-#> [1] "proxymix_mnar" "proxymix_gate"
+#> <proxymix gate>: missing not at random on y (logit, beta = 0.8)
 ```

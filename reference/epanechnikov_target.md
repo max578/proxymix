@@ -65,6 +65,7 @@ in dimension `n_dim` with a declared compact `support`.
 
 Other targets:
 [`banana_target()`](https://max578.github.io/proxymix/reference/banana_target.md),
+[`cf_target()`](https://max578.github.io/proxymix/reference/cf_target.md),
 [`donut_target()`](https://max578.github.io/proxymix/reference/donut_target.md),
 [`gmm_target_from_samples()`](https://max578.github.io/proxymix/reference/gmm_target_from_samples.md),
 [`maxent_target()`](https://max578.github.io/proxymix/reference/maxent_target.md),

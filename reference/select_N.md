@@ -54,7 +54,9 @@ select_N(
 A list of class `proxymix_selection`: `best_n` (the chosen count),
 `best_fit` (its
 [gmm_fit](https://max578.github.io/proxymix/reference/gmm_fit.md)), and
-`table` (one row per candidate with the criterion values).
+`table` (one row per candidate with the criterion values; for regime
+`"sample"` also a `collapsed` column marking fits with a collapsed
+component).
 
 ## See also
 
@@ -62,6 +64,10 @@ Other fitting:
 [`fit_em_samples()`](https://max578.github.io/proxymix/reference/fit_em_samples.md),
 [`fit_kld_em()`](https://max578.github.io/proxymix/reference/fit_kld_em.md),
 [`fit_moment_match()`](https://max578.github.io/proxymix/reference/fit_moment_match.md),
+[`fit_mppca_samples()`](https://max578.github.io/proxymix/reference/fit_mppca_samples.md),
+[`from_cf()`](https://max578.github.io/proxymix/reference/from_cf.md),
+[`from_cf_elliptical()`](https://max578.github.io/proxymix/reference/from_cf_elliptical.md),
+[`from_cf_sources()`](https://max578.github.io/proxymix/reference/from_cf_sources.md),
 [`from_kde()`](https://max578.github.io/proxymix/reference/from_kde.md),
 [`from_objective()`](https://max578.github.io/proxymix/reference/from_objective.md)
 

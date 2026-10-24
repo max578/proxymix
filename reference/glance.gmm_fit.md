@@ -10,7 +10,8 @@ count, and the regime's headline fit statistics. Available as
 
 A one-row data frame with columns `regime`, `n_components`, `dim`,
 `converged`, `iterations`, `ess`, `kld_final`, `validation_kld`,
-`loglik_final` and `bic` (`NA` where not applicable to the regime).
+`loglik_final`, `bic`, `cf_heldout_rms`, `cf_distance` and `cf_upper`
+(`NA` where not applicable to the regime).
 
 ## Details
 
@@ -19,6 +20,15 @@ draws the fit was tuned to, so it reads low and can be negative.
 `validation_kld` is the estimate on an independent draw and is the one
 to quote as the fit's accuracy; it is `NA` when the fit was made with
 `validation_size = 0`.
+
+For a fit to a characteristic function (regime `"cf"`), `cf_heldout_rms`
+is the root mean square error of the characteristic function on
+frequencies the fit did not use, and `cf_distance` and `cf_upper` are
+the largest lower and upper bounds for the Kolmogorov distance over the
+checked directions
+([`from_cf()`](https://max578.github.io/proxymix/reference/from_cf.md),
+*Checking a fit*). They are `NA` when the fit was made with
+`bracket = FALSE`.
 
 ## Arguments
 
@@ -48,6 +58,6 @@ fit <- fit_proxymix(banana_target(), N = 2L, regime = "kld",
 generics::glance(fit)
 #>   regime n_components dim converged iterations      ess kld_final
 #> 1    kld            2   2      TRUE         10 706.9948 0.1123726
-#>   validation_kld loglik_final bic
-#> 1      0.1475466           NA  NA
+#>   validation_kld loglik_final bic cf_heldout_rms cf_distance cf_upper
+#> 1      0.1475466           NA  NA             NA          NA       NA
 ```

@@ -39,7 +39,7 @@ gmm_fit(
 
 - regime:
 
-  One of `"moment"`, `"sample"`, `"kld"`.
+  One of `"moment"`, `"sample"`, `"kld"`, `"cf"`.
 
 - diagnostics:
 

@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../../index.html">proxymix</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.16.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.17.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,6 +40,7 @@
     <li><a class="dropdown-item" href="../../articles/density_shapes.html">How well a mixture proxies four awkward shapes</a></li>
     <li><a class="dropdown-item" href="../../articles/operator_calculus.html">The closed-form operator calculus on a mixture</a></li>
     <li><a class="dropdown-item" href="../../articles/from_kde.html">Compressing a kernel density estimate into a mixture</a></li>
+    <li><a class="dropdown-item" href="../../articles/cf_targets.html">Fitting a mixture to a characteristic function</a></li>
     <li><a class="dropdown-item" href="../../articles/many_methods.html">One mixture, many methods</a></li>
     <li><a class="dropdown-item" href="../../articles/entropy.html">Reading the entropy of a fitted mixture</a></li>
     <li><a class="dropdown-item" href="../../articles/calibration.html">Mapping the optima of an objective</a></li>
@@ -69,11 +70,10 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Reading the entropy of a fitted mixture</h1>
+      <img src="../../logo.png" class="logo" alt=""><h1>Reading the entropy of a fitted mixture</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/HEAD/vignettes/articles/extended/entropy.Rmd" class="external-link"><code>vignettes/articles/extended/entropy.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/main/vignettes/articles/extended/entropy.Rmd" class="external-link"><code>vignettes/articles/extended/entropy.Rmd</code></a></small>
       <div class="d-none name"><code>entropy.Rmd</code></div>
     </div>
 
@@ -141,13 +141,13 @@ entropy that meets them (Jaynes, 1957).</p>
 </h3>
 <p>The integral of a product of two Gaussian densities is itself a
 Gaussian density evaluation: writing
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="script">𝒩</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo>;</mo><mi>m</mi><mo>,</mo><mi>S</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\mathcal{N}(x; m, S)</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝒩</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo>;</mo><mi>m</mi><mo>,</mo><mi>S</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\mathcal{N}(x; m, S)</annotation></semantics></math>
 for a Gaussian density, the integral over
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>
 of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="script">𝒩</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo>;</mo><mi>a</mi><mo>,</mo><mi>A</mi><mo stretchy="false" form="postfix">)</mo><mspace width="0.167em"></mspace><mi mathvariant="script">𝒩</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo>;</mo><mi>b</mi><mo>,</mo><mi>B</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\mathcal{N}(x; a, A)\, \mathcal{N}(x; b, B)</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝒩</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo>;</mo><mi>a</mi><mo>,</mo><mi>A</mi><mo stretchy="false" form="postfix">)</mo><mspace width="0.167em"></mspace><mi>𝒩</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo>;</mo><mi>b</mi><mo>,</mo><mi>B</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\mathcal{N}(x; a, A)\, \mathcal{N}(x; b, B)</annotation></semantics></math>
 equals
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="script">𝒩</mi><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo>;</mo><mi>b</mi><mo>,</mo><mi>A</mi><mo>+</mo><mi>B</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\mathcal{N}(a; b, A + B)</annotation></semantics></math>.
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝒩</mi><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo>;</mo><mi>b</mi><mo>,</mo><mi>A</mi><mo>+</mo><mi>B</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\mathcal{N}(a; b, A + B)</annotation></semantics></math>.
 Any quantity that is <em>quadratic</em> in a mixture – the integral of
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>g</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><msup><mo stretchy="false" form="postfix">)</mo><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">g(x)^2</annotation></semantics></math>,
 or of
@@ -162,7 +162,7 @@ form, so it is estimated by Monte Carlo.</p>
 <p><code><a href="../../reference/gmm_entropy.html">gmm_entropy()</a></code> returns the closed-form order-2 Rényi
 entropy by default. For a single Gaussian the value is exact and matches
 the analytic form
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>H</mi><mn>2</mn></msub><mo stretchy="false" form="prefix">(</mo><mi mathvariant="script">𝒩</mi><mo stretchy="false" form="prefix">(</mo><mi>μ</mi><mo>,</mo><mi mathvariant="normal">Σ</mi><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mstyle displaystyle="false"><mfrac><mi>p</mi><mn>2</mn></mfrac></mstyle><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><mo stretchy="false" form="prefix">(</mo><mn>4</mn><mi>π</mi><mo stretchy="false" form="postfix">)</mo><mo>+</mo><mstyle displaystyle="false"><mfrac><mn>1</mn><mn>2</mn></mfrac></mstyle><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><mrow><mi mathvariant="normal">det</mi><mo>⁡</mo></mrow><mi mathvariant="normal">Σ</mi></mrow><annotation encoding="application/x-tex">H_2(\mathcal{N}(\mu, \Sigma)) =
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>H</mi><mn>2</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>𝒩</mi><mo stretchy="false" form="prefix">(</mo><mi>μ</mi><mo>,</mo><mi mathvariant="normal">Σ</mi><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mstyle displaystyle="false"><mfrac><mi>p</mi><mn>2</mn></mfrac></mstyle><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><mo stretchy="false" form="prefix">(</mo><mn>4</mn><mi>π</mi><mo stretchy="false" form="postfix">)</mo><mo>+</mo><mstyle displaystyle="false"><mfrac><mn>1</mn><mn>2</mn></mfrac></mstyle><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><mrow><mi mathvariant="normal">det</mi><mo>⁡</mo></mrow><mi mathvariant="normal">Σ</mi></mrow><annotation encoding="application/x-tex">H_2(\mathcal{N}(\mu, \Sigma)) =
 \tfrac{p}{2}\log(4\pi) + \tfrac{1}{2}\log\det\Sigma</annotation></semantics></math>
 in
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>p</mi><annotation encoding="application/x-tex">p</annotation></semantics></math>
@@ -361,7 +361,7 @@ a quantity borrowed from statistical mechanics. Varying the temperature
 in it gives an annealed fit. The E-step responsibilities are softened by
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>T</mi><annotation encoding="application/x-tex">T</annotation></semantics></math>,
 so that
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>γ</mi><mrow><mi>i</mi><mi>k</mi></mrow></msub><mo>∝</mo><msub><mi>π</mi><mi>k</mi></msub><mspace width="0.167em"></mspace><mi mathvariant="script">𝒩</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>x</mi><mi>i</mi></msub><mo>;</mo><mspace width="0.222em"></mspace><msub><mi>μ</mi><mi>k</mi></msub><mo>,</mo><msub><mi mathvariant="normal">Σ</mi><mi>k</mi></msub><msup><mo stretchy="false" form="postfix">)</mo><mrow><mn>1</mn><mi>/</mi><mi>T</mi></mrow></msup></mrow><annotation encoding="application/x-tex">\gamma_{ik} \propto \pi_k\, \mathcal{N}(x_i;\ \mu_k, \Sigma_k)^{1/T}</annotation></semantics></math>,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>γ</mi><mrow><mi>i</mi><mi>k</mi></mrow></msub><mo>∝</mo><msub><mi>π</mi><mi>k</mi></msub><mspace width="0.167em"></mspace><mi>𝒩</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>x</mi><mi>i</mi></msub><mo>;</mo><mspace width="0.222em"></mspace><msub><mi>μ</mi><mi>k</mi></msub><mo>,</mo><msub><mi mathvariant="normal">Σ</mi><mi>k</mi></msub><msup><mo stretchy="false" form="postfix">)</mo><mrow><mn>1</mn><mi>/</mi><mi>T</mi></mrow></msup></mrow><annotation encoding="application/x-tex">\gamma_{ik} \propto \pi_k\, \mathcal{N}(x_i;\ \mu_k, \Sigma_k)^{1/T}</annotation></semantics></math>,
 and
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>T</mi><annotation encoding="application/x-tex">T</annotation></semantics></math>
 is cooled from a high value towards one. At high
@@ -446,14 +446,14 @@ The figure below is the curve: the number of distinct centroids against
 temperature on the upper panel, the free energy on the lower, with the
 empirical and analytic first critical temperatures marked. The free
 energy recorded at each temperature is
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>F</mi><mo stretchy="false" form="prefix">(</mo><mi>T</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>−</mi><mi>T</mi><mspace width="0.167em"></mspace><msup><mi>n</mi><mrow><mi>−</mi><mn>1</mn></mrow></msup><msub><mo>∑</mo><mi>i</mi></msub><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><msub><mo>∑</mo><mi>k</mi></msub><msub><mi>π</mi><mi>k</mi></msub><mspace width="0.167em"></mspace><mi mathvariant="script">𝒩</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>x</mi><mi>i</mi></msub><mo>;</mo><mspace width="0.222em"></mspace><msub><mi>μ</mi><mi>k</mi></msub><mo>,</mo><mi mathvariant="normal">Σ</mi><msup><mo stretchy="false" form="postfix">)</mo><mrow><mn>1</mn><mi>/</mi><mi>T</mi></mrow></msup></mrow><annotation encoding="application/x-tex">F(T) = -T\, n^{-1} \sum_i \log \sum_k \pi_k\,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>F</mi><mo stretchy="false" form="prefix">(</mo><mi>T</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>−</mi><mi>T</mi><mspace width="0.167em"></mspace><msup><mi>n</mi><mrow><mi>−</mi><mn>1</mn></mrow></msup><msub><mo>∑</mo><mi>i</mi></msub><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><msub><mo>∑</mo><mi>k</mi></msub><msub><mi>π</mi><mi>k</mi></msub><mspace width="0.167em"></mspace><mi>𝒩</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>x</mi><mi>i</mi></msub><mo>;</mo><mspace width="0.222em"></mspace><msub><mi>μ</mi><mi>k</mi></msub><mo>,</mo><mi mathvariant="normal">Σ</mi><msup><mo stretchy="false" form="postfix">)</mo><mrow><mn>1</mn><mi>/</mi><mi>T</mi></mrow></msup></mrow><annotation encoding="application/x-tex">F(T) = -T\, n^{-1} \sum_i \log \sum_k \pi_k\,
 \mathcal{N}(x_i;\ \mu_k, \Sigma)^{1/T}</annotation></semantics></math>,
 with the shared
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi mathvariant="normal">Σ</mi><annotation encoding="application/x-tex">\Sigma</annotation></semantics></math>
 above. It equals
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">⟨</mo><mi>E</mi><mo stretchy="false" form="postfix">⟩</mo><mo>−</mo><mi>T</mi><mi>H</mi></mrow><annotation encoding="application/x-tex">\langle E \rangle - T H</annotation></semantics></math>,
 where
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>E</mi><mrow><mi>i</mi><mi>k</mi></mrow></msub><mo>=</mo><mi>−</mi><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><mi mathvariant="script">𝒩</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>x</mi><mi>i</mi></msub><mo>;</mo><mspace width="0.222em"></mspace><msub><mi>μ</mi><mi>k</mi></msub><mo>,</mo><mi mathvariant="normal">Σ</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">E_{ik} = -\log \mathcal{N}(x_i;\ \mu_k, \Sigma)</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>E</mi><mrow><mi>i</mi><mi>k</mi></mrow></msub><mo>=</mo><mi>−</mi><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><mi>𝒩</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>x</mi><mi>i</mi></msub><mo>;</mo><mspace width="0.222em"></mspace><msub><mi>μ</mi><mi>k</mi></msub><mo>,</mo><mi mathvariant="normal">Σ</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">E_{ik} = -\log \mathcal{N}(x_i;\ \mu_k, \Sigma)</annotation></semantics></math>
 is averaged over the soft assignments
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mrow><mi>i</mi><mi>k</mi></mrow></msub><annotation encoding="application/x-tex">\gamma_{ik}</annotation></semantics></math>,
 and
@@ -934,6 +934,9 @@ and three graph estimators.</p>
 <div class="section level2">
 <h2 id="numerical-illustration">Numerical illustration<a class="anchor" aria-label="anchor" href="#numerical-illustration"></a>
 </h2>
+<p>FNN, glasso, huge, pcalg or the penguins data (R 4.5.0 or later) is
+not available on this build, so the real-data illustration is
+skipped.</p>
 <div class="section level3">
 <h3 id="dependence-in-the-palmer-penguins-data-read-three-ways">Dependence in the Palmer penguins data, read three ways<a class="anchor" aria-label="anchor" href="#dependence-in-the-palmer-penguins-data-read-three-ways"></a>
 </h3>
@@ -954,7 +957,7 @@ needs the graph and RBGL packages, which install from Bioconductor
 through BiocManager:</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"BiocManager"</span><span class="op">)</span></span>
-<span><span class="fu">BiocManager</span><span class="fu">::</span><span class="fu"><a href="https://bioconductor.github.io/BiocManager/reference/install.html" class="external-link">install</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"graph"</span>, <span class="st">"RBGL"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">BiocManager</span><span class="fu">::</span><span class="fu">install</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"graph"</span>, <span class="st">"RBGL"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mclust"</span>, <span class="st">"FNN"</span>, <span class="st">"glasso"</span>, <span class="st">"huge"</span>, <span class="st">"pcalg"</span>, <span class="st">"cubature"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">FNN</span><span class="op">)</span></span>
@@ -962,15 +965,15 @@ through BiocManager:</p>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/Gatech-Flash/huge" class="external-link">huge</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://pcalg.r-forge.r-project.org/" class="external-link">pcalg</a></span><span class="op">)</span></span></code></pre></div>
 <p>FNN estimates entropy by the nearest-neighbour rule of Kozachenko and
-Leonenko (1987), and its <code><a href="https://rdrr.io/pkg/FNN/man/mutual_information.html" class="external-link">mutinfo()</a></code> implements the first
+Leonenko (1987), and its <code>mutinfo()</code> implements the first
 mutual-information estimator of Kraskov et al. (2004). The simulation
 below uses the same estimator written out in R, shown here and checked
-against <code><a href="https://rdrr.io/pkg/FNN/man/mutual_information.html" class="external-link">mutinfo()</a></code> on the penguins. The distance to the
+against <code>mutinfo()</code> on the penguins. The distance to the
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>-th
 nearest neighbour in the joint space, in the maximum norm, sets a radius
 for each point, and the number of neighbours within that radius in each
 marginal gives the estimate. Ten neighbours are used throughout, the
-default of <code><a href="https://rdrr.io/pkg/FNN/man/entropy.html" class="external-link">FNN::entropy()</a></code>.</p>
+default of <code>FNN::entropy()</code>.</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ksg_mi</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">xa</span>, <span class="va">xb</span>, <span class="va">k</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">da</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/dist.html" class="external-link">dist</a></span><span class="op">(</span><span class="va">xa</span>, method <span class="op">=</span> <span class="st">"maximum"</span><span class="op">)</span><span class="op">)</span></span>
@@ -1017,77 +1020,10 @@ fit.</p>
 <span><span class="op">}</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ksg_fnn</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">pairs</span>, <span class="fl">2L</span>, <span class="kw">function</span><span class="op">(</span><span class="va">ij</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/pkg/FNN/man/mutual_information.html" class="external-link">mutinfo</a></span><span class="op">(</span><span class="va">peng</span><span class="op">[</span>, <span class="va">ij</span><span class="op">[</span><span class="fl">1L</span><span class="op">]</span><span class="op">]</span>, <span class="va">peng</span><span class="op">[</span>, <span class="va">ij</span><span class="op">[</span><span class="fl">2L</span><span class="op">]</span><span class="op">]</span>, k <span class="op">=</span> <span class="fl">10L</span><span class="op">)</span></span>
+<span>  <span class="fu">mutinfo</span><span class="op">(</span><span class="va">peng</span><span class="op">[</span>, <span class="va">ij</span><span class="op">[</span><span class="fl">1L</span><span class="op">]</span><span class="op">]</span>, <span class="va">peng</span><span class="op">[</span>, <span class="va">ij</span><span class="op">[</span><span class="fl">2L</span><span class="op">]</span><span class="op">]</span>, k <span class="op">=</span> <span class="fl">10L</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
 <span><span class="va">ksg_gap</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">mi_tab</span><span class="op">[</span>, <span class="st">"ksg"</span><span class="op">]</span> <span class="op">-</span> <span class="va">ksg_fnn</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">ksg_gap</span></span>
-<span><span class="co">#&gt; [1] 0</span></span></code></pre></div>
-<table class="table">
-<caption>Mutual information in nats between each pair of standardised
-measurements over the 342 complete birds: two forms read from the
-3-component mixture fitted to the colony, and the Kraskov et
-al. estimate with ten neighbours; BL bill length, BD bill depth, FL
-flipper length, BM body mass. No reference value exists for real
-data.</caption>
-<colgroup>
-<col width="24%">
-<col width="13%">
-<col width="27%">
-<col width="19%">
-<col width="14%">
-</colgroup>
-<thead><tr class="header">
-<th align="left">Pair of measurements</th>
-<th align="right">Correlation</th>
-<th align="right">Cauchy-Schwarz, mixture</th>
-<th align="right">Shannon, mixture</th>
-<th align="right">Shannon, KSG</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">BL and BD</td>
-<td align="right">-0.235</td>
-<td align="right">0.175</td>
-<td align="right">0.241</td>
-<td align="right">0.365</td>
-</tr>
-<tr class="even">
-<td align="left">BL and FL</td>
-<td align="right">0.656</td>
-<td align="right">0.223</td>
-<td align="right">0.365</td>
-<td align="right">0.532</td>
-</tr>
-<tr class="odd">
-<td align="left">BL and BM</td>
-<td align="right">0.595</td>
-<td align="right">0.185</td>
-<td align="right">0.328</td>
-<td align="right">0.425</td>
-</tr>
-<tr class="even">
-<td align="left">BD and FL</td>
-<td align="right">-0.584</td>
-<td align="right">0.302</td>
-<td align="right">0.567</td>
-<td align="right">0.750</td>
-</tr>
-<tr class="odd">
-<td align="left">BD and BM</td>
-<td align="right">-0.472</td>
-<td align="right">0.300</td>
-<td align="right">0.582</td>
-<td align="right">0.739</td>
-</tr>
-<tr class="even">
-<td align="left">FL and BM</td>
-<td align="right">0.871</td>
-<td align="right">0.282</td>
-<td align="right">0.661</td>
-<td align="right">0.814</td>
-</tr>
-</tbody>
-</table>
+<span><span class="va">ksg_gap</span></span></code></pre></div>
 <p>Within each species the same four measurements are read for their
 second-order conditional-independence structure. The mixture is selected
 by BIC among one to three components, and its graph tests each partial
@@ -1104,22 +1040,22 @@ test at level 0.01 and its skeleton is kept.</p>
 <span>  <span class="va">s</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cov</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span></span>
 <span>  <span class="va">rhos</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fl">1e-3</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>, length.out <span class="op">=</span> <span class="fl">30L</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="va">bics</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">rhos</span>, <span class="kw">function</span><span class="op">(</span><span class="va">rho</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="va">wi</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/glasso/man/glasso.html" class="external-link">glasso</a></span><span class="op">(</span><span class="va">s</span>, <span class="va">rho</span><span class="op">)</span><span class="op">$</span><span class="va">wi</span></span>
+<span>    <span class="va">wi</span> <span class="op">&lt;-</span> <span class="fu">glasso</span><span class="op">(</span><span class="va">s</span>, <span class="va">rho</span><span class="op">)</span><span class="op">$</span><span class="va">wi</span></span>
 <span>    <span class="va">edges</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">wi</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/lower.tri.html" class="external-link">upper.tri</a></span><span class="op">(</span><span class="va">wi</span><span class="op">)</span><span class="op">]</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">1e-8</span><span class="op">)</span></span>
 <span>    <span class="va">loglik</span> <span class="op">&lt;-</span> <span class="fl">0.5</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">*</span></span>
 <span>      <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/det.html" class="external-link">determinant</a></span><span class="op">(</span><span class="va">wi</span><span class="op">)</span><span class="op">$</span><span class="va">modulus</span><span class="op">[</span><span class="fl">1L</span><span class="op">]</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">s</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="va">wi</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span>    <span class="op">-</span><span class="fl">2</span> <span class="op">*</span> <span class="va">loglik</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span> <span class="op">*</span> <span class="va">edges</span></span>
 <span>  <span class="op">}</span>, <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">1L</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="va">wi</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/glasso/man/glasso.html" class="external-link">glasso</a></span><span class="op">(</span><span class="va">s</span>, <span class="va">rhos</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/which.min.html" class="external-link">which.min</a></span><span class="op">(</span><span class="va">bics</span><span class="op">)</span><span class="op">]</span><span class="op">)</span><span class="op">$</span><span class="va">wi</span></span>
+<span>  <span class="va">wi</span> <span class="op">&lt;-</span> <span class="fu">glasso</span><span class="op">(</span><span class="va">s</span>, <span class="va">rhos</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/which.min.html" class="external-link">which.min</a></span><span class="op">(</span><span class="va">bics</span><span class="op">)</span><span class="op">]</span><span class="op">)</span><span class="op">$</span><span class="va">wi</span></span>
 <span>  <span class="va">adj</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">wi</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">1e-8</span><span class="op">)</span> <span class="op">*</span> <span class="fl">1L</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">adj</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fl">0L</span></span>
 <span>  <span class="va">adj</span></span>
 <span><span class="op">}</span></span>
 <span></span>
 <span><span class="va">pc_skeleton</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">alpha</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/pcalg/man/pc.html" class="external-link">pc</a></span><span class="op">(</span>suffStat <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>C <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>, n <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">pc</span><span class="op">(</span>suffStat <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>C <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>, n <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>            indepTest <span class="op">=</span> <span class="va">gaussCItest</span>, alpha <span class="op">=</span> <span class="va">alpha</span>, p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="va">adj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/methods/as.html" class="external-link">as</a></span><span class="op">(</span><span class="va">fit</span><span class="op">@</span><span class="va">graph</span>, <span class="st">"matrix"</span><span class="op">)</span></span>
+<span>  <span class="va">adj</span> <span class="op">&lt;-</span> <span class="fu">as</span><span class="op">(</span><span class="va">fit</span><span class="op">@</span><span class="va">graph</span>, <span class="st">"matrix"</span><span class="op">)</span></span>
 <span>  <span class="op">(</span><span class="op">(</span><span class="va">adj</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="va">adj</span><span class="op">)</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">*</span> <span class="fl">1L</span></span>
 <span><span class="op">}</span></span>
 <span></span>
@@ -1131,7 +1067,7 @@ test at level 0.01 and its skeleton is kept.</p>
 <span>  <span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    proxymix <span class="op">=</span> <span class="fu"><a href="../../reference/gmm_independence_graph.html">gmm_independence_graph</a></span><span class="op">(</span><span class="va">sel</span><span class="op">$</span><span class="va">best_fit</span><span class="op">)</span>,</span>
 <span>    glasso <span class="op">=</span> <span class="fu">glasso_bic</span><span class="op">(</span><span class="va">x</span><span class="op">)</span>,</span>
-<span>    huge <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/huge/man/huge.select.html" class="external-link">huge.select</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/huge/man/huge.html" class="external-link">huge</a></span><span class="op">(</span><span class="va">x</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
+<span>    huge <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="fu">huge.select</span><span class="op">(</span><span class="fu">huge</span><span class="op">(</span><span class="va">x</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
 <span>                                 verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">refit</span><span class="op">)</span>,</span>
 <span>    pcalg <span class="op">=</span> <span class="fu">pc_skeleton</span><span class="op">(</span><span class="va">x</span>, alpha <span class="op">=</span> <span class="fl">0.01</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
@@ -1149,125 +1085,7 @@ test at level 0.01 and its skeleton is kept.</p>
 <span>  <span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">g</span><span class="op">$</span><span class="va">proxymix</span>, <span class="st">"pcor"</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">p</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/lower.tri.html" class="external-link">upper.tri</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span>, <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">1L</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>components <span class="op">=</span> <span class="va">n_within</span>, largest_pcor <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">pcor_within</span>, <span class="fl">3L</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;           components largest_pcor</span></span>
-<span><span class="co">#&gt; Adelie             1        0.433</span></span>
-<span><span class="co">#&gt; Chinstrap          1        0.468</span></span>
-<span><span class="co">#&gt; Gentoo             1        0.361</span></span></code></pre></div>
-<table class="table">
-<caption>Undirected independence graph over the four measurements within
-each species, by four methods; BL bill length, BD bill depth, FL flipper
-length, BM body mass. Six edges is the complete graph, listed as
-all.</caption>
-<colgroup>
-<col width="30%">
-<col width="12%">
-<col width="8%">
-<col width="48%">
-</colgroup>
-<thead><tr class="header">
-<th align="left">Species</th>
-<th align="left">Method</th>
-<th align="right">Edges</th>
-<th align="left">Edge set</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">Adelie (151 birds)</td>
-<td align="left">proxymix</td>
-<td align="right">3</td>
-<td align="left">BL-BM, BD-BM, FL-BM</td>
-</tr>
-<tr class="even">
-<td align="left">Adelie (151 birds)</td>
-<td align="left">glasso</td>
-<td align="right">6</td>
-<td align="left">all</td>
-</tr>
-<tr class="odd">
-<td align="left">Adelie (151 birds)</td>
-<td align="left">huge</td>
-<td align="right">5</td>
-<td align="left">BL-BD, BL-FL, BL-BM, BD-BM, FL-BM</td>
-</tr>
-<tr class="even">
-<td align="left">Adelie (151 birds)</td>
-<td align="left">pcalg</td>
-<td align="right">3</td>
-<td align="left">BL-BM, BD-BM, FL-BM</td>
-</tr>
-<tr class="odd">
-<td align="left">Chinstrap (68 birds)</td>
-<td align="left">proxymix</td>
-<td align="right">4</td>
-<td align="left">BL-BD, BD-FL, BD-BM, FL-BM</td>
-</tr>
-<tr class="even">
-<td align="left">Chinstrap (68 birds)</td>
-<td align="left">glasso</td>
-<td align="right">6</td>
-<td align="left">all</td>
-</tr>
-<tr class="odd">
-<td align="left">Chinstrap (68 birds)</td>
-<td align="left">huge</td>
-<td align="right">6</td>
-<td align="left">all</td>
-</tr>
-<tr class="even">
-<td align="left">Chinstrap (68 birds)</td>
-<td align="left">pcalg</td>
-<td align="right">2</td>
-<td align="left">BL-BD, FL-BM</td>
-</tr>
-<tr class="odd">
-<td align="left">Gentoo (123 birds)</td>
-<td align="left">proxymix</td>
-<td align="right">6</td>
-<td align="left">all</td>
-</tr>
-<tr class="even">
-<td align="left">Gentoo (123 birds)</td>
-<td align="left">glasso</td>
-<td align="right">6</td>
-<td align="left">all</td>
-</tr>
-<tr class="odd">
-<td align="left">Gentoo (123 birds)</td>
-<td align="left">huge</td>
-<td align="right">6</td>
-<td align="left">all</td>
-</tr>
-<tr class="even">
-<td align="left">Gentoo (123 birds)</td>
-<td align="left">pcalg</td>
-<td align="right">5</td>
-<td align="left">BL-FL, BD-FL, BL-BM, BD-BM, FL-BM</td>
-</tr>
-</tbody>
-</table>
-<p>Given only the four measurements, <code><a href="../../reference/select_N.html">select_N()</a></code> chose 3
-components for the colony, the number of species. Every pair carries
-dependence. The most dependent pair on both Shannon readings is flipper
-length and body mass. The Cauchy-Schwarz form puts bill depth and
-flipper length first and flipper length and body mass third. Only three
-pairs change rank between the three columns: BD-FL, BD-BM and FL-BM. The
-Cauchy-Schwarz and Shannon forms are on different scales and are not to
-be compared to each other. On the Shannon scale the mixture reads 0.10
-to 0.18 nats below the nearest-neighbour estimate on every pair. The
-hand-written estimator and <code><a href="https://rdrr.io/pkg/FNN/man/mutual_information.html" class="external-link">FNN::mutinfo()</a></code> agree to within
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mn>10</mn><mrow><mi>−</mi><mn>10</mn></mrow></msup><annotation encoding="application/x-tex">10^{-10}</annotation></semantics></math>
-nats on all six pairs. The simulation below scores both forms against a
-known value. Within species a single component was selected for all
-three, so the mixture graph is the Gaussian graphical model, and it
-returns 3, 4 and 6 of the six edges for Adelie, Chinstrap and Gentoo.
-The graphical lasso returns 6, 6 and 6, and huge 5, 6 and 6. The PC
-algorithm, which removes an edge as soon as the partial correlation
-given any one of the conditioning sets it tests is not significant at
-the 1 per cent level, keeps 3, 2 and 5. The mixture’s graph tests each
-pair once, given the other two measurements, at the 5 per cent level, on
-68 to 151 birds. The largest within-species partial correlation is
-0.47.</p>
+<span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>components <span class="op">=</span> <span class="va">n_within</span>, largest_pcor <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">pcor_within</span>, <span class="fl">3L</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="a-simulation-benchmark">A simulation benchmark<a class="anchor" aria-label="anchor" href="#a-simulation-benchmark"></a>
@@ -1275,7 +1093,7 @@ pair once, given the other two measurements, at the 5 per cent level, on
 <p>The simulation draws 200 datasets of 500 rows from each of two
 mixtures whose entropies are known, fits a mixture with the true number
 of components, and scores every estimate against adaptive quadrature on
-the true density (<code><a href="https://bnaras.github.io/cubature/reference/hcubature.html" class="external-link">cubature::hcubature()</a></code>, Genz and Malik,
+the true density (<code>cubature::hcubature()</code>, Genz and Malik,
 1980), over a box reaching seven standard deviations of the mixture
 either side of its mean in each coordinate. The box leaves out at most
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>4</mn><mo>×</mo><msup><mn>10</mn><mrow><mi>−</mi><mn>10</mn></mrow></msup></mrow><annotation encoding="application/x-tex">4 \times 10^{-10}</annotation></semantics></math>
@@ -1287,7 +1105,7 @@ autoregressive covariance and one with exchangeable correlation, and the
 mutual information is between the first two coordinates and the last
 two. Four quantities are scored: the Shannon entropy, from
 <code><a href="../../reference/gmm_entropy.html">gmm_entropy()</a></code> on the fit with 5000 Monte Carlo draws and
-from <code><a href="https://rdrr.io/pkg/FNN/man/entropy.html" class="external-link">FNN::entropy()</a></code>; the Rényi-2 entropy, closed form on
+from <code>FNN::entropy()</code>; the Rényi-2 entropy, closed form on
 the fit, with no competitor; the Shannon mutual information, assembled
 from three <code><a href="../../reference/gmm_entropy.html">gmm_entropy()</a></code> calls on the fit and from the
 nearest-neighbour estimator above; and the Cauchy-Schwarz mutual
@@ -1308,9 +1126,9 @@ section, with the mixture selected among one to four components, and
 each recovered graph is scored by its structural Hamming distance from
 the chain (Tsamardinos et al., 2006), the number of edges to add or
 remove.</p>
-<p>This chunk is complete and runs as shown, but it took about 15
-minutes on one core (R 4.6.1, Apple silicon); the results below are read
-from its stored output. For a quick reduced run, change the line
+<p>This chunk is complete and runs as shown, but it took about 7 minutes
+on one core (R 4.6.1, Apple silicon); the results below are read from
+its stored output. For a quick reduced run, change the line
 <code>n_rep &lt;- 200L</code> to a small number such as
 <code>n_rep &lt;- 3L</code>.</p>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
@@ -1369,7 +1187,7 @@ from its stored output. For a quick reduced run, change the line
 <span><span class="co"># an integral of a function of the density over the box, by adaptive</span></span>
 <span><span class="co"># quadrature; the integrand receives points as columns</span></span>
 <span><span class="va">box_integral</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">f</span>, <span class="va">box</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://bnaras.github.io/cubature/reference/hcubature.html" class="external-link">hcubature</a></span><span class="op">(</span><span class="kw">function</span><span class="op">(</span><span class="va">x_mat</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu">f</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="va">x_mat</span><span class="op">)</span><span class="op">)</span>, <span class="fl">1L</span><span class="op">)</span>, <span class="va">box</span><span class="op">$</span><span class="va">lower</span>, <span class="va">box</span><span class="op">$</span><span class="va">upper</span>,</span>
+<span>  <span class="fu">hcubature</span><span class="op">(</span><span class="kw">function</span><span class="op">(</span><span class="va">x_mat</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu">f</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="va">x_mat</span><span class="op">)</span><span class="op">)</span>, <span class="fl">1L</span><span class="op">)</span>, <span class="va">box</span><span class="op">$</span><span class="va">lower</span>, <span class="va">box</span><span class="op">$</span><span class="va">upper</span>,</span>
 <span>            tol <span class="op">=</span> <span class="fl">1e-6</span>, vectorInterface <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">integral</span></span>
 <span><span class="op">}</span></span>
 <span></span>
@@ -1462,7 +1280,7 @@ from its stored output. For a quick reduced run, change the line
 <span>    method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"proxymix"</span>, <span class="st">"FNN"</span>, <span class="st">"proxymix"</span>, <span class="st">"proxymix"</span>, <span class="st">"KSG"</span>, <span class="st">"proxymix"</span><span class="op">)</span>,</span>
 <span>    estimate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>      <span class="fu">h_mc</span><span class="op">(</span><span class="va">fit</span><span class="op">)</span>,</span>
-<span>      <span class="fu"><a href="https://rdrr.io/pkg/FNN/man/entropy.html" class="external-link">entropy</a></span><span class="op">(</span><span class="va">x</span>, k <span class="op">=</span> <span class="va">k_nn</span><span class="op">)</span><span class="op">[</span><span class="va">k_nn</span><span class="op">]</span>,</span>
+<span>      <span class="fu">entropy</span><span class="op">(</span><span class="va">x</span>, k <span class="op">=</span> <span class="va">k_nn</span><span class="op">)</span><span class="op">[</span><span class="va">k_nn</span><span class="op">]</span>,</span>
 <span>      <span class="fu"><a href="../../reference/gmm_entropy.html">gmm_entropy</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span>,</span>
 <span>      <span class="fu">h_mc</span><span class="op">(</span><span class="fu"><a href="../../reference/gmm_marginalise.html">gmm_marginalise</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">a</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu">h_mc</span><span class="op">(</span><span class="fu"><a href="../../reference/gmm_marginalise.html">gmm_marginalise</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">b</span><span class="op">)</span><span class="op">)</span> <span class="op">-</span></span>
 <span>        <span class="fu">h_mc</span><span class="op">(</span><span class="va">fit</span><span class="op">)</span>,</span>
@@ -1503,22 +1321,22 @@ from its stored output. For a quick reduced run, change the line
 <span>  <span class="va">s</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cov</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span></span>
 <span>  <span class="va">rhos</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fl">1e-3</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>, length.out <span class="op">=</span> <span class="fl">30L</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="va">bics</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">rhos</span>, <span class="kw">function</span><span class="op">(</span><span class="va">rho</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="va">wi</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/glasso/man/glasso.html" class="external-link">glasso</a></span><span class="op">(</span><span class="va">s</span>, <span class="va">rho</span><span class="op">)</span><span class="op">$</span><span class="va">wi</span></span>
+<span>    <span class="va">wi</span> <span class="op">&lt;-</span> <span class="fu">glasso</span><span class="op">(</span><span class="va">s</span>, <span class="va">rho</span><span class="op">)</span><span class="op">$</span><span class="va">wi</span></span>
 <span>    <span class="va">edges</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">wi</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/lower.tri.html" class="external-link">upper.tri</a></span><span class="op">(</span><span class="va">wi</span><span class="op">)</span><span class="op">]</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">1e-8</span><span class="op">)</span></span>
 <span>    <span class="va">loglik</span> <span class="op">&lt;-</span> <span class="fl">0.5</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">*</span></span>
 <span>      <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/det.html" class="external-link">determinant</a></span><span class="op">(</span><span class="va">wi</span><span class="op">)</span><span class="op">$</span><span class="va">modulus</span><span class="op">[</span><span class="fl">1L</span><span class="op">]</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">s</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="va">wi</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span>    <span class="op">-</span><span class="fl">2</span> <span class="op">*</span> <span class="va">loglik</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span> <span class="op">*</span> <span class="va">edges</span></span>
 <span>  <span class="op">}</span>, <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">1L</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="va">wi</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/glasso/man/glasso.html" class="external-link">glasso</a></span><span class="op">(</span><span class="va">s</span>, <span class="va">rhos</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/which.min.html" class="external-link">which.min</a></span><span class="op">(</span><span class="va">bics</span><span class="op">)</span><span class="op">]</span><span class="op">)</span><span class="op">$</span><span class="va">wi</span></span>
+<span>  <span class="va">wi</span> <span class="op">&lt;-</span> <span class="fu">glasso</span><span class="op">(</span><span class="va">s</span>, <span class="va">rhos</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/which.min.html" class="external-link">which.min</a></span><span class="op">(</span><span class="va">bics</span><span class="op">)</span><span class="op">]</span><span class="op">)</span><span class="op">$</span><span class="va">wi</span></span>
 <span>  <span class="va">adj</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">wi</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">1e-8</span><span class="op">)</span> <span class="op">*</span> <span class="fl">1L</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">adj</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fl">0L</span></span>
 <span>  <span class="va">adj</span></span>
 <span><span class="op">}</span></span>
 <span></span>
 <span><span class="va">pc_skeleton</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">alpha</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/pcalg/man/pc.html" class="external-link">pc</a></span><span class="op">(</span>suffStat <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>C <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>, n <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">pc</span><span class="op">(</span>suffStat <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>C <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>, n <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>            indepTest <span class="op">=</span> <span class="va">gaussCItest</span>, alpha <span class="op">=</span> <span class="va">alpha</span>, p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="va">adj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/methods/as.html" class="external-link">as</a></span><span class="op">(</span><span class="va">fit</span><span class="op">@</span><span class="va">graph</span>, <span class="st">"matrix"</span><span class="op">)</span></span>
+<span>  <span class="va">adj</span> <span class="op">&lt;-</span> <span class="fu">as</span><span class="op">(</span><span class="va">fit</span><span class="op">@</span><span class="va">graph</span>, <span class="st">"matrix"</span><span class="op">)</span></span>
 <span>  <span class="op">(</span><span class="op">(</span><span class="va">adj</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="va">adj</span><span class="op">)</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">*</span> <span class="fl">1L</span></span>
 <span><span class="op">}</span></span>
 <span></span>
@@ -1529,7 +1347,7 @@ from its stored output. For a quick reduced run, change the line
 <span>  <span class="va">adj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    proxymix <span class="op">=</span> <span class="fu"><a href="../../reference/gmm_independence_graph.html">gmm_independence_graph</a></span><span class="op">(</span><span class="va">sel</span><span class="op">$</span><span class="va">best_fit</span><span class="op">)</span>,</span>
 <span>    glasso <span class="op">=</span> <span class="fu">glasso_bic</span><span class="op">(</span><span class="va">x</span><span class="op">)</span>,</span>
-<span>    huge <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/huge/man/huge.select.html" class="external-link">huge.select</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/huge/man/huge.html" class="external-link">huge</a></span><span class="op">(</span><span class="va">x</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
+<span>    huge <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="fu">huge.select</span><span class="op">(</span><span class="fu">huge</span><span class="op">(</span><span class="va">x</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
 <span>                                 verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">refit</span><span class="op">)</span>,</span>
 <span>    pcalg <span class="op">=</span> <span class="fu">pc_skeleton</span><span class="op">(</span><span class="va">x</span>, alpha <span class="op">=</span> <span class="fl">0.01</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
@@ -1979,62 +1797,58 @@ depend on chunk order.</p>
 <p>The illustration gives <code><a href="../../reference/select_N.html">select_N()</a></code> and every
 <code><a href="../../reference/gmm_entropy.html">gmm_entropy()</a></code> call <code>seed = 1L</code>, and computes
 each species’ graphs after <code>set.seed(1L)</code>, since
-<code><a href="https://rdrr.io/pkg/huge/man/huge.select.html" class="external-link">huge.select()</a></code> draws rows at random. Each simulated dataset,
+<code>huge.select()</code> draws rows at random. Each simulated dataset,
 its fits and its Monte Carlo entropies are seeded with the dataset’s
-index. The stored results come from the code shown, run on 26 September
-2026 with R 4.6.1, proxymix 0.16.0, mclust 6.1.3, FNN 1.1.4.1, glasso
-1.11, huge 2.0.1, pcalg 2.7-12 and cubature 2.1.4-1, and raised 0
+index. The stored results come from the code shown, run on 21 October
+2026 with R 4.6.1, proxymix 0.17.0, mclust 6.1.3, FNN 1.1.4.1, glasso
+1.11, huge 2.0.1, pcalg 2.7.12 and cubature 2.1.4.1, and raised 24
 warnings.</p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; R version 4.6.1 (2026-06-24)</span></span>
-<span><span class="co">#&gt; Platform: aarch64-apple-darwin23</span></span>
-<span><span class="co">#&gt; Running under: macOS Tahoe 26.6.2</span></span>
+<span><span class="co">#&gt; Platform: x86_64-pc-linux-gnu</span></span>
+<span><span class="co">#&gt; Running under: Ubuntu 24.04.5 LTS</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Matrix products: default</span></span>
-<span><span class="co">#&gt; BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/</span></span>
-<span><span class="co">#&gt;     libRblas.0.dylib </span></span>
-<span><span class="co">#&gt; LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/</span></span>
-<span><span class="co">#&gt;     libRlapack.dylib;  LAPACK version 3.12.1</span></span>
+<span><span class="co">#&gt; BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 </span></span>
+<span><span class="co">#&gt; LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/</span></span>
+<span><span class="co">#&gt;     libopenblasp-r0.3.26.so;  LAPACK version 3.12.0</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; locale:</span></span>
-<span><span class="co">#&gt; [1] en_AU.UTF-8/en_AU.UTF-8/en_AU.UTF-8/C/en_AU.UTF-8/en_AU.UTF-8</span></span>
+<span><span class="co">#&gt;  [1] LC_CTYPE=C.UTF-8       LC_NUMERIC=C          </span></span>
+<span><span class="co">#&gt;  [3] LC_TIME=C.UTF-8        LC_COLLATE=C.UTF-8    </span></span>
+<span><span class="co">#&gt;  [5] LC_MONETARY=C.UTF-8    LC_MESSAGES=C.UTF-8   </span></span>
+<span><span class="co">#&gt;  [7] LC_PAPER=C.UTF-8       LC_NAME=C             </span></span>
+<span><span class="co">#&gt;  [9] LC_ADDRESS=C           LC_TELEPHONE=C        </span></span>
+<span><span class="co">#&gt; [11] LC_MEASUREMENT=C.UTF-8 LC_IDENTIFICATION=C   </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; time zone: Australia/Adelaide</span></span>
-<span><span class="co">#&gt; tzcode source: internal</span></span>
+<span><span class="co">#&gt; time zone: UTC</span></span>
+<span><span class="co">#&gt; tzcode source: system (glibc)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; attached base packages:</span></span>
 <span><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods  </span></span>
 <span><span class="co">#&gt; [7] base     </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; other attached packages:</span></span>
-<span><span class="co">#&gt; [1] pcalg_2.7-12    huge_2.0.1      glasso_1.11     FNN_1.1.4.1    </span></span>
-<span><span class="co">#&gt; [5] proxymix_0.16.0</span></span>
+<span><span class="co">#&gt; [1] proxymix_0.17.0</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
-<span><span class="co">#&gt;  [1] sass_0.4.10         generics_0.1.4      robustbase_0.99-7  </span></span>
-<span><span class="co">#&gt;  [4] lattice_0.23-1      digest_0.6.39       magrittr_2.0.5     </span></span>
-<span><span class="co">#&gt;  [7] evaluate_1.0.5      grid_4.6.1          RColorBrewer_1.1-3 </span></span>
-<span><span class="co">#&gt; [10] fastmap_1.2.0       sfsmisc_1.1-25      jsonlite_2.0.0     </span></span>
-<span><span class="co">#&gt; [13] Matrix_1.7-6        graph_1.90.0        BiocManager_1.30.27</span></span>
-<span><span class="co">#&gt; [16] scales_1.4.0        textshaping_1.0.5   jquerylib_0.1.4    </span></span>
-<span><span class="co">#&gt; [19] abind_1.4-8         cli_3.6.6           rlang_1.3.0        </span></span>
-<span><span class="co">#&gt; [22] ggm_2.5.4           fastICA_1.2-8       withr_3.0.3        </span></span>
-<span><span class="co">#&gt; [25] cachem_1.1.0        yaml_2.3.12         otel_0.2.0         </span></span>
-<span><span class="co">#&gt; [28] tools_4.6.1         parallel_4.6.1      bdsmatrix_1.3-7    </span></span>
-<span><span class="co">#&gt; [31] dplyr_1.2.1         corpcor_1.6.10      ggplot2_4.0.3      </span></span>
-<span><span class="co">#&gt; [34] BiocGenerics_0.58.1 vctrs_0.7.3         R6_2.6.1           </span></span>
-<span><span class="co">#&gt; [37] stats4_4.6.1        lifecycle_1.0.5     RBGL_1.88.0        </span></span>
-<span><span class="co">#&gt; [40] fs_2.1.0            htmlwidgets_1.6.4   clue_0.3-68        </span></span>
-<span><span class="co">#&gt; [43] MASS_7.3-66         cluster_2.1.8.3     ragg_1.5.2         </span></span>
-<span><span class="co">#&gt; [46] pkgconfig_2.0.3     desc_1.4.3          pkgdown_2.2.1      </span></span>
-<span><span class="co">#&gt; [49] pillar_1.11.1       bslib_0.12.0        gtable_0.3.6       </span></span>
-<span><span class="co">#&gt; [52] glue_1.8.1          Rcpp_1.1.2          systemfonts_1.3.2  </span></span>
-<span><span class="co">#&gt; [55] DEoptimR_1.2-1      xfun_0.60           tibble_3.3.1       </span></span>
-<span><span class="co">#&gt; [58] tidyselect_1.2.1    knitr_1.51          dichromat_2.0-1    </span></span>
-<span><span class="co">#&gt; [61] farver_2.1.2        htmltools_0.5.9     igraph_2.3.3       </span></span>
-<span><span class="co">#&gt; [64] rmarkdown_2.32      labeling_0.4.3      compiler_4.6.1     </span></span>
-<span><span class="co">#&gt; [67] S7_0.2.2            mvnfast_0.2.8</span></span></code></pre>
+<span><span class="co">#&gt;  [1] mvnfast_0.2.8      gtable_0.3.6       jsonlite_2.0.0    </span></span>
+<span><span class="co">#&gt;  [4] dplyr_1.2.1        compiler_4.6.1     tidyselect_1.2.1  </span></span>
+<span><span class="co">#&gt;  [7] Rcpp_1.1.2         jquerylib_0.1.4    systemfonts_1.3.2 </span></span>
+<span><span class="co">#&gt; [10] scales_1.4.0       textshaping_1.0.5  yaml_2.3.12       </span></span>
+<span><span class="co">#&gt; [13] fastmap_1.2.0      ggplot2_4.0.3      R6_2.6.1          </span></span>
+<span><span class="co">#&gt; [16] labeling_0.4.3     generics_0.1.4     knitr_1.52        </span></span>
+<span><span class="co">#&gt; [19] tibble_3.3.1       desc_1.4.3         bslib_0.12.0      </span></span>
+<span><span class="co">#&gt; [22] pillar_1.11.1      RColorBrewer_1.1-3 rlang_1.3.0       </span></span>
+<span><span class="co">#&gt; [25] cachem_1.1.0       xfun_0.62          fs_2.1.0          </span></span>
+<span><span class="co">#&gt; [28] sass_0.4.10        S7_0.2.2           otel_0.2.0        </span></span>
+<span><span class="co">#&gt; [31] cli_3.6.6          pkgdown_2.2.1      withr_3.0.3       </span></span>
+<span><span class="co">#&gt; [34] magrittr_2.0.5     digest_0.6.39      grid_4.6.1        </span></span>
+<span><span class="co">#&gt; [37] mclust_6.1.3       lifecycle_1.0.5    vctrs_0.7.3       </span></span>
+<span><span class="co">#&gt; [40] evaluate_1.0.5     glue_1.8.1         farver_2.1.2      </span></span>
+<span><span class="co">#&gt; [43] ragg_1.5.2         rmarkdown_2.32     tools_4.6.1       </span></span>
+<span><span class="co">#&gt; [46] pkgconfig_2.0.3    htmltools_0.5.9</span></span></code></pre>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

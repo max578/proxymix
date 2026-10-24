@@ -5,7 +5,7 @@ the latent-class structural causal model read off a fitted Gaussian
 mixture."><meta property="og:description" content="Computes the per-unit counterfactual of a query coordinate (the outcome)
 for an observed unit, under a do() intervention – Pearl's third rung on
 the latent-class structural causal model read off a fitted Gaussian
-mixture."></head><body>
+mixture."><meta property="og:image" content="https://max578.github.io/proxymix/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -13,7 +13,7 @@ mixture."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">proxymix</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.16.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.17.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -30,6 +30,7 @@ mixture."></head><body>
     <li><a class="dropdown-item" href="../articles/density_shapes.html">How well a mixture proxies four awkward shapes</a></li>
     <li><a class="dropdown-item" href="../articles/operator_calculus.html">The closed-form operator calculus on a mixture</a></li>
     <li><a class="dropdown-item" href="../articles/from_kde.html">Compressing a kernel density estimate into a mixture</a></li>
+    <li><a class="dropdown-item" href="../articles/cf_targets.html">Fitting a mixture to a characteristic function</a></li>
     <li><a class="dropdown-item" href="../articles/many_methods.html">One mixture, many methods</a></li>
     <li><a class="dropdown-item" href="../articles/entropy.html">Reading the entropy of a fitted mixture</a></li>
     <li><a class="dropdown-item" href="../articles/calibration.html">Mapping the optima of an objective</a></li>
@@ -50,9 +51,8 @@ mixture."></head><body>
 </nav><div class="container template-reference-topic">
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Counterfactual law of one unit (abduction, action, prediction)</h1>
-      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/HEAD/R/intervene.R" class="external-link"><code>R/intervene.R</code></a></small>
+      <img src="../logo.png" class="logo" alt=""><h1>Counterfactual law of one unit (abduction, action, prediction)</h1>
+      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/main/R/intervene.R" class="external-link"><code>R/intervene.R</code></a></small>
       <div class="d-none name"><code>gmm_counterfactual.Rd</code></div>
     </div>
 
@@ -100,7 +100,7 @@ numerical hygiene.</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A <code>gmm_counterfactual_law</code> object carrying the <code>K</code> atoms, their
-abduction weights, and the identified counterfactual <code>mean</code>.</p>
+abduction weights, and the counterfactual <code>mean</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -111,10 +111,12 @@ component, its structural residual. <em>Action</em> sets the <code>do</code> coo
 result is a discrete law on <code>K</code> atoms,
 $$Y_{t'} \mid (y, t, x) = \sum_k \pi_k(y, t, x)\,
       \delta\!\big(y + \beta_k^{T}(t' - t)\big),$$
-where \(\beta_k^T\) is component <code>k</code>'s within-class treatment slope. Only
-the <strong>mean</strong> of this law is identified; its spread reflects regime
-uncertainty, not the (unidentified) cross-world coupling, so the variance
-and tail accessors refuse to answer (see <code><a href="gmm_cf_variance.html">gmm_cf_variance()</a></code>).</p>
+where \(\beta_k^T\) is component <code>k</code>'s within-class treatment slope.</p>
+<p>This law assumes the unit keeps its structural residual when the treatment
+changes. The joint density cannot confirm that assumption: if the residual
+were redrawn instead, the same mixture would give a different counterfactual
+law for the unit, mean included. <code><a href="gmm_cf_mean.html">gmm_cf_mean()</a></code>, <code><a href="gmm_cf_variance.html">gmm_cf_variance()</a></code> and
+<code><a href="gmm_cf_tail_prob.html">gmm_cf_tail_prob()</a></code> summarise the law under the same assumption.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">proxymix</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.16.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.17.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,6 +40,7 @@
     <li><a class="dropdown-item" href="../articles/density_shapes.html">How well a mixture proxies four awkward shapes</a></li>
     <li><a class="dropdown-item" href="../articles/operator_calculus.html">The closed-form operator calculus on a mixture</a></li>
     <li><a class="dropdown-item" href="../articles/from_kde.html">Compressing a kernel density estimate into a mixture</a></li>
+    <li><a class="dropdown-item" href="../articles/cf_targets.html">Fitting a mixture to a characteristic function</a></li>
     <li><a class="dropdown-item" href="../articles/many_methods.html">One mixture, many methods</a></li>
     <li><a class="dropdown-item" href="../articles/entropy.html">Reading the entropy of a fitted mixture</a></li>
     <li><a class="dropdown-item" href="../articles/calibration.html">Mapping the optima of an objective</a></li>
@@ -69,11 +70,10 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Testing the last observation for instability</h1>
+      <img src="../logo.png" class="logo" alt=""><h1>Testing the last observation for instability</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/HEAD/vignettes/end_of_sample.Rmd" class="external-link"><code>vignettes/end_of_sample.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/main/vignettes/end_of_sample.Rmd" class="external-link"><code>vignettes/end_of_sample.Rmd</code></a></small>
       <div class="d-none name"><code>end_of_sample.Rmd</code></div>
     </div>
 
@@ -483,21 +483,21 @@ plus standard normal noise. Every check was applied at
 dlm and the t-test were fitted to all but the last
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>m</mi><annotation encoding="application/x-tex">m</annotation></semantics></math>
 values and then tested against those values; the
-<code>strucchange</code> and <code><a href="https://rdrr.io/pkg/changepoint/man/cpt.mean.html" class="external-link">cpt.mean()</a></code> checks below
+<code>strucchange</code> and <code>cpt.mean()</code> checks below
 instead ran on the whole series. The power is how often a check rejected
 when the last
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>m</mi><annotation encoding="application/x-tex">m</annotation></semantics></math>
 values were raised by 3 noise standard deviations. The size is how often
 it rejected when they were not.</p>
 <p>The other checks were the sup-F test and the OLS-CUSUM test of
-<code>strucchange</code> (Zeileis et al., 2002), <code><a href="https://rdrr.io/pkg/changepoint/man/cpt.mean.html" class="external-link">cpt.mean()</a></code>
+<code>strucchange</code> (Zeileis et al., 2002), <code>cpt.mean()</code>
 of <code>changepoint</code> (Killick and Eckley, 2014), and a t-test on
 the forecast errors of the last
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>m</mi><annotation encoding="application/x-tex">m</annotation></semantics></math>
 values. The sup-F test looks for a change near the end of the series in
 the regression of each value on the previous one. The OLS-CUSUM test
 looks for drift, over the whole series, in the cumulative sum of the
-errors of that regression. <code><a href="https://rdrr.io/pkg/changepoint/man/cpt.mean.html" class="external-link">cpt.mean()</a></code> searches for changes
+errors of that regression. <code>cpt.mean()</code> searches for changes
 in the mean, and it counts as rejecting when it places a change among
 the last
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>m</mi><annotation encoding="application/x-tex">m</annotation></semantics></math>
@@ -605,21 +605,21 @@ came closer, at 0.038. Its power was 0.810, against 0.852 for the
 chi-square calibration. At
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>m</mi><mo>=</mo><mn>3</mn></mrow><annotation encoding="application/x-tex">m = 3</annotation></semantics></math>,
 a column the table omits, the sup-F test had a size of 0.237, far above
-0.05. The OLS-CUSUM test and <code><a href="https://rdrr.io/pkg/changepoint/man/cpt.mean.html" class="external-link">cpt.mean()</a></code> rejected fewer than
+0.05. The OLS-CUSUM test and <code>cpt.mean()</code> rejected fewer than
 5% of stable series. The OLS-CUSUM test rarely detected a change
 confined to the last few values, with a power of 0.021 at
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>m</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">m = 1</annotation></semantics></math>
 and 0.014 at
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>m</mi><mo>=</mo><mn>5</mn></mrow><annotation encoding="application/x-tex">m = 5</annotation></semantics></math>.
-<code><a href="https://rdrr.io/pkg/changepoint/man/cpt.mean.html" class="external-link">cpt.mean()</a></code> detected it in 0.088 of series at
+<code>cpt.mean()</code> detected it in 0.088 of series at
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>m</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">m = 1</annotation></semantics></math>
 and 0.645 at
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>m</mi><mo>=</mo><mn>5</mn></mrow><annotation encoding="application/x-tex">m = 5</annotation></semantics></math>.</p>
 <p><code>KFAS</code> was the slowest of the five packages. For one
 series at
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>m</mi><annotation encoding="application/x-tex">m</annotation></semantics></math>
-= 3, it took 26 ms and <code>dlm</code> took 9 ms, each including its
-own fit. The two proxymix calibrations together took 8 ms, including the
+= 3, it took 17 ms and <code>dlm</code> took 6 ms, each including its
+own fit. The two proxymix calibrations together took 5 ms, including the
 <code><a href="https://rdrr.io/r/stats/arima.html" class="external-link">arima()</a></code> fit that supplies the parameters.
 <code>strucchange</code> and <code>changepoint</code> each took less
 than 1 ms (median of five runs of 10 calls each, on one computer).</p>
@@ -664,31 +664,31 @@ when this vignette is built.</p>
 <span><span class="va">reg</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y</span><span class="op">[</span><span class="op">-</span><span class="fl">1L</span><span class="op">]</span>, y_lag <span class="op">=</span> <span class="va">y</span><span class="op">[</span><span class="op">-</span><span class="va">n</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">n_reg</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">reg</span><span class="op">)</span></span>
 <span><span class="va">p_supf</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="va">m</span> <span class="op">&gt;=</span> <span class="fl">3L</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">fs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/strucchange/man/Fstats.html" class="external-link">Fstats</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">y_lag</span>, data <span class="op">=</span> <span class="va">reg</span>, from <span class="op">=</span> <span class="va">n_reg</span> <span class="op">-</span> <span class="va">m</span>, to <span class="op">=</span> <span class="va">n_reg</span> <span class="op">-</span> <span class="fl">3L</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/strucchange/man/sctest.html" class="external-link">sctest</a></span><span class="op">(</span><span class="va">fs</span><span class="op">)</span><span class="op">$</span><span class="va">p.value</span><span class="op">)</span></span>
+<span>  <span class="va">fs</span> <span class="op">&lt;-</span> <span class="fu">Fstats</span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">y_lag</span>, data <span class="op">=</span> <span class="va">reg</span>, from <span class="op">=</span> <span class="va">n_reg</span> <span class="op">-</span> <span class="va">m</span>, to <span class="op">=</span> <span class="va">n_reg</span> <span class="op">-</span> <span class="fl">3L</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="fu">sctest</span><span class="op">(</span><span class="va">fs</span><span class="op">)</span><span class="op">$</span><span class="va">p.value</span><span class="op">)</span></span>
 <span><span class="op">}</span> <span class="kw">else</span> <span class="cn">NA_real_</span></span>
-<span><span class="va">p_cusum</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/strucchange/man/sctest.html" class="external-link">sctest</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/strucchange/man/efp.html" class="external-link">efp</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">y_lag</span>, data <span class="op">=</span> <span class="va">reg</span>,</span>
+<span><span class="va">p_cusum</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="fu">sctest</span><span class="op">(</span><span class="fu">efp</span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">y_lag</span>, data <span class="op">=</span> <span class="va">reg</span>,</span>
 <span>                             type <span class="op">=</span> <span class="st">"OLS-CUSUM"</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">p.value</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">cp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/changepoint/man/cpts.html" class="external-link">cpts</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/changepoint/man/cpt.mean.html" class="external-link">cpt.mean</a></span><span class="op">(</span><span class="va">y</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">y_fit</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">cp</span> <span class="op">&lt;-</span> <span class="fu">cpts</span><span class="op">(</span><span class="fu">cpt.mean</span><span class="op">(</span><span class="va">y</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">y_fit</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">p_cpt</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/any.html" class="external-link">any</a></span><span class="op">(</span><span class="va">cp</span> <span class="op">&gt;=</span> <span class="va">n</span> <span class="op">-</span> <span class="va">m</span><span class="op">)</span><span class="op">)</span> <span class="fl">0</span> <span class="kw">else</span> <span class="fl">1</span></span>
 <span></span>
 <span><span class="va">y_bar</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">y_fit</span><span class="op">)</span></span>
 <span><span class="va">kfas_update</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">pars</span>, <span class="va">model</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">part</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/KFAS/man/SSModel.html" class="external-link">SSMarima</a></span><span class="op">(</span>ar <span class="op">=</span> <span class="fl">0.999</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/Hyperbolic.html" class="external-link">tanh</a></span><span class="op">(</span><span class="va">pars</span><span class="op">[</span><span class="fl">1L</span><span class="op">]</span><span class="op">)</span>, Q <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">pars</span><span class="op">[</span><span class="fl">2L</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="va">part</span> <span class="op">&lt;-</span> <span class="fu">SSMarima</span><span class="op">(</span>ar <span class="op">=</span> <span class="fl">0.999</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/Hyperbolic.html" class="external-link">tanh</a></span><span class="op">(</span><span class="va">pars</span><span class="op">[</span><span class="fl">1L</span><span class="op">]</span><span class="op">)</span>, Q <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">pars</span><span class="op">[</span><span class="fl">2L</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="va">model</span><span class="op">[</span><span class="st">"T"</span>, <span class="st">"arima"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">part</span><span class="op">$</span><span class="cn">T</span></span>
 <span>  <span class="va">model</span><span class="op">[</span><span class="st">"R"</span>, <span class="st">"arima"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">part</span><span class="op">$</span><span class="va">R</span></span>
 <span>  <span class="va">model</span><span class="op">[</span><span class="st">"Q"</span>, <span class="st">"arima"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">part</span><span class="op">$</span><span class="va">Q</span></span>
 <span>  <span class="va">model</span><span class="op">[</span><span class="st">"P1"</span>, <span class="st">"arima"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">part</span><span class="op">$</span><span class="va">P1</span></span>
 <span>  <span class="va">model</span></span>
 <span><span class="op">}</span></span>
-<span><span class="va">kfas_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/KFAS/man/fitSSM.html" class="external-link">fitSSM</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/pkg/KFAS/man/SSModel.html" class="external-link">SSModel</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/AsIs.html" class="external-link">I</a></span><span class="op">(</span><span class="va">y_fit</span> <span class="op">-</span> <span class="va">y_bar</span><span class="op">)</span> <span class="op">~</span> <span class="op">-</span><span class="fl">1</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/pkg/KFAS/man/SSModel.html" class="external-link">SSMarima</a></span><span class="op">(</span>ar <span class="op">=</span> <span class="fl">0.5</span>, Q <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>, H <span class="op">=</span> <span class="fl">0</span><span class="op">)</span>,</span>
+<span><span class="va">kfas_fit</span> <span class="op">&lt;-</span> <span class="fu">fitSSM</span><span class="op">(</span></span>
+<span>  <span class="fu">SSModel</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/AsIs.html" class="external-link">I</a></span><span class="op">(</span><span class="va">y_fit</span> <span class="op">-</span> <span class="va">y_bar</span><span class="op">)</span> <span class="op">~</span> <span class="op">-</span><span class="fl">1</span> <span class="op">+</span> <span class="fu">SSMarima</span><span class="op">(</span>ar <span class="op">=</span> <span class="fl">0.5</span>, Q <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>, H <span class="op">=</span> <span class="fl">0</span><span class="op">)</span>,</span>
 <span>  inits <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span>, updatefn <span class="op">=</span> <span class="va">kfas_update</span>, method <span class="op">=</span> <span class="st">"BFGS"</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">kfas_par</span> <span class="op">&lt;-</span> <span class="va">kfas_fit</span><span class="op">$</span><span class="va">optim.out</span><span class="op">$</span><span class="va">par</span></span>
-<span><span class="va">kfas_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/KFAS/man/SSModel.html" class="external-link">SSModel</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/AsIs.html" class="external-link">I</a></span><span class="op">(</span><span class="va">y</span> <span class="op">-</span> <span class="va">y_bar</span><span class="op">)</span> <span class="op">~</span> <span class="op">-</span><span class="fl">1</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/pkg/KFAS/man/SSModel.html" class="external-link">SSMarima</a></span><span class="op">(</span>ar <span class="op">=</span> <span class="fl">0.999</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/Hyperbolic.html" class="external-link">tanh</a></span><span class="op">(</span><span class="va">kfas_par</span><span class="op">[</span><span class="fl">1L</span><span class="op">]</span><span class="op">)</span>,</span>
+<span><span class="va">kfas_model</span> <span class="op">&lt;-</span> <span class="fu">SSModel</span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/AsIs.html" class="external-link">I</a></span><span class="op">(</span><span class="va">y</span> <span class="op">-</span> <span class="va">y_bar</span><span class="op">)</span> <span class="op">~</span> <span class="op">-</span><span class="fl">1</span> <span class="op">+</span> <span class="fu">SSMarima</span><span class="op">(</span>ar <span class="op">=</span> <span class="fl">0.999</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/Hyperbolic.html" class="external-link">tanh</a></span><span class="op">(</span><span class="va">kfas_par</span><span class="op">[</span><span class="fl">1L</span><span class="op">]</span><span class="op">)</span>,</span>
 <span>                                Q <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">kfas_par</span><span class="op">[</span><span class="fl">2L</span><span class="op">]</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  H <span class="op">=</span> <span class="fl">0</span></span>
 <span><span class="op">)</span></span>
@@ -699,11 +699,11 @@ when this vignette is built.</p>
 <span><span class="va">p_kfas</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">m</span> <span class="op">*</span> <span class="fl">2</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">pnorm</a></span><span class="op">(</span><span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">kfas_z</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">dlm_build</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">pars</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/pkg/dlm/man/dlmModARMA.html" class="external-link">dlmModARMA</a></span><span class="op">(</span>ar <span class="op">=</span> <span class="fl">0.999</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/Hyperbolic.html" class="external-link">tanh</a></span><span class="op">(</span><span class="va">pars</span><span class="op">[</span><span class="fl">1L</span><span class="op">]</span><span class="op">)</span>, sigma2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">pars</span><span class="op">[</span><span class="fl">2L</span><span class="op">]</span><span class="op">)</span>, dV <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span>
+<span>  <span class="fu">dlmModARMA</span><span class="op">(</span>ar <span class="op">=</span> <span class="fl">0.999</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/Hyperbolic.html" class="external-link">tanh</a></span><span class="op">(</span><span class="va">pars</span><span class="op">[</span><span class="fl">1L</span><span class="op">]</span><span class="op">)</span>, sigma2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">pars</span><span class="op">[</span><span class="fl">2L</span><span class="op">]</span><span class="op">)</span>, dV <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
-<span><span class="va">dlm_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/dlm/man/dlmMLE.html" class="external-link">dlmMLE</a></span><span class="op">(</span><span class="va">y_fit</span> <span class="op">-</span> <span class="va">y_bar</span>, parm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span>, build <span class="op">=</span> <span class="va">dlm_build</span><span class="op">)</span></span>
-<span><span class="va">dlm_filt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/dlm/man/dlmFilter.html" class="external-link">dlmFilter</a></span><span class="op">(</span><span class="va">y</span> <span class="op">-</span> <span class="va">y_bar</span>, <span class="fu">dlm_build</span><span class="op">(</span><span class="va">dlm_fit</span><span class="op">$</span><span class="va">par</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">dlm_var</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/dlm/man/dlmSvd2var.html" class="external-link">dlmSvd2var</a></span><span class="op">(</span><span class="va">dlm_filt</span><span class="op">$</span><span class="va">U.R</span>, <span class="va">dlm_filt</span><span class="op">$</span><span class="va">D.R</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">dlm_fit</span> <span class="op">&lt;-</span> <span class="fu">dlmMLE</span><span class="op">(</span><span class="va">y_fit</span> <span class="op">-</span> <span class="va">y_bar</span>, parm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span>, build <span class="op">=</span> <span class="va">dlm_build</span><span class="op">)</span></span>
+<span><span class="va">dlm_filt</span> <span class="op">&lt;-</span> <span class="fu">dlmFilter</span><span class="op">(</span><span class="va">y</span> <span class="op">-</span> <span class="va">y_bar</span>, <span class="fu">dlm_build</span><span class="op">(</span><span class="va">dlm_fit</span><span class="op">$</span><span class="va">par</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">dlm_var</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="fu">dlmSvd2var</span><span class="op">(</span><span class="va">dlm_filt</span><span class="op">$</span><span class="va">U.R</span>, <span class="va">dlm_filt</span><span class="op">$</span><span class="va">D.R</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">dlm_z</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">y</span><span class="op">[</span><span class="va">last</span><span class="op">]</span> <span class="op">-</span> <span class="va">y_bar</span> <span class="op">-</span> <span class="va">dlm_filt</span><span class="op">$</span><span class="va">f</span><span class="op">[</span><span class="va">last</span><span class="op">]</span><span class="op">)</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="va">dlm_var</span><span class="op">[</span><span class="va">last</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">p_dlm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">m</span> <span class="op">*</span> <span class="fl">2</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">pnorm</a></span><span class="op">(</span><span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">dlm_z</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
@@ -833,43 +833,46 @@ linear regression models.</em> Journal of Statistical Software 7(2),
 <p>Running the code with <code>set.seed(20260621)</code>, as above,
 reproduces the example, the figures and the size study exactly. The
 comparison is read from stored results of a simulation run under
-proxymix 0.16.0, strucchange 1.6-0, changepoint 2.3, KFAS 1.6.0 and dlm
-1.1-6.1, which took about 18 minutes on one core.</p>
+proxymix 0.17.0, strucchange 1.6-0, changepoint 2.3, KFAS 1.6.0 and dlm
+1.1-6.1, which took about 3 minutes on one core.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <pre class="session-info"><code><span><span class="co">#&gt; R version 4.6.1 (2026-06-24)</span></span>
-<span><span class="co">#&gt; Platform: aarch64-apple-darwin23</span></span>
-<span><span class="co">#&gt; Running under: macOS Tahoe 26.6.2</span></span>
+<span><span class="co">#&gt; Platform: x86_64-pc-linux-gnu</span></span>
+<span><span class="co">#&gt; Running under: Ubuntu 24.04.5 LTS</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Matrix products: default</span></span>
-<span><span class="co">#&gt; BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib </span></span>
-<span><span class="co">#&gt; LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1</span></span>
+<span><span class="co">#&gt; BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 </span></span>
+<span><span class="co">#&gt; LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.26.so;  LAPACK version 3.12.0</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; locale:</span></span>
-<span><span class="co">#&gt; [1] en_AU.UTF-8/en_AU.UTF-8/en_AU.UTF-8/C/en_AU.UTF-8/en_AU.UTF-8</span></span>
+<span><span class="co">#&gt;  [1] LC_CTYPE=C.UTF-8       LC_NUMERIC=C           LC_TIME=C.UTF-8       </span></span>
+<span><span class="co">#&gt;  [4] LC_COLLATE=C.UTF-8     LC_MONETARY=C.UTF-8    LC_MESSAGES=C.UTF-8   </span></span>
+<span><span class="co">#&gt;  [7] LC_PAPER=C.UTF-8       LC_NAME=C              LC_ADDRESS=C          </span></span>
+<span><span class="co">#&gt; [10] LC_TELEPHONE=C         LC_MEASUREMENT=C.UTF-8 LC_IDENTIFICATION=C   </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; time zone: Australia/Adelaide</span></span>
-<span><span class="co">#&gt; tzcode source: internal</span></span>
+<span><span class="co">#&gt; time zone: UTC</span></span>
+<span><span class="co">#&gt; tzcode source: system (glibc)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; attached base packages:</span></span>
 <span><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; other attached packages:</span></span>
-<span><span class="co">#&gt; [1] proxymix_0.16.0</span></span>
+<span><span class="co">#&gt; [1] proxymix_0.17.0</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
 <span><span class="co">#&gt;  [1] mvnfast_0.2.8      gtable_0.3.6       jsonlite_2.0.0     dplyr_1.2.1       </span></span>
-<span><span class="co">#&gt;  [5] compiler_4.6.1     Rcpp_1.1.2         tidyselect_1.2.1   dichromat_2.0-1   </span></span>
-<span><span class="co">#&gt;  [9] jquerylib_0.1.4    systemfonts_1.3.2  scales_1.4.0       textshaping_1.0.5 </span></span>
-<span><span class="co">#&gt; [13] yaml_2.3.12        fastmap_1.2.0      ggplot2_4.0.3      R6_2.6.1          </span></span>
-<span><span class="co">#&gt; [17] labeling_0.4.3     generics_0.1.4     knitr_1.51         htmlwidgets_1.6.4 </span></span>
-<span><span class="co">#&gt; [21] tibble_3.3.1       desc_1.4.3         bslib_0.12.0       pillar_1.11.1     </span></span>
-<span><span class="co">#&gt; [25] RColorBrewer_1.1-3 rlang_1.3.0        cachem_1.1.0       xfun_0.60         </span></span>
-<span><span class="co">#&gt; [29] fs_2.1.0           sass_0.4.10        S7_0.2.2           otel_0.2.0        </span></span>
-<span><span class="co">#&gt; [33] cli_3.6.6          withr_3.0.3        pkgdown_2.2.1      magrittr_2.0.5    </span></span>
-<span><span class="co">#&gt; [37] digest_0.6.39      grid_4.6.1         lifecycle_1.0.5    vctrs_0.7.3       </span></span>
-<span><span class="co">#&gt; [41] evaluate_1.0.5     glue_1.8.1         farver_2.1.2       ragg_1.5.2        </span></span>
-<span><span class="co">#&gt; [45] rmarkdown_2.32     tools_4.6.1        pkgconfig_2.0.3    htmltools_0.5.9</span></span></code></pre>
+<span><span class="co">#&gt;  [5] compiler_4.6.1     tidyselect_1.2.1   Rcpp_1.1.2         jquerylib_0.1.4   </span></span>
+<span><span class="co">#&gt;  [9] systemfonts_1.3.2  scales_1.4.0       textshaping_1.0.5  yaml_2.3.12       </span></span>
+<span><span class="co">#&gt; [13] fastmap_1.2.0      ggplot2_4.0.3      R6_2.6.1           labeling_0.4.3    </span></span>
+<span><span class="co">#&gt; [17] generics_0.1.4     knitr_1.52         tibble_3.3.1       desc_1.4.3        </span></span>
+<span><span class="co">#&gt; [21] bslib_0.12.0       pillar_1.11.1      RColorBrewer_1.1-3 rlang_1.3.0       </span></span>
+<span><span class="co">#&gt; [25] cachem_1.1.0       xfun_0.62          fs_2.1.0           sass_0.4.10       </span></span>
+<span><span class="co">#&gt; [29] S7_0.2.2           otel_0.2.0         cli_3.6.6          pkgdown_2.2.1     </span></span>
+<span><span class="co">#&gt; [33] withr_3.0.3        magrittr_2.0.5     digest_0.6.39      grid_4.6.1        </span></span>
+<span><span class="co">#&gt; [37] lifecycle_1.0.5    vctrs_0.7.3        evaluate_1.0.5     glue_1.8.1        </span></span>
+<span><span class="co">#&gt; [41] farver_2.1.2       ragg_1.5.2         rmarkdown_2.32     tools_4.6.1       </span></span>
+<span><span class="co">#&gt; [45] pkgconfig_2.0.3    htmltools_0.5.9</span></span></code></pre>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

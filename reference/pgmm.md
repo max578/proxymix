@@ -48,6 +48,7 @@ A numeric vector the length of the first argument.
 Other ops:
 [`dgmm()`](https://max578.github.io/proxymix/reference/dgmm.md),
 [`gmm_canonicalise()`](https://max578.github.io/proxymix/reference/gmm_canonicalise.md),
+[`gmm_cf()`](https://max578.github.io/proxymix/reference/gmm_cf.md),
 [`gmm_conditionalise()`](https://max578.github.io/proxymix/reference/gmm_conditionalise.md),
 [`gmm_divergence()`](https://max578.github.io/proxymix/reference/gmm_divergence.md),
 [`gmm_kld()`](https://max578.github.io/proxymix/reference/gmm_kld.md),

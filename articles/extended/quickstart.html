@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../../index.html">proxymix</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.16.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.17.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,6 +40,7 @@
     <li><a class="dropdown-item" href="../../articles/density_shapes.html">How well a mixture proxies four awkward shapes</a></li>
     <li><a class="dropdown-item" href="../../articles/operator_calculus.html">The closed-form operator calculus on a mixture</a></li>
     <li><a class="dropdown-item" href="../../articles/from_kde.html">Compressing a kernel density estimate into a mixture</a></li>
+    <li><a class="dropdown-item" href="../../articles/cf_targets.html">Fitting a mixture to a characteristic function</a></li>
     <li><a class="dropdown-item" href="../../articles/many_methods.html">One mixture, many methods</a></li>
     <li><a class="dropdown-item" href="../../articles/entropy.html">Reading the entropy of a fitted mixture</a></li>
     <li><a class="dropdown-item" href="../../articles/calibration.html">Mapping the optima of an objective</a></li>
@@ -69,11 +70,10 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Fitting a proxy to a density you cannot sample</h1>
+      <img src="../../logo.png" class="logo" alt=""><h1>Fitting a proxy to a density you cannot sample</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/HEAD/vignettes/articles/extended/quickstart.Rmd" class="external-link"><code>vignettes/articles/extended/quickstart.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/main/vignettes/articles/extended/quickstart.Rmd" class="external-link"><code>vignettes/articles/extended/quickstart.Rmd</code></a></small>
       <div class="d-none name"><code>quickstart.Rmd</code></div>
     </div>
 
@@ -441,20 +441,20 @@ renders.</p>
 <p>mclust and BayesianTools install from CRAN. cmdstanr is not on CRAN
 and installs from the Stan R-universe repository,
 stan-dev.r-universe.dev. It also needs a CmdStan installation, which
-<code><a href="https://mc-stan.org/cmdstanr/reference/install_cmdstan.html" class="external-link">cmdstanr::install_cmdstan()</a></code> provides:</p>
+<code>cmdstanr::install_cmdstan()</code> provides:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mclust"</span>, <span class="st">"BayesianTools"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"cmdstanr"</span>,</span>
 <span>                 repos <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"https://stan-dev.r-universe.dev"</span>,</span>
 <span>                           <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"repos"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>This chunk is complete and runs as shown, but it took about 15
-minutes on one core (R 4.6.1, Apple silicon); the results below are read
-from its stored output. Changing <code>n_rep &lt;- 200L</code> to
-<code>n_rep &lt;- 10L</code> gives a reduced run of about 44 seconds
+<p>This chunk is complete and runs as shown, but it took about 9 minutes
+on one core (R 4.6.1, Apple silicon); the results below are read from
+its stored output. Changing <code>n_rep &lt;- 200L</code> to
+<code>n_rep &lt;- 10L</code> gives a reduced run of about 28 seconds
 plus the compilation of the Stan program.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/max578/proxymix" class="external-link">proxymix</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mc-stan.org/cmdstanr/" class="external-link">cmdstanr</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">cmdstanr</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mclust-org.github.io/mclust/" class="external-link">mclust</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/florianhartig/BayesianTools" class="external-link">BayesianTools</a></span><span class="op">)</span></span>
 <span></span>
@@ -486,9 +486,9 @@ plus the compilation of the Stan program.</p>
 <span>  <span class="st">"  target += -0.5 * (square(x[1])"</span>,</span>
 <span>  <span class="st">"                    + square(x[2] - 0.5 * (square(x[1]) - 1)));"</span>,</span>
 <span>  <span class="st">"}"</span><span class="op">)</span>, <span class="va">stan_file</span><span class="op">)</span></span>
-<span><span class="va">banana_stan</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://mc-stan.org/cmdstanr/reference/cmdstan_model.html" class="external-link">cmdstan_model</a></span><span class="op">(</span><span class="va">stan_file</span><span class="op">)</span></span>
+<span><span class="va">banana_stan</span> <span class="op">&lt;-</span> <span class="fu">cmdstan_model</span><span class="op">(</span><span class="va">stan_file</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">box</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/BayesianTools/man/createBayesianSetup.html" class="external-link">createBayesianSetup</a></span><span class="op">(</span>likelihood <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="va">tgt</span><span class="op">@</span><span class="va">log_density</span><span class="op">(</span><span class="va">x</span><span class="op">)</span>,</span>
+<span><span class="va">box</span> <span class="op">&lt;-</span> <span class="fu">createBayesianSetup</span><span class="op">(</span>likelihood <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="va">tgt</span><span class="op">@</span><span class="va">log_density</span><span class="op">(</span><span class="va">x</span><span class="op">)</span>,</span>
 <span>                           lower <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">6</span>, <span class="op">-</span><span class="fl">6</span><span class="op">)</span>, upper <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">6</span>, <span class="fl">14</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># values set by the user in this code, other than seeds</span></span>
@@ -510,7 +510,7 @@ plus the compilation of the Stan program.</p>
 <span>  <span class="va">la</span> <span class="op">&lt;-</span> <span class="fu">timed</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/optim.html" class="external-link">optim</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">-</span><span class="va">tgt</span><span class="op">@</span><span class="va">log_density</span><span class="op">(</span><span class="va">x</span><span class="op">)</span>,</span>
 <span>                    method <span class="op">=</span> <span class="st">"BFGS"</span>, hessian <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="va">la_mean</span> <span class="op">&lt;-</span> <span class="va">la</span><span class="op">$</span><span class="va">value</span><span class="op">$</span><span class="va">par</span></span>
-<span>  <span class="va">la_cov</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/solve-methods.html" class="external-link">solve</a></span><span class="op">(</span><span class="va">la</span><span class="op">$</span><span class="va">value</span><span class="op">$</span><span class="va">hessian</span><span class="op">)</span></span>
+<span>  <span class="va">la_cov</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/solve.html" class="external-link">solve</a></span><span class="op">(</span><span class="va">la</span><span class="op">$</span><span class="va">value</span><span class="op">$</span><span class="va">hessian</span><span class="op">)</span></span>
 <span></span>
 <span>  <span class="va">nuts</span> <span class="op">&lt;-</span> <span class="fu">timed</span><span class="op">(</span><span class="va">banana_stan</span><span class="op">$</span><span class="fu">sample</span><span class="op">(</span>seed <span class="op">=</span> <span class="va">r</span>, refresh <span class="op">=</span> <span class="fl">0L</span>,</span>
 <span>                                   show_messages <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
@@ -521,9 +521,9 @@ plus the compilation of the Stan program.</p>
 <span>  <span class="va">mc</span> <span class="op">&lt;-</span> <span class="fu">timed</span><span class="op">(</span><span class="fu"><a href="https://mclust-org.github.io/mclust/reference/Mclust.html" class="external-link">Mclust</a></span><span class="op">(</span><span class="va">draws</span>, G <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">6</span>, modelNames <span class="op">=</span> <span class="st">"VVV"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="va">mc_par</span> <span class="op">&lt;-</span> <span class="va">mc</span><span class="op">$</span><span class="va">value</span><span class="op">$</span><span class="va">parameters</span></span>
 <span></span>
-<span>  <span class="va">de</span> <span class="op">&lt;-</span> <span class="fu">timed</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/BayesianTools/man/runMCMC.html" class="external-link">runMCMC</a></span><span class="op">(</span><span class="va">box</span>, sampler <span class="op">=</span> <span class="st">"DEzs"</span>,</span>
+<span>  <span class="va">de</span> <span class="op">&lt;-</span> <span class="fu">timed</span><span class="op">(</span><span class="fu">runMCMC</span><span class="op">(</span><span class="va">box</span>, sampler <span class="op">=</span> <span class="st">"DEzs"</span>,</span>
 <span>                      settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>message <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="va">de_draws</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/BayesianTools/man/getSample.html" class="external-link">getSample</a></span><span class="op">(</span><span class="va">de</span><span class="op">$</span><span class="va">value</span>, start <span class="op">=</span> <span class="fl">1000L</span><span class="op">)</span></span>
+<span>  <span class="va">de_draws</span> <span class="op">&lt;-</span> <span class="fu">getSample</span><span class="op">(</span><span class="va">de</span><span class="op">$</span><span class="va">value</span>, start <span class="op">=</span> <span class="fl">1000L</span><span class="op">)</span></span>
 <span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>    rep <span class="op">=</span> <span class="va">r</span>,</span>
@@ -599,7 +599,7 @@ DEzs prior bounds and burn-in.</caption>
 <td align="right">0.0081 (0.0031)</td>
 <td align="right">0.0004</td>
 <td align="right">0.0035</td>
-<td align="right">0.70</td>
+<td align="right">0.41</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
@@ -615,7 +615,7 @@ DEzs prior bounds and burn-in.</caption>
 <td align="right">–</td>
 <td align="right">-0.0001</td>
 <td align="right">0.0046</td>
-<td align="right">1.04</td>
+<td align="right">0.74</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
@@ -623,7 +623,7 @@ DEzs prior bounds and burn-in.</caption>
 <td align="right">0.0139 (0.0046)</td>
 <td align="right">-0.0003</td>
 <td align="right">0.0047</td>
-<td align="right">2.70</td>
+<td align="right">1.82</td>
 <td align="right">2</td>
 </tr>
 <tr class="odd">
@@ -631,7 +631,7 @@ DEzs prior bounds and burn-in.</caption>
 <td align="right">–</td>
 <td align="right">0.0002</td>
 <td align="right">0.0055</td>
-<td align="right">0.53</td>
+<td align="right">0.31</td>
 <td align="right">3</td>
 </tr>
 </tbody>
@@ -661,8 +661,8 @@ are those of the standard normal that is its exact marginal. cmdstanr
 reported divergent transitions in 135 of the 200 NUTS runs, at most 15
 of the 4000 transitions in any one run, as a printed message rather than
 an R warning, and the draws were kept as they were. A proxymix fit took
-a median of 0.70 seconds, a NUTS run 1.04, the two-stage mixture 2.70
-and DEzs 0.53; the machine was running other jobs during the run, so
+a median of 0.41 seconds, a NUTS run 0.74, the two-stage mixture 1.82
+and DEzs 0.31; the machine was running other jobs during the run, so
 these times compare with each other and not with an idle core. The
 proxymix route set no values beyond the target; the Laplace route needed
 a starting point and an optimiser, NUTS needed the target rewritten as a
@@ -743,8 +743,8 @@ package and the shipped target.</p>
 <p>In the simulation each replicate starts with <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code>
 on its own index, which the same index also passes to
 <code><a href="../../reference/select_N.html">select_N()</a></code> and to the Stan sampler. The stored simulation
-results come from the code shown, run on 27 September 2026 with R 4.6.1,
-proxymix 0.16.0, cmdstanr 0.9.0 over CmdStan 2.38.0, mclust 6.1.3 and
+results come from the code shown, run on 21 October 2026 with R 4.6.1,
+proxymix 0.17.0, cmdstanr 0.9.0 over CmdStan 2.38.0, mclust 6.1.3 and
 BayesianTools 0.1.9, and the run raised 0 R warnings.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">old_opt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>width <span class="op">=</span> <span class="fl">72L</span><span class="op">)</span></span>
@@ -756,46 +756,49 @@ BayesianTools 0.1.9, and the run raised 0 R warnings.</p>
 <span>                         <span class="va">si_vec</span><span class="op">[</span><span class="va">long_vec</span><span class="op">]</span>, perl <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="va">si_vec</span><span class="op">)</span></span>
 <span><span class="co">#&gt; R version 4.6.1 (2026-06-24)</span></span>
-<span><span class="co">#&gt; Platform: aarch64-apple-darwin23</span></span>
-<span><span class="co">#&gt; Running under: macOS Tahoe 26.6.2</span></span>
+<span><span class="co">#&gt; Platform: x86_64-pc-linux-gnu</span></span>
+<span><span class="co">#&gt; Running under: Ubuntu 24.04.5 LTS</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Matrix products: default</span></span>
-<span><span class="co">#&gt; BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/</span></span>
-<span><span class="co">#&gt;         libRblas.0.dylib</span></span>
-<span><span class="co">#&gt; LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/</span></span>
-<span><span class="co">#&gt;         libRlapack.dylib;  LAPACK version 3.12.1</span></span>
+<span><span class="co">#&gt; BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3</span></span>
+<span><span class="co">#&gt; LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/</span></span>
+<span><span class="co">#&gt;         libopenblasp-r0.3.26.so;  LAPACK version 3.12.0</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; locale:</span></span>
-<span><span class="co">#&gt; [1] en_AU.UTF-8/en_AU.UTF-8/en_AU.UTF-8/C/en_AU.UTF-8/en_AU.UTF-8</span></span>
+<span><span class="co">#&gt;  [1] LC_CTYPE=C.UTF-8       LC_NUMERIC=C</span></span>
+<span><span class="co">#&gt;  [3] LC_TIME=C.UTF-8        LC_COLLATE=C.UTF-8</span></span>
+<span><span class="co">#&gt;  [5] LC_MONETARY=C.UTF-8    LC_MESSAGES=C.UTF-8</span></span>
+<span><span class="co">#&gt;  [7] LC_PAPER=C.UTF-8       LC_NAME=C</span></span>
+<span><span class="co">#&gt;  [9] LC_ADDRESS=C           LC_TELEPHONE=C</span></span>
+<span><span class="co">#&gt; [11] LC_MEASUREMENT=C.UTF-8 LC_IDENTIFICATION=C</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; time zone: Australia/Adelaide</span></span>
-<span><span class="co">#&gt; tzcode source: internal</span></span>
+<span><span class="co">#&gt; time zone: UTC</span></span>
+<span><span class="co">#&gt; tzcode source: system (glibc)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; attached base packages:</span></span>
 <span><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods</span></span>
 <span><span class="co">#&gt; [7] base</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; other attached packages:</span></span>
-<span><span class="co">#&gt; [1] proxymix_0.16.0</span></span>
+<span><span class="co">#&gt; [1] proxymix_0.17.0</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
 <span><span class="co">#&gt;  [1] mvnfast_0.2.8      gtable_0.3.6       jsonlite_2.0.0</span></span>
-<span><span class="co">#&gt;  [4] dplyr_1.2.1        compiler_4.6.1     Rcpp_1.1.2</span></span>
-<span><span class="co">#&gt;  [7] tidyselect_1.2.1   dichromat_2.0-1    jquerylib_0.1.4</span></span>
-<span><span class="co">#&gt; [10] systemfonts_1.3.2  scales_1.4.0       textshaping_1.0.5</span></span>
-<span><span class="co">#&gt; [13] yaml_2.3.12        fastmap_1.2.0      ggplot2_4.0.3</span></span>
-<span><span class="co">#&gt; [16] R6_2.6.1           labeling_0.4.3     generics_0.1.4</span></span>
-<span><span class="co">#&gt; [19] isoband_0.3.0      knitr_1.51         htmlwidgets_1.6.4</span></span>
-<span><span class="co">#&gt; [22] tibble_3.3.1       desc_1.4.3         bslib_0.12.0</span></span>
-<span><span class="co">#&gt; [25] pillar_1.11.1      RColorBrewer_1.1-3 rlang_1.3.0</span></span>
-<span><span class="co">#&gt; [28] cachem_1.1.0       xfun_0.60          fs_2.1.0</span></span>
-<span><span class="co">#&gt; [31] sass_0.4.10        S7_0.2.2           otel_0.2.0</span></span>
-<span><span class="co">#&gt; [34] viridisLite_0.4.3  cli_3.6.6          pkgdown_2.2.1</span></span>
-<span><span class="co">#&gt; [37] withr_3.0.3        magrittr_2.0.5     digest_0.6.39</span></span>
-<span><span class="co">#&gt; [40] grid_4.6.1         lifecycle_1.0.5    vctrs_0.7.3</span></span>
-<span><span class="co">#&gt; [43] evaluate_1.0.5     glue_1.8.1         farver_2.1.2</span></span>
-<span><span class="co">#&gt; [46] ragg_1.5.2         rmarkdown_2.32     tools_4.6.1</span></span>
-<span><span class="co">#&gt; [49] pkgconfig_2.0.3    htmltools_0.5.9</span></span></code></pre></div>
+<span><span class="co">#&gt;  [4] dplyr_1.2.1        compiler_4.6.1     tidyselect_1.2.1</span></span>
+<span><span class="co">#&gt;  [7] Rcpp_1.1.2         jquerylib_0.1.4    systemfonts_1.3.2</span></span>
+<span><span class="co">#&gt; [10] scales_1.4.0       textshaping_1.0.5  yaml_2.3.12</span></span>
+<span><span class="co">#&gt; [13] fastmap_1.2.0      ggplot2_4.0.3      R6_2.6.1</span></span>
+<span><span class="co">#&gt; [16] labeling_0.4.3     generics_0.1.4     isoband_0.3.0</span></span>
+<span><span class="co">#&gt; [19] knitr_1.52         tibble_3.3.1       desc_1.4.3</span></span>
+<span><span class="co">#&gt; [22] bslib_0.12.0       pillar_1.11.1      RColorBrewer_1.1-3</span></span>
+<span><span class="co">#&gt; [25] rlang_1.3.0        cachem_1.1.0       xfun_0.62</span></span>
+<span><span class="co">#&gt; [28] fs_2.1.0           sass_0.4.10        S7_0.2.2</span></span>
+<span><span class="co">#&gt; [31] otel_0.2.0         viridisLite_0.4.3  cli_3.6.6</span></span>
+<span><span class="co">#&gt; [34] pkgdown_2.2.1      withr_3.0.3        magrittr_2.0.5</span></span>
+<span><span class="co">#&gt; [37] digest_0.6.39      grid_4.6.1         lifecycle_1.0.5</span></span>
+<span><span class="co">#&gt; [40] vctrs_0.7.3        evaluate_1.0.5     glue_1.8.1</span></span>
+<span><span class="co">#&gt; [43] farver_2.1.2       ragg_1.5.2         rmarkdown_2.32</span></span>
+<span><span class="co">#&gt; [46] tools_4.6.1        pkgconfig_2.0.3    htmltools_0.5.9</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

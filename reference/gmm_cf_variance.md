@@ -1,10 +1,12 @@
-# Refused: the variance of an individual counterfactual law
+# The counterfactual variance
 
-The per-unit counterfactual *variance* is not identified from the joint
-density: it depends on the cross-world coupling of the structural
-residuals under the factual and counterfactual treatments, which no
-goodness-of-fit can certify. This accessor therefore raises an error
-rather than return the (misleading) spread of the abduction atoms.
+Returns the variance of a
+[gmm_counterfactual_law](https://max578.github.io/proxymix/reference/gmm_counterfactual_law.md),
+the weighted spread of its atoms around the counterfactual mean. Like
+the law itself, it assumes the unit keeps its structural residual under
+the intervention. Under that assumption the only uncertainty left is
+which component generated the unit; if the residual were redrawn, the
+same mixture would give a different variance.
 
 ## Usage
 
@@ -16,12 +18,11 @@ gmm_cf_variance(x)
 
 - x:
 
-  A
-  [gmm_counterfactual_law](https://max578.github.io/proxymix/reference/gmm_counterfactual_law.md).
+  A `gmm_counterfactual_law`.
 
 ## Value
 
-Never returns; always raises a `proxymix_not_identified` error.
+Numeric scalar. Zero when the mixture has one component.
 
 ## See also
 
@@ -47,14 +48,11 @@ Other decision:
 ## Examples
 
 ``` r
-g <- gmm(weights = 1, means = list(c(0, 0, 0)),
-         covariances = list(diag(3)))
-cf <- gmm_counterfactual(g, evidence = c(1, 0, 0.2),
+g <- gmm(weights = c(0.6, 0.4),
+         means = list(c(0, 0, 0), c(2, 1, 1)),
+         covariances = list(diag(3), diag(3)))
+cf <- gmm_counterfactual(g, evidence = c(1.2, 0, 0.5),
                          do = c(NA, 1, NA), query = 1L)
-try(gmm_cf_variance(cf))
-#> Error in gmm_cf_variance(cf) : 
-#>   The individual counterfactual variance is not identified.
-#> ℹ It depends on the unidentified cross-world coupling of the structural
-#>   residuals.
-#> ℹ Only the counterfactual mean is identified; see `gmm_cf_mean()`.
+gmm_cf_variance(cf)
+#> [1] 0
 ```

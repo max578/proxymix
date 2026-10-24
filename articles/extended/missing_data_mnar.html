@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../../index.html">proxymix</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.16.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.17.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,6 +40,7 @@
     <li><a class="dropdown-item" href="../../articles/density_shapes.html">How well a mixture proxies four awkward shapes</a></li>
     <li><a class="dropdown-item" href="../../articles/operator_calculus.html">The closed-form operator calculus on a mixture</a></li>
     <li><a class="dropdown-item" href="../../articles/from_kde.html">Compressing a kernel density estimate into a mixture</a></li>
+    <li><a class="dropdown-item" href="../../articles/cf_targets.html">Fitting a mixture to a characteristic function</a></li>
     <li><a class="dropdown-item" href="../../articles/many_methods.html">One mixture, many methods</a></li>
     <li><a class="dropdown-item" href="../../articles/entropy.html">Reading the entropy of a fitted mixture</a></li>
     <li><a class="dropdown-item" href="../../articles/calibration.html">Mapping the optima of an objective</a></li>
@@ -69,11 +70,10 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Missing data that depends on the missing value</h1>
+      <img src="../../logo.png" class="logo" alt=""><h1>Missing data that depends on the missing value</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/HEAD/vignettes/articles/extended/missing_data_mnar.Rmd" class="external-link"><code>vignettes/articles/extended/missing_data_mnar.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/main/vignettes/articles/extended/missing_data_mnar.Rmd" class="external-link"><code>vignettes/articles/extended/missing_data_mnar.Rmd</code></a></small>
       <div class="d-none name"><code>missing_data_mnar.Rmd</code></div>
     </div>
 
@@ -497,13 +497,16 @@ simulation.</p>
 <div class="section level2">
 <h2 id="numerical-illustration">Numerical illustration<a class="anchor" aria-label="anchor" href="#numerical-illustration"></a>
 </h2>
+<p>mice, Amelia, AER, survival, sampleSelection or the penguins data (R
+4.5.0 or later) is not available on this build, so the real-data
+illustration is skipped.</p>
 <div class="section level3">
 <h3 id="a-censored-outcome-the-affairs-data-with-three-estimators">A censored outcome: the Affairs data with three estimators<a class="anchor" aria-label="anchor" href="#a-censored-outcome-the-affairs-data-with-three-estimators"></a>
 </h3>
 <p>The censored case has an established estimator, the Tobit regression
 of Tobin (1958), which treats an outcome recorded as zero as a latent
 value at or below zero and maximises the likelihood of a linear-Gaussian
-model for the latent value. <code><a href="https://rdrr.io/pkg/AER/man/tobit.html" class="external-link">tobit()</a></code> in AER (Kleiber and
+model for the latent value. <code>tobit()</code> in AER (Kleiber and
 Zeileis, 2008) and <code><a href="https://rdrr.io/pkg/survival/man/survreg.html" class="external-link">survreg()</a></code> in survival (Therneau and
 Grambsch, 2000) both fit it, the first by calling the second. The
 proxymix route reaches the same model from the other side: the zeros are
@@ -530,10 +533,8 @@ occupation and a self-rating of the marriage:</p>
 <span>              <span class="st">"occupation"</span>, <span class="st">"rating"</span><span class="op">)</span></span>
 <span><span class="va">aff</span> <span class="op">&lt;-</span> <span class="va">Affairs</span><span class="op">[</span>, <span class="va">cols_aff</span><span class="op">]</span></span>
 <span><span class="va">f_aff</span> <span class="op">&lt;-</span> <span class="va">affairs</span> <span class="op">~</span> <span class="va">age</span> <span class="op">+</span> <span class="va">yearsmarried</span> <span class="op">+</span> <span class="va">religiousness</span> <span class="op">+</span> <span class="va">occupation</span> <span class="op">+</span> <span class="va">rating</span></span></code></pre></div>
-<p>Of the 601 respondents, 451 reported no affairs, which the Tobit
-model reads as a latent value at or below zero.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit_tobit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/AER/man/tobit.html" class="external-link">tobit</a></span><span class="op">(</span><span class="va">f_aff</span>, data <span class="op">=</span> <span class="va">aff</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">fit_tobit</span> <span class="op">&lt;-</span> <span class="fu">tobit</span><span class="op">(</span><span class="va">f_aff</span>, data <span class="op">=</span> <span class="va">aff</span><span class="op">)</span></span>
 <span><span class="va">fit_survreg</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survival/man/survreg.html" class="external-link">survreg</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">affairs</span>, <span class="va">affairs</span> <span class="op">&gt;</span> <span class="fl">0</span>, type <span class="op">=</span> <span class="st">"left"</span><span class="op">)</span> <span class="op">~</span> <span class="va">age</span> <span class="op">+</span> <span class="va">yearsmarried</span> <span class="op">+</span></span>
 <span>    <span class="va">religiousness</span> <span class="op">+</span> <span class="va">occupation</span> <span class="op">+</span> <span class="va">rating</span>,</span>
@@ -554,88 +555,6 @@ model reads as a latent value at or below zero.</p>
 <span><span class="op">}</span></span>
 <span><span class="va">pooled_aff</span> <span class="op">&lt;-</span> <span class="fu">pool_aff</span><span class="op">(</span><span class="va">imp_aff</span><span class="op">)</span></span>
 <span><span class="va">pooled_aff_bic</span> <span class="op">&lt;-</span> <span class="fu">pool_aff</span><span class="op">(</span><span class="va">imp_aff_bic</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<caption>Coefficients of the latent regression of affairs on five
-covariates, with standard errors in brackets, from the Tobit likelihood
-in two packages and from proxymix’s truncated imputations pooled by
-Rubin’s rules, with the component count fixed at one and selected by
-BIC.</caption>
-<colgroup>
-<col width="17%">
-<col width="19%">
-<col width="21%">
-<col width="20%">
-<col width="20%">
-</colgroup>
-<thead><tr class="header">
-<th align="left">Coefficient</th>
-<th align="right">AER tobit</th>
-<th align="right">survival survreg</th>
-<th align="right">proxymix, N = 1</th>
-<th align="right">proxymix, N = 6</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">intercept</td>
-<td align="right">8.174 (2.741)</td>
-<td align="right">8.174 (2.741)</td>
-<td align="right">8.522 (2.920)</td>
-<td align="right">8.927 (3.626)</td>
-</tr>
-<tr class="even">
-<td align="left">age</td>
-<td align="right">-0.179 (0.079)</td>
-<td align="right">-0.179 (0.079)</td>
-<td align="right">-0.182 (0.082)</td>
-<td align="right">-0.187 (0.088)</td>
-</tr>
-<tr class="odd">
-<td align="left">years married</td>
-<td align="right">0.554 (0.135)</td>
-<td align="right">0.554 (0.135)</td>
-<td align="right">0.554 (0.142)</td>
-<td align="right">0.349 (0.183)</td>
-</tr>
-<tr class="even">
-<td align="left">religiousness</td>
-<td align="right">-1.686 (0.404)</td>
-<td align="right">-1.686 (0.404)</td>
-<td align="right">-1.687 (0.391)</td>
-<td align="right">-1.208 (0.425)</td>
-</tr>
-<tr class="odd">
-<td align="left">occupation</td>
-<td align="right">0.326 (0.254)</td>
-<td align="right">0.326 (0.254)</td>
-<td align="right">0.252 (0.264)</td>
-<td align="right">0.285 (0.273)</td>
-</tr>
-<tr class="even">
-<td align="left">rating</td>
-<td align="right">-2.285 (0.408)</td>
-<td align="right">-2.285 (0.408)</td>
-<td align="right">-2.277 (0.398)</td>
-<td align="right">-1.889 (0.481)</td>
-</tr>
-</tbody>
-</table>
-<p>The two Tobit fits are the same fit, as the identical columns show.
-With a single component, proxymix’s model of the latent value given the
-covariates is the same linear-Gaussian model, estimated by
-expectation-maximisation over the truncated conditional rather than by
-direct maximisation, and its pooled coefficients fall within 0.3 Tobit
-standard errors of the Tobit estimates. Left to choose its component
-count, proxymix selects 6 components for the joint distribution of the
-six columns, all of them coarsely coded and three of them integer
-scores, and that fit had not converged after 100 iterations, the default
-limit. The regression on its completions is then the linear projection
-of a conditional that is no longer linear. Against the Tobit estimates,
-the coefficients on years married, religiousness, occupation and rating
-move towards zero, the largest in Tobit standard errors being on years
-married, from 0.554 to 0.349, or 1.53 standard errors. On this data the
-Tobit model is the natural reading, and the single component is the
-like-for-like comparison; the simulation below scores it against the
-truth.</p>
 </div>
 <div class="section level3">
 <h3 id="value-dependent-deletion-the-palmer-penguins-data">Value-dependent deletion: the Palmer penguins data<a class="anchor" aria-label="anchor" href="#value-dependent-deletion-the-palmer-penguins-data"></a>
@@ -674,8 +593,6 @@ kilogram, and the deleted values stay aside for scoring.</p>
 <span><span class="va">peng_holes</span> <span class="op">&lt;-</span> <span class="va">peng</span></span>
 <span><span class="va">peng_holes</span><span class="op">$</span><span class="va">body_mass</span><span class="op">[</span><span class="va">gone</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">NA</span></span>
 <span><span class="va">mass_truth</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">peng</span><span class="op">$</span><span class="va">body_mass</span><span class="op">)</span></span></code></pre></div>
-<p>That leaves 342 birds, of which 145 lose their body mass. The mean of
-the retained masses is 3.871 kg against 4.202 kg over all the birds.</p>
 <p>The proxymix sweep covers five slopes from 0 to 3 per kilogram, which
 bracket the generating slope, at 20 completions each. The mice sweep
 covers five shifts from 0 to 0.6 kg, three quarters of a standard
@@ -703,13 +620,13 @@ that the shift acts on a model-based draw:</p>
 <span><span class="va">sweep_mice</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">delta_peng</span>, <span class="va">mice_delta</span>, <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">3L</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1L</span><span class="op">)</span></span>
-<span><span class="va">imp_amelia</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/Amelia/man/amelia.html" class="external-link">amelia</a></span><span class="op">(</span><span class="va">peng_holes</span>, m <span class="op">=</span> <span class="fl">20L</span>, p2s <span class="op">=</span> <span class="fl">0L</span><span class="op">)</span></span>
+<span><span class="va">imp_amelia</span> <span class="op">&lt;-</span> <span class="fu">amelia</span><span class="op">(</span><span class="va">peng_holes</span>, m <span class="op">=</span> <span class="fl">20L</span>, p2s <span class="op">=</span> <span class="fl">0L</span><span class="op">)</span></span>
 <span><span class="va">mean_amelia</span> <span class="op">&lt;-</span> <span class="fu">pool_mean</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">imp_amelia</span><span class="op">$</span><span class="va">imputations</span>,</span>
 <span>                                <span class="kw">function</span><span class="op">(</span><span class="va">d</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">body_mass</span> <span class="op">~</span> <span class="fl">1</span>, data <span class="op">=</span> <span class="va">d</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">peng_sel</span> <span class="op">&lt;-</span> <span class="va">peng_holes</span></span>
 <span><span class="va">peng_sel</span><span class="op">$</span><span class="va">seen</span> <span class="op">&lt;-</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">peng_sel</span><span class="op">$</span><span class="va">body_mass</span><span class="op">)</span></span>
-<span><span class="va">fit_heckit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/sampleSelection/man/selection.html" class="external-link">heckit</a></span><span class="op">(</span><span class="va">seen</span> <span class="op">~</span> <span class="va">bill_len</span> <span class="op">+</span> <span class="va">bill_dep</span> <span class="op">+</span> <span class="va">flipper_len</span>,</span>
+<span><span class="va">fit_heckit</span> <span class="op">&lt;-</span> <span class="fu">heckit</span><span class="op">(</span><span class="va">seen</span> <span class="op">~</span> <span class="va">bill_len</span> <span class="op">+</span> <span class="va">bill_dep</span> <span class="op">+</span> <span class="va">flipper_len</span>,</span>
 <span>                     <span class="va">body_mass</span> <span class="op">~</span> <span class="va">bill_len</span> <span class="op">+</span> <span class="va">bill_dep</span> <span class="op">+</span> <span class="va">flipper_len</span>,</span>
 <span>                     data <span class="op">=</span> <span class="va">peng_sel</span><span class="op">)</span></span>
 <span><span class="co"># the mean of the outcome equation over every bird, delta-method interval</span></span>
@@ -724,153 +641,6 @@ that the shift acts on a model-based draw:</p>
 <span>    conf.high <span class="op">=</span> <span class="va">est</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">qnorm</a></span><span class="op">(</span><span class="fl">0.975</span><span class="op">)</span> <span class="op">*</span> <span class="va">se</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span><span class="va">mean_heckit</span> <span class="op">&lt;-</span> <span class="fu">heckit_mean</span><span class="op">(</span><span class="va">fit_heckit</span>, <span class="va">peng_sel</span>, <span class="va">cols</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
-<p>Deleting the heavier birds pulls the mean of the available cases down
-by 0.331 kg. The proxymix curve at slope 0 and Amelia both impute under
-missing at random, and both recover most of that from the three observed
-measurements, which carry the species structure: their errors are -0.058
-and -0.097 kg. At the generating slope of 1.5 the proxymix estimate is
--0.012 kg from the truth. The mice curve starts lower, at -0.109 kg, and
-crosses the truth between shifts of 0.15 and 0.3 kg. Both curves reach
-the truth. Every mice shift uses the same imputation model, so the
-observed data fit equally well at every shift. The proxymix fit
-converged at every slope, and its log-likelihood is highest at slope
-1.5. That lean comes from the assumed mixture shape of the four
-measurements, not from the deletion mechanism. The Heckman estimator’s
-selection equation has no variable that predicts deletion but not body
-mass, so it is identified by the shape of the inverse Mills ratio alone.
-Here that fit breaks down. Its mean is 1.78 kg, with an interval from
-1.48 to 2.09 kg, while the lightest bird weighs 2.70 kg. Its estimated
-correlation between the selection and outcome errors is 1.38, outside
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">[</mo><mi>−</mi><mn>1</mn><mo>,</mo><mn>1</mn><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">[-1, 1]</annotation></semantics></math>,
-and its coefficient on flipper length is -0.042 kg per millimetre
-against 0.050 in the complete data. This is one deletion of one dataset,
-so the simulation repeats it.</p>
-<table class="table">
-<caption>The mean body mass of 342 penguins with 145 masses deleted with
-a probability that increases with the mass, logistic in the mass minus
-4.5 kg, from each estimator, with a 95% interval, its error against the
-mean of the complete data before deletion, and for proxymix the
-observed-data log-likelihood of the selection model. Value is the
-sensitivity parameter, and a dash marks an estimator that has none.
-heckit is the Heckman two-step estimator from sampleSelection.</caption>
-<thead><tr class="header">
-<th align="left">Method</th>
-<th align="right">Value</th>
-<th align="right">Mean body mass, kg</th>
-<th align="right">Error</th>
-<th align="right">Log-likelihood</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">complete data</td>
-<td align="right">–</td>
-<td align="right">4.202 (4.116, 4.287)</td>
-<td align="right">0.000</td>
-<td align="right">–</td>
-</tr>
-<tr class="even">
-<td align="left">available cases</td>
-<td align="right">–</td>
-<td align="right">3.871 (3.781, 3.961)</td>
-<td align="right">-0.331</td>
-<td align="right">–</td>
-</tr>
-<tr class="odd">
-<td align="left">proxymix, slope</td>
-<td align="right">0.00</td>
-<td align="right">4.144 (4.057, 4.230)</td>
-<td align="right">-0.058</td>
-<td align="right">-2979.0</td>
-</tr>
-<tr class="even">
-<td align="left">proxymix, slope</td>
-<td align="right">0.75</td>
-<td align="right">4.177 (4.081, 4.272)</td>
-<td align="right">-0.025</td>
-<td align="right">-2950.6</td>
-</tr>
-<tr class="odd">
-<td align="left">proxymix, slope</td>
-<td align="right">1.50</td>
-<td align="right">4.190 (4.090, 4.289)</td>
-<td align="right">-0.012</td>
-<td align="right">-2943.9</td>
-</tr>
-<tr class="even">
-<td align="left">proxymix, slope</td>
-<td align="right">2.25</td>
-<td align="right">4.196 (4.103, 4.288)</td>
-<td align="right">-0.006</td>
-<td align="right">-2950.8</td>
-</tr>
-<tr class="odd">
-<td align="left">proxymix, slope</td>
-<td align="right">3.00</td>
-<td align="right">4.225 (4.127, 4.324)</td>
-<td align="right">0.024</td>
-<td align="right">-2964.5</td>
-</tr>
-<tr class="even">
-<td align="left">mice, shift, kg</td>
-<td align="right">0.00</td>
-<td align="right">4.093 (4.010, 4.175)</td>
-<td align="right">-0.109</td>
-<td align="right">–</td>
-</tr>
-<tr class="odd">
-<td align="left">mice, shift, kg</td>
-<td align="right">0.15</td>
-<td align="right">4.156 (4.071, 4.242)</td>
-<td align="right">-0.046</td>
-<td align="right">–</td>
-</tr>
-<tr class="even">
-<td align="left">mice, shift, kg</td>
-<td align="right">0.30</td>
-<td align="right">4.220 (4.131, 4.309)</td>
-<td align="right">0.018</td>
-<td align="right">–</td>
-</tr>
-<tr class="odd">
-<td align="left">mice, shift, kg</td>
-<td align="right">0.45</td>
-<td align="right">4.283 (4.190, 4.376)</td>
-<td align="right">0.082</td>
-<td align="right">–</td>
-</tr>
-<tr class="even">
-<td align="left">mice, shift, kg</td>
-<td align="right">0.60</td>
-<td align="right">4.347 (4.249, 4.445)</td>
-<td align="right">0.145</td>
-<td align="right">–</td>
-</tr>
-<tr class="odd">
-<td align="left">Amelia</td>
-<td align="right">–</td>
-<td align="right">4.104 (4.014, 4.195)</td>
-<td align="right">-0.097</td>
-<td align="right">–</td>
-</tr>
-<tr class="even">
-<td align="left">heckit</td>
-<td align="right">–</td>
-<td align="right">1.784 (1.479, 2.088)</td>
-<td align="right">-2.418</td>
-<td align="right">–</td>
-</tr>
-</tbody>
-</table>
-<div class="figure">
-<img src="missing_data_mnar_files/figure-html/fig-penguins-1.png" class="r-plt" alt="Two panels. Left, the proxymix pooled mean of body mass against the assumed selection slope from 0 to 3, with a shaded band. Right, the mice delta-adjusted mean against the shift from 0 to 0.6 kg, with a shaded band. A dashed horizontal line marks the complete-data mean in both panels." width="100%"><p class="caption">
-The two sensitivity curves for the mean body mass of the penguins,
-proxymix over the assumed selection slope and mice over the shift added
-to each imputed value, with 95% bands and the complete-data mean as a
-dashed line. Each curve crosses the truth somewhere along its grid. The
-observed data inform the proxymix slope only through the assumed mixture
-shape, and do not inform the mice shift.
-</p>
-</div>
 </div>
 <div class="section level3">
 <h3 id="a-simulation-benchmark">A simulation benchmark<a class="anchor" aria-label="anchor" href="#a-simulation-benchmark"></a>
@@ -924,7 +694,7 @@ interval otherwise. The analysis of the complete data, before deletion
 or censoring, is the reference. <code><a href="../../reference/proxy_mnar_sensitivity.html">proxy_mnar_sensitivity()</a></code>
 warns when a fit does not converge, and the stored run raised 0
 warnings, so every sweep fit converged within its 500 iterations. This
-chunk is complete and runs as shown, but it took about 15 minutes on one
+chunk is complete and runs as shown, but it took about 20 minutes on one
 core (R 4.6.1, Apple silicon), so it is not run when the vignette builds
 and the tables below it are read from its stored output. For a quick
 reduced run, change the line <code>n_rep &lt;- 300L</code> to a small
@@ -1008,10 +778,10 @@ number such as <code>n_rep &lt;- 3L</code>.</p>
 <span>            <span class="fu">ci_fits</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">imp</span>, <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">analyses</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="op">}</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="va">out</span><span class="op">[[</span><span class="fl">5L</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu">rows_of</span><span class="op">(</span><span class="st">"mnar"</span>, <span class="st">"mean"</span>, <span class="st">"Amelia"</span>,</span>
-<span>                       <span class="fu">ci_fits</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/Amelia/man/amelia.html" class="external-link">amelia</a></span><span class="op">(</span><span class="va">obs</span>, m <span class="op">=</span> <span class="va">m</span>, p2s <span class="op">=</span> <span class="fl">0L</span><span class="op">)</span><span class="op">$</span><span class="va">imputations</span>,</span>
+<span>                       <span class="fu">ci_fits</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu">amelia</span><span class="op">(</span><span class="va">obs</span>, m <span class="op">=</span> <span class="va">m</span>, p2s <span class="op">=</span> <span class="fl">0L</span><span class="op">)</span><span class="op">$</span><span class="va">imputations</span>,</span>
 <span>                                      <span class="kw">function</span><span class="op">(</span><span class="va">d</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fl">1</span>, data <span class="op">=</span> <span class="va">d</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="va">obs</span><span class="op">$</span><span class="va">seen</span> <span class="op">&lt;-</span> <span class="va">seen</span></span>
-<span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/sampleSelection/man/selection.html" class="external-link">heckit</a></span><span class="op">(</span><span class="va">seen</span> <span class="op">~</span> <span class="va">x1</span>, <span class="va">y</span> <span class="op">~</span> <span class="va">x1</span>, data <span class="op">=</span> <span class="va">obs</span><span class="op">)</span></span>
+<span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">heckit</span><span class="op">(</span><span class="va">seen</span> <span class="op">~</span> <span class="va">x1</span>, <span class="va">y</span> <span class="op">~</span> <span class="va">x1</span>, data <span class="op">=</span> <span class="va">obs</span><span class="op">)</span></span>
 <span>  <span class="va">out</span><span class="op">[[</span><span class="fl">6L</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu">rows_of</span><span class="op">(</span><span class="st">"mnar"</span>, <span class="st">"mean"</span>, <span class="st">"sampleSelection heckit"</span>,</span>
 <span>                       <span class="fu">ci_heckit_mean</span><span class="op">(</span><span class="va">fit</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">obs</span><span class="op">$</span><span class="va">x1</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="va">out</span><span class="op">)</span></span>
@@ -1030,7 +800,7 @@ number such as <code>n_rep &lt;- 3L</code>.</p>
 <span>  <span class="va">cis</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    <span class="st">"complete data"</span> <span class="op">=</span> <span class="fu">ci_fits</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span>, data <span class="op">=</span> <span class="va">full</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>    <span class="st">"zeros at face value"</span> <span class="op">=</span> <span class="fu">ci_fits</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span>, data <span class="op">=</span> <span class="va">obs</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>    <span class="st">"AER tobit"</span> <span class="op">=</span> <span class="fu">ci_wald</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/AER/man/tobit.html" class="external-link">tobit</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span>, data <span class="op">=</span> <span class="va">obs</span><span class="op">)</span>, <span class="fl">2L</span><span class="op">)</span>,</span>
+<span>    <span class="st">"AER tobit"</span> <span class="op">=</span> <span class="fu">ci_wald</span><span class="op">(</span><span class="fu">tobit</span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span>, data <span class="op">=</span> <span class="va">obs</span><span class="op">)</span>, <span class="fl">2L</span><span class="op">)</span>,</span>
 <span>    <span class="st">"survival survreg"</span> <span class="op">=</span> <span class="fu">ci_wald</span><span class="op">(</span></span>
 <span>      <span class="fu"><a href="https://rdrr.io/pkg/survival/man/survreg.html" class="external-link">survreg</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">y</span>, <span class="va">y</span> <span class="op">&gt;</span> <span class="fl">0</span>, type <span class="op">=</span> <span class="st">"left"</span><span class="op">)</span> <span class="op">~</span> <span class="va">x</span>, data <span class="op">=</span> <span class="va">obs</span>,</span>
 <span>              dist <span class="op">=</span> <span class="st">"gaussian"</span><span class="op">)</span>, <span class="fl">2L</span><span class="op">)</span>,</span>
@@ -1372,56 +1142,54 @@ through <code>set.seed(1L)</code> for Amelia; the Affairs fits draw
 nothing beyond proxymix’s seeded completions. In the simulation each
 dataset is generated after <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> with its own index,
 which is also the seed given to each imputer. The stored simulation
-results come from the code shown, run on 26 September 2026 with R 4.6.1,
-proxymix 0.16.0, mice 3.19.0, Amelia 1.8.3, AER 1.2-17, survival 3.8-11
-and sampleSelection 1.2-14, and the run raised 0 warnings.</p>
+results come from the code shown, run on 21 October 2026 with R 4.6.1,
+proxymix 0.17.0, mice 3.19.0, Amelia 1.8.3, AER 1.2.17, survival 3.8.11
+and sampleSelection 1.2.14, and the run raised 0 warnings.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt; R version 4.6.1 (2026-06-24)</span></span>
-<span><span class="co">#&gt; Platform: aarch64-apple-darwin23</span></span>
-<span><span class="co">#&gt; Running under: macOS Tahoe 26.6.2</span></span>
+<span><span class="co">#&gt; Platform: x86_64-pc-linux-gnu</span></span>
+<span><span class="co">#&gt; Running under: Ubuntu 24.04.5 LTS</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Matrix products: default</span></span>
-<span><span class="co">#&gt; BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib </span></span>
-<span><span class="co">#&gt; LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1</span></span>
+<span><span class="co">#&gt; BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 </span></span>
+<span><span class="co">#&gt; LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.26.so;  LAPACK version 3.12.0</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; locale:</span></span>
-<span><span class="co">#&gt; [1] en_AU.UTF-8/en_AU.UTF-8/en_AU.UTF-8/C/en_AU.UTF-8/en_AU.UTF-8</span></span>
+<span><span class="co">#&gt;  [1] LC_CTYPE=C.UTF-8       LC_NUMERIC=C           LC_TIME=C.UTF-8       </span></span>
+<span><span class="co">#&gt;  [4] LC_COLLATE=C.UTF-8     LC_MONETARY=C.UTF-8    LC_MESSAGES=C.UTF-8   </span></span>
+<span><span class="co">#&gt;  [7] LC_PAPER=C.UTF-8       LC_NAME=C              LC_ADDRESS=C          </span></span>
+<span><span class="co">#&gt; [10] LC_TELEPHONE=C         LC_MEASUREMENT=C.UTF-8 LC_IDENTIFICATION=C   </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; time zone: Australia/Adelaide</span></span>
-<span><span class="co">#&gt; tzcode source: internal</span></span>
+<span><span class="co">#&gt; time zone: UTC</span></span>
+<span><span class="co">#&gt; tzcode source: system (glibc)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; attached base packages:</span></span>
 <span><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; other attached packages:</span></span>
-<span><span class="co">#&gt;  [1] sampleSelection_1.2-14 maxLik_1.5-2.2         miscTools_0.6-30      </span></span>
-<span><span class="co">#&gt;  [4] AER_1.2-17             survival_3.8-11        sandwich_3.1-3        </span></span>
-<span><span class="co">#&gt;  [7] lmtest_0.9-40          zoo_1.9-0              car_3.1-5             </span></span>
-<span><span class="co">#&gt; [10] carData_3.0-6          Amelia_1.8.3           Rcpp_1.1.2            </span></span>
-<span><span class="co">#&gt; [13] mice_3.19.0            proxymix_0.16.0       </span></span>
+<span><span class="co">#&gt; [1] proxymix_0.17.0</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
-<span><span class="co">#&gt;  [1] gtable_0.3.6       shape_1.4.6.1      xfun_0.60          bslib_0.12.0      </span></span>
-<span><span class="co">#&gt;  [5] ggplot2_4.0.3      htmlwidgets_1.6.4  lattice_0.23-1     vctrs_0.7.3       </span></span>
-<span><span class="co">#&gt;  [9] tools_4.6.1        Rdpack_2.6.6       generics_0.1.4     stats4_4.6.1      </span></span>
-<span><span class="co">#&gt; [13] tibble_3.3.1       pan_2.0            pkgconfig_2.0.3    jomo_2.7-6        </span></span>
-<span><span class="co">#&gt; [17] Matrix_1.7-6       RColorBrewer_1.1-3 S7_0.2.2           desc_1.4.3        </span></span>
-<span><span class="co">#&gt; [21] lifecycle_1.0.5    compiler_4.6.1     farver_2.1.2       textshaping_1.0.5 </span></span>
-<span><span class="co">#&gt; [25] codetools_0.2-20   systemfit_1.1-30   htmltools_0.5.9    sass_0.4.10       </span></span>
-<span><span class="co">#&gt; [29] yaml_2.3.12        glmnet_5.0         Formula_1.2-6      pillar_1.11.1     </span></span>
-<span><span class="co">#&gt; [33] pkgdown_2.2.1      nloptr_2.2.1       jquerylib_0.1.4    tidyr_1.3.2       </span></span>
-<span><span class="co">#&gt; [37] MASS_7.3-66        cachem_1.1.0       reformulas_0.4.4   iterators_1.0.14  </span></span>
-<span><span class="co">#&gt; [41] abind_1.4-8        rpart_4.1.27       boot_1.3-32        foreach_1.5.2     </span></span>
-<span><span class="co">#&gt; [45] mitml_0.4-5        nlme_3.1-171       tidyselect_1.2.1   digest_0.6.39     </span></span>
-<span><span class="co">#&gt; [49] mvtnorm_1.4-2      dplyr_1.2.1        purrr_1.2.2        labeling_0.4.3    </span></span>
-<span><span class="co">#&gt; [53] splines_4.6.1      fastmap_1.2.0      grid_4.6.1         cli_3.6.6         </span></span>
-<span><span class="co">#&gt; [57] magrittr_2.0.5     dichromat_2.0-1    broom_1.0.13       foreign_0.8-91    </span></span>
-<span><span class="co">#&gt; [61] withr_3.0.3        scales_1.4.0       backports_1.5.1    rmarkdown_2.32    </span></span>
-<span><span class="co">#&gt; [65] otel_0.2.0         nnet_7.3-21        lme4_2.0-6         ragg_1.5.2        </span></span>
-<span><span class="co">#&gt; [69] VGAM_1.1-14        evaluate_1.0.5     knitr_1.51         rbibutils_2.4.1   </span></span>
-<span><span class="co">#&gt; [73] rlang_1.3.0        glue_1.8.1         minqa_1.2.8        jsonlite_2.0.0    </span></span>
-<span><span class="co">#&gt; [77] R6_2.6.1           systemfonts_1.3.2  fs_2.1.0</span></span></code></pre></div>
+<span><span class="co">#&gt;  [1] gtable_0.3.6       shape_1.4.6.1      xfun_0.62          bslib_0.12.0      </span></span>
+<span><span class="co">#&gt;  [5] ggplot2_4.0.3      lattice_0.22-9     vctrs_0.7.3        tools_4.6.1       </span></span>
+<span><span class="co">#&gt;  [9] Rdpack_2.6.6       generics_0.1.4     tibble_3.3.1       pan_2.0           </span></span>
+<span><span class="co">#&gt; [13] pkgconfig_2.0.3    jomo_2.7-6         Matrix_1.7-5       RColorBrewer_1.1-3</span></span>
+<span><span class="co">#&gt; [17] S7_0.2.2           desc_1.4.3         lifecycle_1.0.5    compiler_4.6.1    </span></span>
+<span><span class="co">#&gt; [21] farver_2.1.2       textshaping_1.0.5  codetools_0.2-20   htmltools_0.5.9   </span></span>
+<span><span class="co">#&gt; [25] sass_0.4.10        yaml_2.3.12        glmnet_5.1         mice_3.19.0       </span></span>
+<span><span class="co">#&gt; [29] pillar_1.11.1      pkgdown_2.2.1      nloptr_2.2.1       jquerylib_0.1.4   </span></span>
+<span><span class="co">#&gt; [33] tidyr_1.3.2        MASS_7.3-65        cachem_1.1.0       reformulas_0.4.4  </span></span>
+<span><span class="co">#&gt; [37] iterators_1.0.14   rpart_4.1.27       boot_1.3-32        foreach_1.5.2     </span></span>
+<span><span class="co">#&gt; [41] mitml_0.4-5        nlme_3.1-169       tidyselect_1.2.1   digest_0.6.39     </span></span>
+<span><span class="co">#&gt; [45] dplyr_1.2.1        purrr_1.2.2        labeling_0.4.3     splines_4.6.1     </span></span>
+<span><span class="co">#&gt; [49] fastmap_1.2.0      grid_4.6.1         cli_3.6.6          magrittr_2.0.5    </span></span>
+<span><span class="co">#&gt; [53] survival_3.8-6     broom_1.0.13       withr_3.0.3        scales_1.4.0      </span></span>
+<span><span class="co">#&gt; [57] backports_1.5.1    rmarkdown_2.32     otel_0.2.0         nnet_7.3-20       </span></span>
+<span><span class="co">#&gt; [61] lme4_2.1-0         ragg_1.5.2         evaluate_1.0.5     knitr_1.52        </span></span>
+<span><span class="co">#&gt; [65] rbibutils_2.4.1    rlang_1.3.0        Rcpp_1.1.2         glue_1.8.1        </span></span>
+<span><span class="co">#&gt; [69] minqa_1.2.8        jsonlite_2.0.0     R6_2.6.1           systemfonts_1.3.2 </span></span>
+<span><span class="co">#&gt; [73] fs_2.1.0</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

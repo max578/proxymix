@@ -35,6 +35,7 @@ in dimension 2.
 
 Other targets:
 [`banana_target()`](https://max578.github.io/proxymix/reference/banana_target.md),
+[`cf_target()`](https://max578.github.io/proxymix/reference/cf_target.md),
 [`donut_target()`](https://max578.github.io/proxymix/reference/donut_target.md),
 [`epanechnikov_target()`](https://max578.github.io/proxymix/reference/epanechnikov_target.md),
 [`gmm_target_from_samples()`](https://max578.github.io/proxymix/reference/gmm_target_from_samples.md),

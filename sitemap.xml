@@ -3,6 +3,7 @@
 <url><loc>https://max578.github.io/proxymix/LICENSE-text.html</loc></url>
 <url><loc>https://max578.github.io/proxymix/LICENSE.html</loc></url>
 <url><loc>https://max578.github.io/proxymix/articles/calibration.html</loc></url>
+<url><loc>https://max578.github.io/proxymix/articles/cf_targets.html</loc></url>
 <url><loc>https://max578.github.io/proxymix/articles/density_shapes.html</loc></url>
 <url><loc>https://max578.github.io/proxymix/articles/end_of_sample.html</loc></url>
 <url><loc>https://max578.github.io/proxymix/articles/entropy.html</loc></url>
@@ -34,6 +35,7 @@
 <url><loc>https://max578.github.io/proxymix/reference/autoplot.gmm_fit.html</loc></url>
 <url><loc>https://max578.github.io/proxymix/reference/banana_target.html</loc></url>
 <url><loc>https://max578.github.io/proxymix/reference/bic_aic.html</loc></url>
+<url><loc>https://max578.github.io/proxymix/reference/cf_target.html</loc></url>
 <url><loc>https://max578.github.io/proxymix/reference/dgmm.html</loc></url>
 <url><loc>https://max578.github.io/proxymix/reference/donut_target.html</loc></url>
 <url><loc>https://max578.github.io/proxymix/reference/epanechnikov_target.html</loc></url>
@@ -42,8 +44,12 @@
 <url><loc>https://max578.github.io/proxymix/reference/fit_em_samples.html</loc></url>
 <url><loc>https://max578.github.io/proxymix/reference/fit_kld_em.html</loc></url>
 <url><loc>https://max578.github.io/proxymix/reference/fit_moment_match.html</loc></url>
+<url><loc>https://max578.github.io/proxymix/reference/fit_mppca_samples.html</loc></url>
 <url><loc>https://max578.github.io/proxymix/reference/fit_proxymix.html</loc></url>
 <url><loc>https://max578.github.io/proxymix/reference/fit_uplift.html</loc></url>
+<url><loc>https://max578.github.io/proxymix/reference/from_cf.html</loc></url>
+<url><loc>https://max578.github.io/proxymix/reference/from_cf_elliptical.html</loc></url>
+<url><loc>https://max578.github.io/proxymix/reference/from_cf_sources.html</loc></url>
 <url><loc>https://max578.github.io/proxymix/reference/from_kde.html</loc></url>
 <url><loc>https://max578.github.io/proxymix/reference/from_objective.html</loc></url>
 <url><loc>https://max578.github.io/proxymix/reference/glance.gmm_fit.html</loc></url>
@@ -52,6 +58,8 @@
 <url><loc>https://max578.github.io/proxymix/reference/gmm_aggregate.html</loc></url>
 <url><loc>https://max578.github.io/proxymix/reference/gmm_anneal_path.html</loc></url>
 <url><loc>https://max578.github.io/proxymix/reference/gmm_canonicalise.html</loc></url>
+<url><loc>https://max578.github.io/proxymix/reference/gmm_cf.html</loc></url>
+<url><loc>https://max578.github.io/proxymix/reference/gmm_cf_distance.html</loc></url>
 <url><loc>https://max578.github.io/proxymix/reference/gmm_cf_mean.html</loc></url>
 <url><loc>https://max578.github.io/proxymix/reference/gmm_cf_tail_prob.html</loc></url>
 <url><loc>https://max578.github.io/proxymix/reference/gmm_cf_variance.html</loc></url>

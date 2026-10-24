@@ -9,7 +9,7 @@ together with the integrated completed likelihood (ICL). All three are
 computed against the empirical log-likelihood of the samples used to fit
 the model and are reported on the same scale (smaller is better). They are
 NA for regimes that do not have an empirical likelihood ("moment",
-"kld").'></head><body>
+"kld").'><meta property="og:image" content="https://max578.github.io/proxymix/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -17,7 +17,7 @@ NA for regimes that do not have an empirical likelihood ("moment",
 
     <a class="navbar-brand me-2" href="../index.html">proxymix</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.16.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.17.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -34,6 +34,7 @@ NA for regimes that do not have an empirical likelihood ("moment",
     <li><a class="dropdown-item" href="../articles/density_shapes.html">How well a mixture proxies four awkward shapes</a></li>
     <li><a class="dropdown-item" href="../articles/operator_calculus.html">The closed-form operator calculus on a mixture</a></li>
     <li><a class="dropdown-item" href="../articles/from_kde.html">Compressing a kernel density estimate into a mixture</a></li>
+    <li><a class="dropdown-item" href="../articles/cf_targets.html">Fitting a mixture to a characteristic function</a></li>
     <li><a class="dropdown-item" href="../articles/many_methods.html">One mixture, many methods</a></li>
     <li><a class="dropdown-item" href="../articles/entropy.html">Reading the entropy of a fitted mixture</a></li>
     <li><a class="dropdown-item" href="../articles/calibration.html">Mapping the optima of an objective</a></li>
@@ -54,9 +55,8 @@ NA for regimes that do not have an empirical likelihood ("moment",
 </nav><div class="container template-reference-topic">
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Information criteria: BIC, AIC, and ICL</h1>
-      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/HEAD/R/diagnostics.R" class="external-link"><code>R/diagnostics.R</code></a></small>
+      <img src="../logo.png" class="logo" alt=""><h1>Information criteria: BIC, AIC, and ICL</h1>
+      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/main/R/diagnostics.R" class="external-link"><code>R/diagnostics.R</code></a></small>
       <div class="d-none name"><code>bic_aic.Rd</code></div>
     </div>
 
@@ -113,6 +113,7 @@ mixture model for clustering with the integrated completed likelihood.
 <code><a href="ess_summary.html">ess_summary()</a></code>,
 <code><a href="ess_trace.html">ess_trace()</a></code>,
 <code><a href="gmm_anneal_path.html">gmm_anneal_path()</a></code>,
+<code><a href="gmm_cf_distance.html">gmm_cf_distance()</a></code>,
 <code><a href="gmm_conditional_entropy.html">gmm_conditional_entropy()</a></code>,
 <code><a href="gmm_entropy.html">gmm_entropy()</a></code>,
 <code><a href="gmm_evidence.html">gmm_evidence()</a></code>,

@@ -5,7 +5,7 @@ samples, with diagonal ridge regularisation for numerical stability,
 optional multi-start, and monotone-log-likelihood checking."><meta property="og:description" content="Implements regime (ii) of Hoek and Elliott (2024). Runs the textbook
 expectation-maximisation algorithm for Gaussian mixtures on the supplied
 samples, with diagonal ridge regularisation for numerical stability,
-optional multi-start, and monotone-log-likelihood checking."></head><body>
+optional multi-start, and monotone-log-likelihood checking."><meta property="og:image" content="https://max578.github.io/proxymix/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -13,7 +13,7 @@ optional multi-start, and monotone-log-likelihood checking."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">proxymix</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.16.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.17.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -30,6 +30,7 @@ optional multi-start, and monotone-log-likelihood checking."></head><body>
     <li><a class="dropdown-item" href="../articles/density_shapes.html">How well a mixture proxies four awkward shapes</a></li>
     <li><a class="dropdown-item" href="../articles/operator_calculus.html">The closed-form operator calculus on a mixture</a></li>
     <li><a class="dropdown-item" href="../articles/from_kde.html">Compressing a kernel density estimate into a mixture</a></li>
+    <li><a class="dropdown-item" href="../articles/cf_targets.html">Fitting a mixture to a characteristic function</a></li>
     <li><a class="dropdown-item" href="../articles/many_methods.html">One mixture, many methods</a></li>
     <li><a class="dropdown-item" href="../articles/entropy.html">Reading the entropy of a fitted mixture</a></li>
     <li><a class="dropdown-item" href="../articles/calibration.html">Mapping the optima of an objective</a></li>
@@ -50,9 +51,8 @@ optional multi-start, and monotone-log-likelihood checking."></head><body>
 </nav><div class="container template-reference-topic">
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Classical EM fit on samples</h1>
-      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/HEAD/R/fit_em_samples.R" class="external-link"><code>R/fit_em_samples.R</code></a></small>
+      <img src="../logo.png" class="logo" alt=""><h1>Classical EM fit on samples</h1>
+      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/main/R/fit_em_samples.R" class="external-link"><code>R/fit_em_samples.R</code></a></small>
       <div class="d-none name"><code>fit_em_samples.Rd</code></div>
     </div>
 
@@ -147,13 +147,25 @@ are sorted by descending weight and (as a tiebreaker) by descending
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A <a href="gmm_fit.html">gmm_fit</a> with <code>regime = "sample"</code>. When <code>anneal = TRUE</code> the
 diagnostics list also carries <code>annealed = TRUE</code> and the <code>temp_schedule</code>
-used.</p>
+used. The diagnostics also carry <code>loglik_max_drop</code>, the largest decrease
+of the log-likelihood between iterations, and <code>collapsed_components</code>, the
+components (in the returned order) that sit on fewer than <code>p + 1</code>
+effective samples, or whose smallest variance across the coordinates that
+are not constant within the component is below 100 times the ridge, or
+in which every coordinate is constant (a point mass). A
+collapsed component marks the fit as degenerate in its quality
+certificate and raises a <code>proxymix_component_collapse</code> warning.
+Only the returned fit is checked, so a discarded start raises no warning.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p>Other fitting:
 <code><a href="fit_kld_em.html">fit_kld_em()</a></code>,
 <code><a href="fit_moment_match.html">fit_moment_match()</a></code>,
+<code><a href="fit_mppca_samples.html">fit_mppca_samples()</a></code>,
+<code><a href="from_cf.html">from_cf()</a></code>,
+<code><a href="from_cf_elliptical.html">from_cf_elliptical()</a></code>,
+<code><a href="from_cf_sources.html">from_cf_sources()</a></code>,
 <code><a href="from_kde.html">from_kde()</a></code>,
 <code><a href="from_objective.html">from_objective()</a></code>,
 <code><a href="select_N.html">select_N()</a></code></p></div>

@@ -1,5 +1,161 @@
 # Changelog
 
+## proxymix 0.17.0
+
+#### New features
+
+- [`from_cf()`](https://max578.github.io/proxymix/reference/from_cf.md)
+  fits a Gaussian mixture to a distribution given by its characteristic
+  function, for targets with no usable density such as stable laws and
+  sums of independent variables. The fit reports its error on
+  frequencies it did not use and warns when the target has heavy tails.
+- [`from_cf_elliptical()`](https://max578.github.io/proxymix/reference/from_cf_elliptical.md)
+  fits normal components with a common centre and proportional
+  covariances to an elliptical characteristic function, such as a
+  multivariate Cauchy or an elliptical stable law. It needs no starting
+  value and reaches further into heavy tails than
+  [`from_cf()`](https://max578.github.io/proxymix/reference/from_cf.md):
+  for the bivariate Cauchy of its examples, the 0.99 quantiles of both
+  coordinates are within 0.02 of the exact values.
+- [`from_cf_sources()`](https://max578.github.io/proxymix/reference/from_cf_sources.md)
+  fits a linear mix of independent sources, with or without Gaussian
+  noise. It returns a list with functions for the characteristic
+  function, sampling and one-dimensional projections, not a `gmm`. The
+  separated coordinates are tested for pairwise independence with the
+  criterion of Eriksson and Koivunen (2003), reported as
+  `diagnostics$dependence`.
+- [`fit_proxymix()`](https://max578.github.io/proxymix/reference/fit_proxymix.md)
+  has a fourth regime, `"cf"`, for a target known only through its
+  characteristic function.
+  [`cf_target()`](https://max578.github.io/proxymix/reference/cf_target.md)
+  builds such a target after checking the function, and
+  `regime = "auto"` picks `"cf"` when the target has a characteristic
+  function and neither samples nor a log-density. The other regimes
+  choose as before.
+- Fits to a characteristic function carry lower and upper bounds for the
+  Kolmogorov distance to the target, computed by numerical inversion
+  without sampling, along eight one-dimensional projections (one in one
+  dimension). For
+  [`from_cf_sources()`](https://max578.github.io/proxymix/reference/from_cf_sources.md)
+  they are for each separated coordinate.
+  [`print()`](https://rdrr.io/r/base/print.html),
+  [`glance()`](https://generics.r-lib.org/reference/glance.html) and
+  [`gmm_fit_quality()`](https://max578.github.io/proxymix/reference/gmm_fit_quality.md)
+  report them (`cf_distance`, `cf_upper`). `bracket = FALSE` skips them.
+  The bounds do not change the fit or the state of the random number
+  generator.
+- A mixture made from such a fit by an operator
+  ([`gmm_marginalise()`](https://max578.github.io/proxymix/reference/gmm_marginalise.md),
+  [`gmm_product()`](https://max578.github.io/proxymix/reference/gmm_product.md)
+  and the others) has `cf_heldout_rms`, `cf_distance` and `cf_upper` set
+  to `NA` in its quality record, since the bounds of the fit need not
+  hold for it. A composite keeps each operand’s own values under
+  `quality_sources`.
+- [`gmm_cf_distance()`](https://max578.github.io/proxymix/reference/gmm_cf_distance.md)
+  returns the same bounds between a characteristic-function target and
+  any mixture along a chosen direction. The upper bound needs a target
+  whose projected characteristic function is integrable.
+- [`gmm_cf()`](https://max578.github.io/proxymix/reference/gmm_cf.md)
+  evaluates the characteristic function of a mixture.
+- [`fit_mppca_samples()`](https://max578.github.io/proxymix/reference/fit_mppca_samples.md)
+  fits a mixture of probabilistic principal component analysers (Tipping
+  and Bishop, 1999): each component covariance is a rank-`q` term plus
+  equal noise in every direction. It can be fitted when a component
+  holds fewer points than there are variables, where a full-covariance
+  fit is singular, and returns an ordinary fitted mixture.
+
+#### Behaviour changes
+
+- [`fit_em_samples()`](https://max578.github.io/proxymix/reference/fit_em_samples.md)
+  checks the fit it returns for a component that has collapsed onto a
+  few samples: fewer effective samples than the dimension plus one, or a
+  variance held up by the ridge. Such a fit is marked degenerate in its
+  quality record and raises a warning of class
+  `proxymix_component_collapse`. The log-likelihood decrease warning is
+  now raised only for the returned fit, not for a discarded start.
+  [`select_N()`](https://max578.github.io/proxymix/reference/select_N.md)
+  reports collapse per candidate in a `collapsed` column and warns only
+  when the chosen fit has collapsed.
+
+- [`from_kde()`](https://max578.github.io/proxymix/reference/from_kde.md)
+  now defaults to `bandwidth = "plugin"`, the Sheather-Jones plug-in
+  bandwidth of each variable
+  ([`stats::bw.SJ()`](https://rdrr.io/r/stats/bandwidth.html)), in place
+  of Silverman’s rule. On the galaxy velocities the held-out
+  log-likelihood of the compressed estimate went from about 0.13 to
+  about 0.06 nats below that of the full `ks::kde()` estimate, and on
+  two simulated two-dimensional mixtures the Kullback-Leibler divergence
+  to the truth fell by a factor of about three. A variable with fewer
+  distinct values than half the number of points keeps Silverman’s rule.
+  `bandwidth = "silverman"` gives the 0.16.0 results.
+
+- [`glance()`](https://generics.r-lib.org/reference/glance.html) has
+  three more columns, `cf_heldout_rms`, `cf_distance` and `cf_upper`,
+  which are `NA` outside regime `"cf"`.
+
+- [`gmm_cf_variance()`](https://max578.github.io/proxymix/reference/gmm_cf_variance.md)
+  and
+  [`gmm_cf_tail_prob()`](https://max578.github.io/proxymix/reference/gmm_cf_tail_prob.md)
+  now return the variance and the tail probability of a per-unit
+  counterfactual law instead of an error. They rest on the same
+  assumption as
+  [`gmm_cf_mean()`](https://max578.github.io/proxymix/reference/gmm_cf_mean.md):
+  the unit keeps its structural residual when the treatment changes. A
+  printed counterfactual law shows its variance.
+
+#### Corrections
+
+- The k-means start used by
+  [`fit_kld_em()`](https://max578.github.io/proxymix/reference/fit_kld_em.md),
+  [`from_kde()`](https://max578.github.io/proxymix/reference/from_kde.md)
+  and the other importance-sampling fits no longer passes on the
+  “Quick-TRANSfer stage steps exceeded” warning from one of its ten
+  starts. If the start that is kept hit that limit, the clustering is
+  redone with MacQueen’s algorithm.
+- Printing the result of
+  [`gmm_eos_test()`](https://max578.github.io/proxymix/reference/gmm_eos_test.md),
+  [`gmm_fit_ensemble()`](https://max578.github.io/proxymix/reference/gmm_fit_ensemble.md),
+  [`gmm_evidence()`](https://max578.github.io/proxymix/reference/gmm_evidence.md),
+  [`select_N()`](https://max578.github.io/proxymix/reference/select_N.md)
+  and the other functions with their own print method now gives the
+  short summary. In 0.16.0 these printed as raw lists, because the
+  method was not found when
+  [`print()`](https://rdrr.io/r/base/print.html) was called from outside
+  the package.
+- [`gmm_impute()`](https://max578.github.io/proxymix/reference/gmm_impute.md)
+  with
+  [`censored()`](https://max578.github.io/proxymix/reference/mechanism.md)
+  could impute a value beyond the detection limit when the limit lay far
+  in the tail of a component’s conditional normal. Such draws now stay
+  inside the limit. All other draws are unchanged.
+- [`gmm_impute()`](https://max578.github.io/proxymix/reference/gmm_impute.md)
+  could stop with “the leading minor … is not positive” when choosing
+  the number of components, if one candidate component held only a few
+  rows. Rounding in its conditional covariance is now removed, and the
+  output is unchanged when this does not occur.
+- The help for
+  [`gmm_counterfactual()`](https://max578.github.io/proxymix/reference/gmm_counterfactual.md),
+  [`gmm_cf_mean()`](https://max578.github.io/proxymix/reference/gmm_cf_mean.md)
+  and
+  [`proxy_retrospective_uplift()`](https://max578.github.io/proxymix/reference/proxy_retrospective_uplift.md)
+  no longer calls the per-unit counterfactual mean identified. It
+  assumes the unit keeps its structural residual when the treatment
+  changes; if the residual were redrawn, the same mixture would give a
+  different mean. A printed counterfactual law now labels its mean
+  “residual kept”.
+
+#### Documentation and CI
+
+- New vignette, *Fitting a mixture to a characteristic function*: a
+  stable law with no closed-form density, a sum of independent
+  variables, two targets in two dimensions and a filtering step, each
+  checked against an independent computation. The README has a short
+  example.
+- The package has a logo.
+- README lists related packages and carries R-CMD-check, coverage and
+  r-universe badges.
+- CI runs lintr (report-only) and test coverage.
+
 ## proxymix 0.16.0
 
 CRAN release: 2026-10-08
@@ -180,8 +336,8 @@ CRAN release: 2026-10-08
   assumes stationary ergodic innovations, and can over-reject in short
   series. It also states how `method = "andrews"` differs from
   Andrews’ (2003) P-test: its p-value counts the tested block, and the
-  block statistics are computed at the supplied model rather than
-  re-estimated.
+  block statistics are computed at the supplied model without
+  re-estimating it.
 
 - The
   [`mnar()`](https://max578.github.io/proxymix/reference/mechanism.md)
@@ -226,10 +382,11 @@ CRAN release: 2026-10-08
   did not survive the computation were corrected: the regime (i) and
   regime
 
-  \(iii\) fits at `N = 1` do not agree to within Monte Carlo error, the
-  donut’s residual divergence needed a grid-quadrature reference to be
-  stated at all, and the fraction of `x2` deleted in the imputation
-  example was near a half rather than the two fifths claimed.
+  3.  fits at `N = 1` do not agree to within Monte Carlo error, the
+      donut’s residual divergence needed a grid-quadrature reference to
+      be stated at all, and the fraction of `x2` deleted in the
+      imputation example was near a half rather than the two fifths
+      claimed.
 
 - Every figure chunk across the vignette set now carries a `fig.cap`
   stating what the figure shows, and the four uncaptioned or
@@ -356,14 +513,13 @@ CRAN release: 2026-10-08
   plus a `defensive_gamma` share of the original proposal as a
   heavy-tailed anchor) – the mixture population-Monte-Carlo scheme of
   Cappé et al.
-
-  \(2008\) with the Owen–Zhou (2000) defensive safeguard. While a batch
-  is degenerate the refresh fires every iteration with an escalating
-  inflation floored at a growing fraction of the batch’s sample
-  covariance, so a collapsed iterate walks back out to the target; and
-  convergence is only accepted on an adapted batch. The per-batch ESS
-  trace ships in `diagnostics$ess_history` and the total evaluation cost
-  in `diagnostics$n_target_evals`.
+  2008. with the Owen–Zhou (2000) defensive safeguard. While a batch is
+        degenerate the refresh fires every iteration with an escalating
+        inflation floored at a growing fraction of the batch’s sample
+        covariance, so a collapsed iterate walks back out to the target;
+        and convergence is only accepted on an adapted batch. The
+        per-batch ESS trace ships in `diagnostics$ess_history` and the
+        total evaluation cost in `diagnostics$n_target_evals`.
 
   Validated against analytic conjugate Gaussians and a ten-dimensional
   warped target (`validation/adaptive_pmc_study.R` in the development

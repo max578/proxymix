@@ -1,8 +1,9 @@
-# The identified counterfactual mean
+# The counterfactual mean
 
-Returns the one identified summary of a
-[gmm_counterfactual_law](https://max578.github.io/proxymix/reference/gmm_counterfactual_law.md)
-– its mean.
+Returns the mean of a
+[gmm_counterfactual_law](https://max578.github.io/proxymix/reference/gmm_counterfactual_law.md).
+Like the law itself, it assumes the unit keeps its structural residual
+under the intervention.
 
 ## Usage
 

@@ -50,6 +50,7 @@ Other diagnostics:
 [`ess_summary()`](https://max578.github.io/proxymix/reference/ess_summary.md),
 [`ess_trace()`](https://max578.github.io/proxymix/reference/ess_trace.md),
 [`gmm_anneal_path()`](https://max578.github.io/proxymix/reference/gmm_anneal_path.md),
+[`gmm_cf_distance()`](https://max578.github.io/proxymix/reference/gmm_cf_distance.md),
 [`gmm_conditional_entropy()`](https://max578.github.io/proxymix/reference/gmm_conditional_entropy.md),
 [`gmm_entropy()`](https://max578.github.io/proxymix/reference/gmm_entropy.md),
 [`gmm_evidence()`](https://max578.github.io/proxymix/reference/gmm_evidence.md),

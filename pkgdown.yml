@@ -1,9 +1,10 @@
-pandoc: '3.12'
+pandoc: 3.8.3
 pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
   articles/extended/calibration: extended/calibration.html
   calibration: calibration.html
+  cf_targets: cf_targets.html
   articles/extended/density_shapes: extended/density_shapes.html
   density_shapes: density_shapes.html
   articles/extended/end_of_sample: extended/end_of_sample.html
@@ -26,7 +27,7 @@ articles:
   quickstart: quickstart.html
   articles/extended/three_regimes: extended/three_regimes.html
   three_regimes: three_regimes.html
-last_built: 2026-10-09T00:35Z
+last_built: 2026-10-24T13:01Z
 urls:
   reference: https://max578.github.io/proxymix/reference
   article: https://max578.github.io/proxymix/articles

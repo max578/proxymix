@@ -1,10 +1,14 @@
 # Mapping the optima of an objective
 
-\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`
+``` r
 
-\
-`has_ggplot2`` ``<-`` `[`requireNamespace`](https://rdrr.io/r/base/ns-load.html)`(``"ggplot2"``, quietly ``=`` ``TRUE``)`
+library(proxymix)
+```
+
+``` r
+
+has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
+```
 
 ## The problem
 
@@ -67,27 +71,31 @@ to the map of solutions like any other fitted mixture.
 The objective $`(\theta^2 - 4)^2`$ has two minima, at $`\theta = -2`$
 and $`\theta = 2`$. Fit the map and resolve it.
 
-\
-[`set.seed`](https://rdrr.io/r/base/Random.html)`(``20260619``)`\
-\
-`f`` ``<-`` ``function``(``v``)`` ``(``v``[``1``]``^``2`` ``-`` ``4``)``^``2`\
-\
-`fit`` ``<-`` `[`from_objective`](https://max578.github.io/proxymix/reference/from_objective.md)`(``f``, lower ``=`` ``-``5``, upper ``=`` ``5``, N ``=`` ``6L``,`\
-`                      is_size ``=`` ``3000L``, n_steps ``=`` ``5L``, seed ``=`` ``1L``)`\
-\
-`modes`` ``<-`` `[`gmm_modes`](https://max578.github.io/proxymix/reference/gmm_modes.md)`(``fit``)`\
-[`sort`](https://rdrr.io/r/base/sort.html)`(`[`round`](https://rdrr.io/r/base/Round.html)`(``modes``$``modes``[``, ``1``]``, ``3``)``)`\
-`#> [1] -2.034  2.031`
+``` r
+
+set.seed(20260619)
+
+f <- function(v) (v[1]^2 - 4)^2
+
+fit <- from_objective(f, lower = -5, upper = 5, N = 6L,
+                      is_size = 3000L, n_steps = 5L, seed = 1L)
+
+modes <- gmm_modes(fit)
+sort(round(modes$modes[, 1], 3))
+#> [1] -2.034  2.031
+```
 
 The fitted object is a `gmm_fit`, so the importance-sampling diagnostics
 are available alongside the map.
 
-\
-`ess_1d`` ``<-`` `[`ess_summary`](https://max578.github.io/proxymix/reference/ess_summary.md)`(``fit``)`\
-[`c`](https://rdrr.io/r/base/c.html)`(``ess ``=`` `[`round`](https://rdrr.io/r/base/Round.html)`(``ess_1d``$``ess``, ``1``)``, is_size ``=`` ``ess_1d``$``is_size``,`\
-`  ess_relative ``=`` `[`round`](https://rdrr.io/r/base/Round.html)`(``ess_1d``$``ess_relative``, ``3``)``)`\
-`#>          ess      is_size ess_relative `\
-`#>     1565.100     3000.000        0.522`
+``` r
+
+ess_1d <- ess_summary(fit)
+c(ess = round(ess_1d$ess, 1), is_size = ess_1d$is_size,
+  ess_relative = round(ess_1d$ess_relative, 3))
+#>          ess      is_size ess_relative 
+#>     1565.100     3000.000        0.522
+```
 
 ### Four minima at once: Himmelblau
 
@@ -98,41 +106,45 @@ returns all four in one fit, provided the number of components `N` is
 comfortably larger than the number of optima so that a component can
 settle on each basin.
 
-\
-`himmelblau`` ``<-`` ``function``(``v``)`` ``{`\
-`  ``x`` ``<-`` ``v``[``1``]`\
-`  ``y`` ``<-`` ``v``[``2``]`\
-`  ``(``x`` ``*`` ``x`` ``+`` ``y`` ``-`` ``11``)``^``2`` ``+`` ``(``x`` ``+`` ``y`` ``*`` ``y`` ``-`` ``7``)``^``2`\
-`}`\
-\
-`fit2`` ``<-`` `[`from_objective`](https://max578.github.io/proxymix/reference/from_objective.md)`(``himmelblau``, lower ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``-``5``, ``-``5``)``, upper ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``5``, ``5``)``,`\
-`                       N ``=`` ``10L``, is_size ``=`` ``4000L``, n_steps ``=`` ``6L``, seed ``=`` ``1L``)`\
-\
-`found`` ``<-`` `[`gmm_modes`](https://max578.github.io/proxymix/reference/gmm_modes.md)`(``fit2``)`\
-`found``$``n`\
-`#> [1] 4`
+``` r
+
+himmelblau <- function(v) {
+  x <- v[1]
+  y <- v[2]
+  (x * x + y - 11)^2 + (x + y * y - 7)^2
+}
+
+fit2 <- from_objective(himmelblau, lower = c(-5, -5), upper = c(5, 5),
+                       N = 10L, is_size = 4000L, n_steps = 6L, seed = 1L)
+
+found <- gmm_modes(fit2)
+found$n
+#> [1] 4
+```
 
 Himmelblau’s optima are known in closed form, so the recovered map can
 be checked against them rather than against itself. Each recovered mode
 is matched to its nearest analytic optimum, and the distance between the
 two is the error the reader should judge the fit on.
 
-\
-`truth`` ``<-`` `[`rbind`](https://rdrr.io/r/base/cbind.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``3``, ``2``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``-``2.805118``, ``3.131312``)``,`\
-`               `[`c`](https://rdrr.io/r/base/c.html)`(``-``3.779310``, ``-``3.283186``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``3.584428``, ``-``1.848126``)``)`\
-\
-`pair_dist`` ``<-`` `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(`[`dist`](https://rdrr.io/r/stats/dist.html)`(`[`rbind`](https://rdrr.io/r/base/cbind.html)`(``found``$``modes``, ``truth``)``)``)`\
-`n_found`` ``<-`` `[`nrow`](https://rdrr.io/r/base/nrow.html)`(``found``$``modes``)`\
-`pair_dist`` ``<-`` ``pair_dist``[`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``n_found``)``, ``n_found`` ``+`` `[`seq_len`](https://rdrr.io/r/base/seq.html)`(`[`nrow`](https://rdrr.io/r/base/nrow.html)`(``truth``)``)``]`\
-`nearest`` ``<-`` `[`apply`](https://rdrr.io/r/base/apply.html)`(``pair_dist``, ``1L``, ``which.min``)`\
-`gap`` ``<-`` `[`apply`](https://rdrr.io/r/base/apply.html)`(``pair_dist``, ``1L``, ``min``)`\
-\
-`all_distinct`` ``<-`` `[`length`](https://rdrr.io/r/base/length.html)`(`[`unique`](https://rdrr.io/r/base/unique.html)`(``nearest``)``)`` ``==`` `[`nrow`](https://rdrr.io/r/base/nrow.html)`(``truth``)`\
-`worst_gap`` ``<-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(``gap``)`\
-[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``modes_found ``=`` ``found``$``n``, one_per_optimum ``=`` ``all_distinct``,`\
-`           worst_gap ``=`` `[`round`](https://rdrr.io/r/base/Round.html)`(``worst_gap``, ``3``)``)`\
-`#>   modes_found one_per_optimum worst_gap`\
-`#> 1           4            TRUE     0.117`
+``` r
+
+truth <- rbind(c(3, 2), c(-2.805118, 3.131312),
+               c(-3.779310, -3.283186), c(3.584428, -1.848126))
+
+pair_dist <- as.matrix(dist(rbind(found$modes, truth)))
+n_found <- nrow(found$modes)
+pair_dist <- pair_dist[seq_len(n_found), n_found + seq_len(nrow(truth))]
+nearest <- apply(pair_dist, 1L, which.min)
+gap <- apply(pair_dist, 1L, min)
+
+all_distinct <- length(unique(nearest)) == nrow(truth)
+worst_gap <- max(gap)
+data.frame(modes_found = found$n, one_per_optimum = all_distinct,
+           worst_gap = round(worst_gap, 3))
+#>   modes_found one_per_optimum worst_gap
+#> 1           4            TRUE     0.117
+```
 
 | Recovered $`x_1`$ | Recovered $`x_2`$ | Analytic $`x_1`$ | Analytic $`x_2`$ | Distance | Mixture density |
 |---:|---:|---:|---:|---:|---:|
@@ -157,36 +169,38 @@ The recovered modes sit on the four analytic optima of Himmelblau’s
 function, one per basin of the log-objective surface. No basin is left
 without a recovered mode.
 
-\
-`xs`` ``<-`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``5``, ``5``, length.out ``=`` ``140L``)`\
-`ys`` ``<-`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``5``, ``5``, length.out ``=`` ``140L``)`\
-`surface`` ``<-`` `[`expand.grid`](https://rdrr.io/r/base/expand.grid.html)`(``x1 ``=`` ``xs``, x2 ``=`` ``ys``)`\
-`surface``$``log_f`` ``<-`` `[`log1p`](https://rdrr.io/r/base/Log.html)`(`\
-`  `[`apply`](https://rdrr.io/r/base/apply.html)`(`[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(``surface``[``, `[`c`](https://rdrr.io/r/base/c.html)`(``"x1"``, ``"x2"``)``]``)``, ``1L``, ``himmelblau``)`\
-`)`\
-\
-`mode_df`` ``<-`` `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``x1 ``=`` ``found``$``modes``[``, ``1``]``, x2 ``=`` ``found``$``modes``[``, ``2``]``)`\
-`truth_df`` ``<-`` `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``x1 ``=`` ``truth``[``, ``1``]``, x2 ``=`` ``truth``[``, ``2``]``)`\
-\
-`ggplot2``::`[`ggplot`](https://ggplot2.tidyverse.org/reference/ggplot.html)`(``surface``, ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``x1``, ``x2``)``)`` ``+`\
-`  ``ggplot2``::`[`geom_raster`](https://ggplot2.tidyverse.org/reference/geom_tile.html)`(``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``fill ``=`` ``log_f``)``, interpolate ``=`` ``TRUE``)`` ``+`\
-`  ``ggplot2``::`[`geom_contour`](https://ggplot2.tidyverse.org/reference/geom_contour.html)`(``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``z ``=`` ``log_f``)``, colour ``=`` ``"white"``,`\
-`                        linewidth ``=`` ``0.2``, alpha ``=`` ``0.6``, bins ``=`` ``8L``)`` ``+`\
-`  ``ggplot2``::`[`geom_point`](https://ggplot2.tidyverse.org/reference/geom_point.html)`(``data ``=`` ``truth_df``, shape ``=`` ``4``, size ``=`` ``4``, stroke ``=`` ``1.4``,`\
-`                      colour ``=`` ``"#000000"``)`` ``+`\
-`  ``ggplot2``::`[`geom_point`](https://ggplot2.tidyverse.org/reference/geom_point.html)`(``data ``=`` ``mode_df``, shape ``=`` ``21``, size ``=`` ``3``, stroke ``=`` ``1``,`\
-`                      fill ``=`` ``"#D55E00"``, colour ``=`` ``"#000000"``)`` ``+`\
-`  ``ggplot2``::`[`scale_fill_viridis_c`](https://ggplot2.tidyverse.org/reference/scale_viridis.html)`(``name ``=`` ``"log(1 + f)"``, option ``=`` ``"mako"``,`\
-`                                direction ``=`` ``-``1``)`` ``+`\
-`  ``ggplot2``::`[`coord_equal`](https://ggplot2.tidyverse.org/reference/coord_fixed.html)`(``expand ``=`` ``FALSE``)`` ``+`\
-`  ``ggplot2``::`[`labs`](https://ggplot2.tidyverse.org/reference/labs.html)`(`\
-`    title ``=`` ``"One fit, four basins: the map over Himmelblau's minima"``,`\
-`    subtitle ``=`` ``"crosses: analytic optima; filled circles: recovered modes"``,`\
-`    x ``=`` `[`expression`](https://rdrr.io/r/base/expression.html)`(``x``[``1``]``)``, y ``=`` `[`expression`](https://rdrr.io/r/base/expression.html)`(``x``[``2``]``)`\
-`  ``)`` ``+`\
-`  ``ggplot2``::`[`theme_minimal`](https://ggplot2.tidyverse.org/reference/ggtheme.html)`(``base_size ``=`` ``11``)`` ``+`\
-`  ``ggplot2``::`[`theme`](https://ggplot2.tidyverse.org/reference/theme.html)`(``plot.title ``=`` ``ggplot2``::`[`element_text`](https://ggplot2.tidyverse.org/reference/element.html)`(``face ``=`` ``"bold"``)``,`\
-`                 panel.grid ``=`` ``ggplot2``::`[`element_blank`](https://ggplot2.tidyverse.org/reference/element.html)`(``)``)`
+``` r
+
+xs <- seq(-5, 5, length.out = 140L)
+ys <- seq(-5, 5, length.out = 140L)
+surface <- expand.grid(x1 = xs, x2 = ys)
+surface$log_f <- log1p(
+  apply(as.matrix(surface[, c("x1", "x2")]), 1L, himmelblau)
+)
+
+mode_df <- data.frame(x1 = found$modes[, 1], x2 = found$modes[, 2])
+truth_df <- data.frame(x1 = truth[, 1], x2 = truth[, 2])
+
+ggplot2::ggplot(surface, ggplot2::aes(x1, x2)) +
+  ggplot2::geom_raster(ggplot2::aes(fill = log_f), interpolate = TRUE) +
+  ggplot2::geom_contour(ggplot2::aes(z = log_f), colour = "white",
+                        linewidth = 0.2, alpha = 0.6, bins = 8L) +
+  ggplot2::geom_point(data = truth_df, shape = 4, size = 4, stroke = 1.4,
+                      colour = "#000000") +
+  ggplot2::geom_point(data = mode_df, shape = 21, size = 3, stroke = 1,
+                      fill = "#D55E00", colour = "#000000") +
+  ggplot2::scale_fill_viridis_c(name = "log(1 + f)", option = "mako",
+                                direction = -1) +
+  ggplot2::coord_equal(expand = FALSE) +
+  ggplot2::labs(
+    title = "One fit, four basins: the map over Himmelblau's minima",
+    subtitle = "crosses: analytic optima; filled circles: recovered modes",
+    x = expression(x[1]), y = expression(x[2])
+  ) +
+  ggplot2::theme_minimal(base_size = 11) +
+  ggplot2::theme(plot.title = ggplot2::element_text(face = "bold"),
+                 panel.grid = ggplot2::element_blank())
+```
 
 ## Interpretation
 
@@ -250,6 +264,9 @@ one evaluation budget, on a real likelihood and on two test functions.
 
 ## Numerical illustration
 
+GenSA, DEoptim, cmaes, nloptr, optimx, mclust or MASS is not installed
+on this build, so the real-data illustration is skipped.
+
 ### The likelihood of a two-component mixture on the Old Faithful data
 
 The objective is the negative log-likelihood of a two-component normal
@@ -274,36 +291,42 @@ charged to the evaluation budget.
 
 The competitors install from CRAN once and load as usual:
 
-\
-[`install.packages`](https://rdrr.io/r/utils/install.packages.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``"GenSA"``, ``"DEoptim"``, ``"cmaes"``, ``"nloptr"``, ``"optimx"``,`\
-`                   ``"mclust"``, ``"MASS"``)``)`
+``` r
 
-\
-[`library`](https://rdrr.io/r/base/library.html)`(``GenSA``)`\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`DEoptim`](https://github.com/ArdiaD/DEoptim)`)`\
-[`library`](https://rdrr.io/r/base/library.html)`(``cmaes``)`\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`nloptr`](https://github.com/astamm/nloptr)`)`\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`optimx`](https://github.com/nashjc/optimx)`)`\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`mclust`](https://mclust-org.github.io/mclust/)`)`
+install.packages(c("GenSA", "DEoptim", "cmaes", "nloptr", "optimx",
+                   "mclust", "MASS"))
+```
 
-\
-`waiting`` ``<-`` ``MASS``::`[`geyser`](https://rdrr.io/pkg/MASS/man/geyser.html)`$``waiting`\
-`lower`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``0.05``, ``40``, ``40``, ``1``, ``1``)`\
-`upper`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``0.95``, ``100``, ``100``, ``25``, ``25``)`\
-\
-`# below the box a standard deviation near zero gives values lower than any`\
-`# inside, so the objective is Inf outside; the margin leaves room for the`\
-`# finite-difference gradients of the local optimisers at the box edges`\
-`margin`` ``<-`` ``0.01`` ``*`` ``(``upper`` ``-`` ``lower``)`\
-`geyser_nll`` ``<-`` ``function``(``v``)`` ``{`\
-`  ``if`` ``(`[`any`](https://rdrr.io/r/base/any.html)`(``v`` ``<`` ``lower`` ``-`` ``margin`` ``|`` ``v`` ``>`` ``upper`` ``+`` ``margin``)``)`` `[`return`](https://rdrr.io/r/base/function.html)`(``Inf``)`\
-`  ``d`` ``<-`` ``v``[``1``]`` ``*`` `[`dnorm`](https://rdrr.io/r/stats/Normal.html)`(``waiting``, ``v``[``2``]``, ``v``[``4``]``)`` ``+`\
-`    ``(``1`` ``-`` ``v``[``1``]``)`` ``*`` `[`dnorm`](https://rdrr.io/r/stats/Normal.html)`(``waiting``, ``v``[``3``]``, ``v``[``5``]``)`\
-`  ``-`[`sum`](https://rdrr.io/r/base/sum.html)`(`[`log`](https://rdrr.io/r/base/Log.html)`(``d``)``)`\
-`}`\
-\
-`mle`` ``<-`` `[`Mclust`](https://mclust-org.github.io/mclust/reference/Mclust.html)`(``waiting``, G ``=`` ``2L``, modelNames ``=`` ``"V"``, verbose ``=`` ``FALSE``)`\
-`nll_ref`` ``<-`` ``-``mle``$``loglik`
+``` r
+
+library(GenSA)
+library(DEoptim)
+library(cmaes)
+library(nloptr)
+library(optimx)
+library(mclust)
+```
+
+``` r
+
+waiting <- MASS::geyser$waiting
+lower <- c(0.05, 40, 40, 1, 1)
+upper <- c(0.95, 100, 100, 25, 25)
+
+# below the box a standard deviation near zero gives values lower than any
+# inside, so the objective is Inf outside; the margin leaves room for the
+# finite-difference gradients of the local optimisers at the box edges
+margin <- 0.01 * (upper - lower)
+geyser_nll <- function(v) {
+  if (any(v < lower - margin | v > upper + margin)) return(Inf)
+  d <- v[1] * dnorm(waiting, v[2], v[4]) +
+    (1 - v[1]) * dnorm(waiting, v[3], v[5])
+  -sum(log(d))
+}
+
+mle <- Mclust(waiting, G = 2L, modelNames = "V", verbose = FALSE)
+nll_ref <- -mle$loglik
+```
 
 Which minima the surface holds is settled first, by 400 local descents
 from random starts in the box, without any package under comparison.
@@ -311,190 +334,126 @@ Each descent below is run by
 [`optim()`](https://rdrr.io/r/stats/optim.html) and is not charged to
 any method’s budget.
 
-\
-[`set.seed`](https://rdrr.io/r/base/Random.html)`(``20260925``)`\
-`descend`` ``<-`` ``function``(``x0``)`` ``{`\
-`  `[`optim`](https://rdrr.io/r/stats/optim.html)`(``x0``, ``geyser_nll``, method ``=`` ``"L-BFGS-B"``, lower ``=`` ``lower``, upper ``=`` ``upper``,`\
-`        control ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``maxit ``=`` ``500L``)``)`\
-`}`\
-`scaled`` ``<-`` ``function``(``x``)`` `[`sweep`](https://rdrr.io/r/base/sweep.html)`(`[`sweep`](https://rdrr.io/r/base/sweep.html)`(``x``, ``2L``, ``lower``)``, ``2L``, ``upper`` ``-`` ``lower``, ``"/"``)`\
-\
-`starts`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`runif`](https://rdrr.io/r/stats/Uniform.html)`(``400L`` ``*`` ``5L``, ``lower``, ``upper``)``, ``400L``, byrow ``=`` ``TRUE``)`\
-`ends`` ``<-`` `[`t`](https://rdrr.io/r/base/t.html)`(`[`apply`](https://rdrr.io/r/base/apply.html)`(``starts``, ``1L``, ``function``(``x0``)`` ``{`\
-`  ``o`` ``<-`` ``descend``(``x0``)`\
-`  `[`c`](https://rdrr.io/r/base/c.html)`(``o``$``par``, ``o``$``value``)`\
-`}``)``)`\
-`ends`` ``<-`` ``ends``[`[`order`](https://rdrr.io/r/base/order.html)`(``ends``[``, ``6L``]``)``, ``]`\
-\
-`# distinct end points: more than 0.05 apart, Euclidean, in box-scaled units`\
-`keep`` ``<-`` ``1L`\
-`for`` ``(``i`` ``in`` `[`seq_len`](https://rdrr.io/r/base/seq.html)`(`[`nrow`](https://rdrr.io/r/base/nrow.html)`(``ends``)``)``[``-``1L``]``)`` ``{`\
-`  ``gaps`` ``<-`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(`[`rowSums`](https://rdrr.io/r/base/colSums.html)`(``(``scaled``(``ends``[``keep``, ``1``:``5``, drop ``=`` ``FALSE``]``)`` ``-`\
-`    `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``scaled``(``ends``[``i``, ``1``:``5``, drop ``=`` ``FALSE``]``)``, `[`length`](https://rdrr.io/r/base/length.html)`(``keep``)``, ``5L``,`\
-`           byrow ``=`` ``TRUE``)``)``^``2``)``)`\
-`  ``if`` ``(`[`all`](https://rdrr.io/r/base/all.html)`(``gaps`` ``>`` ``0.05``)``)`` ``keep`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``keep``, ``i``)`\
-`}`\
-`minima`` ``<-`` ``ends``[``keep``, , drop ``=`` ``FALSE``]`
+``` r
 
-| Basin | Weight | Mean 1 | Mean 2 |  SD 1 |  SD 2 | Excess over the mclust fit |
-|:------|-------:|-------:|-------:|------:|------:|---------------------------:|
-| M1    |  0.692 |  80.36 |  54.20 |  7.51 |  4.95 |                      -0.01 |
-| M2    |  0.308 |  54.20 |  80.36 |  4.95 |  7.51 |                      -0.01 |
-| M3    |  0.059 |  87.32 |  71.37 |  1.00 | 13.76 |                      46.46 |
-| M4    |  0.050 |  72.14 |  72.33 | 13.92 | 13.86 |                      52.93 |
+set.seed(20260925)
+descend <- function(x0) {
+  optim(x0, geyser_nll, method = "L-BFGS-B", lower = lower, upper = upper,
+        control = list(maxit = 500L))
+}
+scaled <- function(x) sweep(sweep(x, 2L, lower), 2L, upper - lower, "/")
 
-The distinct local minima of the negative log-likelihood found by 400
-local descents, each with its negative log-likelihood minus that of the
-mclust maximum-likelihood fit. {.table}
+starts <- matrix(runif(400L * 5L, lower, upper), 400L, byrow = TRUE)
+ends <- t(apply(starts, 1L, function(x0) {
+  o <- descend(x0)
+  c(o$par, o$value)
+}))
+ends <- ends[order(ends[, 6L]), ]
 
-The descents end in 4 distinct minima. M1 and M2 are the
-maximum-likelihood fit and its label-switched twin, both within 0.01 of
-the mclust value. The others lie 46.5 and more above it: one puts a
-narrow component at the lower bound of the scale, the other collapses
-the mixture onto one component. A method has found a basin when a local
-descent from one of its reported solutions ends within 5% of the box of
-that minimum.
+# distinct end points: more than 0.05 apart, Euclidean, in box-scaled units
+keep <- 1L
+for (i in seq_len(nrow(ends))[-1L]) {
+  gaps <- sqrt(rowSums((scaled(ends[keep, 1:5, drop = FALSE]) -
+    matrix(scaled(ends[i, 1:5, drop = FALSE]), length(keep), 5L,
+           byrow = TRUE))^2))
+  if (all(gaps > 0.05)) keep <- c(keep, i)
+}
+minima <- ends[keep, , drop = FALSE]
+```
 
-\
-`budget`` ``<-`` ``5000L`\
-\
-`counted`` ``<-`` ``function``(``f``)`` ``{`\
-`  ``count`` ``<-`` ``0L`\
-`  `[`list`](https://rdrr.io/r/base/list.html)`(``f ``=`` ``function``(``v``)`` ``{`\
-`    ``count`` ``<<-`` ``count`` ``+`` ``1L`\
-`    ``f``(``v``)`\
-`  ``}``, count ``=`` ``function``(``)`` ``count``)`\
-`}`\
-\
-`n_starts`` ``<-`` ``20L`\
-`# a numerical gradient costs 2p + 1 calls per iteration`\
-`per_start`` ``<-`` ``budget`` `[`%/%`](https://rdrr.io/r/base/Arithmetic.html)` ``(``n_starts`` ``*`` ``11L``)`\
-\
-`# the ladder ends at temperature 1, where exp(-f) is the likelihood itself`\
-`map_quality`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(``)`\
-`map_modes`` ``<-`` ``function``(``f``, ``is_size``, ``n_steps``)`` ``{`\
-`  ``fit`` ``<-`` `[`from_objective`](https://max578.github.io/proxymix/reference/from_objective.md)`(``f``, ``lower``, ``upper``, N ``=`` ``10L``, scale ``=`` ``"loglik"``,`\
-`                        is_size ``=`` ``is_size``, n_steps ``=`` ``n_steps``, seed ``=`` ``1L``)`\
-`  ``map_quality``[[`[`as.character`](https://rdrr.io/r/base/character.html)`(``is_size``)``]``]`` ``<<-`` `[`gmm_fit_quality`](https://max578.github.io/proxymix/reference/gmm_fit_quality.md)`(``fit``)`\
-`  `[`gmm_modes`](https://max578.github.io/proxymix/reference/gmm_modes.md)`(``fit``)``$``modes`\
-`}`\
-\
-`methods_geyser`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(`\
-`  proxymix ``=`` ``function``(``f``)`` ``map_modes``(``f``, ``1000L``, ``3L``)``,`\
-`  ``"proxymix, 26 000"`` ``=`` ``function``(``f``)`` ``map_modes``(``f``, ``4000L``, ``6L``)``,`\
-`  GenSA ``=`` ``function``(``f``)`` ``{`\
-`    `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`GenSA`](https://rdrr.io/pkg/GenSA/man/GenSA.html)`(``fn ``=`` ``f``, lower ``=`` ``lower``, upper ``=`` ``upper``,`\
-`                 control ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``max.call ``=`` ``budget``, seed ``=`` ``1L``)``)``$``par``, ``1L``)`\
-`  ``}``,`\
-`  DEoptim ``=`` ``function``(``f``)`` ``{`\
-`    ``out`` ``<-`` `[`DEoptim`](https://rdrr.io/pkg/DEoptim/man/DEoptim.html)`(``f``, ``lower``, ``upper``,`\
-`                   `[`DEoptim.control`](https://rdrr.io/pkg/DEoptim/man/DEoptim.control.html)`(``NP ``=`` ``50L``, itermax ``=`` ``99L``, trace ``=`` ``FALSE``)``)`\
-`    `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``out``$``optim``$``bestmem``, ``1L``)`\
-`  ``}``,`\
-`  cmaes ``=`` ``function``(``f``)`` ``{`\
-`    ``lambda`` ``<-`` ``4L`` ``+`` `[`floor`](https://rdrr.io/r/base/Round.html)`(``3`` ``*`` `[`log`](https://rdrr.io/r/base/Log.html)`(``5``)``)`\
-`    `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`cma_es`](https://rdrr.io/pkg/cmaes/man/cma_es.html)`(``(``lower`` ``+`` ``upper``)`` ``/`` ``2``, ``f``, lower ``=`` ``lower``, upper ``=`` ``upper``,`\
-`                  control ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``maxit ``=`` ``budget`` `[`%/%`](https://rdrr.io/r/base/Arithmetic.html)` ``lambda``)``)``$``par``, ``1L``)`\
-`  ``}``,`\
-`  nloptr ``=`` ``function``(``f``)`` ``{`\
-`    ``x0`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`runif`](https://rdrr.io/r/stats/Uniform.html)`(``n_starts`` ``*`` ``5L``, ``lower``, ``upper``)``, ``n_starts``, byrow ``=`` ``TRUE``)`\
-`    `[`t`](https://rdrr.io/r/base/t.html)`(`[`apply`](https://rdrr.io/r/base/apply.html)`(``x0``, ``1L``, ``function``(``x``)`` ``{`\
-`      `[`lbfgs`](https://astamm.github.io/nloptr/reference/lbfgs.html)`(``x``, ``f``, lower ``=`` ``lower``, upper ``=`` ``upper``,`\
-`            control ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``maxeval ``=`` ``per_start``)``)``$``par`\
-`    ``}``)``)`\
-`  ``}``,`\
-`  optimx ``=`` ``function``(``f``)`` ``{`\
-`    ``x0`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`runif`](https://rdrr.io/r/stats/Uniform.html)`(``n_starts`` ``*`` ``5L``, ``lower``, ``upper``)``, ``n_starts``, byrow ``=`` ``TRUE``)`\
-`    ``out`` ``<-`` `[`multistart`](https://rdrr.io/pkg/optimx/man/multistart.html)`(``x0``, ``f``, lower ``=`` ``lower``, upper ``=`` ``upper``,`\
-`                      method ``=`` ``"L-BFGS-B"``,`\
-`                      control ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``maxit ``=`` ``per_start``, trace ``=`` ``0``)``)`\
-`    `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(``out``[``, ``1``:``5``]``)`\
-`  ``}`\
-`)`\
-\
-`basins_of`` ``<-`` ``function``(``sol``)`` ``{`\
-`  ``landed`` ``<-`` `[`t`](https://rdrr.io/r/base/t.html)`(`[`apply`](https://rdrr.io/r/base/apply.html)`(``sol``, ``1L``, ``function``(``x``)`` ``descend``(``x``)``$``par``)``)`\
-`  ``d`` ``<-`` `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(`[`dist`](https://rdrr.io/r/stats/dist.html)`(``scaled``(`[`rbind`](https://rdrr.io/r/base/cbind.html)`(``landed``, ``minima``[``, ``1``:``5``]``)``)``)``)`\
-`  ``d`` ``<-`` ``d``[`[`seq_len`](https://rdrr.io/r/base/seq.html)`(`[`nrow`](https://rdrr.io/r/base/nrow.html)`(``sol``)``)``, `[`nrow`](https://rdrr.io/r/base/nrow.html)`(``sol``)`` ``+`` `[`seq_len`](https://rdrr.io/r/base/seq.html)`(`[`nrow`](https://rdrr.io/r/base/nrow.html)`(``minima``)``)``,`\
-`         drop ``=`` ``FALSE``]`\
-`  `[`which`](https://rdrr.io/r/base/which.html)`(`[`apply`](https://rdrr.io/r/base/apply.html)`(``d``, ``2L``, ``min``)`` ``<`` ``0.05``)`\
-`}`\
-\
-`# warnings are kept by method: low effective sample size, and any other`\
-`low_ess_geyser`` ``<-`` `[`logical`](https://rdrr.io/r/base/logical.html)`(``0L``)`\
-`other_warn_geyser`` ``<-`` ``0L`\
-`geyser_res`` ``<-`` `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`names`](https://rdrr.io/r/base/names.html)`(``methods_geyser``)``, ``function``(``method``)`` ``{`\
-`  ``cf`` ``<-`` ``counted``(``geyser_nll``)`\
-`  `[`set.seed`](https://rdrr.io/r/base/Random.html)`(``1L``)`\
-`  ``low_ess_geyser``[``method``]`` ``<<-`` ``FALSE`\
-`  ``secs`` ``<-`` `[`system.time`](https://rdrr.io/r/base/system.time.html)`(`\
-`    ``sol`` ``<-`` `[`withCallingHandlers`](https://rdrr.io/r/base/conditions.html)`(``methods_geyser``[[``method``]``]``(``cf``$``f``)``,`\
-`                               warning ``=`` ``function``(``w``)`` ``{`\
-`                                 ``if`` ``(`[`inherits`](https://rdrr.io/r/base/class.html)`(``w``, ``"proxymix_low_ess"``)``)`` ``{`\
-`                                   ``low_ess_geyser``[``method``]`` ``<<-`` ``TRUE`\
-`                                 ``}`` ``else`` ``{`\
-`                                   ``other_warn_geyser`` ``<<-`` ``other_warn_geyser`` ``+`` ``1L`\
-`                                 ``}`\
-`                                 `[`invokeRestart`](https://rdrr.io/r/base/conditions.html)`(``"muffleWarning"``)`\
-`                               ``}``)`\
-`  ``)``[[``3L``]``]`\
-`  `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(`\
-`    method ``=`` ``method``, evaluations ``=`` ``cf``$``count``(``)``, reported ``=`` `[`nrow`](https://rdrr.io/r/base/nrow.html)`(``sol``)``,`\
-`    excess ``=`` `[`min`](https://rdrr.io/r/base/Extremes.html)`(`[`apply`](https://rdrr.io/r/base/apply.html)`(``sol``, ``1L``, ``geyser_nll``)``)`` ``-`` ``nll_ref``,`\
-`    basins ``=`` `[`paste0`](https://rdrr.io/r/base/paste.html)`(``"M"``, ``basins_of``(``sol``)``, collapse ``=`` ``", "``)``,`\
-`    secs ``=`` ``secs``, stringsAsFactors ``=`` ``FALSE`\
-`  ``)`\
-`}``)`\
-`geyser_res`` ``<-`` `[`do.call`](https://rdrr.io/r/base/do.call.html)`(``rbind``, ``geyser_res``)`
+``` r
 
-| Method           | Evaluations | Reported | Excess over mclust | Basins | Seconds |
-|:-----------------|------------:|---------:|-------------------:|:-------|--------:|
-| proxymix         |        4170 |        6 |              23.67 | M1, M2 |    0.29 |
-| proxymix, 26 000 |       20903 |        9 |               5.09 | M1, M2 |    2.25 |
-| GenSA            |        5000 |        1 |              -0.01 | M2     |    0.07 |
-| DEoptim          |        5000 |        1 |               1.02 | M1     |    0.07 |
-| cmaes            |        5000 |        1 |              -0.01 | M1     |    0.14 |
-| nloptr           |        5636 |       20 |              -0.01 | M1, M2 |    0.07 |
-| optimx           |        7161 |       20 |              -0.01 | M1, M2 |    0.09 |
+budget <- 5000L
 
-Each method on the Old Faithful likelihood at a budget of 5000 objective
-evaluations: the negative log-likelihood of its best reported solution
-minus the mclust fit, and the basins a local descent from its reported
-solutions reaches. proxymix at a nominal 26 000 evaluations is shown
-beside the equal-budget rows. {.table}
+counted <- function(f) {
+  count <- 0L
+  list(f = function(v) {
+    count <<- count + 1L
+    f(v)
+  }, count = function() count)
+}
 
-At 5000 evaluations, GenSA and cmaes reach the maximum-likelihood value,
-DEoptim ends 1.02 above it, and each of the three reports one basin. The
-two multi-start methods report both label-switched twins. They used 5636
-and 7161 evaluations, more than the budget of 5000, although each start
-was capped at 22 evaluations (nloptr) or iterations (optimx). The map at
-the shared budget reports 6 modes whose best value is 23.7 above the
-mclust fit. At the last cooling step the effective sample size is 1.4 of
-1000 draws for the fit at the shared budget and 6.5 of 4000 for the fit
-at a nominal 26 000 evaluations, which used 20903. Both proxymix fits
-carry a degenerate quality certificate, and both fits raised the low
-effective-sample-size warning.
+n_starts <- 20L
+# a numerical gradient costs 2p + 1 calls per iteration
+per_start <- budget %/% (n_starts * 11L)
 
-A map whose last update rests on so few draws does not describe the
-likelihood surface, so its modes are to be trusted only as far as an
-independent check confirms them. Here the check is a local descent, and
-from the modes at the shared budget it reaches M1, M2. On this surface
-the check separates little: 397 of the 400 random starts above also
-descend to M1 or M2. At 26 000 evaluations the best mode is 5.1 above
-the fit and the modes descend to M1, M2. The objective returns `Inf`
-outside the box for every method, because the likelihood grows without
-bound as a standard deviation shrinks towards zero. A component of
-weight 0.05 and standard deviation 0.01 on the 17 waiting times of 78
-minutes, beside one at the sample mean and standard deviation, gives a
-negative log-likelihood of 1151.2, below the mclust fit’s 1157.6. One
-setting differs from the defaults: the map is fitted with
-`scale = "loglik"`, which ends the temperature ladder at 1, where the
-Gibbs measure is the likelihood itself. The default ladder ends far
-above the scale on which the log-likelihood varies around its maximum.
-The excesses of $`-0.01`$ are the tolerance at which mclust’s
-expectation-maximisation stops. This is one run of one objective, so the
-simulation below repeats the comparison on two functions whose optima
-are known.
+# the ladder ends at temperature 1, where exp(-f) is the likelihood itself
+map_quality <- list()
+map_modes <- function(f, is_size, n_steps) {
+  fit <- from_objective(f, lower, upper, N = 10L, scale = "loglik",
+                        is_size = is_size, n_steps = n_steps, seed = 1L)
+  map_quality[[as.character(is_size)]] <<- gmm_fit_quality(fit)
+  gmm_modes(fit)$modes
+}
+
+methods_geyser <- list(
+  proxymix = function(f) map_modes(f, 1000L, 3L),
+  "proxymix, 26 000" = function(f) map_modes(f, 4000L, 6L),
+  GenSA = function(f) {
+    matrix(GenSA(fn = f, lower = lower, upper = upper,
+                 control = list(max.call = budget, seed = 1L))$par, 1L)
+  },
+  DEoptim = function(f) {
+    out <- DEoptim(f, lower, upper,
+                   DEoptim.control(NP = 50L, itermax = 99L, trace = FALSE))
+    matrix(out$optim$bestmem, 1L)
+  },
+  cmaes = function(f) {
+    lambda <- 4L + floor(3 * log(5))
+    matrix(cma_es((lower + upper) / 2, f, lower = lower, upper = upper,
+                  control = list(maxit = budget %/% lambda))$par, 1L)
+  },
+  nloptr = function(f) {
+    x0 <- matrix(runif(n_starts * 5L, lower, upper), n_starts, byrow = TRUE)
+    t(apply(x0, 1L, function(x) {
+      lbfgs(x, f, lower = lower, upper = upper,
+            control = list(maxeval = per_start))$par
+    }))
+  },
+  optimx = function(f) {
+    x0 <- matrix(runif(n_starts * 5L, lower, upper), n_starts, byrow = TRUE)
+    out <- multistart(x0, f, lower = lower, upper = upper,
+                      method = "L-BFGS-B",
+                      control = list(maxit = per_start, trace = 0))
+    as.matrix(out[, 1:5])
+  }
+)
+
+basins_of <- function(sol) {
+  landed <- t(apply(sol, 1L, function(x) descend(x)$par))
+  d <- as.matrix(dist(scaled(rbind(landed, minima[, 1:5]))))
+  d <- d[seq_len(nrow(sol)), nrow(sol) + seq_len(nrow(minima)),
+         drop = FALSE]
+  which(apply(d, 2L, min) < 0.05)
+}
+
+# warnings are kept by method: low effective sample size, and any other
+low_ess_geyser <- logical(0L)
+other_warn_geyser <- 0L
+geyser_res <- lapply(names(methods_geyser), function(method) {
+  cf <- counted(geyser_nll)
+  set.seed(1L)
+  low_ess_geyser[method] <<- FALSE
+  secs <- system.time(
+    sol <- withCallingHandlers(methods_geyser[[method]](cf$f),
+                               warning = function(w) {
+                                 if (inherits(w, "proxymix_low_ess")) {
+                                   low_ess_geyser[method] <<- TRUE
+                                 } else {
+                                   other_warn_geyser <<- other_warn_geyser + 1L
+                                 }
+                                 invokeRestart("muffleWarning")
+                               })
+  )[[3L]]
+  data.frame(
+    method = method, evaluations = cf$count(), reported = nrow(sol),
+    excess = min(apply(sol, 1L, geyser_nll)) - nll_ref,
+    basins = paste0("M", basins_of(sol), collapse = ", "),
+    secs = secs, stringsAsFactors = FALSE
+  )
+})
+geyser_res <- do.call(rbind, geyser_res)
+```
 
 ### A simulation benchmark
 
@@ -522,182 +481,184 @@ evaluations, the settings of the Himmelblau example earlier in this
 vignette, is shown beside the equal-budget proxymix row. The label 26
 000 is the nominal budget of those settings, and the median run used
 24632 evaluations on Himmelblau’s function and 24605 on the Rastrigin
-function. This chunk is complete and runs as shown, but it took about 7
+function. This chunk is complete and runs as shown, but it took about 4
 minutes on one core (R 4.6.1, Apple silicon); the tables below are read
 from its stored output. For a quick reduced run, change the line
 `n_rep <- 100L` to `n_rep <- 5L`.
 
-\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`\
-[`library`](https://rdrr.io/r/base/library.html)`(``GenSA``)`\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`DEoptim`](https://github.com/ArdiaD/DEoptim)`)`\
-[`library`](https://rdrr.io/r/base/library.html)`(``cmaes``)`\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`nloptr`](https://github.com/astamm/nloptr)`)`\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`optimx`](https://github.com/nashjc/optimx)`)`\
-\
-`budget`` ``<-`` ``5000L``  ``# objective evaluations per run`\
-`n_rep`` ``<-`` ``100L`\
-`radius`` ``<-`` ``0.3``    ``# a point within this distance of an optimum is in its basin`\
-\
-`himmelblau`` ``<-`` ``function``(``v``)`` ``(``v``[``1``]``^``2`` ``+`` ``v``[``2``]`` ``-`` ``11``)``^``2`` ``+`` ``(``v``[``1``]`` ``+`` ``v``[``2``]``^``2`` ``-`` ``7``)``^``2`\
-`shift`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``1.7``, ``-``2.3``)`\
-`rastrigin`` ``<-`` ``function``(``v``)`` ``{`\
-`  ``z`` ``<-`` ``v`` ``-`` ``shift`\
-`  ``20`` ``+`` `[`sum`](https://rdrr.io/r/base/sum.html)`(``z``^``2`` ``-`` ``10`` ``*`` `[`cos`](https://rdrr.io/r/base/Trig.html)`(``2`` ``*`` ``pi`` ``*`` ``z``)``)`\
-`}`\
-\
-`problems`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(`\
-`  Himmelblau ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`\
-`    f ``=`` ``himmelblau``, lower ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``-``5``, ``-``5``)``, upper ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``5``, ``5``)``,`\
-`    optima ``=`` `[`rbind`](https://rdrr.io/r/base/cbind.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``3``, ``2``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``-``2.805118``, ``3.131312``)``,`\
-`                   `[`c`](https://rdrr.io/r/base/c.html)`(``-``3.779310``, ``-``3.283186``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``3.584428``, ``-``1.848126``)``)`\
-`  ``)``,`\
-`  Rastrigin ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`\
-`    f ``=`` ``rastrigin``, lower ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``-``5.12``, ``-``5.12``)``, upper ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``5.12``, ``5.12``)``,`\
-`    optima ``=`` `[`rbind`](https://rdrr.io/r/base/cbind.html)`(``shift``, ``shift`` ``+`` `[`c`](https://rdrr.io/r/base/c.html)`(``1``, ``0``)``, ``shift`` ``-`` `[`c`](https://rdrr.io/r/base/c.html)`(``1``, ``0``)``,`\
-`                   ``shift`` ``+`` `[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``1``)``, ``shift`` ``-`` `[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``1``)``)`\
-`  ``)`\
-`)`\
-\
-`# every method sees the objective through this counter, which keeps the`\
-`` # first `budget` evaluated points ``\
-`counted`` ``<-`` ``function``(``f``)`` ``{`\
-`  ``count`` ``<-`` ``0L`\
-`  ``trace`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``NA_real_``, ``budget``, ``2L``)`\
-`  `[`list`](https://rdrr.io/r/base/list.html)`(`\
-`    f ``=`` ``function``(``v``)`` ``{`\
-`      ``count`` ``<<-`` ``count`` ``+`` ``1L`\
-`      ``if`` ``(``count`` ``<=`` ``budget``)`` ``trace``[``count``, ``]`` ``<<-`` ``v`\
-`      ``f``(``v``)`\
-`    ``}``,`\
-`    count ``=`` ``function``(``)`` ``count``,`\
-`    trace ``=`` ``function``(``)`` ``trace``[`[`seq_len`](https://rdrr.io/r/base/seq.html)`(`[`min`](https://rdrr.io/r/base/Extremes.html)`(``count``, ``budget``)``)``, , drop ``=`` ``FALSE``]`\
-`  ``)`\
-`}`\
-\
-`n_starts`` ``<-`` ``20L`\
-`# a numerical gradient costs 2p + 1 calls per iteration`\
-`per_start`` ``<-`` ``budget`` `[`%/%`](https://rdrr.io/r/base/Arithmetic.html)` ``(``n_starts`` ``*`` ``5L``)`\
-\
-`methods`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(`\
-`  proxymix ``=`` ``function``(``f``, ``lower``, ``upper``, ``seed``)`` ``{`\
-`    ``fit`` ``<-`` `[`from_objective`](https://max578.github.io/proxymix/reference/from_objective.md)`(``f``, ``lower``, ``upper``, N ``=`` ``10L``, is_size ``=`` ``1000L``,`\
-`                          n_steps ``=`` ``3L``, seed ``=`` ``seed``)`\
-`    `[`gmm_modes`](https://max578.github.io/proxymix/reference/gmm_modes.md)`(``fit``)``$``modes`\
-`  ``}``,`\
-`  ``"proxymix, 26 000"`` ``=`` ``function``(``f``, ``lower``, ``upper``, ``seed``)`` ``{`\
-`    ``fit`` ``<-`` `[`from_objective`](https://max578.github.io/proxymix/reference/from_objective.md)`(``f``, ``lower``, ``upper``, N ``=`` ``10L``, is_size ``=`` ``4000L``,`\
-`                          n_steps ``=`` ``6L``, seed ``=`` ``seed``)`\
-`    `[`gmm_modes`](https://max578.github.io/proxymix/reference/gmm_modes.md)`(``fit``)``$``modes`\
-`  ``}``,`\
-`  GenSA ``=`` ``function``(``f``, ``lower``, ``upper``, ``seed``)`` ``{`\
-`    ``out`` ``<-`` `[`GenSA`](https://rdrr.io/pkg/GenSA/man/GenSA.html)`(``fn ``=`` ``f``, lower ``=`` ``lower``, upper ``=`` ``upper``,`\
-`                 control ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``max.call ``=`` ``budget``, seed ``=`` ``seed``)``)`\
-`    `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``out``$``par``, ``1L``)`\
-`  ``}``,`\
-`  DEoptim ``=`` ``function``(``f``, ``lower``, ``upper``, ``seed``)`` ``{`\
-`    ``out`` ``<-`` `[`DEoptim`](https://rdrr.io/pkg/DEoptim/man/DEoptim.html)`(``f``, ``lower``, ``upper``,`\
-`                   `[`DEoptim.control`](https://rdrr.io/pkg/DEoptim/man/DEoptim.control.html)`(``NP ``=`` ``50L``, itermax ``=`` ``99L``, trace ``=`` ``FALSE``)``)`\
-`    `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``out``$``optim``$``bestmem``, ``1L``)`\
-`  ``}``,`\
-`  cmaes ``=`` ``function``(``f``, ``lower``, ``upper``, ``seed``)`` ``{`\
-`    ``lambda`` ``<-`` ``4L`` ``+`` `[`floor`](https://rdrr.io/r/base/Round.html)`(``3`` ``*`` `[`log`](https://rdrr.io/r/base/Log.html)`(`[`length`](https://rdrr.io/r/base/length.html)`(``lower``)``)``)`\
-`    ``out`` ``<-`` `[`cma_es`](https://rdrr.io/pkg/cmaes/man/cma_es.html)`(``(``lower`` ``+`` ``upper``)`` ``/`` ``2``, ``f``, lower ``=`` ``lower``, upper ``=`` ``upper``,`\
-`                  control ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``maxit ``=`` ``budget`` `[`%/%`](https://rdrr.io/r/base/Arithmetic.html)` ``lambda``)``)`\
-`    `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``out``$``par``, ``1L``)`\
-`  ``}``,`\
-`  nloptr ``=`` ``function``(``f``, ``lower``, ``upper``, ``seed``)`` ``{`\
-`    ``starts`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`runif`](https://rdrr.io/r/stats/Uniform.html)`(``n_starts`` ``*`` ``2L``, ``lower``, ``upper``)``, ``n_starts``,`\
-`                     byrow ``=`` ``TRUE``)`\
-`    `[`t`](https://rdrr.io/r/base/t.html)`(`[`apply`](https://rdrr.io/r/base/apply.html)`(``starts``, ``1L``, ``function``(``x0``)`` ``{`\
-`      `[`lbfgs`](https://astamm.github.io/nloptr/reference/lbfgs.html)`(``x0``, ``f``, lower ``=`` ``lower``, upper ``=`` ``upper``,`\
-`            control ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``maxeval ``=`` ``per_start``)``)``$``par`\
-`    ``}``)``)`\
-`  ``}``,`\
-`  optimx ``=`` ``function``(``f``, ``lower``, ``upper``, ``seed``)`` ``{`\
-`    ``starts`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`runif`](https://rdrr.io/r/stats/Uniform.html)`(``n_starts`` ``*`` ``2L``, ``lower``, ``upper``)``, ``n_starts``,`\
-`                     byrow ``=`` ``TRUE``)`\
-`    ``out`` ``<-`` `[`multistart`](https://rdrr.io/pkg/optimx/man/multistart.html)`(``starts``, ``f``, lower ``=`` ``lower``, upper ``=`` ``upper``,`\
-`                      method ``=`` ``"L-BFGS-B"``,`\
-`                      control ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``maxit ``=`` ``per_start``, trace ``=`` ``0``)``)`\
-`    `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(``out``[``, ``1``:``2``]``)`\
-`  ``}`\
-`)`\
-\
-`nearest_optimum`` ``<-`` ``function``(``points``, ``optima``)`` ``{`\
-`  ``d`` ``<-`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(`[`pmax`](https://rdrr.io/r/base/Extremes.html)`(`[`outer`](https://rdrr.io/r/base/outer.html)`(`[`rowSums`](https://rdrr.io/r/base/colSums.html)`(``points``^``2``)``, `[`rowSums`](https://rdrr.io/r/base/colSums.html)`(``optima``^``2``)``, ``"+"``)`` ``-`\
-`                   ``2`` ``*`` ``points`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` `[`t`](https://rdrr.io/r/base/t.html)`(``optima``)``, ``0``)``)`\
-`  `[`list`](https://rdrr.io/r/base/list.html)`(``basin ``=`` `[`apply`](https://rdrr.io/r/base/apply.html)`(``d``, ``1L``, ``which.min``)``, gap ``=`` `[`apply`](https://rdrr.io/r/base/apply.html)`(``d``, ``1L``, ``min``)``)`\
-`}`\
-\
-`one_run`` ``<-`` ``function``(``problem``, ``method``, ``r``)`` ``{`\
-`  ``pr`` ``<-`` ``problems``[[``problem``]``]`\
-`  ``cf`` ``<-`` ``counted``(``pr``$``f``)`\
-`  `[`set.seed`](https://rdrr.io/r/base/Random.html)`(``r``)`\
-`  ``# flag the run's warnings; they still reach the caller`\
-`  ``low_ess`` ``<-`` ``FALSE`\
-`  ``other_warnings`` ``<-`` ``0L`\
-`  ``secs`` ``<-`` `[`system.time`](https://rdrr.io/r/base/system.time.html)`(`\
-`    ``sol`` ``<-`` `[`withCallingHandlers`](https://rdrr.io/r/base/conditions.html)`(`\
-`      ``methods``[[``method``]``]``(``cf``$``f``, ``pr``$``lower``, ``pr``$``upper``, ``r``)``,`\
-`      warning ``=`` ``function``(``w``)`` ``{`\
-`        ``if`` ``(`[`inherits`](https://rdrr.io/r/base/class.html)`(``w``, ``"proxymix_low_ess"``)``)`` ``{`\
-`          ``low_ess`` ``<<-`` ``TRUE`\
-`        ``}`` ``else`` ``{`\
-`          ``other_warnings`` ``<<-`` ``other_warnings`` ``+`` ``1L`\
-`        ``}`\
-`      ``}`\
-`    ``)`\
-`  ``)``[[``3L``]``]`\
-`  ``n_opt`` ``<-`` `[`nrow`](https://rdrr.io/r/base/nrow.html)`(``pr``$``optima``)`\
-`  ``# reported solutions: which basins hold one`\
-`  ``rep`` ``<-`` ``nearest_optimum``(``sol``, ``pr``$``optima``)`\
-`  ``in_basin`` ``<-`` `[`tabulate`](https://rdrr.io/r/base/tabulate.html)`(``rep``$``basin``[``rep``$``gap`` ``<`` ``radius``]``, ``n_opt``)`` ``>`` ``0L`\
-`  ``# evaluated points: first evaluation inside each basin`\
-`  ``tr`` ``<-`` ``nearest_optimum``(``cf``$``trace``(``)``, ``pr``$``optima``)`\
-`  ``first_visit`` ``<-`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``n_opt``)``, ``function``(``b``)`` ``{`\
-`    ``hit`` ``<-`` `[`which`](https://rdrr.io/r/base/which.html)`(``tr``$``basin`` ``==`` ``b`` ``&`` ``tr``$``gap`` ``<`` ``radius``)`\
-`    ``if`` ``(`[`length`](https://rdrr.io/r/base/length.html)`(``hit``)`` ``==`` ``0L``)`` ``NA_integer_`` ``else`` ``hit``[``1L``]`\
-`  ``}``, `[`integer`](https://rdrr.io/r/base/integer.html)`(``1L``)``)`\
-`  ``basin`` ``<-`` `[`rep`](https://rdrr.io/r/base/rep.html)`(``NA``, ``5L``)`\
-`  ``basin``[`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``n_opt``)``]`` ``<-`` ``in_basin`\
-`  `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(`\
-`    problem ``=`` ``problem``, method ``=`` ``method``, run ``=`` ``r``,`\
-`    evaluations ``=`` ``cf``$``count``(``)``, secs ``=`` ``secs``,`\
-`    n_reported ``=`` `[`nrow`](https://rdrr.io/r/base/nrow.html)`(``sol``)``,`\
-`    best_value ``=`` `[`min`](https://rdrr.io/r/base/Extremes.html)`(`[`apply`](https://rdrr.io/r/base/apply.html)`(``sol``, ``1L``, ``pr``$``f``)``)``,`\
-`    basins_found ``=`` `[`sum`](https://rdrr.io/r/base/sum.html)`(``in_basin``)``,`\
-`    all_found ``=`` `[`all`](https://rdrr.io/r/base/all.html)`(``in_basin``)``,`\
-`    global_found ``=`` ``in_basin``[``1L``]``,`\
-`    basin_1 ``=`` ``basin``[``1L``]``, basin_2 ``=`` ``basin``[``2L``]``, basin_3 ``=`` ``basin``[``3L``]``,`\
-`    basin_4 ``=`` ``basin``[``4L``]``, basin_5 ``=`` ``basin``[``5L``]``,`\
-`    visited_all ``=`` ``!`[`anyNA`](https://rdrr.io/r/base/NA.html)`(``first_visit``)``,`\
-`    ``# a run that never entered every basin counts as never (Inf)`\
-`    evals_to_all ``=`` ``if`` ``(`[`anyNA`](https://rdrr.io/r/base/NA.html)`(``first_visit``)``)`` ``Inf`` ``else`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(``first_visit``)``,`\
-`    low_ess ``=`` ``low_ess``, other_warnings ``=`` ``other_warnings`\
-`  ``)`\
-`}`\
-\
-`res`` ``<-`` `[`do.call`](https://rdrr.io/r/base/do.call.html)`(``rbind``, `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`names`](https://rdrr.io/r/base/names.html)`(``problems``)``, ``function``(``problem``)`` ``{`\
-`  `[`do.call`](https://rdrr.io/r/base/do.call.html)`(``rbind``, `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`names`](https://rdrr.io/r/base/names.html)`(``methods``)``, ``function``(``method``)`` ``{`\
-`    `[`do.call`](https://rdrr.io/r/base/do.call.html)`(``rbind``, `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``n_rep``)``, ``function``(``r``)`` ``{`\
-`      ``one_run``(``problem``, ``method``, ``r``)`\
-`    ``}``)``)`\
-`  ``}``)``)`\
-`}``)``)`\
-\
-`# rates over runs, and medians of the run-level quantities`\
-`by_mean`` ``<-`` `[`aggregate`](https://rdrr.io/r/stats/aggregate.html)`(`\
-`  `[`cbind`](https://rdrr.io/r/base/cbind.html)`(``basin_1``, ``basin_2``, ``basin_3``, ``basin_4``, ``basin_5``, ``all_found``, ``global_found``,`\
-`        ``basins_found``, ``visited_all``, ``low_ess``)`` ``~`` ``problem`` ``+`` ``method``,`\
-`  data ``=`` ``res``, FUN ``=`` ``mean``, na.action ``=`` ``na.pass`\
-`)`\
-`by_median`` ``<-`` `[`aggregate`](https://rdrr.io/r/stats/aggregate.html)`(`\
-`  `[`cbind`](https://rdrr.io/r/base/cbind.html)`(``evaluations``, ``best_value``, ``evals_to_all``, ``secs``)`` ``~`` ``problem`` ``+`` ``method``,`\
-`  data ``=`` ``res``, FUN ``=`` ``median``, na.action ``=`` ``na.pass`\
-`)`\
-`sim_tab`` ``<-`` `[`merge`](https://rdrr.io/r/base/merge.html)`(``by_mean``, ``by_median``, by ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"problem"``, ``"method"``)``)`\
-`sim_tab`
+``` r
+
+library(proxymix)
+library(GenSA)
+library(DEoptim)
+library(cmaes)
+library(nloptr)
+library(optimx)
+
+budget <- 5000L  # objective evaluations per run
+n_rep <- 100L
+radius <- 0.3    # a point within this distance of an optimum is in its basin
+
+himmelblau <- function(v) (v[1]^2 + v[2] - 11)^2 + (v[1] + v[2]^2 - 7)^2
+shift <- c(1.7, -2.3)
+rastrigin <- function(v) {
+  z <- v - shift
+  20 + sum(z^2 - 10 * cos(2 * pi * z))
+}
+
+problems <- list(
+  Himmelblau = list(
+    f = himmelblau, lower = c(-5, -5), upper = c(5, 5),
+    optima = rbind(c(3, 2), c(-2.805118, 3.131312),
+                   c(-3.779310, -3.283186), c(3.584428, -1.848126))
+  ),
+  Rastrigin = list(
+    f = rastrigin, lower = c(-5.12, -5.12), upper = c(5.12, 5.12),
+    optima = rbind(shift, shift + c(1, 0), shift - c(1, 0),
+                   shift + c(0, 1), shift - c(0, 1))
+  )
+)
+
+# every method sees the objective through this counter, which keeps the
+# first `budget` evaluated points
+counted <- function(f) {
+  count <- 0L
+  trace <- matrix(NA_real_, budget, 2L)
+  list(
+    f = function(v) {
+      count <<- count + 1L
+      if (count <= budget) trace[count, ] <<- v
+      f(v)
+    },
+    count = function() count,
+    trace = function() trace[seq_len(min(count, budget)), , drop = FALSE]
+  )
+}
+
+n_starts <- 20L
+# a numerical gradient costs 2p + 1 calls per iteration
+per_start <- budget %/% (n_starts * 5L)
+
+methods <- list(
+  proxymix = function(f, lower, upper, seed) {
+    fit <- from_objective(f, lower, upper, N = 10L, is_size = 1000L,
+                          n_steps = 3L, seed = seed)
+    gmm_modes(fit)$modes
+  },
+  "proxymix, 26 000" = function(f, lower, upper, seed) {
+    fit <- from_objective(f, lower, upper, N = 10L, is_size = 4000L,
+                          n_steps = 6L, seed = seed)
+    gmm_modes(fit)$modes
+  },
+  GenSA = function(f, lower, upper, seed) {
+    out <- GenSA(fn = f, lower = lower, upper = upper,
+                 control = list(max.call = budget, seed = seed))
+    matrix(out$par, 1L)
+  },
+  DEoptim = function(f, lower, upper, seed) {
+    out <- DEoptim(f, lower, upper,
+                   DEoptim.control(NP = 50L, itermax = 99L, trace = FALSE))
+    matrix(out$optim$bestmem, 1L)
+  },
+  cmaes = function(f, lower, upper, seed) {
+    lambda <- 4L + floor(3 * log(length(lower)))
+    out <- cma_es((lower + upper) / 2, f, lower = lower, upper = upper,
+                  control = list(maxit = budget %/% lambda))
+    matrix(out$par, 1L)
+  },
+  nloptr = function(f, lower, upper, seed) {
+    starts <- matrix(runif(n_starts * 2L, lower, upper), n_starts,
+                     byrow = TRUE)
+    t(apply(starts, 1L, function(x0) {
+      lbfgs(x0, f, lower = lower, upper = upper,
+            control = list(maxeval = per_start))$par
+    }))
+  },
+  optimx = function(f, lower, upper, seed) {
+    starts <- matrix(runif(n_starts * 2L, lower, upper), n_starts,
+                     byrow = TRUE)
+    out <- multistart(starts, f, lower = lower, upper = upper,
+                      method = "L-BFGS-B",
+                      control = list(maxit = per_start, trace = 0))
+    as.matrix(out[, 1:2])
+  }
+)
+
+nearest_optimum <- function(points, optima) {
+  d <- sqrt(pmax(outer(rowSums(points^2), rowSums(optima^2), "+") -
+                   2 * points %*% t(optima), 0))
+  list(basin = apply(d, 1L, which.min), gap = apply(d, 1L, min))
+}
+
+one_run <- function(problem, method, r) {
+  pr <- problems[[problem]]
+  cf <- counted(pr$f)
+  set.seed(r)
+  # flag the run's warnings; they still reach the caller
+  low_ess <- FALSE
+  other_warnings <- 0L
+  secs <- system.time(
+    sol <- withCallingHandlers(
+      methods[[method]](cf$f, pr$lower, pr$upper, r),
+      warning = function(w) {
+        if (inherits(w, "proxymix_low_ess")) {
+          low_ess <<- TRUE
+        } else {
+          other_warnings <<- other_warnings + 1L
+        }
+      }
+    )
+  )[[3L]]
+  n_opt <- nrow(pr$optima)
+  # reported solutions: which basins hold one
+  rep <- nearest_optimum(sol, pr$optima)
+  in_basin <- tabulate(rep$basin[rep$gap < radius], n_opt) > 0L
+  # evaluated points: first evaluation inside each basin
+  tr <- nearest_optimum(cf$trace(), pr$optima)
+  first_visit <- vapply(seq_len(n_opt), function(b) {
+    hit <- which(tr$basin == b & tr$gap < radius)
+    if (length(hit) == 0L) NA_integer_ else hit[1L]
+  }, integer(1L))
+  basin <- rep(NA, 5L)
+  basin[seq_len(n_opt)] <- in_basin
+  data.frame(
+    problem = problem, method = method, run = r,
+    evaluations = cf$count(), secs = secs,
+    n_reported = nrow(sol),
+    best_value = min(apply(sol, 1L, pr$f)),
+    basins_found = sum(in_basin),
+    all_found = all(in_basin),
+    global_found = in_basin[1L],
+    basin_1 = basin[1L], basin_2 = basin[2L], basin_3 = basin[3L],
+    basin_4 = basin[4L], basin_5 = basin[5L],
+    visited_all = !anyNA(first_visit),
+    # a run that never entered every basin counts as never (Inf)
+    evals_to_all = if (anyNA(first_visit)) Inf else max(first_visit),
+    low_ess = low_ess, other_warnings = other_warnings
+  )
+}
+
+res <- do.call(rbind, lapply(names(problems), function(problem) {
+  do.call(rbind, lapply(names(methods), function(method) {
+    do.call(rbind, lapply(seq_len(n_rep), function(r) {
+      one_run(problem, method, r)
+    }))
+  }))
+}))
+
+# rates over runs, and medians of the run-level quantities
+by_mean <- aggregate(
+  cbind(basin_1, basin_2, basin_3, basin_4, basin_5, all_found, global_found,
+        basins_found, visited_all, low_ess) ~ problem + method,
+  data = res, FUN = mean, na.action = na.pass
+)
+by_median <- aggregate(
+  cbind(evaluations, best_value, evals_to_all, secs) ~ problem + method,
+  data = res, FUN = median, na.action = na.pass
+)
+sim_tab <- merge(by_mean, by_median, by = c("problem", "method"))
+sim_tab
+```
 
 | Function   | Method           | Basin 1 | Basin 2 | Basin 3 | Basin 4 | Basin 5 | All basins |
 |:-----------|:-----------------|--------:|--------:|--------:|--------:|--------:|-----------:|
@@ -723,20 +684,20 @@ so its Basin 5 cells are empty. {.table}
 
 | Function | Method | Evaluations | Best value | Visited all | Evals to visit all | Seconds |
 |:---|:---|---:|---:|---:|---:|---:|
-| Himmelblau | proxymix | 4734 | 0.181 | 1.00 | 623 | 0.229 |
-| Himmelblau | proxymix, 26 000 | 24632 | 0.045 | 1.00 | 623 | 1.308 |
-| Himmelblau | GenSA | 5012 | 0.000 | 0.76 | 1948 | 0.015 |
-| Himmelblau | DEoptim | 5000 | 0.000 | 0.71 | 1710 | 0.017 |
-| Himmelblau | cmaes | 4998 | 0.000 | 0.00 | – | 0.084 |
-| Himmelblau | nloptr | 1766 | 0.000 | 0.99 | 572 | 0.016 |
-| Himmelblau | optimx | 1622 | 0.000 | 0.98 | 604 | 0.009 |
-| Rastrigin | proxymix | 4730 | 2.067 | 1.00 | 751 | 0.213 |
-| Rastrigin | proxymix, 26 000 | 24605 | 1.000 | 1.00 | 751 | 1.245 |
-| Rastrigin | GenSA | 5005 | 0.000 | 1.00 | 408 | 0.014 |
-| Rastrigin | DEoptim | 5000 | 0.000 | 1.00 | 299 | 0.014 |
-| Rastrigin | cmaes | 4998 | 4.975 | 0.08 | – | 0.072 |
-| Rastrigin | nloptr | 1496 | 0.995 | 0.00 | – | 0.015 |
-| Rastrigin | optimx | 1198 | 0.995 | 0.00 | – | 0.008 |
+| Himmelblau | proxymix | 4734 | 0.181 | 1.00 | 623 | 0.135 |
+| Himmelblau | proxymix, 26 000 | 24632 | 0.045 | 1.00 | 623 | 0.783 |
+| Himmelblau | GenSA | 5012 | 0.000 | 0.76 | 1948 | 0.009 |
+| Himmelblau | DEoptim | 5000 | 0.000 | 0.71 | 1710 | 0.008 |
+| Himmelblau | cmaes | 4998 | 0.000 | 0.00 | – | 0.045 |
+| Himmelblau | nloptr | 1766 | 0.000 | 0.99 | 572 | 0.009 |
+| Himmelblau | optimx | 1622 | 0.000 | 0.98 | 604 | 0.005 |
+| Rastrigin | proxymix | 4730 | 2.067 | 1.00 | 751 | 0.122 |
+| Rastrigin | proxymix, 26 000 | 24605 | 1.000 | 1.00 | 751 | 0.729 |
+| Rastrigin | GenSA | 5005 | 0.000 | 1.00 | 408 | 0.008 |
+| Rastrigin | DEoptim | 5000 | 0.000 | 1.00 | 299 | 0.008 |
+| Rastrigin | cmaes | 4998 | 4.975 | 0.08 | – | 0.043 |
+| Rastrigin | nloptr | 1496 | 0.995 | 0.00 | – | 0.008 |
+| Rastrigin | optimx | 1198 | 0.995 | 0.00 | – | 0.004 |
 
 Over 100 runs per method: the median number of objective evaluations
 used, the median of the best reported objective value, the fraction of
@@ -853,55 +814,59 @@ The illustration draws the 400 descent starts after `set.seed(20260925)`
 and runs every method after `set.seed(1L)`, with `seed = 1L` passed to
 [`from_objective()`](https://max578.github.io/proxymix/reference/from_objective.md)
 and to GenSA. Each simulation run is seeded by its own index. The stored
-results come from the code shown, run on 28 September 2026 with R 4.6.1,
-proxymix 0.16.0, GenSA 1.1.15, DEoptim 2.2-8, cmaes 1.0-12, nloptr 2.2.1
-and optimx 2025-4.9, and raised 110 warnings: 100 of low effective
+results come from the code shown, run on 21 October 2026 with R 4.6.1,
+proxymix 0.17.0, GenSA 1.1.15, DEoptim 2.2.8, cmaes 1.0.12, nloptr 2.2.1
+and optimx 2025.4.9, and raised 110 warnings: 100 of low effective
 sample size, 10 of the EM objective falling by at most
 $`6 \times 10^{-5}`$ in a cooling step, and 0 others.
 
-\
-[`sessionInfo`](https://rdrr.io/r/utils/sessionInfo.html)`(``)`
+``` r
+
+sessionInfo()
+```
 
     #> R version 4.6.1 (2026-06-24)
-    #> Platform: aarch64-apple-darwin23
-    #> Running under: macOS Tahoe 26.6.2
+    #> Platform: x86_64-pc-linux-gnu
+    #> Running under: Ubuntu 24.04.5 LTS
     #> 
     #> Matrix products: default
-    #> BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/
-    #>     libRblas.0.dylib 
-    #> LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/
-    #>     libRlapack.dylib;  LAPACK version 3.12.1
+    #> BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 
+    #> LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/
+    #>     libopenblasp-r0.3.26.so;  LAPACK version 3.12.0
     #> 
     #> locale:
-    #> [1] en_AU.UTF-8/en_AU.UTF-8/en_AU.UTF-8/C/en_AU.UTF-8/en_AU.UTF-8
+    #>  [1] LC_CTYPE=C.UTF-8       LC_NUMERIC=C          
+    #>  [3] LC_TIME=C.UTF-8        LC_COLLATE=C.UTF-8    
+    #>  [5] LC_MONETARY=C.UTF-8    LC_MESSAGES=C.UTF-8   
+    #>  [7] LC_PAPER=C.UTF-8       LC_NAME=C             
+    #>  [9] LC_ADDRESS=C           LC_TELEPHONE=C        
+    #> [11] LC_MEASUREMENT=C.UTF-8 LC_IDENTIFICATION=C   
     #> 
-    #> time zone: Australia/Adelaide
-    #> tzcode source: internal
+    #> time zone: UTC
+    #> tzcode source: system (glibc)
     #> 
     #> attached base packages:
-    #> [1] parallel  stats     graphics  grDevices utils     datasets 
-    #> [7] methods   base     
+    #> [1] stats     graphics  grDevices utils     datasets  methods  
+    #> [7] base     
     #> 
     #> other attached packages:
-    #> [1] mclust_6.1.3    optimx_2025-4.9 nloptr_2.2.1    cmaes_1.0-12   
-    #> [5] DEoptim_2.2-8   GenSA_1.1.15    proxymix_0.16.0
+    #> [1] proxymix_0.17.0
     #> 
     #> loaded via a namespace (and not attached):
-    #>  [1] sass_0.4.10         generics_0.1.4      pracma_2.4.6       
-    #>  [4] digest_0.6.39       magrittr_2.0.5      evaluate_1.0.5     
-    #>  [7] grid_4.6.1          RColorBrewer_1.1-3  fastmap_1.2.0      
-    #> [10] jsonlite_2.0.0      viridisLite_0.4.3   scales_1.4.0       
-    #> [13] numDeriv_2016.8-1.1 isoband_0.3.0       textshaping_1.0.5  
-    #> [16] jquerylib_0.1.4     cli_3.6.6           rlang_1.3.0        
-    #> [19] withr_3.0.3         cachem_1.1.0        yaml_2.3.12        
-    #> [22] otel_0.2.0          tools_4.6.1         dplyr_1.2.1        
-    #> [25] ggplot2_4.0.3       vctrs_0.7.3         R6_2.6.1           
-    #> [28] lifecycle_1.0.5     fs_2.1.0            htmlwidgets_1.6.4  
-    #> [31] MASS_7.3-66         ragg_1.5.2          pkgconfig_2.0.3    
-    #> [34] desc_1.4.3          pkgdown_2.2.1       pillar_1.11.1      
-    #> [37] bslib_0.12.0        gtable_0.3.6        glue_1.8.1         
-    #> [40] Rcpp_1.1.2          systemfonts_1.3.2   xfun_0.60          
-    #> [43] tibble_3.3.1        tidyselect_1.2.1    knitr_1.51         
-    #> [46] dichromat_2.0-1     farver_2.1.2        htmltools_0.5.9    
-    #> [49] rmarkdown_2.32      labeling_0.4.3      compiler_4.6.1     
-    #> [52] S7_0.2.2            mvnfast_0.2.8
+    #>  [1] mvnfast_0.2.8      gtable_0.3.6       jsonlite_2.0.0    
+    #>  [4] dplyr_1.2.1        compiler_4.6.1     tidyselect_1.2.1  
+    #>  [7] Rcpp_1.1.2         jquerylib_0.1.4    systemfonts_1.3.2 
+    #> [10] scales_1.4.0       textshaping_1.0.5  yaml_2.3.12       
+    #> [13] fastmap_1.2.0      ggplot2_4.0.3      R6_2.6.1          
+    #> [16] labeling_0.4.3     generics_0.1.4     isoband_0.3.0     
+    #> [19] knitr_1.52         MASS_7.3-65        tibble_3.3.1      
+    #> [22] nloptr_2.2.1       desc_1.4.3         bslib_0.12.0      
+    #> [25] pillar_1.11.1      RColorBrewer_1.1-3 rlang_1.3.0       
+    #> [28] cachem_1.1.0       xfun_0.62          fs_2.1.0          
+    #> [31] sass_0.4.10        S7_0.2.2           otel_0.2.0        
+    #> [34] viridisLite_0.4.3  cli_3.6.6          pkgdown_2.2.1     
+    #> [37] withr_3.0.3        magrittr_2.0.5     digest_0.6.39     
+    #> [40] grid_4.6.1         mclust_6.1.3       lifecycle_1.0.5   
+    #> [43] vctrs_0.7.3        evaluate_1.0.5     glue_1.8.1        
+    #> [46] farver_2.1.2       ragg_1.5.2         rmarkdown_2.32    
+    #> [49] tools_4.6.1        pkgconfig_2.0.3    htmltools_0.5.9

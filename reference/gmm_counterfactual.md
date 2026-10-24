@@ -43,7 +43,7 @@ gmm_counterfactual(g, evidence, do, query, ridge_eps = 1e-06)
 ## Value
 
 A `gmm_counterfactual_law` object carrying the `K` atoms, their
-abduction weights, and the identified counterfactual `mean`.
+abduction weights, and the counterfactual `mean`.
 
 ## Details
 
@@ -54,11 +54,17 @@ coordinates. *Prediction* re-evaluates the query coordinate. For a
 binary treatment the result is a discrete law on `K` atoms, \$\$Y\_{t'}
 \mid (y, t, x) = \sum_k \pi_k(y, t, x)\\ \delta\\\big(y +
 \beta_k^{T}(t' - t)\big),\$\$ where \\\beta_k^T\\ is component `k`'s
-within-class treatment slope. Only the **mean** of this law is
-identified; its spread reflects regime uncertainty, not the
-(unidentified) cross-world coupling, so the variance and tail accessors
-refuse to answer (see
-[`gmm_cf_variance()`](https://max578.github.io/proxymix/reference/gmm_cf_variance.md)).
+within-class treatment slope.
+
+This law assumes the unit keeps its structural residual when the
+treatment changes. The joint density cannot confirm that assumption: if
+the residual were redrawn instead, the same mixture would give a
+different counterfactual law for the unit, mean included.
+[`gmm_cf_mean()`](https://max578.github.io/proxymix/reference/gmm_cf_mean.md),
+[`gmm_cf_variance()`](https://max578.github.io/proxymix/reference/gmm_cf_variance.md)
+and
+[`gmm_cf_tail_prob()`](https://max578.github.io/proxymix/reference/gmm_cf_tail_prob.md)
+summarise the law under the same assumption.
 
 ## See also
 

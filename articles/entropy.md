@@ -1,10 +1,14 @@
 # Reading the entropy of a fitted mixture
 
-\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`
+``` r
 
-\
-`has_ggplot2`` ``<-`` `[`requireNamespace`](https://rdrr.io/r/base/ns-load.html)`(``"ggplot2"``, quietly ``=`` ``TRUE``)`
+library(proxymix)
+```
+
+``` r
+
+has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
+```
 
 ## The problem
 
@@ -54,8 +58,10 @@ others must be estimated by simulation.
 
 ## Addressing the problem
 
-\
-[`set.seed`](https://rdrr.io/r/base/Random.html)`(``20260618``)`
+``` r
+
+set.seed(20260618)
+```
 
 ### Why some quantities are exact
 
@@ -81,24 +87,26 @@ $`\Sigma`$, the Rényi-2 entropy is
 $`\tfrac{p}{2}\log(4\pi) + \tfrac{1}{2}\log\det\Sigma`$, an independent
 check on the package.
 
-\
-`g`` ``<-`` `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(`\
-`  weights ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``0.5``, ``0.5``)``,`\
-`  means ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``-``2``, ``0``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``2``, ``0``)``)``,`\
-`  covariances ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``, `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``)`\
-`)`\
-`h2_mixture`` ``<-`` `[`gmm_entropy`](https://max578.github.io/proxymix/reference/gmm_entropy.md)`(``g``)`\
-\
-`sigma_one`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``1``, ``0.3``, ``0.3``, ``1``)``, ``2L``, ``2L``)`\
-`one`` ``<-`` `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(``weights ``=`` ``1``, means ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)``)``, covariances ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``sigma_one``)``)`\
-`h2_closed`` ``<-`` `[`gmm_entropy`](https://max578.github.io/proxymix/reference/gmm_entropy.md)`(``one``)`\
-`h2_analytic`` ``<-`` ``0.5`` ``*`` ``(``2`` ``*`` `[`log`](https://rdrr.io/r/base/Log.html)`(``4`` ``*`` ``pi``)`` ``+`\
-`  `[`as.numeric`](https://rdrr.io/r/base/numeric.html)`(`[`determinant`](https://rdrr.io/r/base/det.html)`(``sigma_one``, logarithm ``=`` ``TRUE``)``$``modulus``)``)`\
-`h2_gap`` ``<-`` `[`abs`](https://rdrr.io/r/base/MathFun.html)`(``h2_closed`` ``-`` ``h2_analytic``)`\
-\
-`sh`` ``<-`` `[`gmm_entropy`](https://max578.github.io/proxymix/reference/gmm_entropy.md)`(``g``, order ``=`` ``"shannon"``, n_mc ``=`` ``5000L``, seed ``=`` ``1L``)`\
-`sh_slack`` ``<-`` ``sh``$``upper_bound`` ``-`` ``sh``$``mc`\
-`sh_slack_se`` ``<-`` ``sh_slack`` ``/`` ``sh``$``mc_se`
+``` r
+
+g <- gmm(
+  weights = c(0.5, 0.5),
+  means = list(c(-2, 0), c(2, 0)),
+  covariances = list(diag(2), diag(2))
+)
+h2_mixture <- gmm_entropy(g)
+
+sigma_one <- matrix(c(1, 0.3, 0.3, 1), 2L, 2L)
+one <- gmm(weights = 1, means = list(c(0, 0)), covariances = list(sigma_one))
+h2_closed <- gmm_entropy(one)
+h2_analytic <- 0.5 * (2 * log(4 * pi) +
+  as.numeric(determinant(sigma_one, logarithm = TRUE)$modulus))
+h2_gap <- abs(h2_closed - h2_analytic)
+
+sh <- gmm_entropy(g, order = "shannon", n_mc = 5000L, seed = 1L)
+sh_slack <- sh$upper_bound - sh$mc
+sh_slack_se <- sh_slack / sh$mc_se
+```
 
 | Quantity                                            | Value (nats) |
 |:----------------------------------------------------|-------------:|
@@ -121,13 +129,15 @@ has no exact formula for mixtures. With `type = "kl"`,
 returns a simulation estimate and the approximation of Hershey and Olsen
 (2007), which needs no simulation.
 
-\
-`q`` ``<-`` `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(`\
-`  weights ``=`` ``1``, means ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)``)``, covariances ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)`` ``*`` ``2``)`\
-`)`\
-`d_cs`` ``<-`` `[`gmm_divergence`](https://max578.github.io/proxymix/reference/gmm_divergence.md)`(``g``, ``q``)`\
-`d_self`` ``<-`` `[`gmm_divergence`](https://max578.github.io/proxymix/reference/gmm_divergence.md)`(``g``, ``g``)`\
-`d_kl`` ``<-`` `[`gmm_divergence`](https://max578.github.io/proxymix/reference/gmm_divergence.md)`(``g``, ``q``, type ``=`` ``"kl"``, n_mc ``=`` ``2000L``)`
+``` r
+
+q <- gmm(
+  weights = 1, means = list(c(0, 0)), covariances = list(diag(2) * 2)
+)
+d_cs <- gmm_divergence(g, q)
+d_self <- gmm_divergence(g, g)
+d_kl <- gmm_divergence(g, q, type = "kl", n_mc = 2000L)
+```
 
 | Quantity                                         | Value (nats) |
 |:-------------------------------------------------|-------------:|
@@ -149,20 +159,22 @@ computed at each value separately, not averaged over $`x_2`$.
 [`gmm_conditional_entropy()`](https://max578.github.io/proxymix/reference/gmm_conditional_entropy.md)
 takes one row per value, with `NA` marking the free variable.
 
-\
-`sigma_joint`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``1``, ``0.7``, ``0.7``, ``1``)``, ``2L``, ``2L``)`\
-`joint`` ``<-`` `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(`\
-`  weights ``=`` ``1``, means ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)``)``, covariances ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``sigma_joint``)`\
-`)`\
-`mi`` ``<-`` `[`gmm_mutual_information`](https://max578.github.io/proxymix/reference/gmm_mutual_information.md)`(``joint``, ``1L``, ``2L``)`\
-\
-`independent`` ``<-`` `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(`\
-`  weights ``=`` ``1``, means ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)``)``, covariances ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``)`\
-`)`\
-`mi_independent`` ``<-`` `[`gmm_mutual_information`](https://max578.github.io/proxymix/reference/gmm_mutual_information.md)`(``independent``, ``1L``, ``2L``)`\
-\
-`given_grid`` ``<-`` `[`rbind`](https://rdrr.io/r/base/cbind.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``NA``, ``0``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``NA``, ``1``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``NA``, ``2``)``)`\
-`h_cond`` ``<-`` `[`gmm_conditional_entropy`](https://max578.github.io/proxymix/reference/gmm_conditional_entropy.md)`(``joint``, given ``=`` ``given_grid``)`
+``` r
+
+sigma_joint <- matrix(c(1, 0.7, 0.7, 1), 2L, 2L)
+joint <- gmm(
+  weights = 1, means = list(c(0, 0)), covariances = list(sigma_joint)
+)
+mi <- gmm_mutual_information(joint, 1L, 2L)
+
+independent <- gmm(
+  weights = 1, means = list(c(0, 0)), covariances = list(diag(2))
+)
+mi_independent <- gmm_mutual_information(independent, 1L, 2L)
+
+given_grid <- rbind(c(NA, 0), c(NA, 1), c(NA, 2))
+h_cond <- gmm_conditional_entropy(joint, given = given_grid)
+```
 
 | Quantity                                      | Value (nats) |
 |:----------------------------------------------|-------------:|
@@ -199,19 +211,21 @@ and
 cool first and start the usual fit from the result. The data below are
 three far-apart clusters of 100 points each.
 
-\
-`x_three`` ``<-`` `[`rbind`](https://rdrr.io/r/base/cbind.html)`(`\
-`  `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``200L``)``, ncol ``=`` ``2L``)`` ``+`\
-`    `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`rep`](https://rdrr.io/r/base/rep.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``-``7``, ``-``7``)``, each ``=`` ``100L``)``, ncol ``=`` ``2L``)``,`\
-`  `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``200L``)``, ncol ``=`` ``2L``)`` ``+`\
-`    `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`rep`](https://rdrr.io/r/base/rep.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``7``, ``-``7``)``, each ``=`` ``100L``)``, ncol ``=`` ``2L``)``,`\
-`  `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``200L``)``, ncol ``=`` ``2L``)`` ``+`\
-`    `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`rep`](https://rdrr.io/r/base/rep.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``8``)``, each ``=`` ``100L``)``, ncol ``=`` ``2L``)`\
-`)`\
-`tgt_three`` ``<-`` `[`gmm_target_from_samples`](https://max578.github.io/proxymix/reference/gmm_target_from_samples.md)`(``x_three``)`\
-`fit_annealed`` ``<-`` `[`fit_em_samples`](https://max578.github.io/proxymix/reference/fit_em_samples.md)`(``tgt_three``, N ``=`` ``3L``, anneal ``=`` ``TRUE``, seed ``=`` ``1L``)`\
-`fit_annealed``@``diagnostics``$``annealed`\
-`#> [1] TRUE`
+``` r
+
+x_three <- rbind(
+  matrix(rnorm(200L), ncol = 2L) +
+    matrix(rep(c(-7, -7), each = 100L), ncol = 2L),
+  matrix(rnorm(200L), ncol = 2L) +
+    matrix(rep(c(7, -7), each = 100L), ncol = 2L),
+  matrix(rnorm(200L), ncol = 2L) +
+    matrix(rep(c(0, 8), each = 100L), ncol = 2L)
+)
+tgt_three <- gmm_target_from_samples(x_three)
+fit_annealed <- fit_em_samples(tgt_three, N = 3L, anneal = TRUE, seed = 1L)
+fit_annealed@diagnostics$annealed
+#> [1] TRUE
+```
 
 [`gmm_anneal_path()`](https://max578.github.io/proxymix/reference/gmm_anneal_path.md)
 counts the distinct component centres at each temperature. It returns
@@ -225,11 +239,13 @@ $`\sigma = 1`$, $`T_c`$ is the largest eigenvalue of $`C`$, which is the
 variance of the data along the direction in which they are most spread
 out.
 
-\
-`path`` ``<-`` `[`gmm_anneal_path`](https://max578.github.io/proxymix/reference/gmm_anneal_path.md)`(``x_three``, k_max ``=`` ``6L``, n_steps ``=`` ``60L``, seed ``=`` ``1L``)`\
-`k_found`` ``<-`` ``path``$``k_selected`\
-`t_empirical`` ``<-`` ``path``$``first_critical_temperature`\
-`t_analytic`` ``<-`` ``path``$``t_critical_analytic`
+``` r
+
+path <- gmm_anneal_path(x_three, k_max = 6L, n_steps = 60L, seed = 1L)
+k_found <- path$k_selected
+t_empirical <- path$first_critical_temperature
+t_analytic <- path$t_critical_analytic
+```
 
 | Quantity                             | Value |
 |:-------------------------------------|------:|
@@ -240,39 +256,41 @@ out.
 
 What the cooling found on three well-separated clusters. {.table}
 
-\
-`anneal_df`` ``<-`` `[`rbind`](https://rdrr.io/r/base/cbind.html)`(`\
-`  `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(`\
-`    temperature ``=`` ``path``$``path``$``temperature``,`\
-`    value ``=`` ``path``$``path``$``n_effective``,`\
-`    panel ``=`` ``"distinct centres"`\
-`  ``)``,`\
-`  `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(`\
-`    temperature ``=`` ``path``$``path``$``temperature``,`\
-`    value ``=`` ``path``$``path``$``free_energy``,`\
-`    panel ``=`` ``"free energy"`\
-`  ``)`\
-`)`\
-`ggplot2``::`[`ggplot`](https://ggplot2.tidyverse.org/reference/ggplot.html)`(``anneal_df``, ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``temperature``, ``value``)``)`` ``+`\
-`  ``ggplot2``::`[`geom_vline`](https://ggplot2.tidyverse.org/reference/geom_abline.html)`(`\
-`    xintercept ``=`` ``t_analytic``, linetype ``=`` ``"dotted"``,`\
-`    colour ``=`` ``"#0072B2"``, linewidth ``=`` ``0.7`\
-`  ``)`` ``+`\
-`  ``ggplot2``::`[`geom_vline`](https://ggplot2.tidyverse.org/reference/geom_abline.html)`(`\
-`    xintercept ``=`` ``t_empirical``, linetype ``=`` ``"dashed"``,`\
-`    colour ``=`` ``"#D55E00"``, linewidth ``=`` ``0.7`\
-`  ``)`` ``+`\
-`  ``# a count recorded at one temperature holds until the next, cooler step`\
-`  ``ggplot2``::`[`geom_step`](https://ggplot2.tidyverse.org/reference/geom_path.html)`(``direction ``=`` ``"vh"``, linewidth ``=`` ``0.8``,`\
-`                     colour ``=`` ``"#000000"``)`` ``+`\
-`  ``ggplot2``::`[`facet_wrap`](https://ggplot2.tidyverse.org/reference/facet_wrap.html)`(``~`` ``panel``, ncol ``=`` ``1L``, scales ``=`` ``"free_y"``)`` ``+`\
-`  ``ggplot2``::`[`scale_x_log10`](https://ggplot2.tidyverse.org/reference/scale_continuous.html)`(``)`` ``+`\
-`  ``ggplot2``::`[`labs`](https://ggplot2.tidyverse.org/reference/labs.html)`(`\
-`    x ``=`` ``"temperature (log scale, cooling from right to left)"``,`\
-`    y ``=`` ``NULL``,`\
-`    title ``=`` ``"Where the components split as the fit cools"`\
-`  ``)`` ``+`\
-`  ``ggplot2``::`[`theme_minimal`](https://ggplot2.tidyverse.org/reference/ggtheme.html)`(``base_size ``=`` ``11``)`
+``` r
+
+anneal_df <- rbind(
+  data.frame(
+    temperature = path$path$temperature,
+    value = path$path$n_effective,
+    panel = "distinct centres"
+  ),
+  data.frame(
+    temperature = path$path$temperature,
+    value = path$path$free_energy,
+    panel = "free energy"
+  )
+)
+ggplot2::ggplot(anneal_df, ggplot2::aes(temperature, value)) +
+  ggplot2::geom_vline(
+    xintercept = t_analytic, linetype = "dotted",
+    colour = "#0072B2", linewidth = 0.7
+  ) +
+  ggplot2::geom_vline(
+    xintercept = t_empirical, linetype = "dashed",
+    colour = "#D55E00", linewidth = 0.7
+  ) +
+  # a count recorded at one temperature holds until the next, cooler step
+  ggplot2::geom_step(direction = "vh", linewidth = 0.8,
+                     colour = "#000000") +
+  ggplot2::facet_wrap(~ panel, ncol = 1L, scales = "free_y") +
+  ggplot2::scale_x_log10() +
+  ggplot2::labs(
+    x = "temperature (log scale, cooling from right to left)",
+    y = NULL,
+    title = "Where the components split as the fit cools"
+  ) +
+  ggplot2::theme_minimal(base_size = 11)
+```
 
 ![Two stacked panels against a logarithmic temperature axis: the upper
 panel is a staircase of the number of distinct component centres, the
@@ -297,11 +315,13 @@ records its range. When such a target is fitted from its formula alone
 (`regime = "kld"`, van der Hoek and Elliott, 2024), the trial points
 that the fit weights are drawn from within that range.
 
-\
-`me_gauss`` ``<-`` `[`maxent_target`](https://max578.github.io/proxymix/reference/maxent_target.md)`(``moments ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``mean ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)``, cov ``=`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``2``)``)``)`\
-`me_unif`` ``<-`` `[`maxent_target`](https://max578.github.io/proxymix/reference/maxent_target.md)`(``support ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``lower ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)``, upper ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``1``, ``1``)``)``)`\
-`unif_density`` ``<-`` `[`exp`](https://rdrr.io/r/base/Log.html)`(``me_unif``@``log_density``(`[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0.5``, ``0.5``)``, nrow ``=`` ``1L``)``)``)`\
-`gauss_density`` ``<-`` `[`exp`](https://rdrr.io/r/base/Log.html)`(``me_gauss``@``log_density``(`[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)``, nrow ``=`` ``1L``)``)``)`
+``` r
+
+me_gauss <- maxent_target(moments = list(mean = c(0, 0), cov = diag(2)))
+me_unif <- maxent_target(support = list(lower = c(0, 0), upper = c(1, 1)))
+unif_density <- exp(me_unif@log_density(matrix(c(0.5, 0.5), nrow = 1L)))
+gauss_density <- exp(me_gauss@log_density(matrix(c(0, 0), nrow = 1L)))
+```
 
 | Constraint                 | Family returned | Density at the centre |
 |:---------------------------|:----------------|----------------------:|
@@ -326,13 +346,15 @@ $`E_N`$ is zero when every point belongs clearly to one component and
 grows with overlap. The ICL equals the BIC for one component, is never
 smaller than the BIC, and favours well-separated components.
 
-\
-`x_two`` ``<-`` `[`rbind`](https://rdrr.io/r/base/cbind.html)`(`\
-`  `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``200L``, ``-``4``)``, ncol ``=`` ``2L``)``,`\
-`  `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``200L``, ``4``)``, ncol ``=`` ``2L``)`\
-`)`\
-`fit_two`` ``<-`` `[`fit_em_samples`](https://max578.github.io/proxymix/reference/fit_em_samples.md)`(`[`gmm_target_from_samples`](https://max578.github.io/proxymix/reference/gmm_target_from_samples.md)`(``x_two``)``, N ``=`` ``2L``, seed ``=`` ``1L``)`\
-`crit`` ``<-`` `[`bic_aic`](https://max578.github.io/proxymix/reference/bic_aic.md)`(``fit_two``)`
+``` r
+
+x_two <- rbind(
+  matrix(rnorm(200L, -4), ncol = 2L),
+  matrix(rnorm(200L, 4), ncol = 2L)
+)
+fit_two <- fit_em_samples(gmm_target_from_samples(x_two), N = 2L, seed = 1L)
+crit <- bic_aic(fit_two)
+```
 
 | Criterion       |                   Value |
 |:----------------|------------------------:|
@@ -360,17 +382,19 @@ example is a normal distribution in four variables whose inverse
 covariance matrix links each variable only to its neighbours. Its graph
 should be the chain $`x_1 - x_2 - x_3 - x_4`$.
 
-\
-`omega`` ``<-`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``4L``)`\
-`for`` ``(``i1`` ``in`` `[`seq_len`](https://rdrr.io/r/base/seq.html)`(``3L``)``)`` ``{`\
-`  ``omega``[``i1``, ``i1`` ``+`` ``1L``]`` ``<-`` ``-``0.5`\
-`  ``omega``[``i1`` ``+`` ``1L``, ``i1``]`` ``<-`` ``-``0.5`\
-`}`` ``# ends i1, over the off-diagonal band of the chain precision`\
-`g_chain`` ``<-`` `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(`\
-`  weights ``=`` ``1``, means ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`rep`](https://rdrr.io/r/base/rep.html)`(``0``, ``4L``)``)``, covariances ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`solve`](https://rdrr.io/r/base/solve.html)`(``omega``)``)`\
-`)`\
-`adj_chain`` ``<-`` `[`gmm_independence_graph`](https://max578.github.io/proxymix/reference/gmm_independence_graph.md)`(``g_chain``)`\
-`edges_chain`` ``<-`` `[`sum`](https://rdrr.io/r/base/sum.html)`(``adj_chain``)`` ``/`` ``2L`
+``` r
+
+omega <- diag(4L)
+for (i1 in seq_len(3L)) {
+  omega[i1, i1 + 1L] <- -0.5
+  omega[i1 + 1L, i1] <- -0.5
+} # ends i1, over the off-diagonal band of the chain precision
+g_chain <- gmm(
+  weights = 1, means = list(rep(0, 4L)), covariances = list(solve(omega))
+)
+adj_chain <- gmm_independence_graph(g_chain)
+edges_chain <- sum(adj_chain) / 2L
+```
 
 |     |  x1 |  x2 |  x3 |  x4 |
 |:----|----:|----:|----:|----:|
@@ -387,24 +411,26 @@ with $`x_2`$ and $`x_2`$ with $`x_3`$ but has no term in $`x_1 x_3`$.
 Given $`x_2`$, the variables $`x_1`$ and $`x_3`$ are independent, and
 the graph of the target is the chain $`x_1 - x_2 - x_3`$.
 
-\
-`energy`` ``<-`` ``function``(``x_mat``)`` ``{`\
-`  ``x_mat`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``x_mat``, ncol ``=`` ``3L``)`\
-`  `[`rowSums`](https://rdrr.io/r/base/colSums.html)`(``(``x_mat``^``2`` ``-`` ``1``)``^``2``)`` ``-`\
-`    ``0.7`` ``*`` ``(``x_mat``[``, ``1L``]`` ``*`` ``x_mat``[``, ``2L``]`` ``+`` ``x_mat``[``, ``2L``]`` ``*`` ``x_mat``[``, ``3L``]``)`\
-`}`\
-`field`` ``<-`` `[`gmm_target`](https://max578.github.io/proxymix/reference/gmm_target.md)`(``n_dim ``=`` ``3L``, log_density ``=`` ``function``(``x_mat``)`` ``-``energy``(``x_mat``)``)`\
-`fit_field`` ``<-`` `[`fit_kld_em`](https://max578.github.io/proxymix/reference/fit_kld_em.md)`(`\
-`  ``field``,`\
-`  N ``=`` ``8L``,`\
-`  proposal ``=`` `[`proposal_uniform`](https://max578.github.io/proxymix/reference/proposal_uniform.md)`(``3L``, ``-``3``, ``3``)``,`\
-`  is_size ``=`` ``6000L``,`\
-`  anneal ``=`` ``TRUE``,`\
-`  seed ``=`` ``1L``,`\
-`  support_warn ``=`` ``FALSE`\
-`)`\
-`adj_field`` ``<-`` `[`gmm_independence_graph`](https://max578.github.io/proxymix/reference/gmm_independence_graph.md)`(``fit_field``)`\
-`edges_field`` ``<-`` `[`sum`](https://rdrr.io/r/base/sum.html)`(``adj_field``)`` ``/`` ``2L`
+``` r
+
+energy <- function(x_mat) {
+  x_mat <- matrix(x_mat, ncol = 3L)
+  rowSums((x_mat^2 - 1)^2) -
+    0.7 * (x_mat[, 1L] * x_mat[, 2L] + x_mat[, 2L] * x_mat[, 3L])
+}
+field <- gmm_target(n_dim = 3L, log_density = function(x_mat) -energy(x_mat))
+fit_field <- fit_kld_em(
+  field,
+  N = 8L,
+  proposal = proposal_uniform(3L, -3, 3),
+  is_size = 6000L,
+  anneal = TRUE,
+  seed = 1L,
+  support_warn = FALSE
+)
+adj_field <- gmm_independence_graph(fit_field)
+edges_field <- sum(adj_field) / 2L
+```
 
 |     |  x1 |  x2 |  x3 |
 |:----|----:|----:|----:|
@@ -419,18 +445,16 @@ Edges of the mixture fitted to the three-variable density (1 = edge).
 
 The FNN package estimates the Shannon entropy from the distances between
 each data point and its nearest neighbours (Kozachenko and Leonenko,
-1987). Its
-[`mutinfo()`](https://rdrr.io/pkg/FNN/man/mutual_information.html)
-estimates the mutual information in the same way (Kraskov et al., 2004).
-Neither estimator fits a model. In a simulation, 200 datasets of 500
-rows were drawn from each of two mixtures with known entropy. One has
-three overlapping components in two variables. The other has two
-components in four variables, and its mutual information is between the
-first two variables and the last two. proxymix was given the true number
-of components, which FNN does not need, and used 5000 simulation draws.
-FNN used 10 neighbours. The true values came from numerical integration
-of the true density. The measure is the mean absolute error, and smaller
-is better.
+1987). Its `mutinfo()` estimates the mutual information in the same way
+(Kraskov et al., 2004). Neither estimator fits a model. In a simulation,
+200 datasets of 500 rows were drawn from each of two mixtures with known
+entropy. One has three overlapping components in two variables. The
+other has two components in four variables, and its mutual information
+is between the first two variables and the last two. proxymix was given
+the true number of components, which FNN does not need, and used 5000
+simulation draws. FNN used 10 neighbours. The true values came from
+numerical integration of the true density. The measure is the mean
+absolute error, and smaller is better.
 
 | Design | Shannon quantity | True value | Error, proxymix | Error, FNN | Difference (standard error) |
 |:---|:---|---:|---:|---:|---:|
@@ -470,73 +494,77 @@ most of the gap comes from the looser level.
 
 proxymix was slower than FNN and pcalg. On one dataset of 500 rows, the
 FNN estimates took 0.002 seconds and the proxymix fit with its estimates
-0.029 seconds. The PC algorithm took 0.002 seconds and proxymix 0.165.
-proxymix’s five fits for the component count took 0.171 seconds and
-mclust’s ICL 0.318 (median of five runs on one computer).
+0.031 seconds. The PC algorithm took 0.002 seconds and proxymix 0.178.
+proxymix’s five fits for the component count took 0.179 seconds and
+mclust’s ICL 0.316 (median of five runs on one computer).
 
 The code below runs the three competitors and the proxymix estimates on
 one dataset from each design.
 
-\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`\
-[`library`](https://rdrr.io/r/base/library.html)`(``FNN``)`\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`mclust`](https://mclust-org.github.io/mclust/)`)`\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`pcalg`](https://pcalg.r-forge.r-project.org/)`)`\
-\
-`# one dataset of 500 rows from the design with three overlapping components`\
-`w`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``0.4``, ``0.35``, ``0.25``)`\
-`mu`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``-``2``, ``0``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``2``, ``1``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``3``)``)`\
-`sig`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``1``, ``0.5``, ``0.5``, ``1``)``, ``2L``)``,`\
-`            `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``1.5``, ``-``0.6``, ``-``0.6``, ``0.8``)``, ``2L``)``,`\
-`            `[`diag`](https://rdrr.io/r/base/diag.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0.5``, ``1.2``)``)``)`\
-[`set.seed`](https://rdrr.io/r/base/Random.html)`(``1L``)`\
-`z`` ``<-`` `[`sample.int`](https://rdrr.io/r/base/sample.html)`(``3L``, ``500L``, replace ``=`` ``TRUE``, prob ``=`` ``w``)`\
-`x`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``500L`` ``*`` ``2L``)``, ``500L``, ``2L``)`\
-`for`` ``(``k`` ``in`` ``1``:``3``)`` ``{`\
-`  ``x``[``z`` ``==`` ``k``, ``]`` ``<-`` ``x``[``z`` ``==`` ``k``, , drop ``=`` ``FALSE``]`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` `[`chol`](https://rdrr.io/r/base/chol.html)`(``sig``[[``k``]``]``)`` ``+`\
-`    `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``mu``[[``k``]``]``, `[`sum`](https://rdrr.io/r/base/sum.html)`(``z`` ``==`` ``k``)``, ``2L``, byrow ``=`` ``TRUE``)`\
-`}`\
-\
-`# Shannon entropy and mutual information by nearest neighbours`\
-[`entropy`](https://rdrr.io/pkg/FNN/man/entropy.html)`(``x``, k ``=`` ``10L``)``[``10L``]`\
-[`mutinfo`](https://rdrr.io/pkg/FNN/man/mutual_information.html)`(``x``[``, ``1L``, drop ``=`` ``FALSE``]``, ``x``[``, ``2L``, drop ``=`` ``FALSE``]``, k ``=`` ``10L``)`\
-\
-`# the same two quantities from a fitted three-component mixture`\
-`fit`` ``<-`` `[`fit_em_samples`](https://max578.github.io/proxymix/reference/fit_em_samples.md)`(`[`gmm_target_from_samples`](https://max578.github.io/proxymix/reference/gmm_target_from_samples.md)`(``x``)``, N ``=`` ``3L``, seed ``=`` ``1L``)`\
-`h_mc`` ``<-`` ``function``(``g``)`` ``{`\
-`  `[`gmm_entropy`](https://max578.github.io/proxymix/reference/gmm_entropy.md)`(``g``, order ``=`` ``"shannon"``, n_mc ``=`` ``5000L``, seed ``=`` ``1L``)``$``mc`\
-`}`\
-`h_mc``(``fit``)`\
-`h_mc``(`[`gmm_marginalise`](https://max578.github.io/proxymix/reference/gmm_marginalise.md)`(``fit``, ``1L``)``)`` ``+`` ``h_mc``(`[`gmm_marginalise`](https://max578.github.io/proxymix/reference/gmm_marginalise.md)`(``fit``, ``2L``)``)`` ``-`` ``h_mc``(``fit``)`\
-\
-`# number of components by mclust's BIC and ICL, one to five offered`\
-[`Mclust`](https://mclust-org.github.io/mclust/reference/Mclust.html)`(``x``, G ``=`` ``1``:``5``, verbose ``=`` ``FALSE``)``$``G`\
-`icl_m`` ``<-`` `[`mclustICL`](https://mclust-org.github.io/mclust/reference/mclustICL.html)`(``x``, G ``=`` ``1``:``5``, verbose ``=`` ``FALSE``)`\
-[`which`](https://rdrr.io/r/base/which.html)`(``icl_m`` ``==`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(``icl_m``, na.rm ``=`` ``TRUE``)``, arr.ind ``=`` ``TRUE``)``[``1L``]`\
-\
-`# one dataset from the graph design: a six-variable chain, two components`\
-`omega`` ``<-`` `[`diag`](https://rdrr.io/r/base/diag.html)`(``6L``)`\
-`omega``[`[`abs`](https://rdrr.io/r/base/MathFun.html)`(`[`row`](https://rdrr.io/r/base/row.html)`(``omega``)`` ``-`` `[`col`](https://rdrr.io/r/base/col.html)`(``omega``)``)`` ``==`` ``1L``]`` ``<-`` ``-``0.4`\
-[`set.seed`](https://rdrr.io/r/base/Random.html)`(``1L``)`\
-`z_g`` ``<-`` `[`sample.int`](https://rdrr.io/r/base/sample.html)`(``2L``, ``500L``, replace ``=`` ``TRUE``, prob ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``0.5``, ``0.5``)``)`\
-`x_g`` ``<-`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(`[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``500L`` ``*`` ``6L``)``, ``500L``, ``6L``)`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` `[`chol`](https://rdrr.io/r/base/chol.html)`(`[`solve`](https://rdrr.io/r/base/solve.html)`(``omega``)``)`\
-`x_g``[``z_g`` ``==`` ``2L``, ``1L``]`` ``<-`` ``x_g``[``z_g`` ``==`` ``2L``, ``1L``]`` ``+`` ``4`\
-\
-`# the graph by the PC algorithm, and by proxymix`\
-`pc_fit`` ``<-`` `[`pc`](https://rdrr.io/pkg/pcalg/man/pc.html)`(``suffStat ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``C ``=`` `[`cor`](https://rdrr.io/r/stats/cor.html)`(``x_g``)``, n ``=`` `[`nrow`](https://rdrr.io/r/base/nrow.html)`(``x_g``)``)``,`\
-`             indepTest ``=`` ``gaussCItest``, alpha ``=`` ``0.01``, p ``=`` `[`ncol`](https://rdrr.io/r/base/nrow.html)`(``x_g``)``)`\
-`adj`` ``<-`` `[`as`](https://rdrr.io/r/methods/as.html)`(``pc_fit``@``graph``, ``"matrix"``)`\
-`(``(``adj`` ``+`` `[`t`](https://rdrr.io/r/base/t.html)`(``adj``)``)`` ``>`` ``0``)`` ``*`` ``1L`\
-`sel`` ``<-`` `[`select_N`](https://max578.github.io/proxymix/reference/select_N.md)`(`[`gmm_target_from_samples`](https://max578.github.io/proxymix/reference/gmm_target_from_samples.md)`(``x_g``)``, candidates ``=`` ``1``:``4``, seed ``=`` ``1L``)`\
-[`gmm_independence_graph`](https://max578.github.io/proxymix/reference/gmm_independence_graph.md)`(``sel``$``best_fit``)`
+``` r
+
+library(proxymix)
+library(FNN)
+library(mclust)
+library(pcalg)
+
+# one dataset of 500 rows from the design with three overlapping components
+w <- c(0.4, 0.35, 0.25)
+mu <- list(c(-2, 0), c(2, 1), c(0, 3))
+sig <- list(matrix(c(1, 0.5, 0.5, 1), 2L),
+            matrix(c(1.5, -0.6, -0.6, 0.8), 2L),
+            diag(c(0.5, 1.2)))
+set.seed(1L)
+z <- sample.int(3L, 500L, replace = TRUE, prob = w)
+x <- matrix(rnorm(500L * 2L), 500L, 2L)
+for (k in 1:3) {
+  x[z == k, ] <- x[z == k, , drop = FALSE] %*% chol(sig[[k]]) +
+    matrix(mu[[k]], sum(z == k), 2L, byrow = TRUE)
+}
+
+# Shannon entropy and mutual information by nearest neighbours
+entropy(x, k = 10L)[10L]
+mutinfo(x[, 1L, drop = FALSE], x[, 2L, drop = FALSE], k = 10L)
+
+# the same two quantities from a fitted three-component mixture
+fit <- fit_em_samples(gmm_target_from_samples(x), N = 3L, seed = 1L)
+h_mc <- function(g) {
+  gmm_entropy(g, order = "shannon", n_mc = 5000L, seed = 1L)$mc
+}
+h_mc(fit)
+h_mc(gmm_marginalise(fit, 1L)) + h_mc(gmm_marginalise(fit, 2L)) - h_mc(fit)
+
+# number of components by mclust's BIC and ICL, one to five offered
+Mclust(x, G = 1:5, verbose = FALSE)$G
+icl_m <- mclustICL(x, G = 1:5, verbose = FALSE)
+which(icl_m == max(icl_m, na.rm = TRUE), arr.ind = TRUE)[1L]
+
+# one dataset from the graph design: a six-variable chain, two components
+omega <- diag(6L)
+omega[abs(row(omega) - col(omega)) == 1L] <- -0.4
+set.seed(1L)
+z_g <- sample.int(2L, 500L, replace = TRUE, prob = c(0.5, 0.5))
+x_g <- matrix(rnorm(500L * 6L), 500L, 6L) %*% chol(solve(omega))
+x_g[z_g == 2L, 1L] <- x_g[z_g == 2L, 1L] + 4
+
+# the graph by the PC algorithm, and by proxymix
+pc_fit <- pc(suffStat = list(C = cor(x_g), n = nrow(x_g)),
+             indepTest = gaussCItest, alpha = 0.01, p = ncol(x_g))
+adj <- as(pc_fit@graph, "matrix")
+((adj + t(adj)) > 0) * 1L
+sel <- select_N(gmm_target_from_samples(x_g), candidates = 1:4, seed = 1L)
+gmm_independence_graph(sel$best_fit)
+```
 
 It needs FNN and mclust from CRAN, and pcalg, which needs graph and RBGL
 from Bioconductor. It is not run when this vignette is built.
 
-\
-[`install.packages`](https://rdrr.io/r/utils/install.packages.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``"FNN"``, ``"mclust"``, ``"BiocManager"``)``)`\
-`BiocManager``::`[`install`](https://bioconductor.github.io/BiocManager/reference/install.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``"graph"``, ``"RBGL"``)``)`\
-[`install.packages`](https://rdrr.io/r/utils/install.packages.html)`(``"pcalg"``)`
+``` r
+
+install.packages(c("FNN", "mclust", "BiocManager"))
+BiocManager::install(c("graph", "RBGL"))
+install.packages("pcalg")
+```
 
 The [extended version of this
 article](https://max578.github.io/proxymix/articles/extended/entropy.html)
@@ -708,43 +736,48 @@ has a `seed` argument is given one. `gmm_divergence(type = "kl")` has no
 `seed` argument and uses the stream that
 [`set.seed()`](https://rdrr.io/r/base/Random.html) started. The
 comparison and the refits over 10 seeds read stored results, run under
-proxymix 0.16.0 on 26 September 2026.
+proxymix 0.17.0 on 21 October 2026.
 
-\
-[`sessionInfo`](https://rdrr.io/r/utils/sessionInfo.html)`(``)`
+``` r
 
+sessionInfo()
 ```
+
+``` session-info
 #> R version 4.6.1 (2026-06-24)
-#> Platform: aarch64-apple-darwin23
-#> Running under: macOS Tahoe 26.6.2
+#> Platform: x86_64-pc-linux-gnu
+#> Running under: Ubuntu 24.04.5 LTS
 #> 
 #> Matrix products: default
-#> BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib 
-#> LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1
+#> BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 
+#> LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.26.so;  LAPACK version 3.12.0
 #> 
 #> locale:
-#> [1] en_AU.UTF-8/en_AU.UTF-8/en_AU.UTF-8/C/en_AU.UTF-8/en_AU.UTF-8
+#>  [1] LC_CTYPE=C.UTF-8       LC_NUMERIC=C           LC_TIME=C.UTF-8       
+#>  [4] LC_COLLATE=C.UTF-8     LC_MONETARY=C.UTF-8    LC_MESSAGES=C.UTF-8   
+#>  [7] LC_PAPER=C.UTF-8       LC_NAME=C              LC_ADDRESS=C          
+#> [10] LC_TELEPHONE=C         LC_MEASUREMENT=C.UTF-8 LC_IDENTIFICATION=C   
 #> 
-#> time zone: Australia/Adelaide
-#> tzcode source: internal
+#> time zone: UTC
+#> tzcode source: system (glibc)
 #> 
 #> attached base packages:
 #> [1] stats     graphics  grDevices utils     datasets  methods   base     
 #> 
 #> other attached packages:
-#> [1] proxymix_0.16.0
+#> [1] proxymix_0.17.0
 #> 
 #> loaded via a namespace (and not attached):
 #>  [1] mvnfast_0.2.8      gtable_0.3.6       jsonlite_2.0.0     dplyr_1.2.1       
-#>  [5] compiler_4.6.1     Rcpp_1.1.2         tidyselect_1.2.1   dichromat_2.0-1   
-#>  [9] jquerylib_0.1.4    systemfonts_1.3.2  scales_1.4.0       textshaping_1.0.5 
-#> [13] yaml_2.3.12        fastmap_1.2.0      ggplot2_4.0.3      R6_2.6.1          
-#> [17] labeling_0.4.3     generics_0.1.4     knitr_1.51         htmlwidgets_1.6.4 
-#> [21] tibble_3.3.1       desc_1.4.3         bslib_0.12.0       pillar_1.11.1     
-#> [25] RColorBrewer_1.1-3 rlang_1.3.0        cachem_1.1.0       xfun_0.60         
-#> [29] fs_2.1.0           sass_0.4.10        S7_0.2.2           otel_0.2.0        
-#> [33] cli_3.6.6          withr_3.0.3        pkgdown_2.2.1      magrittr_2.0.5    
-#> [37] digest_0.6.39      grid_4.6.1         lifecycle_1.0.5    vctrs_0.7.3       
-#> [41] evaluate_1.0.5     glue_1.8.1         farver_2.1.2       ragg_1.5.2        
-#> [45] rmarkdown_2.32     tools_4.6.1        pkgconfig_2.0.3    htmltools_0.5.9
+#>  [5] compiler_4.6.1     tidyselect_1.2.1   Rcpp_1.1.2         jquerylib_0.1.4   
+#>  [9] systemfonts_1.3.2  scales_1.4.0       textshaping_1.0.5  yaml_2.3.12       
+#> [13] fastmap_1.2.0      ggplot2_4.0.3      R6_2.6.1           labeling_0.4.3    
+#> [17] generics_0.1.4     knitr_1.52         tibble_3.3.1       desc_1.4.3        
+#> [21] bslib_0.12.0       pillar_1.11.1      RColorBrewer_1.1-3 rlang_1.3.0       
+#> [25] cachem_1.1.0       xfun_0.62          fs_2.1.0           sass_0.4.10       
+#> [29] S7_0.2.2           otel_0.2.0         cli_3.6.6          pkgdown_2.2.1     
+#> [33] withr_3.0.3        magrittr_2.0.5     digest_0.6.39      grid_4.6.1        
+#> [37] lifecycle_1.0.5    vctrs_0.7.3        evaluate_1.0.5     glue_1.8.1        
+#> [41] farver_2.1.2       ragg_1.5.2         rmarkdown_2.32     tools_4.6.1       
+#> [45] pkgconfig_2.0.3    htmltools_0.5.9
 ```

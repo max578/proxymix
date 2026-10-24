@@ -10,7 +10,7 @@ KLD-EM.
 from_kde(
   samples,
   N = 3L,
-  bandwidth = "silverman",
+  bandwidth = "plugin",
   proposal = NULL,
   is_size = NULL,
   max_iter = 100L,
@@ -38,10 +38,19 @@ from_kde(
 
 - bandwidth:
 
-  Either `"silverman"`, `"scott"`, a positive numeric scalar (absolute
-  bandwidth applied to every coordinate), or a length-`p` positive
-  numeric vector of per-coordinate absolute bandwidths. Default
-  `"silverman"`.
+  Either `"plugin"`, `"silverman"`, `"scott"`, a positive numeric scalar
+  (absolute bandwidth applied to every coordinate), or a length-`p`
+  positive numeric vector of per-coordinate absolute bandwidths. Default
+  `"plugin"`: the Sheather-Jones plug-in bandwidth
+  ([`stats::bw.SJ()`](https://rdrr.io/r/stats/bandwidth.html)) of each
+  coordinate. A coordinate with fewer distinct values than half the
+  number of points gets Silverman's rule instead, because the plug-in
+  bandwidth shrinks towards zero on heavily tied data. Silverman's rule
+  smooths more and can merge nearby modes. The diagonal multivariate
+  plug-in `sqrt(diag(ks::Hpi.diag(samples)))` can be passed as a numeric
+  vector. It did better than `"plugin"` on a simulated two-dimensional
+  mixture with three overlapping components, and its cost grows with the
+  square of the sample size.
 
 - proposal:
 
@@ -131,9 +140,9 @@ sampled in closed form as it stands. `from_kde()` is a **compression**:
 it replaces the `n` components with the closest `N`-component mixture in
 the Kullback-Leibler sense, with `N` much smaller than `n`. Density
 evaluation, storage and the operator calculus then cost in proportion to
-`N` rather than `n` (products and convolutions of two mixtures have as
-many components as the product of their counts). Bias inherited from the
-KDE is reproduced in the proxy; the bandwidth controls the bias-variance
+`N` (products and convolutions of two mixtures have as many components
+as the product of their counts). Bias inherited from the KDE is
+reproduced in the proxy; the bandwidth controls the bias-variance
 trade-off.
 
 Dimensional scope. The dimensional guard is `p <= 5` (recommended),
@@ -147,6 +156,10 @@ Other fitting:
 [`fit_em_samples()`](https://max578.github.io/proxymix/reference/fit_em_samples.md),
 [`fit_kld_em()`](https://max578.github.io/proxymix/reference/fit_kld_em.md),
 [`fit_moment_match()`](https://max578.github.io/proxymix/reference/fit_moment_match.md),
+[`fit_mppca_samples()`](https://max578.github.io/proxymix/reference/fit_mppca_samples.md),
+[`from_cf()`](https://max578.github.io/proxymix/reference/from_cf.md),
+[`from_cf_elliptical()`](https://max578.github.io/proxymix/reference/from_cf_elliptical.md),
+[`from_cf_sources()`](https://max578.github.io/proxymix/reference/from_cf_sources.md),
 [`from_objective()`](https://max578.github.io/proxymix/reference/from_objective.md),
 [`select_N()`](https://max578.github.io/proxymix/reference/select_N.md)
 
@@ -162,22 +175,22 @@ fit <- from_kde(x, N = 2L, is_size = 2000L, max_iter = 40L, seed = 1L)
 fit
 #> <gmm_fit>: regime = "kld", K = 2, p = 2
 #>   target     : from_kde
-#>   iterations : 16
+#>   iterations : 10
 #>   converged  : TRUE
-#>   [1] w = 0.5014, |mu| = 2.0118, tr(Sigma) = 3.1904
-#>   [2] w = 0.4986, |mu| = 2.1807, tr(Sigma) = 2.4859
+#>   [1] w = 0.5004, |mu| = 2.2022, tr(Sigma) = 1.7180
+#>   [2] w = 0.4996, |mu| = 1.9977, tr(Sigma) = 2.4443
 ess_summary(fit)
 #> $is_size
 #> [1] 2000
 #> 
 #> $ess
-#> [1] 1552.231
+#> [1] 1200.1
 #> 
 #> $ess_relative
-#> [1] 0.7761155
+#> [1] 0.6000501
 #> 
 #> $max_weight
-#> [1] 0.001135827
+#> [1] 0.002616048
 #> 
 #> $support_fraction
 #> [1] 1
@@ -186,24 +199,24 @@ ess_summary(fit)
 #> [1] FALSE
 #> 
 #> $mc_se_kld
-#> [1] 0.005537868
+#> [1] 0.01293372
 #> 
 #> $validation_size
-#> [1] 12000
+#> [1] 6000
 #> 
 #> $validation_ess
-#> [1] 9302.059
+#> [1] 3648.249
 #> 
 #> $validation_ess_relative
-#> [1] 0.7751716
+#> [1] 0.6080416
 #> 
 #> $validation_max_weight
-#> [1] 0.0001909344
+#> [1] 0.001031152
 #> 
 #> $validation_support_fraction
 #> [1] 1
 #> 
 #> $validation_kld
-#> [1] 0.01945376
+#> [1] 0.07066454
 #> 
 ```

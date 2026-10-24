@@ -3,13 +3,15 @@
 from t0 to t1, \(E[Y_{t_1} \mid y, t, x] - E[Y_{t_0} \mid y, t, x]\),
 computed by gmm_counterfactual(). Unlike proxy_cate(), the abduction
 gate uses the observed outcome y as well, sharpening the per-unit estimate.
-Only the counterfactual mean is identified; the spread is not (see
-gmm_cf_variance())."><meta property="og:description" content="For each observed unit (y, t, x), the counterfactual-mean uplift of moving
+Both means assume each unit keeps its structural residual when the
+treatment changes, which the data cannot confirm (see
+gmm_counterfactual())."><meta property="og:description" content="For each observed unit (y, t, x), the counterfactual-mean uplift of moving
 from t0 to t1, \(E[Y_{t_1} \mid y, t, x] - E[Y_{t_0} \mid y, t, x]\),
 computed by gmm_counterfactual(). Unlike proxy_cate(), the abduction
 gate uses the observed outcome y as well, sharpening the per-unit estimate.
-Only the counterfactual mean is identified; the spread is not (see
-gmm_cf_variance())."></head><body>
+Both means assume each unit keeps its structural residual when the
+treatment changes, which the data cannot confirm (see
+gmm_counterfactual())."><meta property="og:image" content="https://max578.github.io/proxymix/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -17,7 +19,7 @@ gmm_cf_variance())."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">proxymix</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.16.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.17.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -34,6 +36,7 @@ gmm_cf_variance())."></head><body>
     <li><a class="dropdown-item" href="../articles/density_shapes.html">How well a mixture proxies four awkward shapes</a></li>
     <li><a class="dropdown-item" href="../articles/operator_calculus.html">The closed-form operator calculus on a mixture</a></li>
     <li><a class="dropdown-item" href="../articles/from_kde.html">Compressing a kernel density estimate into a mixture</a></li>
+    <li><a class="dropdown-item" href="../articles/cf_targets.html">Fitting a mixture to a characteristic function</a></li>
     <li><a class="dropdown-item" href="../articles/many_methods.html">One mixture, many methods</a></li>
     <li><a class="dropdown-item" href="../articles/entropy.html">Reading the entropy of a fitted mixture</a></li>
     <li><a class="dropdown-item" href="../articles/calibration.html">Mapping the optima of an objective</a></li>
@@ -54,9 +57,8 @@ gmm_cf_variance())."></head><body>
 </nav><div class="container template-reference-topic">
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Retrospective (counterfactual-mean) uplift for observed units</h1>
-      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/HEAD/R/identification.R" class="external-link"><code>R/identification.R</code></a></small>
+      <img src="../logo.png" class="logo" alt=""><h1>Retrospective (counterfactual-mean) uplift for observed units</h1>
+      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/main/R/identification.R" class="external-link"><code>R/identification.R</code></a></small>
       <div class="d-none name"><code>proxy_retrospective_uplift.Rd</code></div>
     </div>
 
@@ -65,8 +67,9 @@ gmm_cf_variance())."></head><body>
 from <code>t0</code> to <code>t1</code>, \(E[Y_{t_1} \mid y, t, x] - E[Y_{t_0} \mid y, t, x]\),
 computed by <code><a href="gmm_counterfactual.html">gmm_counterfactual()</a></code>. Unlike <code><a href="proxy_cate.html">proxy_cate()</a></code>, the abduction
 gate uses the observed outcome <code>y</code> as well, sharpening the per-unit estimate.
-Only the counterfactual <em>mean</em> is identified; the spread is not (see
-<code><a href="gmm_cf_variance.html">gmm_cf_variance()</a></code>).</p>
+Both means assume each unit keeps its structural residual when the
+treatment changes, which the data cannot confirm (see
+<code><a href="gmm_counterfactual.html">gmm_counterfactual()</a></code>).</p>
     </div>
 
     <div class="section level2">

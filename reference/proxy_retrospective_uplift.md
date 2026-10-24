@@ -7,9 +7,9 @@ moving from `t0` to `t1`, \\E\[Y\_{t_1} \mid y, t, x\] - E\[Y\_{t_0}
 Unlike
 [`proxy_cate()`](https://max578.github.io/proxymix/reference/proxy_cate.md),
 the abduction gate uses the observed outcome `y` as well, sharpening the
-per-unit estimate. Only the counterfactual *mean* is identified; the
-spread is not (see
-[`gmm_cf_variance()`](https://max578.github.io/proxymix/reference/gmm_cf_variance.md)).
+per-unit estimate. Both means assume each unit keeps its structural
+residual when the treatment changes, which the data cannot confirm (see
+[`gmm_counterfactual()`](https://max578.github.io/proxymix/reference/gmm_counterfactual.md)).
 
 ## Usage
 

@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../../index.html">proxymix</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.16.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.17.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,6 +40,7 @@
     <li><a class="dropdown-item" href="../../articles/density_shapes.html">How well a mixture proxies four awkward shapes</a></li>
     <li><a class="dropdown-item" href="../../articles/operator_calculus.html">The closed-form operator calculus on a mixture</a></li>
     <li><a class="dropdown-item" href="../../articles/from_kde.html">Compressing a kernel density estimate into a mixture</a></li>
+    <li><a class="dropdown-item" href="../../articles/cf_targets.html">Fitting a mixture to a characteristic function</a></li>
     <li><a class="dropdown-item" href="../../articles/many_methods.html">One mixture, many methods</a></li>
     <li><a class="dropdown-item" href="../../articles/entropy.html">Reading the entropy of a fitted mixture</a></li>
     <li><a class="dropdown-item" href="../../articles/calibration.html">Mapping the optima of an objective</a></li>
@@ -69,11 +70,10 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Mapping the optima of an objective</h1>
+      <img src="../../logo.png" class="logo" alt=""><h1>Mapping the optima of an objective</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/HEAD/vignettes/articles/extended/calibration.Rmd" class="external-link"><code>vignettes/articles/extended/calibration.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/main/vignettes/articles/extended/calibration.Rmd" class="external-link"><code>vignettes/articles/extended/calibration.Rmd</code></a></small>
       <div class="d-none name"><code>calibration.Rmd</code></div>
     </div>
 
@@ -397,6 +397,8 @@ functions.</p>
 <div class="section level2">
 <h2 id="numerical-illustration">Numerical illustration<a class="anchor" aria-label="anchor" href="#numerical-illustration"></a>
 </h2>
+<p>GenSA, DEoptim, cmaes, nloptr, optimx, mclust or MASS is not
+installed on this build, so the real-data illustration is skipped.</p>
 <div class="section level3">
 <h3 id="the-likelihood-of-a-two-component-mixture-on-the-old-faithful-data">The likelihood of a two-component mixture on the Old Faithful
 data<a class="anchor" aria-label="anchor" href="#the-likelihood-of-a-two-component-mixture-on-the-old-faithful-data"></a>
@@ -478,74 +480,6 @@ charged to any method’s budget.</p>
 <span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">gaps</span> <span class="op">&gt;</span> <span class="fl">0.05</span><span class="op">)</span><span class="op">)</span> <span class="va">keep</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">keep</span>, <span class="va">i</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span><span class="va">minima</span> <span class="op">&lt;-</span> <span class="va">ends</span><span class="op">[</span><span class="va">keep</span>, , drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span></code></pre></div>
-<table class="table">
-<caption>The distinct local minima of the negative log-likelihood found
-by 400 local descents, each with its negative log-likelihood minus that
-of the mclust maximum-likelihood fit.</caption>
-<colgroup>
-<col width="9%">
-<col width="10%">
-<col width="10%">
-<col width="10%">
-<col width="9%">
-<col width="9%">
-<col width="40%">
-</colgroup>
-<thead><tr class="header">
-<th align="left">Basin</th>
-<th align="right">Weight</th>
-<th align="right">Mean 1</th>
-<th align="right">Mean 2</th>
-<th align="right">SD 1</th>
-<th align="right">SD 2</th>
-<th align="right">Excess over the mclust fit</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">M1</td>
-<td align="right">0.692</td>
-<td align="right">80.36</td>
-<td align="right">54.20</td>
-<td align="right">7.51</td>
-<td align="right">4.95</td>
-<td align="right">-0.01</td>
-</tr>
-<tr class="even">
-<td align="left">M2</td>
-<td align="right">0.308</td>
-<td align="right">54.20</td>
-<td align="right">80.36</td>
-<td align="right">4.95</td>
-<td align="right">7.51</td>
-<td align="right">-0.01</td>
-</tr>
-<tr class="odd">
-<td align="left">M3</td>
-<td align="right">0.059</td>
-<td align="right">87.32</td>
-<td align="right">71.37</td>
-<td align="right">1.00</td>
-<td align="right">13.76</td>
-<td align="right">46.46</td>
-</tr>
-<tr class="even">
-<td align="left">M4</td>
-<td align="right">0.050</td>
-<td align="right">72.14</td>
-<td align="right">72.33</td>
-<td align="right">13.92</td>
-<td align="right">13.86</td>
-<td align="right">52.93</td>
-</tr>
-</tbody>
-</table>
-<p>The descents end in 4 distinct minima. M1 and M2 are the
-maximum-likelihood fit and its label-switched twin, both within 0.01 of
-the mclust value. The others lie 46.5 and more above it: one puts a
-narrow component at the lower bound of the scale, the other collapses
-the mixture onto one component. A method has found a basin when a local
-descent from one of its reported solutions ends within 5% of the box of
-that minimum.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">budget</span> <span class="op">&lt;-</span> <span class="fl">5000L</span></span>
 <span></span>
@@ -574,17 +508,17 @@ that minimum.</p>
 <span>  proxymix <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="fu">map_modes</span><span class="op">(</span><span class="va">f</span>, <span class="fl">1000L</span>, <span class="fl">3L</span><span class="op">)</span>,</span>
 <span>  <span class="st">"proxymix, 26 000"</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="fu">map_modes</span><span class="op">(</span><span class="va">f</span>, <span class="fl">4000L</span>, <span class="fl">6L</span><span class="op">)</span>,</span>
 <span>  GenSA <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/GenSA/man/GenSA.html" class="external-link">GenSA</a></span><span class="op">(</span>fn <span class="op">=</span> <span class="va">f</span>, lower <span class="op">=</span> <span class="va">lower</span>, upper <span class="op">=</span> <span class="va">upper</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu">GenSA</span><span class="op">(</span>fn <span class="op">=</span> <span class="va">f</span>, lower <span class="op">=</span> <span class="va">lower</span>, upper <span class="op">=</span> <span class="va">upper</span>,</span>
 <span>                 control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>max.call <span class="op">=</span> <span class="va">budget</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">par</span>, <span class="fl">1L</span><span class="op">)</span></span>
 <span>  <span class="op">}</span>,</span>
 <span>  DEoptim <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/DEoptim/man/DEoptim.html" class="external-link">DEoptim</a></span><span class="op">(</span><span class="va">f</span>, <span class="va">lower</span>, <span class="va">upper</span>,</span>
-<span>                   <span class="fu"><a href="https://rdrr.io/pkg/DEoptim/man/DEoptim.control.html" class="external-link">DEoptim.control</a></span><span class="op">(</span>NP <span class="op">=</span> <span class="fl">50L</span>, itermax <span class="op">=</span> <span class="fl">99L</span>, trace <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="va">out</span> <span class="op">&lt;-</span> <span class="fu">DEoptim</span><span class="op">(</span><span class="va">f</span>, <span class="va">lower</span>, <span class="va">upper</span>,</span>
+<span>                   <span class="fu">DEoptim.control</span><span class="op">(</span>NP <span class="op">=</span> <span class="fl">50L</span>, itermax <span class="op">=</span> <span class="fl">99L</span>, trace <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="va">out</span><span class="op">$</span><span class="va">optim</span><span class="op">$</span><span class="va">bestmem</span>, <span class="fl">1L</span><span class="op">)</span></span>
 <span>  <span class="op">}</span>,</span>
 <span>  cmaes <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    <span class="va">lambda</span> <span class="op">&lt;-</span> <span class="fl">4L</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">floor</a></span><span class="op">(</span><span class="fl">3</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fl">5</span><span class="op">)</span><span class="op">)</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/cmaes/man/cma_es.html" class="external-link">cma_es</a></span><span class="op">(</span><span class="op">(</span><span class="va">lower</span> <span class="op">+</span> <span class="va">upper</span><span class="op">)</span> <span class="op">/</span> <span class="fl">2</span>, <span class="va">f</span>, lower <span class="op">=</span> <span class="va">lower</span>, upper <span class="op">=</span> <span class="va">upper</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu">cma_es</span><span class="op">(</span><span class="op">(</span><span class="va">lower</span> <span class="op">+</span> <span class="va">upper</span><span class="op">)</span> <span class="op">/</span> <span class="fl">2</span>, <span class="va">f</span>, lower <span class="op">=</span> <span class="va">lower</span>, upper <span class="op">=</span> <span class="va">upper</span>,</span>
 <span>                  control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="va">budget</span> <span class="op"><a href="https://rdrr.io/r/base/Arithmetic.html" class="external-link">%/%</a></span> <span class="va">lambda</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">par</span>, <span class="fl">1L</span><span class="op">)</span></span>
 <span>  <span class="op">}</span>,</span>
 <span>  nloptr <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="op">{</span></span>
@@ -596,7 +530,7 @@ that minimum.</p>
 <span>  <span class="op">}</span>,</span>
 <span>  optimx <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    <span class="va">x0</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n_starts</span> <span class="op">*</span> <span class="fl">5L</span>, <span class="va">lower</span>, <span class="va">upper</span><span class="op">)</span>, <span class="va">n_starts</span>, byrow <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span>    <span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/optimx/man/multistart.html" class="external-link">multistart</a></span><span class="op">(</span><span class="va">x0</span>, <span class="va">f</span>, lower <span class="op">=</span> <span class="va">lower</span>, upper <span class="op">=</span> <span class="va">upper</span>,</span>
+<span>    <span class="va">out</span> <span class="op">&lt;-</span> <span class="fu">multistart</span><span class="op">(</span><span class="va">x0</span>, <span class="va">f</span>, lower <span class="op">=</span> <span class="va">lower</span>, upper <span class="op">=</span> <span class="va">upper</span>,</span>
 <span>                      method <span class="op">=</span> <span class="st">"L-BFGS-B"</span>,</span>
 <span>                      control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="va">per_start</span>, trace <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">out</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">]</span><span class="op">)</span></span>
@@ -637,111 +571,6 @@ that minimum.</p>
 <span>  <span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
 <span><span class="va">geyser_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="va">geyser_res</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<caption>Each method on the Old Faithful likelihood at a budget of 5000
-objective evaluations: the negative log-likelihood of its best reported
-solution minus the mclust fit, and the basins a local descent from its
-reported solutions reaches. proxymix at a nominal 26 000 evaluations is
-shown beside the equal-budget rows.</caption>
-<thead><tr class="header">
-<th align="left">Method</th>
-<th align="right">Evaluations</th>
-<th align="right">Reported</th>
-<th align="right">Excess over mclust</th>
-<th align="left">Basins</th>
-<th align="right">Seconds</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">proxymix</td>
-<td align="right">4170</td>
-<td align="right">6</td>
-<td align="right">23.67</td>
-<td align="left">M1, M2</td>
-<td align="right">0.29</td>
-</tr>
-<tr class="even">
-<td align="left">proxymix, 26 000</td>
-<td align="right">20903</td>
-<td align="right">9</td>
-<td align="right">5.09</td>
-<td align="left">M1, M2</td>
-<td align="right">2.25</td>
-</tr>
-<tr class="odd">
-<td align="left">GenSA</td>
-<td align="right">5000</td>
-<td align="right">1</td>
-<td align="right">-0.01</td>
-<td align="left">M2</td>
-<td align="right">0.07</td>
-</tr>
-<tr class="even">
-<td align="left">DEoptim</td>
-<td align="right">5000</td>
-<td align="right">1</td>
-<td align="right">1.02</td>
-<td align="left">M1</td>
-<td align="right">0.07</td>
-</tr>
-<tr class="odd">
-<td align="left">cmaes</td>
-<td align="right">5000</td>
-<td align="right">1</td>
-<td align="right">-0.01</td>
-<td align="left">M1</td>
-<td align="right">0.14</td>
-</tr>
-<tr class="even">
-<td align="left">nloptr</td>
-<td align="right">5636</td>
-<td align="right">20</td>
-<td align="right">-0.01</td>
-<td align="left">M1, M2</td>
-<td align="right">0.07</td>
-</tr>
-<tr class="odd">
-<td align="left">optimx</td>
-<td align="right">7161</td>
-<td align="right">20</td>
-<td align="right">-0.01</td>
-<td align="left">M1, M2</td>
-<td align="right">0.09</td>
-</tr>
-</tbody>
-</table>
-<p>At 5000 evaluations, GenSA and cmaes reach the maximum-likelihood
-value, DEoptim ends 1.02 above it, and each of the three reports one
-basin. The two multi-start methods report both label-switched twins.
-They used 5636 and 7161 evaluations, more than the budget of 5000,
-although each start was capped at 22 evaluations (nloptr) or iterations
-(optimx). The map at the shared budget reports 6 modes whose best value
-is 23.7 above the mclust fit. At the last cooling step the effective
-sample size is 1.4 of 1000 draws for the fit at the shared budget and
-6.5 of 4000 for the fit at a nominal 26 000 evaluations, which used
-20903. Both proxymix fits carry a degenerate quality certificate, and
-both fits raised the low effective-sample-size warning.</p>
-<p>A map whose last update rests on so few draws does not describe the
-likelihood surface, so its modes are to be trusted only as far as an
-independent check confirms them. Here the check is a local descent, and
-from the modes at the shared budget it reaches M1, M2. On this surface
-the check separates little: 397 of the 400 random starts above also
-descend to M1 or M2. At 26 000 evaluations the best mode is 5.1 above
-the fit and the modes descend to M1, M2. The objective returns
-<code>Inf</code> outside the box for every method, because the
-likelihood grows without bound as a standard deviation shrinks towards
-zero. A component of weight 0.05 and standard deviation 0.01 on the 17
-waiting times of 78 minutes, beside one at the sample mean and standard
-deviation, gives a negative log-likelihood of 1151.2, below the mclust
-fit’s 1157.6. One setting differs from the defaults: the map is fitted
-with <code>scale = "loglik"</code>, which ends the temperature ladder at
-1, where the Gibbs measure is the likelihood itself. The default ladder
-ends far above the scale on which the log-likelihood varies around its
-maximum. The excesses of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>−</mi><mn>0.01</mn></mrow><annotation encoding="application/x-tex">-0.01</annotation></semantics></math>
-are the tolerance at which mclust’s expectation-maximisation stops. This
-is one run of one objective, so the simulation below repeats the
-comparison on two functions whose optima are known.</p>
 </div>
 <div class="section level3">
 <h3 id="a-simulation-benchmark">A simulation benchmark<a class="anchor" aria-label="anchor" href="#a-simulation-benchmark"></a>
@@ -774,7 +603,7 @@ earlier in this vignette, is shown beside the equal-budget proxymix row.
 The label 26 000 is the nominal budget of those settings, and the median
 run used 24632 evaluations on Himmelblau’s function and 24605 on the
 Rastrigin function. This chunk is complete and runs as shown, but it
-took about 7 minutes on one core (R 4.6.1, Apple silicon); the tables
+took about 4 minutes on one core (R 4.6.1, Apple silicon); the tables
 below are read from its stored output. For a quick reduced run, change
 the line <code>n_rep &lt;- 100L</code> to
 <code>n_rep &lt;- 5L</code>.</p>
@@ -842,18 +671,18 @@ the line <code>n_rep &lt;- 100L</code> to
 <span>    <span class="fu"><a href="../../reference/gmm_modes.html">gmm_modes</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span><span class="op">$</span><span class="va">modes</span></span>
 <span>  <span class="op">}</span>,</span>
 <span>  GenSA <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">f</span>, <span class="va">lower</span>, <span class="va">upper</span>, <span class="va">seed</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/GenSA/man/GenSA.html" class="external-link">GenSA</a></span><span class="op">(</span>fn <span class="op">=</span> <span class="va">f</span>, lower <span class="op">=</span> <span class="va">lower</span>, upper <span class="op">=</span> <span class="va">upper</span>,</span>
+<span>    <span class="va">out</span> <span class="op">&lt;-</span> <span class="fu">GenSA</span><span class="op">(</span>fn <span class="op">=</span> <span class="va">f</span>, lower <span class="op">=</span> <span class="va">lower</span>, upper <span class="op">=</span> <span class="va">upper</span>,</span>
 <span>                 control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>max.call <span class="op">=</span> <span class="va">budget</span>, seed <span class="op">=</span> <span class="va">seed</span><span class="op">)</span><span class="op">)</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="va">out</span><span class="op">$</span><span class="va">par</span>, <span class="fl">1L</span><span class="op">)</span></span>
 <span>  <span class="op">}</span>,</span>
 <span>  DEoptim <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">f</span>, <span class="va">lower</span>, <span class="va">upper</span>, <span class="va">seed</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/DEoptim/man/DEoptim.html" class="external-link">DEoptim</a></span><span class="op">(</span><span class="va">f</span>, <span class="va">lower</span>, <span class="va">upper</span>,</span>
-<span>                   <span class="fu"><a href="https://rdrr.io/pkg/DEoptim/man/DEoptim.control.html" class="external-link">DEoptim.control</a></span><span class="op">(</span>NP <span class="op">=</span> <span class="fl">50L</span>, itermax <span class="op">=</span> <span class="fl">99L</span>, trace <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="va">out</span> <span class="op">&lt;-</span> <span class="fu">DEoptim</span><span class="op">(</span><span class="va">f</span>, <span class="va">lower</span>, <span class="va">upper</span>,</span>
+<span>                   <span class="fu">DEoptim.control</span><span class="op">(</span>NP <span class="op">=</span> <span class="fl">50L</span>, itermax <span class="op">=</span> <span class="fl">99L</span>, trace <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="va">out</span><span class="op">$</span><span class="va">optim</span><span class="op">$</span><span class="va">bestmem</span>, <span class="fl">1L</span><span class="op">)</span></span>
 <span>  <span class="op">}</span>,</span>
 <span>  cmaes <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">f</span>, <span class="va">lower</span>, <span class="va">upper</span>, <span class="va">seed</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    <span class="va">lambda</span> <span class="op">&lt;-</span> <span class="fl">4L</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">floor</a></span><span class="op">(</span><span class="fl">3</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">lower</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span>    <span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/cmaes/man/cma_es.html" class="external-link">cma_es</a></span><span class="op">(</span><span class="op">(</span><span class="va">lower</span> <span class="op">+</span> <span class="va">upper</span><span class="op">)</span> <span class="op">/</span> <span class="fl">2</span>, <span class="va">f</span>, lower <span class="op">=</span> <span class="va">lower</span>, upper <span class="op">=</span> <span class="va">upper</span>,</span>
+<span>    <span class="va">out</span> <span class="op">&lt;-</span> <span class="fu">cma_es</span><span class="op">(</span><span class="op">(</span><span class="va">lower</span> <span class="op">+</span> <span class="va">upper</span><span class="op">)</span> <span class="op">/</span> <span class="fl">2</span>, <span class="va">f</span>, lower <span class="op">=</span> <span class="va">lower</span>, upper <span class="op">=</span> <span class="va">upper</span>,</span>
 <span>                  control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="va">budget</span> <span class="op"><a href="https://rdrr.io/r/base/Arithmetic.html" class="external-link">%/%</a></span> <span class="va">lambda</span><span class="op">)</span><span class="op">)</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="va">out</span><span class="op">$</span><span class="va">par</span>, <span class="fl">1L</span><span class="op">)</span></span>
 <span>  <span class="op">}</span>,</span>
@@ -868,7 +697,7 @@ the line <code>n_rep &lt;- 100L</code> to
 <span>  optimx <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">f</span>, <span class="va">lower</span>, <span class="va">upper</span>, <span class="va">seed</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    <span class="va">starts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n_starts</span> <span class="op">*</span> <span class="fl">2L</span>, <span class="va">lower</span>, <span class="va">upper</span><span class="op">)</span>, <span class="va">n_starts</span>,</span>
 <span>                     byrow <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span>    <span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/optimx/man/multistart.html" class="external-link">multistart</a></span><span class="op">(</span><span class="va">starts</span>, <span class="va">f</span>, lower <span class="op">=</span> <span class="va">lower</span>, upper <span class="op">=</span> <span class="va">upper</span>,</span>
+<span>    <span class="va">out</span> <span class="op">&lt;-</span> <span class="fu">multistart</span><span class="op">(</span><span class="va">starts</span>, <span class="va">f</span>, lower <span class="op">=</span> <span class="va">lower</span>, upper <span class="op">=</span> <span class="va">upper</span>,</span>
 <span>                      method <span class="op">=</span> <span class="st">"L-BFGS-B"</span>,</span>
 <span>                      control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="va">per_start</span>, trace <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">out</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
@@ -1132,7 +961,7 @@ half or more of the runs never did.</caption>
 <td align="right">0.181</td>
 <td align="right">1.00</td>
 <td align="right">623</td>
-<td align="right">0.229</td>
+<td align="right">0.135</td>
 </tr>
 <tr class="even">
 <td align="left">Himmelblau</td>
@@ -1141,7 +970,7 @@ half or more of the runs never did.</caption>
 <td align="right">0.045</td>
 <td align="right">1.00</td>
 <td align="right">623</td>
-<td align="right">1.308</td>
+<td align="right">0.783</td>
 </tr>
 <tr class="odd">
 <td align="left">Himmelblau</td>
@@ -1150,7 +979,7 @@ half or more of the runs never did.</caption>
 <td align="right">0.000</td>
 <td align="right">0.76</td>
 <td align="right">1948</td>
-<td align="right">0.015</td>
+<td align="right">0.009</td>
 </tr>
 <tr class="even">
 <td align="left">Himmelblau</td>
@@ -1159,7 +988,7 @@ half or more of the runs never did.</caption>
 <td align="right">0.000</td>
 <td align="right">0.71</td>
 <td align="right">1710</td>
-<td align="right">0.017</td>
+<td align="right">0.008</td>
 </tr>
 <tr class="odd">
 <td align="left">Himmelblau</td>
@@ -1168,7 +997,7 @@ half or more of the runs never did.</caption>
 <td align="right">0.000</td>
 <td align="right">0.00</td>
 <td align="right">–</td>
-<td align="right">0.084</td>
+<td align="right">0.045</td>
 </tr>
 <tr class="even">
 <td align="left">Himmelblau</td>
@@ -1177,7 +1006,7 @@ half or more of the runs never did.</caption>
 <td align="right">0.000</td>
 <td align="right">0.99</td>
 <td align="right">572</td>
-<td align="right">0.016</td>
+<td align="right">0.009</td>
 </tr>
 <tr class="odd">
 <td align="left">Himmelblau</td>
@@ -1186,7 +1015,7 @@ half or more of the runs never did.</caption>
 <td align="right">0.000</td>
 <td align="right">0.98</td>
 <td align="right">604</td>
-<td align="right">0.009</td>
+<td align="right">0.005</td>
 </tr>
 <tr class="even">
 <td align="left">Rastrigin</td>
@@ -1195,7 +1024,7 @@ half or more of the runs never did.</caption>
 <td align="right">2.067</td>
 <td align="right">1.00</td>
 <td align="right">751</td>
-<td align="right">0.213</td>
+<td align="right">0.122</td>
 </tr>
 <tr class="odd">
 <td align="left">Rastrigin</td>
@@ -1204,7 +1033,7 @@ half or more of the runs never did.</caption>
 <td align="right">1.000</td>
 <td align="right">1.00</td>
 <td align="right">751</td>
-<td align="right">1.245</td>
+<td align="right">0.729</td>
 </tr>
 <tr class="even">
 <td align="left">Rastrigin</td>
@@ -1213,7 +1042,7 @@ half or more of the runs never did.</caption>
 <td align="right">0.000</td>
 <td align="right">1.00</td>
 <td align="right">408</td>
-<td align="right">0.014</td>
+<td align="right">0.008</td>
 </tr>
 <tr class="odd">
 <td align="left">Rastrigin</td>
@@ -1222,7 +1051,7 @@ half or more of the runs never did.</caption>
 <td align="right">0.000</td>
 <td align="right">1.00</td>
 <td align="right">299</td>
-<td align="right">0.014</td>
+<td align="right">0.008</td>
 </tr>
 <tr class="even">
 <td align="left">Rastrigin</td>
@@ -1231,7 +1060,7 @@ half or more of the runs never did.</caption>
 <td align="right">4.975</td>
 <td align="right">0.08</td>
 <td align="right">–</td>
-<td align="right">0.072</td>
+<td align="right">0.043</td>
 </tr>
 <tr class="odd">
 <td align="left">Rastrigin</td>
@@ -1240,7 +1069,7 @@ half or more of the runs never did.</caption>
 <td align="right">0.995</td>
 <td align="right">0.00</td>
 <td align="right">–</td>
-<td align="right">0.015</td>
+<td align="right">0.008</td>
 </tr>
 <tr class="even">
 <td align="left">Rastrigin</td>
@@ -1249,7 +1078,7 @@ half or more of the runs never did.</caption>
 <td align="right">0.995</td>
 <td align="right">0.00</td>
 <td align="right">–</td>
-<td align="right">0.008</td>
+<td align="right">0.004</td>
 </tr>
 </tbody>
 </table>
@@ -1363,8 +1192,8 @@ their importance draws.</p>
 <code>set.seed(1L)</code>, with <code>seed = 1L</code> passed to
 <code><a href="../../reference/from_objective.html">from_objective()</a></code> and to GenSA. Each simulation run is
 seeded by its own index. The stored results come from the code shown,
-run on 28 September 2026 with R 4.6.1, proxymix 0.16.0, GenSA 1.1.15,
-DEoptim 2.2-8, cmaes 1.0-12, nloptr 2.2.1 and optimx 2025-4.9, and
+run on 21 October 2026 with R 4.6.1, proxymix 0.17.0, GenSA 1.1.15,
+DEoptim 2.2.8, cmaes 1.0.12, nloptr 2.2.1 and optimx 2025.4.9, and
 raised 110 warnings: 100 of low effective sample size, 10 of the EM
 objective falling by at most
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>6</mn><mo>×</mo><msup><mn>10</mn><mrow><mi>−</mi><mn>5</mn></mrow></msup></mrow><annotation encoding="application/x-tex">6 \times 10^{-5}</annotation></semantics></math>
@@ -1372,48 +1201,50 @@ in a cooling step, and 0 others.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; R version 4.6.1 (2026-06-24)</span></span>
-<span><span class="co">#&gt; Platform: aarch64-apple-darwin23</span></span>
-<span><span class="co">#&gt; Running under: macOS Tahoe 26.6.2</span></span>
+<span><span class="co">#&gt; Platform: x86_64-pc-linux-gnu</span></span>
+<span><span class="co">#&gt; Running under: Ubuntu 24.04.5 LTS</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Matrix products: default</span></span>
-<span><span class="co">#&gt; BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/</span></span>
-<span><span class="co">#&gt;     libRblas.0.dylib </span></span>
-<span><span class="co">#&gt; LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/</span></span>
-<span><span class="co">#&gt;     libRlapack.dylib;  LAPACK version 3.12.1</span></span>
+<span><span class="co">#&gt; BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 </span></span>
+<span><span class="co">#&gt; LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/</span></span>
+<span><span class="co">#&gt;     libopenblasp-r0.3.26.so;  LAPACK version 3.12.0</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; locale:</span></span>
-<span><span class="co">#&gt; [1] en_AU.UTF-8/en_AU.UTF-8/en_AU.UTF-8/C/en_AU.UTF-8/en_AU.UTF-8</span></span>
+<span><span class="co">#&gt;  [1] LC_CTYPE=C.UTF-8       LC_NUMERIC=C          </span></span>
+<span><span class="co">#&gt;  [3] LC_TIME=C.UTF-8        LC_COLLATE=C.UTF-8    </span></span>
+<span><span class="co">#&gt;  [5] LC_MONETARY=C.UTF-8    LC_MESSAGES=C.UTF-8   </span></span>
+<span><span class="co">#&gt;  [7] LC_PAPER=C.UTF-8       LC_NAME=C             </span></span>
+<span><span class="co">#&gt;  [9] LC_ADDRESS=C           LC_TELEPHONE=C        </span></span>
+<span><span class="co">#&gt; [11] LC_MEASUREMENT=C.UTF-8 LC_IDENTIFICATION=C   </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; time zone: Australia/Adelaide</span></span>
-<span><span class="co">#&gt; tzcode source: internal</span></span>
+<span><span class="co">#&gt; time zone: UTC</span></span>
+<span><span class="co">#&gt; tzcode source: system (glibc)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; attached base packages:</span></span>
-<span><span class="co">#&gt; [1] parallel  stats     graphics  grDevices utils     datasets </span></span>
-<span><span class="co">#&gt; [7] methods   base     </span></span>
+<span><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods  </span></span>
+<span><span class="co">#&gt; [7] base     </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; other attached packages:</span></span>
-<span><span class="co">#&gt; [1] mclust_6.1.3    optimx_2025-4.9 nloptr_2.2.1    cmaes_1.0-12   </span></span>
-<span><span class="co">#&gt; [5] DEoptim_2.2-8   GenSA_1.1.15    proxymix_0.16.0</span></span>
+<span><span class="co">#&gt; [1] proxymix_0.17.0</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
-<span><span class="co">#&gt;  [1] sass_0.4.10         generics_0.1.4      pracma_2.4.6       </span></span>
-<span><span class="co">#&gt;  [4] digest_0.6.39       magrittr_2.0.5      evaluate_1.0.5     </span></span>
-<span><span class="co">#&gt;  [7] grid_4.6.1          RColorBrewer_1.1-3  fastmap_1.2.0      </span></span>
-<span><span class="co">#&gt; [10] jsonlite_2.0.0      viridisLite_0.4.3   scales_1.4.0       </span></span>
-<span><span class="co">#&gt; [13] numDeriv_2016.8-1.1 isoband_0.3.0       textshaping_1.0.5  </span></span>
-<span><span class="co">#&gt; [16] jquerylib_0.1.4     cli_3.6.6           rlang_1.3.0        </span></span>
-<span><span class="co">#&gt; [19] withr_3.0.3         cachem_1.1.0        yaml_2.3.12        </span></span>
-<span><span class="co">#&gt; [22] otel_0.2.0          tools_4.6.1         dplyr_1.2.1        </span></span>
-<span><span class="co">#&gt; [25] ggplot2_4.0.3       vctrs_0.7.3         R6_2.6.1           </span></span>
-<span><span class="co">#&gt; [28] lifecycle_1.0.5     fs_2.1.0            htmlwidgets_1.6.4  </span></span>
-<span><span class="co">#&gt; [31] MASS_7.3-66         ragg_1.5.2          pkgconfig_2.0.3    </span></span>
-<span><span class="co">#&gt; [34] desc_1.4.3          pkgdown_2.2.1       pillar_1.11.1      </span></span>
-<span><span class="co">#&gt; [37] bslib_0.12.0        gtable_0.3.6        glue_1.8.1         </span></span>
-<span><span class="co">#&gt; [40] Rcpp_1.1.2          systemfonts_1.3.2   xfun_0.60          </span></span>
-<span><span class="co">#&gt; [43] tibble_3.3.1        tidyselect_1.2.1    knitr_1.51         </span></span>
-<span><span class="co">#&gt; [46] dichromat_2.0-1     farver_2.1.2        htmltools_0.5.9    </span></span>
-<span><span class="co">#&gt; [49] rmarkdown_2.32      labeling_0.4.3      compiler_4.6.1     </span></span>
-<span><span class="co">#&gt; [52] S7_0.2.2            mvnfast_0.2.8</span></span></code></pre>
+<span><span class="co">#&gt;  [1] mvnfast_0.2.8      gtable_0.3.6       jsonlite_2.0.0    </span></span>
+<span><span class="co">#&gt;  [4] dplyr_1.2.1        compiler_4.6.1     tidyselect_1.2.1  </span></span>
+<span><span class="co">#&gt;  [7] Rcpp_1.1.2         jquerylib_0.1.4    systemfonts_1.3.2 </span></span>
+<span><span class="co">#&gt; [10] scales_1.4.0       textshaping_1.0.5  yaml_2.3.12       </span></span>
+<span><span class="co">#&gt; [13] fastmap_1.2.0      ggplot2_4.0.3      R6_2.6.1          </span></span>
+<span><span class="co">#&gt; [16] labeling_0.4.3     generics_0.1.4     isoband_0.3.0     </span></span>
+<span><span class="co">#&gt; [19] knitr_1.52         MASS_7.3-65        tibble_3.3.1      </span></span>
+<span><span class="co">#&gt; [22] nloptr_2.2.1       desc_1.4.3         bslib_0.12.0      </span></span>
+<span><span class="co">#&gt; [25] pillar_1.11.1      RColorBrewer_1.1-3 rlang_1.3.0       </span></span>
+<span><span class="co">#&gt; [28] cachem_1.1.0       xfun_0.62          fs_2.1.0          </span></span>
+<span><span class="co">#&gt; [31] sass_0.4.10        S7_0.2.2           otel_0.2.0        </span></span>
+<span><span class="co">#&gt; [34] viridisLite_0.4.3  cli_3.6.6          pkgdown_2.2.1     </span></span>
+<span><span class="co">#&gt; [37] withr_3.0.3        magrittr_2.0.5     digest_0.6.39     </span></span>
+<span><span class="co">#&gt; [40] grid_4.6.1         mclust_6.1.3       lifecycle_1.0.5   </span></span>
+<span><span class="co">#&gt; [43] vctrs_0.7.3        evaluate_1.0.5     glue_1.8.1        </span></span>
+<span><span class="co">#&gt; [46] farver_2.1.2       ragg_1.5.2         rmarkdown_2.32    </span></span>
+<span><span class="co">#&gt; [49] tools_4.6.1        pkgconfig_2.0.3    htmltools_0.5.9</span></span></code></pre>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

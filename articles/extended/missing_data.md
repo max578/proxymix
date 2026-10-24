@@ -1,11 +1,15 @@
 # Imputing missing data with a mixture
 
-\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`
+``` r
 
-\
-`has_ggplot2`` ``<-`` `[`requireNamespace`](https://rdrr.io/r/base/ns-load.html)`(``"ggplot2"``, quietly ``=`` ``TRUE``)`\
-`has_mice`` ``<-`` `[`requireNamespace`](https://rdrr.io/r/base/ns-load.html)`(``"mice"``, quietly ``=`` ``TRUE``)`
+library(proxymix)
+```
+
+``` r
+
+has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
+has_mice <- requireNamespace("mice", quietly = TRUE)
+```
 
 ## The problem
 
@@ -64,49 +68,59 @@ values are available to score against. The chance of an entry going
 missing depends on the observed `x1` and not on the hidden `x2` itself,
 which is the missing-at-random setting.
 
-\
-[`set.seed`](https://rdrr.io/r/base/Random.html)`(``20260620``)`\
-`n`` ``<-`` ``600L`\
-`lab`` ``<-`` `[`sample`](https://rdrr.io/r/base/sample.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``-``1``, ``1``)``, ``n``, replace ``=`` ``TRUE``)`\
-`x1`` ``<-`` ``2`` ``*`` ``lab`` ``+`` `[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n``, ``0``, ``0.6``)`\
-`x2`` ``<-`` ``2`` ``*`` ``lab`` ``+`` ``0.5`` ``*`` ``(``x1`` ``-`` ``2`` ``*`` ``lab``)`` ``+`` `[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n``, ``0``, ``0.6``)`\
-`truth`` ``<-`` `[`cbind`](https://amices.org/mice/reference/cbind.html)`(``x1 ``=`` ``x1``, x2 ``=`` ``x2``)`\
-\
-`x_holes`` ``<-`` ``truth`\
-`missing`` ``<-`` `[`runif`](https://rdrr.io/r/stats/Uniform.html)`(``n``)`` ``<`` `[`plogis`](https://rdrr.io/r/stats/Logistic.html)`(``0.6`` ``*`` ``x1``)`\
-`x_holes``[``missing``, ``"x2"``]`` ``<-`` ``NA`\
-`frac_missing`` ``<-`` `[`mean`](https://rdrr.io/r/base/mean.html)`(``missing``)`
+``` r
+
+set.seed(20260620)
+n <- 600L
+lab <- sample(c(-1, 1), n, replace = TRUE)
+x1 <- 2 * lab + rnorm(n, 0, 0.6)
+x2 <- 2 * lab + 0.5 * (x1 - 2 * lab) + rnorm(n, 0, 0.6)
+truth <- cbind(x1 = x1, x2 = x2)
+
+x_holes <- truth
+missing <- runif(n) < plogis(0.6 * x1)
+x_holes[missing, "x2"] <- NA
+frac_missing <- mean(missing)
+```
 
 The marginal distribution of `x2` is bimodal, one cluster near $`-2`$
 and one near $`+2`$, with little mass between them. Writing the empty
 middle as the interval $`|x_2| < 1`$, the values that were deleted put
 only a small share of their mass there.
 
-\
-`in_gap`` ``<-`` ``function``(``v``)`` `[`mean`](https://rdrr.io/r/base/mean.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``v``)`` ``<`` ``1``)`\
-`gap_truth`` ``<-`` ``in_gap``(``truth``[``missing``, ``"x2"``]``)`
+``` r
+
+in_gap <- function(v) mean(abs(v) < 1)
+gap_truth <- in_gap(truth[missing, "x2"])
+```
 
 ### Impute with a mixture, and with a single Gaussian
 
-\
-`imp`` ``<-`` `[`gmm_impute`](https://max578.github.io/proxymix/reference/gmm_impute.md)`(``x_holes``, N ``=`` ``2L``, m ``=`` ``20L``, seed ``=`` ``1L``)`\
-`imp`\
-`#> <gmm_imputation>: m = 20 completions, K = 2 components, p = 2`\
-`#>   mechanism  : missing at random`\
-`#>   missing    : x1 0%, x2 53%`
+``` r
+
+imp <- gmm_impute(x_holes, N = 2L, m = 20L, seed = 1L)
+imp
+#> <gmm_imputation>: m = 20 completions, K = 2 components, p = 2
+#>   mechanism  : missing at random
+#>   missing    : x1 0%, x2 53%
+```
 
 A single completed dataset has no holes:
 
-\
-`done`` ``<-`` `[`gmm_complete`](https://max578.github.io/proxymix/reference/gmm_complete.md)`(``imp``, ``1L``)`\
-[`anyNA`](https://rdrr.io/r/base/NA.html)`(``done``)`\
-`#> [1] FALSE`
+``` r
+
+done <- gmm_complete(imp, 1L)
+anyNA(done)
+#> [1] FALSE
+```
 
 Forcing one component reproduces the multivariate-normal assumption.
 
-\
-`imp1`` ``<-`` `[`gmm_impute`](https://max578.github.io/proxymix/reference/gmm_impute.md)`(``x_holes``, N ``=`` ``1L``, m ``=`` ``20L``, seed ``=`` ``1L``)`\
-`done1`` ``<-`` `[`gmm_complete`](https://max578.github.io/proxymix/reference/gmm_complete.md)`(``imp1``, ``1L``)`
+``` r
+
+imp1 <- gmm_impute(x_holes, N = 1L, m = 20L, seed = 1L)
+done1 <- gmm_complete(imp1, 1L)
+```
 
 | Source | Share of values with $`\lvert x_2 \rvert < 1`$ |
 |:---|---:|
@@ -120,40 +134,42 @@ from the first of the 20 completions of each imputer. {.table}
 
 ### The shape of the imputations
 
-\
-`dens_df`` ``<-`` ``function``(``v``, ``label``)`` ``{`\
-`  ``d`` ``<-`` `[`density`](https://rdrr.io/r/stats/density.html)`(``v``)`\
-`  `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``x2 ``=`` ``d``$``x``, density ``=`` ``d``$``y``, source ``=`` ``label``,`\
-`             stringsAsFactors ``=`` ``FALSE``)`\
-`}`\
-`plot_df`` ``<-`` `[`rbind`](https://amices.org/mice/reference/cbind.html)`(`\
-`  ``dens_df``(``truth``[``missing``, ``"x2"``]``, ``"held-out truth"``)``,`\
-`  ``dens_df``(``done``[``missing``, ``"x2"``]``, ``"mixture (N = 2)"``)``,`\
-`  ``dens_df``(``done1``[``missing``, ``"x2"``]``, ``"single Gaussian (N = 1)"``)`\
-`)`\
-`plot_df``$``source`` ``<-`` `[`factor`](https://rdrr.io/r/base/factor.html)`(`\
-`  ``plot_df``$``source``,`\
-`  levels ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"held-out truth"``, ``"mixture (N = 2)"``,`\
-`             ``"single Gaussian (N = 1)"``)`\
-`)`\
-`ggplot2``::`[`ggplot`](https://ggplot2.tidyverse.org/reference/ggplot.html)`(``plot_df``, ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``x2``, ``density``, colour ``=`` ``source``)``)`` ``+`\
-`  ``ggplot2``::`[`geom_line`](https://ggplot2.tidyverse.org/reference/geom_path.html)`(``linewidth ``=`` ``0.9``)`` ``+`\
-`  ``ggplot2``::`[`annotate`](https://ggplot2.tidyverse.org/reference/annotate.html)`(``"rect"``, xmin ``=`` ``-``1``, xmax ``=`` ``1``, ymin ``=`` ``-``Inf``, ymax ``=`` ``Inf``,`\
-`                    fill ``=`` ``"grey60"``, alpha ``=`` ``0.18``)`` ``+`\
-`  ``ggplot2``::`[`scale_colour_manual`](https://ggplot2.tidyverse.org/reference/scale_manual.html)`(`\
-`    name ``=`` ``NULL``,`\
-`    values ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"held-out truth"`` ``=`` ``"#000000"``,`\
-`               ``"mixture (N = 2)"`` ``=`` ``"#009E73"``,`\
-`               ``"single Gaussian (N = 1)"`` ``=`` ``"#D55E00"``)`\
-`  ``)`` ``+`\
-`  ``ggplot2``::`[`labs`](https://ggplot2.tidyverse.org/reference/labs.html)`(`\
-`    x ``=`` `[`expression`](https://rdrr.io/r/base/expression.html)`(``x``[``2``]``)``, y ``=`` ``"density"``,`\
-`    title ``=`` ``"What each imputer put where the data was deleted"``,`\
-`    subtitle ``=`` `[`expression`](https://rdrr.io/r/base/expression.html)`(``"Shaded band marks the empty middle, "`` ``*`\
-`                            ``group``(``"|"``, ``x``[``2``]``, ``"|"``)`` ``<`` ``1``)`\
-`  ``)`` ``+`\
-`  ``ggplot2``::`[`theme_minimal`](https://ggplot2.tidyverse.org/reference/ggtheme.html)`(``base_size ``=`` ``11``)`` ``+`\
-`  ``ggplot2``::`[`theme`](https://ggplot2.tidyverse.org/reference/theme.html)`(``legend.position ``=`` ``"top"``)`
+``` r
+
+dens_df <- function(v, label) {
+  d <- density(v)
+  data.frame(x2 = d$x, density = d$y, source = label,
+             stringsAsFactors = FALSE)
+}
+plot_df <- rbind(
+  dens_df(truth[missing, "x2"], "held-out truth"),
+  dens_df(done[missing, "x2"], "mixture (N = 2)"),
+  dens_df(done1[missing, "x2"], "single Gaussian (N = 1)")
+)
+plot_df$source <- factor(
+  plot_df$source,
+  levels = c("held-out truth", "mixture (N = 2)",
+             "single Gaussian (N = 1)")
+)
+ggplot2::ggplot(plot_df, ggplot2::aes(x2, density, colour = source)) +
+  ggplot2::geom_line(linewidth = 0.9) +
+  ggplot2::annotate("rect", xmin = -1, xmax = 1, ymin = -Inf, ymax = Inf,
+                    fill = "grey60", alpha = 0.18) +
+  ggplot2::scale_colour_manual(
+    name = NULL,
+    values = c("held-out truth" = "#000000",
+               "mixture (N = 2)" = "#009E73",
+               "single Gaussian (N = 1)" = "#D55E00")
+  ) +
+  ggplot2::labs(
+    x = expression(x[2]), y = "density",
+    title = "What each imputer put where the data was deleted",
+    subtitle = expression("Shaded band marks the empty middle, " *
+                            group("|", x[2], "|") < 1)
+  ) +
+  ggplot2::theme_minimal(base_size = 11) +
+  ggplot2::theme(legend.position = "top")
+```
 
 ![Three density curves over x2: the held-out truth, the mixture
 imputation and the single-Gaussian imputation are all bimodal; the
@@ -172,13 +188,15 @@ completions of its imputer.
 
 ### Pooling a column mean
 
-\
-`pooled`` ``<-`` `[`proxy_pool`](https://max578.github.io/proxymix/reference/proxy_pool.md)`(``imp``, ``"x2"``)`\
-`pooled1`` ``<-`` `[`proxy_pool`](https://max578.github.io/proxymix/reference/proxy_pool.md)`(``imp1``, ``"x2"``)`\
-`fmi_mix`` ``<-`` `[`proxy_fmi`](https://max578.github.io/proxymix/reference/proxy_fmi.md)`(``imp``, ``"x2"``)`\
-`mean_truth`` ``<-`` `[`mean`](https://rdrr.io/r/base/mean.html)`(``truth``[``, ``"x2"``]``)`\
-`err_mix`` ``<-`` `[`abs`](https://rdrr.io/r/base/MathFun.html)`(``pooled``$``estimate`` ``-`` ``mean_truth``)`\
-`err_one`` ``<-`` `[`abs`](https://rdrr.io/r/base/MathFun.html)`(``pooled1``$``estimate`` ``-`` ``mean_truth``)`
+``` r
+
+pooled <- proxy_pool(imp, "x2")
+pooled1 <- proxy_pool(imp1, "x2")
+fmi_mix <- proxy_fmi(imp, "x2")
+mean_truth <- mean(truth[, "x2"])
+err_mix <- abs(pooled$estimate - mean_truth)
+err_one <- abs(pooled1$estimate - mean_truth)
+```
 
 | Estimate of the mean of $`x_2`$ | Estimate | SE | CI lower | CI upper | Absolute error |
 |:---|---:|---:|---:|---:|---:|
@@ -191,12 +209,14 @@ The mean of $`x_2`$ in the complete data and recovered three ways, each
 scored against that complete-data value. Standard errors and intervals
 are shown for the two pooled imputations only. The complete-data row is
 the reference, and the available-cases row is the plain mean of the rows
-that came back. {.table style="width:99%;"}
+that came back. {.table style="width:100%;"}
 
 ### Any other estimand, through `mice`
 
-\
-`mice_fit`` ``<-`` ``mice``::`[`pool`](https://amices.org/mice/reference/pool.html)`(`[`with`](https://rdrr.io/r/base/with.html)`(`[`as_mids`](https://max578.github.io/proxymix/reference/as_mids.md)`(``imp``)``, `[`lm`](https://rdrr.io/r/stats/lm.html)`(``x2`` ``~`` ``x1``)``)``)`
+``` r
+
+mice_fit <- mice::pool(with(as_mids(imp), lm(x2 ~ x1)))
+```
 
 | term        | estimate | std.error | statistic |     df |  p.value |
 |:------------|---------:|----------:|----------:|-------:|---------:|
@@ -281,6 +301,9 @@ clusters would fit noise into the conditional law.
 
 ## Numerical illustration
 
+mice, Amelia or the penguins data (R 4.5.0 or later) is not available on
+this build, so the real-data illustration is skipped.
+
 ### Imputing the Palmer penguins data with three packages
 
 We apply proxymix, mice (van Buuren and Groothuis-Oudshoorn, 2011) and
@@ -293,43 +316,42 @@ draws from the fitted mixture.
 
 The two competitors install from CRAN once and load as usual:
 
-\
-[`install.packages`](https://rdrr.io/r/utils/install.packages.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``"mice"``, ``"Amelia"``)``)`
+``` r
 
-\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`mice`](https://github.com/amices/mice)`)`\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`Amelia`](https://gking.harvard.edu/amelia)`)`
+install.packages(c("mice", "Amelia"))
+```
+
+``` r
+
+library(mice)
+library(Amelia)
+```
 
 The four body measurements of the birds measured in full are kept, and
 part of body mass is deleted, with the chance of deletion rising with
 flipper length. The complete data stay aside for scoring.
 
-\
-`cols`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``"bill_len"``, ``"bill_dep"``, ``"flipper_len"``, ``"body_mass"``)`\
-`peng`` ``<-`` `[`na.omit`](https://rdrr.io/r/stats/na.fail.html)`(``penguins``[``, ``cols``]``)`\
-\
-[`set.seed`](https://rdrr.io/r/base/Random.html)`(``20260913``)`\
-`gone`` ``<-`` `[`runif`](https://rdrr.io/r/stats/Uniform.html)`(`[`nrow`](https://rdrr.io/r/base/nrow.html)`(``peng``)``)`` ``<`` `[`plogis`](https://rdrr.io/r/stats/Logistic.html)`(``(``peng``$``flipper_len`` ``-`` ``205``)`` ``/`` ``10``)`\
-`peng_holes`` ``<-`` ``peng`\
-`peng_holes``$``body_mass``[``gone``]`` ``<-`` ``NA`
+``` r
 
-That leaves 342 birds with bill length, bill depth and flipper length in
-millimetres and body mass in grams. Deletion removes 42 per cent of the
-masses, and 74 per cent among Gentoo penguins, the heaviest species, so
-the values are missing at random given an observed column. The data
-carry structure that none of the imputers is told about. The three
-species form separate clusters, and across the colony body mass falls by
-192 g per millimetre of bill depth, while within each species it rises
-by 205 to 369 g per millimetre.
+cols <- c("bill_len", "bill_dep", "flipper_len", "body_mass")
+peng <- na.omit(penguins[, cols])
+
+set.seed(20260913)
+gone <- runif(nrow(peng)) < plogis((peng$flipper_len - 205) / 10)
+peng_holes <- peng
+peng_holes$body_mass[gone] <- NA
+```
 
 Each package imputes the same data frame with its default settings and
 20 completions:
 
-\
-`imp_proxymix`` ``<-`` `[`gmm_impute`](https://max578.github.io/proxymix/reference/gmm_impute.md)`(``peng_holes``, m ``=`` ``20L``, seed ``=`` ``1L``)`\
-`imp_mice`` ``<-`` `[`mice`](https://amices.org/mice/reference/mice.html)`(``peng_holes``, m ``=`` ``20L``, seed ``=`` ``1L``, printFlag ``=`` ``FALSE``)`\
-[`set.seed`](https://rdrr.io/r/base/Random.html)`(``1L``)`\
-`imp_amelia`` ``<-`` `[`amelia`](https://rdrr.io/pkg/Amelia/man/amelia.html)`(``peng_holes``, m ``=`` ``20L``, p2s ``=`` ``0L``)`
+``` r
+
+imp_proxymix <- gmm_impute(peng_holes, m = 20L, seed = 1L)
+imp_mice <- mice(peng_holes, m = 20L, seed = 1L, printFlag = FALSE)
+set.seed(1L)
+imp_amelia <- amelia(peng_holes, m = 20L, p2s = 0L)
+```
 
 The same analysis then runs on every completed dataset, and one pooling
 rule, Rubin’s rules as implemented in
@@ -337,50 +359,25 @@ rule, Rubin’s rules as implemented in
 the results for all three, so the differences come from the imputations
 alone:
 
-\
-`completed`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(`\
-`  proxymix ``=`` `[`complete`](https://tidyr.tidyverse.org/reference/complete.html)`(`[`as_mids`](https://max578.github.io/proxymix/reference/as_mids.md)`(``imp_proxymix``)``, ``"all"``)``,`\
-`  mice ``=`` `[`complete`](https://tidyr.tidyverse.org/reference/complete.html)`(``imp_mice``, ``"all"``)``,`\
-`  Amelia ``=`` ``imp_amelia``$``imputations`\
-`)`\
-\
-`pool_three`` ``<-`` ``function``(``f``)`` ``{`\
-`  `[`t`](https://rdrr.io/r/base/t.html)`(`[`vapply`](https://rdrr.io/r/base/lapply.html)`(``completed``, ``function``(``sets``)`` ``{`\
-`    ``fits`` ``<-`` `[`lapply`](https://rdrr.io/r/base/lapply.html)`(``sets``, ``function``(``d``)`` `[`lm`](https://rdrr.io/r/stats/lm.html)`(``f``, data ``=`` ``d``)``)`\
-`    ``s`` ``<-`` `[`summary`](https://rdrr.io/r/base/summary.html)`(`[`pool`](https://amices.org/mice/reference/pool.html)`(``fits``)``, conf.int ``=`` ``TRUE``)`\
-`    `[`unlist`](https://rdrr.io/r/base/unlist.html)`(``s``[`[`nrow`](https://rdrr.io/r/base/nrow.html)`(``s``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``"estimate"``, ``"conf.low"``, ``"conf.high"``)``]``)`\
-`  ``}``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``3L``)``)``)`\
-`}`\
-\
-`mean_mass`` ``<-`` ``pool_three``(``body_mass`` ``~`` ``1``)`\
-`slope_mass`` ``<-`` ``pool_three``(``body_mass`` ``~`` ``bill_dep``)`
+``` r
 
-| Data used | Mean body mass, g | Slope on bill depth, g per mm |
-|:---|---:|---:|
-| complete data, before deletion | 4202 (4116 to 4287) | -191.6 (-229.8 to -153.5) |
-| available cases only | 3897 (3803 to 3991) | -106.1 (-158.6 to -53.5) |
-| proxymix | 4200 (4109 to 4290) | -189.7 (-231.7 to -147.7) |
-| mice | 4199 (4097 to 4300) | -180.4 (-233.3 to -127.5) |
-| Amelia | 4171 (4077 to 4265) | -163.9 (-207.1 to -120.7) |
+completed <- list(
+  proxymix = complete(as_mids(imp_proxymix), "all"),
+  mice = complete(imp_mice, "all"),
+  Amelia = imp_amelia$imputations
+)
 
-Mean body mass and its slope on bill depth, each with a 95% interval,
-from the complete data, from the birds whose mass was kept, and from
-each package’s 20 completions pooled by Rubin’s rules. {.table
-style="width:99%;"}
+pool_three <- function(f) {
+  t(vapply(completed, function(sets) {
+    fits <- lapply(sets, function(d) lm(f, data = d))
+    s <- summary(pool(fits), conf.int = TRUE)
+    unlist(s[nrow(s), c("estimate", "conf.low", "conf.high")])
+  }, numeric(3L)))
+}
 
-Given only the four measurements, proxymix selected 3 mixture
-components, the number of species. Keeping only the birds whose mass
-survived pulls the mean body mass down from 4202 g to 3897 g, because
-the heaviest species lost most of its values. Pooled over the
-completions, proxymix, mice and Amelia return means 2, 3 and 31 g from
-the complete-data value, and all three intervals contain it. The slope
-on bill depth separates them more. The complete data give -191.6 g per
-millimetre and the available cases -106.1, while proxymix, mice and
-Amelia give -189.7, -180.4 and -163.9. Amelia moves furthest towards
-zero, consistent with a single multivariate-normal model, which gives
-bill depth one conditional coefficient across the three species. This is
-one deletion of one dataset, which illustrates the imputers but cannot
-rank them, so the simulation below repeats the exercise many times.
+mean_mass <- pool_three(body_mass ~ 1)
+slope_mass <- pool_three(body_mass ~ bill_dep)
+```
 
 ### A simulation benchmark
 
@@ -403,87 +400,89 @@ $`x_2`$ on $`x_1`$ are pooled by Rubin’s rules as before and scored
 against their population values, 0 and 1.5 in design A, and 0.25 and
 0.854 in design B. The analysis of the complete data, before deletion,
 is the reference. This chunk is complete and runs as shown, but it took
-about 27 minutes on one core (R 4.6.1, Apple silicon); the results below
+about 17 minutes on one core (R 4.6.1, Apple silicon); the results below
 are read from its stored output.
 
-\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`mice`](https://github.com/amices/mice)`)`\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`Amelia`](https://gking.harvard.edu/amelia)`)`\
-\
-`n`` ``<-`` ``500L``      ``# rows in each dataset`\
-`m`` ``<-`` ``20L``       ``# completions per imputer`\
-`n_rep`` ``<-`` ``500L``  ``# datasets per design`\
-\
-`designs`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(`\
-`  A ``=`` ``function``(``n``)`` ``{`\
-`    ``x1`` ``<-`` `[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n``)`\
-`    `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``x1 ``=`` ``x1``, x2 ``=`` ``1.5`` ``*`` ``x1`` ``+`` `[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n``)``)`\
-`  ``}``,`\
-`  B ``=`` ``function``(``n``)`` ``{`\
-`    ``grp`` ``<-`` `[`runif`](https://rdrr.io/r/stats/Uniform.html)`(``n``)`` ``<`` ``0.5`\
-`    ``rho`` ``<-`` `[`ifelse`](https://rdrr.io/r/base/ifelse.html)`(``grp``, ``-``0.3``, ``0.6``)`\
-`    ``z1`` ``<-`` `[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n``)`\
-`    `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(`\
-`      x1 ``=`` `[`ifelse`](https://rdrr.io/r/base/ifelse.html)`(``grp``, ``1.5``, ``-``1.5``)`` ``+`` ``z1``,`\
-`      x2 ``=`` `[`ifelse`](https://rdrr.io/r/base/ifelse.html)`(``grp``, ``2``, ``-``1.5``)`` ``+`` ``rho`` ``*`` ``z1`` ``+`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(``1`` ``-`` ``rho``^``2``)`` ``*`` `[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n``)`\
-`    ``)`\
-`  ``}`\
-`)`\
-\
-`# population mean of x2 and slope of x2 on x1`\
-`population`` ``<-`` `[`rbind`](https://amices.org/mice/reference/cbind.html)`(`\
-`  A ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``mean ``=`` ``0``, slope ``=`` ``1.5``)``,`\
-`  B ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``mean ``=`` ``0.25``, slope ``=`` ``2.775`` ``/`` ``3.25``)`\
-`)`\
-\
-`# estimate and 95% interval for the last coefficient: the usual interval`\
-`# for one dataset, Rubin's rules over several completions`\
-`ci_last`` ``<-`` ``function``(``fits``)`` ``{`\
-`  ``if`` ``(`[`length`](https://rdrr.io/r/base/length.html)`(``fits``)`` ``==`` ``1L``)`` ``{`\
-`    ``k`` ``<-`` `[`length`](https://rdrr.io/r/base/length.html)`(`[`coef`](https://rdrr.io/r/stats/coef.html)`(``fits``[[``1L``]``]``)``)`\
-`    `[`return`](https://rdrr.io/r/base/function.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(`[`coef`](https://rdrr.io/r/stats/coef.html)`(``fits``[[``1L``]``]``)``[[``k``]``]``, `[`confint`](https://rdrr.io/r/stats/confint.html)`(``fits``[[``1L``]``]``)``[``k``, ``]``)``)`\
-`  ``}`\
-`  ``s`` ``<-`` `[`summary`](https://rdrr.io/r/base/summary.html)`(`[`pool`](https://amices.org/mice/reference/pool.html)`(``fits``)``, conf.int ``=`` ``TRUE``)`\
-`  `[`unlist`](https://rdrr.io/r/base/unlist.html)`(``s``[`[`nrow`](https://rdrr.io/r/base/nrow.html)`(``s``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``"estimate"``, ``"conf.low"``, ``"conf.high"``)``]``)`\
-`}`\
-\
-`one_dataset`` ``<-`` ``function``(``design``, ``r``)`` ``{`\
-`  `[`set.seed`](https://rdrr.io/r/base/Random.html)`(``r``)`\
-`  ``full`` ``<-`` ``designs``[[``design``]``]``(``n``)`\
-`  ``obs`` ``<-`` ``full`\
-`  ``obs``$``x2``[`[`runif`](https://rdrr.io/r/stats/Uniform.html)`(``n``)`` ``<`` `[`plogis`](https://rdrr.io/r/stats/Logistic.html)`(``0.4`` ``+`` ``0.6`` ``*`` ``full``$``x1``)``]`` ``<-`` ``NA`\
-`  ``sets`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(`\
-`    ``"complete data"`` ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``full``)``,`\
-`    proxymix ``=`` `[`complete`](https://tidyr.tidyverse.org/reference/complete.html)`(`[`as_mids`](https://max578.github.io/proxymix/reference/as_mids.md)`(`[`gmm_impute`](https://max578.github.io/proxymix/reference/gmm_impute.md)`(``obs``, m ``=`` ``m``, seed ``=`` ``r``)``)``, ``"all"``)``,`\
-`    mice ``=`` `[`complete`](https://tidyr.tidyverse.org/reference/complete.html)`(`[`mice`](https://amices.org/mice/reference/mice.html)`(``obs``, m ``=`` ``m``, seed ``=`` ``r``, printFlag ``=`` ``FALSE``)``, ``"all"``)``,`\
-`    Amelia ``=`` `[`amelia`](https://rdrr.io/pkg/Amelia/man/amelia.html)`(``obs``, m ``=`` ``m``, p2s ``=`` ``0L``)``$``imputations`\
-`  ``)`\
-`  ``out`` ``<-`` `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`names`](https://rdrr.io/r/base/names.html)`(``sets``)``, ``function``(``method``)`` ``{`\
-`    ``ci`` ``<-`` `[`rbind`](https://amices.org/mice/reference/cbind.html)`(`\
-`      ``ci_last``(`[`lapply`](https://rdrr.io/r/base/lapply.html)`(``sets``[[``method``]``]``, ``function``(``d``)`` `[`lm`](https://rdrr.io/r/stats/lm.html)`(``x2`` ``~`` ``1``, data ``=`` ``d``)``)``)``,`\
-`      ``ci_last``(`[`lapply`](https://rdrr.io/r/base/lapply.html)`(``sets``[[``method``]``]``, ``function``(``d``)`` `[`lm`](https://rdrr.io/r/stats/lm.html)`(``x2`` ``~`` ``x1``, data ``=`` ``d``)``)``)`\
-`    ``)`\
-`    `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``design ``=`` ``design``, method ``=`` ``method``,`\
-`               estimand ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"mean"``, ``"slope"``)``,`\
-`               estimate ``=`` ``ci``[``, ``1L``]``, lower ``=`` ``ci``[``, ``2L``]``, upper ``=`` ``ci``[``, ``3L``]``)`\
-`  ``}``)`\
-`  `[`do.call`](https://rdrr.io/r/base/do.call.html)`(``rbind``, ``out``)`\
-`}`\
-\
-`res`` ``<-`` `[`do.call`](https://rdrr.io/r/base/do.call.html)`(``rbind``, `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``"A"``, ``"B"``)``, ``function``(``design``)`` ``{`\
-`  `[`do.call`](https://rdrr.io/r/base/do.call.html)`(``rbind``, `[`lapply`](https://rdrr.io/r/base/lapply.html)`(`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``n_rep``)``, ``function``(``r``)`` ``one_dataset``(``design``, ``r``)``)``)`\
-`}``)``)`\
-`res``$``truth`` ``<-`` ``population``[`[`cbind`](https://amices.org/mice/reference/cbind.html)`(``res``$``design``, ``res``$``estimand``)``]`\
-\
-`sim_tab`` ``<-`` `[`aggregate`](https://rdrr.io/r/stats/aggregate.html)`(`\
-`  `[`cbind`](https://amices.org/mice/reference/cbind.html)`(``bias ``=`` ``estimate`` ``-`` ``truth``, rmse ``=`` ``(``estimate`` ``-`` ``truth``)``^``2``,`\
-`        coverage ``=`` ``lower`` ``<=`` ``truth`` ``&`` ``truth`` ``<=`` ``upper``,`\
-`        width ``=`` ``upper`` ``-`` ``lower``)`` ``~`` ``design`` ``+`` ``estimand`` ``+`` ``method``,`\
-`  data ``=`` ``res``, FUN ``=`` ``mean`\
-`)`\
-`sim_tab``$``rmse`` ``<-`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(``sim_tab``$``rmse``)`\
-`sim_tab`
+``` r
+
+library(proxymix)
+library(mice)
+library(Amelia)
+
+n <- 500L      # rows in each dataset
+m <- 20L       # completions per imputer
+n_rep <- 500L  # datasets per design
+
+designs <- list(
+  A = function(n) {
+    x1 <- rnorm(n)
+    data.frame(x1 = x1, x2 = 1.5 * x1 + rnorm(n))
+  },
+  B = function(n) {
+    grp <- runif(n) < 0.5
+    rho <- ifelse(grp, -0.3, 0.6)
+    z1 <- rnorm(n)
+    data.frame(
+      x1 = ifelse(grp, 1.5, -1.5) + z1,
+      x2 = ifelse(grp, 2, -1.5) + rho * z1 + sqrt(1 - rho^2) * rnorm(n)
+    )
+  }
+)
+
+# population mean of x2 and slope of x2 on x1
+population <- rbind(
+  A = c(mean = 0, slope = 1.5),
+  B = c(mean = 0.25, slope = 2.775 / 3.25)
+)
+
+# estimate and 95% interval for the last coefficient: the usual interval
+# for one dataset, Rubin's rules over several completions
+ci_last <- function(fits) {
+  if (length(fits) == 1L) {
+    k <- length(coef(fits[[1L]]))
+    return(c(coef(fits[[1L]])[[k]], confint(fits[[1L]])[k, ]))
+  }
+  s <- summary(pool(fits), conf.int = TRUE)
+  unlist(s[nrow(s), c("estimate", "conf.low", "conf.high")])
+}
+
+one_dataset <- function(design, r) {
+  set.seed(r)
+  full <- designs[[design]](n)
+  obs <- full
+  obs$x2[runif(n) < plogis(0.4 + 0.6 * full$x1)] <- NA
+  sets <- list(
+    "complete data" = list(full),
+    proxymix = complete(as_mids(gmm_impute(obs, m = m, seed = r)), "all"),
+    mice = complete(mice(obs, m = m, seed = r, printFlag = FALSE), "all"),
+    Amelia = amelia(obs, m = m, p2s = 0L)$imputations
+  )
+  out <- lapply(names(sets), function(method) {
+    ci <- rbind(
+      ci_last(lapply(sets[[method]], function(d) lm(x2 ~ 1, data = d))),
+      ci_last(lapply(sets[[method]], function(d) lm(x2 ~ x1, data = d)))
+    )
+    data.frame(design = design, method = method,
+               estimand = c("mean", "slope"),
+               estimate = ci[, 1L], lower = ci[, 2L], upper = ci[, 3L])
+  })
+  do.call(rbind, out)
+}
+
+res <- do.call(rbind, lapply(c("A", "B"), function(design) {
+  do.call(rbind, lapply(seq_len(n_rep), function(r) one_dataset(design, r)))
+}))
+res$truth <- population[cbind(res$design, res$estimand)]
+
+sim_tab <- aggregate(
+  cbind(bias = estimate - truth, rmse = (estimate - truth)^2,
+        coverage = lower <= truth & truth <= upper,
+        width = upper - lower) ~ design + estimand + method,
+  data = res, FUN = mean
+)
+sim_tab$rmse <- sqrt(sim_tab$rmse)
+sim_tab
+```
 
 | Design | Estimand                    | Data used     |    Bias |  RMSE | Coverage | Width |
 |:-------|:----------------------------|:--------------|--------:|------:|---------:|------:|
@@ -593,59 +592,65 @@ The numerical illustration deletes body mass after `set.seed(20260913)`
 and gives each imputer the seed 1, through `set.seed(1L)` for Amelia. In
 the simulation each dataset is generated after
 [`set.seed()`](https://rdrr.io/r/base/Random.html) with its own index.
-The stored simulation results come from the code shown, run on 26
-September 2026 with R 4.6.1, proxymix 0.16.0, mice 3.19.0 and Amelia
+The stored simulation results come from the code shown, run on 21
+October 2026 with R 4.6.1, proxymix 0.17.0, mice 3.19.0 and Amelia
 1.8.3, and the run raised 0 warnings.
 
-\
-[`sessionInfo`](https://rdrr.io/r/utils/sessionInfo.html)`(``)`
+``` r
+
+sessionInfo()
+```
 
     #> R version 4.6.1 (2026-06-24)
-    #> Platform: aarch64-apple-darwin23
-    #> Running under: macOS Tahoe 26.6.2
+    #> Platform: x86_64-pc-linux-gnu
+    #> Running under: Ubuntu 24.04.5 LTS
     #> 
     #> Matrix products: default
-    #> BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/
-    #>     libRblas.0.dylib 
-    #> LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/
-    #>     libRlapack.dylib;  LAPACK version 3.12.1
+    #> BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 
+    #> LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/
+    #>     libopenblasp-r0.3.26.so;  LAPACK version 3.12.0
     #> 
     #> locale:
-    #> [1] en_AU.UTF-8/en_AU.UTF-8/en_AU.UTF-8/C/en_AU.UTF-8/en_AU.UTF-8
+    #>  [1] LC_CTYPE=C.UTF-8       LC_NUMERIC=C          
+    #>  [3] LC_TIME=C.UTF-8        LC_COLLATE=C.UTF-8    
+    #>  [5] LC_MONETARY=C.UTF-8    LC_MESSAGES=C.UTF-8   
+    #>  [7] LC_PAPER=C.UTF-8       LC_NAME=C             
+    #>  [9] LC_ADDRESS=C           LC_TELEPHONE=C        
+    #> [11] LC_MEASUREMENT=C.UTF-8 LC_IDENTIFICATION=C   
     #> 
-    #> time zone: Australia/Adelaide
-    #> tzcode source: internal
+    #> time zone: UTC
+    #> tzcode source: system (glibc)
     #> 
     #> attached base packages:
     #> [1] stats     graphics  grDevices utils     datasets  methods  
     #> [7] base     
     #> 
     #> other attached packages:
-    #> [1] Amelia_1.8.3    Rcpp_1.1.2      mice_3.19.0     proxymix_0.16.0
+    #> [1] proxymix_0.17.0
     #> 
     #> loaded via a namespace (and not attached):
-    #>  [1] gtable_0.3.6       shape_1.4.6.1      xfun_0.60         
-    #>  [4] bslib_0.12.0       ggplot2_4.0.3      htmlwidgets_1.6.4 
-    #>  [7] lattice_0.23-1     vctrs_0.7.3        tools_4.6.1       
-    #> [10] Rdpack_2.6.6       generics_0.1.4     stats4_4.6.1      
-    #> [13] tibble_3.3.1       pan_2.0            pkgconfig_2.0.3   
-    #> [16] jomo_2.7-6         Matrix_1.7-6       RColorBrewer_1.1-3
-    #> [19] S7_0.2.2           desc_1.4.3         lifecycle_1.0.5   
-    #> [22] compiler_4.6.1     farver_2.1.2       textshaping_1.0.5 
-    #> [25] codetools_0.2-20   htmltools_0.5.9    sass_0.4.10       
-    #> [28] yaml_2.3.12        glmnet_5.0         pillar_1.11.1     
+    #>  [1] gtable_0.3.6       shape_1.4.6.1      xfun_0.62         
+    #>  [4] bslib_0.12.0       ggplot2_4.0.3      lattice_0.22-9    
+    #>  [7] vctrs_0.7.3        tools_4.6.1        Rdpack_2.6.6      
+    #> [10] generics_0.1.4     stats4_4.6.1       tibble_3.3.1      
+    #> [13] pan_2.0            pkgconfig_2.0.3    jomo_2.7-6        
+    #> [16] Matrix_1.7-5       RColorBrewer_1.1-3 S7_0.2.2          
+    #> [19] desc_1.4.3         lifecycle_1.0.5    compiler_4.6.1    
+    #> [22] farver_2.1.2       textshaping_1.0.5  codetools_0.2-20  
+    #> [25] htmltools_0.5.9    sass_0.4.10        yaml_2.3.12       
+    #> [28] glmnet_5.1         mice_3.19.0        pillar_1.11.1     
     #> [31] pkgdown_2.2.1      nloptr_2.2.1       jquerylib_0.1.4   
-    #> [34] tidyr_1.3.2        MASS_7.3-66        cachem_1.1.0      
+    #> [34] tidyr_1.3.2        MASS_7.3-65        cachem_1.1.0      
     #> [37] reformulas_0.4.4   iterators_1.0.14   rpart_4.1.27      
     #> [40] boot_1.3-32        foreach_1.5.2      mitml_0.4-5       
-    #> [43] nlme_3.1-171       tidyselect_1.2.1   digest_0.6.39     
+    #> [43] nlme_3.1-169       tidyselect_1.2.1   digest_0.6.39     
     #> [46] dplyr_1.2.1        purrr_1.2.2        labeling_0.4.3    
     #> [49] splines_4.6.1      fastmap_1.2.0      grid_4.6.1        
-    #> [52] cli_3.6.6          magrittr_2.0.5     dichromat_2.0-1   
-    #> [55] survival_3.8-11    broom_1.0.13       foreign_0.8-91    
-    #> [58] withr_3.0.3        scales_1.4.0       backports_1.5.1   
-    #> [61] rmarkdown_2.32     otel_0.2.0         nnet_7.3-21       
-    #> [64] lme4_2.0-6         ragg_1.5.2         evaluate_1.0.5    
-    #> [67] knitr_1.51         rbibutils_2.4.1    rlang_1.3.0       
-    #> [70] glue_1.8.1         minqa_1.2.8        jsonlite_2.0.0    
-    #> [73] R6_2.6.1           systemfonts_1.3.2  fs_2.1.0
+    #> [52] cli_3.6.6          magrittr_2.0.5     survival_3.8-6    
+    #> [55] broom_1.0.13       withr_3.0.3        scales_1.4.0      
+    #> [58] backports_1.5.1    rmarkdown_2.32     otel_0.2.0        
+    #> [61] nnet_7.3-20        lme4_2.1-0         ragg_1.5.2        
+    #> [64] evaluate_1.0.5     knitr_1.52         rbibutils_2.4.1   
+    #> [67] rlang_1.3.0        Rcpp_1.1.2         glue_1.8.1        
+    #> [70] minqa_1.2.8        jsonlite_2.0.0     R6_2.6.1          
+    #> [73] systemfonts_1.3.2  fs_2.1.0

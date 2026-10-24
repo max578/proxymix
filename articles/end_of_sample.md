@@ -1,10 +1,14 @@
 # Testing the last observation for instability
 
-\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`
+``` r
 
-\
-`has_ggplot2`` ``<-`` `[`requireNamespace`](https://rdrr.io/r/base/ns-load.html)`(``"ggplot2"``, quietly ``=`` ``TRUE``)`
+library(proxymix)
+```
+
+``` r
+
+has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
+```
 
 ## The problem
 
@@ -82,8 +86,10 @@ parameters or the overlapping blocks of `m > 1`.
 
 ## Addressing the problem
 
-\
-[`set.seed`](https://rdrr.io/r/base/Random.html)`(``20260621``)`
+``` r
+
+set.seed(20260621)
+```
 
 ### A model and a stable series
 
@@ -98,14 +104,16 @@ mixture of normal distributions, and with `weights = 1` it is a single
 normal distribution. A prior variance of 10 means the starting level is
 known only roughly.
 
-\
-`prior`` ``<-`` `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(``weights ``=`` ``1``, means ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``0``)``, covariances ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`matrix`](https://rdrr.io/r/base/matrix.html)`(``10``)``)``)`\
-`dynamics`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(``A ``=`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``1``)``, Q ``=`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``0.04``)``)``  ``# the level's random walk`\
-`measurement`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(``C ``=`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``1``)``, R ``=`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``1``)``)``  ``# the observation noise`\
-\
-`n`` ``<-`` ``120L`\
-`level`` ``<-`` `[`cumsum`](https://rdrr.io/r/base/cumsum.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0``, `[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n`` ``-`` ``1L``, ``0``, `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(``0.04``)``)``)``)`\
-`y_stable`` ``<-`` ``level`` ``+`` `[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n``, ``0``, ``1``)`
+``` r
+
+prior <- gmm(weights = 1, means = list(0), covariances = list(matrix(10)))
+dynamics <- list(A = matrix(1), Q = matrix(0.04))  # the level's random walk
+measurement <- list(C = matrix(1), R = matrix(1))  # the observation noise
+
+n <- 120L
+level <- cumsum(c(0, rnorm(n - 1L, 0, sqrt(0.04))))
+y_stable <- level + rnorm(n, 0, 1)
+```
 
 ### The same series with a broken final value
 
@@ -113,16 +121,18 @@ A copy of the series has its final value moved up by five standard
 deviations of the observation noise. Both series are tested at `m = 1`
 with the subsampling calibration.
 
-\
-`y_break`` ``<-`` ``y_stable`\
-`y_break``[``n``]`` ``<-`` ``y_break``[``n``]`` ``+`` ``5`\
-\
-`test_stable`` ``<-`` `[`gmm_eos_test`](https://max578.github.io/proxymix/reference/gmm_eos_test.md)`(`\
-`  ``prior``, ``dynamics``, ``measurement``, ``y_stable``, m ``=`` ``1L``, method ``=`` ``"andrews"`\
-`)`\
-`test_break`` ``<-`` `[`gmm_eos_test`](https://max578.github.io/proxymix/reference/gmm_eos_test.md)`(`\
-`  ``prior``, ``dynamics``, ``measurement``, ``y_break``, m ``=`` ``1L``, method ``=`` ``"andrews"`\
-`)`
+``` r
+
+y_break <- y_stable
+y_break[n] <- y_break[n] + 5
+
+test_stable <- gmm_eos_test(
+  prior, dynamics, measurement, y_stable, m = 1L, method = "andrews"
+)
+test_break <- gmm_eos_test(
+  prior, dynamics, measurement, y_break, m = 1L, method = "andrews"
+)
+```
 
 | Result         | Stable series | Broken final value |
 |:---------------|:--------------|:-------------------|
@@ -144,63 +154,67 @@ band spans two forecast standard deviations either side of each
 forecast. The statistic divides each innovation by this forecast
 standard deviation.
 
-\
-`filtered`` ``<-`` `[`gmm_filter`](https://max578.github.io/proxymix/reference/gmm_filter.md)`(`\
-`  ``prior``, ``dynamics``, ``measurement``, ``y_stable``, ridge_eps ``=`` ``0`\
-`)`\
-`# ridge_eps adds a tiny amount to each covariance for numerical stability;`\
-`# 0 keeps the filter's recursion exact`\
-`path`` ``<-`` ``filtered``$``summary`\
-`# forecast of y_t and its standard deviation, from the filter at t - 1`\
-`pred_mean`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(``prior``@``means``[[``1L``]``]``, ``path``$``mean_1``[``-``n``]``)`\
-`pred_sd`` ``<-`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``prior``@``covariances``[[``1L``]``]``[``1L``, ``1L``]``, ``path``$``sd_1``[``-``n``]``^``2``)`` ``+`\
-`                  ``dynamics``$``Q``[``1L``, ``1L``]`` ``+`` ``measurement``$``R``[``1L``, ``1L``]``)`\
-`outside`` ``<-`` `[`sum`](https://rdrr.io/r/base/sum.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``y_stable`` ``-`` ``pred_mean``)``[``-``1L``]`` ``>`` ``2`` ``*`` ``pred_sd``[``-``1L``]``)`
+``` r
 
-\
-`series_df`` ``<-`` `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(`\
-`  t ``=`` `[`seq_len`](https://rdrr.io/r/base/seq.html)`(``n``)``,`\
-`  observed ``=`` ``y_stable``,`\
-`  truth ``=`` ``level``,`\
-`  filtered ``=`` ``path``$``mean_1``,`\
-`  lo ``=`` ``pred_mean`` ``-`` ``2`` ``*`` ``pred_sd``,`\
-`  hi ``=`` ``pred_mean`` ``+`` ``2`` ``*`` ``pred_sd`\
-`)`\
-`break_df`` ``<-`` `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``t ``=`` ``n``, y ``=`` ``y_break``[``n``]``)`\
-`ggplot2``::`[`ggplot`](https://ggplot2.tidyverse.org/reference/ggplot.html)`(``series_df``, ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``t``)``)`` ``+`\
-`  ``ggplot2``::`[`geom_ribbon`](https://ggplot2.tidyverse.org/reference/geom_ribbon.html)`(`\
-`    data ``=`` ``series_df``[``-``1L``, ``]``, ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``ymin ``=`` ``lo``, ymax ``=`` ``hi``)``,`\
-`    fill ``=`` ``"#0072B2"``, alpha ``=`` ``0.18`\
-`  ``)`` ``+`\
-`  ``ggplot2``::`[`geom_point`](https://ggplot2.tidyverse.org/reference/geom_point.html)`(`\
-`    ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``y ``=`` ``observed``, colour ``=`` ``"observed (stable)"``)``,`\
-`    size ``=`` ``1.1``, alpha ``=`` ``0.7`\
-`  ``)`` ``+`\
-`  ``ggplot2``::`[`geom_line`](https://ggplot2.tidyverse.org/reference/geom_path.html)`(`\
-`    ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``y ``=`` ``truth``, colour ``=`` ``"true level"``)``, linewidth ``=`` ``0.8`\
-`  ``)`` ``+`\
-`  ``ggplot2``::`[`geom_line`](https://ggplot2.tidyverse.org/reference/geom_path.html)`(`\
-`    ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``y ``=`` ``filtered``, colour ``=`` ``"estimated level"``)``, linewidth ``=`` ``0.8`\
-`  ``)`` ``+`\
-`  ``ggplot2``::`[`geom_point`](https://ggplot2.tidyverse.org/reference/geom_point.html)`(`\
-`    data ``=`` ``break_df``, ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``t``, ``y``, colour ``=`` ``"broken final value"``)``,`\
-`    size ``=`` ``2.6`\
-`  ``)`` ``+`\
-`  ``ggplot2``::`[`scale_colour_manual`](https://ggplot2.tidyverse.org/reference/scale_manual.html)`(`\
-`    name ``=`` ``NULL``,`\
-`    values ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(`\
-`      ``"observed (stable)"`` ``=`` ``"grey60"``,`\
-`      ``"true level"`` ``=`` ``"#009E73"``,`\
-`      ``"estimated level"`` ``=`` ``"#0072B2"``,`\
-`      ``"broken final value"`` ``=`` ``"#D55E00"`\
-`    ``)`\
-`  ``)`` ``+`\
-`  ``ggplot2``::`[`labs`](https://ggplot2.tidyverse.org/reference/labs.html)`(`\
-`    x ``=`` ``"time step"``, y ``=`` ``"observation"``,`\
-`    title ``=`` ``"A break in the last observation"`\
-`  ``)`` ``+`\
-`  ``ggplot2``::`[`theme_minimal`](https://ggplot2.tidyverse.org/reference/ggtheme.html)`(``base_size ``=`` ``11``)`` ``+`\
-`  ``ggplot2``::`[`theme`](https://ggplot2.tidyverse.org/reference/theme.html)`(``legend.position ``=`` ``"top"``)`
+filtered <- gmm_filter(
+  prior, dynamics, measurement, y_stable, ridge_eps = 0
+)
+# ridge_eps adds a tiny amount to each covariance for numerical stability;
+# 0 keeps the filter's recursion exact
+path <- filtered$summary
+# forecast of y_t and its standard deviation, from the filter at t - 1
+pred_mean <- c(prior@means[[1L]], path$mean_1[-n])
+pred_sd <- sqrt(c(prior@covariances[[1L]][1L, 1L], path$sd_1[-n]^2) +
+                  dynamics$Q[1L, 1L] + measurement$R[1L, 1L])
+outside <- sum(abs(y_stable - pred_mean)[-1L] > 2 * pred_sd[-1L])
+```
+
+``` r
+
+series_df <- data.frame(
+  t = seq_len(n),
+  observed = y_stable,
+  truth = level,
+  filtered = path$mean_1,
+  lo = pred_mean - 2 * pred_sd,
+  hi = pred_mean + 2 * pred_sd
+)
+break_df <- data.frame(t = n, y = y_break[n])
+ggplot2::ggplot(series_df, ggplot2::aes(t)) +
+  ggplot2::geom_ribbon(
+    data = series_df[-1L, ], ggplot2::aes(ymin = lo, ymax = hi),
+    fill = "#0072B2", alpha = 0.18
+  ) +
+  ggplot2::geom_point(
+    ggplot2::aes(y = observed, colour = "observed (stable)"),
+    size = 1.1, alpha = 0.7
+  ) +
+  ggplot2::geom_line(
+    ggplot2::aes(y = truth, colour = "true level"), linewidth = 0.8
+  ) +
+  ggplot2::geom_line(
+    ggplot2::aes(y = filtered, colour = "estimated level"), linewidth = 0.8
+  ) +
+  ggplot2::geom_point(
+    data = break_df, ggplot2::aes(t, y, colour = "broken final value"),
+    size = 2.6
+  ) +
+  ggplot2::scale_colour_manual(
+    name = NULL,
+    values = c(
+      "observed (stable)" = "grey60",
+      "true level" = "#009E73",
+      "estimated level" = "#0072B2",
+      "broken final value" = "#D55E00"
+    )
+  ) +
+  ggplot2::labs(
+    x = "time step", y = "observation",
+    title = "A break in the last observation"
+  ) +
+  ggplot2::theme_minimal(base_size = 11) +
+  ggplot2::theme(legend.position = "top")
+```
 
 ![A time series of noisy observations in grey with the true and
 estimated level overlaid, a shaded forecast band around them, and a
@@ -218,41 +232,43 @@ The subsampling calibration ranks the final block among the earlier
 blocks of the same series. The next figure shows that ranking for both
 series.
 
-\
-`blocks_df`` ``<-`` `[`rbind`](https://rdrr.io/r/base/cbind.html)`(`\
-`  `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(`\
-`    block ``=`` ``test_stable``$``in_sample_blocks``, series ``=`` ``"stable series"`\
-`  ``)``,`\
-`  `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(`\
-`    block ``=`` ``test_break``$``in_sample_blocks``, series ``=`` ``"broken final value"`\
-`  ``)`\
-`)`\
-`blocks_df``$``series`` ``<-`` `[`factor`](https://rdrr.io/r/base/factor.html)`(`\
-`  ``blocks_df``$``series``, levels ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"stable series"``, ``"broken final value"``)`\
-`)`\
-`rule_df`` ``<-`` `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(`\
-`  series ``=`` `[`factor`](https://rdrr.io/r/base/factor.html)`(`\
-`    `[`c`](https://rdrr.io/r/base/c.html)`(``"stable series"``, ``"broken final value"``)``,`\
-`    levels ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"stable series"``, ``"broken final value"``)`\
-`  ``)``,`\
-`  statistic ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``test_stable``$``statistic``, ``test_break``$``statistic``)`\
-`)`\
-`ggplot2``::`[`ggplot`](https://ggplot2.tidyverse.org/reference/ggplot.html)`(``blocks_df``, ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``block``)``)`` ``+`\
-`  ``ggplot2``::`[`stat_ecdf`](https://ggplot2.tidyverse.org/reference/stat_ecdf.html)`(``geom ``=`` ``"step"``, linewidth ``=`` ``0.8``, colour ``=`` ``"#0072B2"``)`` ``+`\
-`  ``ggplot2``::`[`geom_vline`](https://ggplot2.tidyverse.org/reference/geom_abline.html)`(`\
-`    data ``=`` ``rule_df``, ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``xintercept ``=`` ``statistic``)``,`\
-`    colour ``=`` ``"#D55E00"``, linetype ``=`` ``"dashed"``, linewidth ``=`` ``0.8`\
-`  ``)`` ``+`\
-`  ``ggplot2``::`[`facet_wrap`](https://ggplot2.tidyverse.org/reference/facet_wrap.html)`(``~`` ``series``)`` ``+`\
-`  ``ggplot2``::`[`scale_x_log10`](https://ggplot2.tidyverse.org/reference/scale_continuous.html)`(``labels ``=`` ``function``(``v``)`` ``{`\
-`    `[`format`](https://rdrr.io/r/base/format.html)`(``v``, scientific ``=`` ``FALSE``, drop0trailing ``=`` ``TRUE``, trim ``=`` ``TRUE``)`\
-`  ``}``)`` ``+`\
-`  ``ggplot2``::`[`labs`](https://ggplot2.tidyverse.org/reference/labs.html)`(`\
-`    x ``=`` ``"block statistic (log scale)"``,`\
-`    y ``=`` ``"cumulative share of earlier blocks"``,`\
-`    title ``=`` ``"The final block against the earlier blocks of the same series"`\
-`  ``)`` ``+`\
-`  ``ggplot2``::`[`theme_minimal`](https://ggplot2.tidyverse.org/reference/ggtheme.html)`(``base_size ``=`` ``11``)`
+``` r
+
+blocks_df <- rbind(
+  data.frame(
+    block = test_stable$in_sample_blocks, series = "stable series"
+  ),
+  data.frame(
+    block = test_break$in_sample_blocks, series = "broken final value"
+  )
+)
+blocks_df$series <- factor(
+  blocks_df$series, levels = c("stable series", "broken final value")
+)
+rule_df <- data.frame(
+  series = factor(
+    c("stable series", "broken final value"),
+    levels = c("stable series", "broken final value")
+  ),
+  statistic = c(test_stable$statistic, test_break$statistic)
+)
+ggplot2::ggplot(blocks_df, ggplot2::aes(block)) +
+  ggplot2::stat_ecdf(geom = "step", linewidth = 0.8, colour = "#0072B2") +
+  ggplot2::geom_vline(
+    data = rule_df, ggplot2::aes(xintercept = statistic),
+    colour = "#D55E00", linetype = "dashed", linewidth = 0.8
+  ) +
+  ggplot2::facet_wrap(~ series) +
+  ggplot2::scale_x_log10(labels = function(v) {
+    format(v, scientific = FALSE, drop0trailing = TRUE, trim = TRUE)
+  }) +
+  ggplot2::labs(
+    x = "block statistic (log scale)",
+    y = "cumulative share of earlier blocks",
+    title = "The final block against the earlier blocks of the same series"
+  ) +
+  ggplot2::theme_minimal(base_size = 11)
+```
 
 ![Two panels, each showing a rising step function of the cumulative
 share of earlier block statistics against a logarithmic axis, with a
@@ -275,25 +291,27 @@ simulates stable series of 30 values from the same model, tests each
 one, and records the share of p-values below 0.05. The model’s
 parameters are known here, as in the example above.
 
-\
-`simulate_null`` ``<-`` ``function``(``n_obs``)`` ``{`\
-`  ``lv`` ``<-`` `[`cumsum`](https://rdrr.io/r/base/cumsum.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``0``, `[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n_obs`` ``-`` ``1L``, ``0``, `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(``0.04``)``)``)``)`\
-`  ``lv`` ``+`` `[`rnorm`](https://rdrr.io/r/stats/Normal.html)`(``n_obs``, ``0``, ``1``)`\
-`}`\
-`empirical_size`` ``<-`` ``function``(``n_obs``, ``method``, ``n_rep``)`` ``{`\
-`  ``p`` ``<-`` `[`vapply`](https://rdrr.io/r/base/lapply.html)`(`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``n_rep``)``, ``function``(``i1``)`` ``{`\
-`    `[`gmm_eos_test`](https://max578.github.io/proxymix/reference/gmm_eos_test.md)`(`\
-`      ``prior``, ``dynamics``, ``measurement``, ``simulate_null``(``n_obs``)``,`\
-`      m ``=`` ``1L``, method ``=`` ``method`\
-`    ``)``$``p_value`\
-`  ``}``, `[`numeric`](https://rdrr.io/r/base/numeric.html)`(``1L``)``)`\
-`  ``size`` ``<-`` `[`mean`](https://rdrr.io/r/base/mean.html)`(``p`` ``<`` ``0.05``)`\
-`  `[`c`](https://rdrr.io/r/base/c.html)`(``size ``=`` ``size``, se ``=`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(``size`` ``*`` ``(``1`` ``-`` ``size``)`` ``/`` ``n_rep``)``)`\
-`}`\
-\
-`n_rep`` ``<-`` ``250L`\
-`size_chisq_30`` ``<-`` ``empirical_size``(``30L``, ``"chisq"``, ``n_rep``)`\
-`size_andrews_30`` ``<-`` ``empirical_size``(``30L``, ``"andrews"``, ``n_rep``)`
+``` r
+
+simulate_null <- function(n_obs) {
+  lv <- cumsum(c(0, rnorm(n_obs - 1L, 0, sqrt(0.04))))
+  lv + rnorm(n_obs, 0, 1)
+}
+empirical_size <- function(n_obs, method, n_rep) {
+  p <- vapply(seq_len(n_rep), function(i1) {
+    gmm_eos_test(
+      prior, dynamics, measurement, simulate_null(n_obs),
+      m = 1L, method = method
+    )$p_value
+  }, numeric(1L))
+  size <- mean(p < 0.05)
+  c(size = size, se = sqrt(size * (1 - size) / n_rep))
+}
+
+n_rep <- 250L
+size_chisq_30 <- empirical_size(30L, "chisq", n_rep)
+size_andrews_30 <- empirical_size(30L, "andrews", n_rep)
+```
 
 The subsampling p-value can take only the values
 $`(1 + k) / (n - 2m + 2)`$ for $`k = 0, 1, 2, \ldots`$. Its smallest
@@ -303,14 +321,16 @@ values below 0.05. This holds at $`m = 1`$ with known parameters, apart
 from the first few innovations, which the rough starting level affects.
 It does not hold when the parameters are estimated or when $`m > 1`$.
 
-\
-`grid_size`` ``<-`` ``function``(``n_obs``, ``m`` ``=`` ``1L``, ``alpha`` ``=`` ``0.05``)`` ``{`\
-`  ``n_block`` ``<-`` ``n_obs`` ``-`` ``2L`` ``*`` ``m`` ``+`` ``1L`\
-`  ``p_grid`` ``<-`` ``(``1L`` ``+`` `[`seq.int`](https://rdrr.io/r/base/seq.html)`(``0L``, ``n_block``)``)`` ``/`` ``(``1L`` ``+`` ``n_block``)`\
-`  `[`mean`](https://rdrr.io/r/base/mean.html)`(``p_grid`` ``<`` ``alpha``)`\
-`}`\
-`grid_30`` ``<-`` ``grid_size``(``30L``)`\
-`grid_120`` ``<-`` ``grid_size``(``120L``)`
+``` r
+
+grid_size <- function(n_obs, m = 1L, alpha = 0.05) {
+  n_block <- n_obs - 2L * m + 1L
+  p_grid <- (1L + seq.int(0L, n_block)) / (1L + n_block)
+  mean(p_grid < alpha)
+}
+grid_30 <- grid_size(30L)
+grid_120 <- grid_size(120L)
+```
 
 | Calibration | Series length | Obtained              |   Size | Standard error |
 |:------------|--------------:|:----------------------|-------:|---------------:|
@@ -333,28 +353,25 @@ autoregressive model, in which each value is 0.6 times the previous one
 plus standard normal noise. Every check was applied at $`m`$ = 1, 3 and
 5, where it is defined. proxymix’s two calibrations, KFAS, dlm and the
 t-test were fitted to all but the last $`m`$ values and then tested
-against those values; the `strucchange` and
-[`cpt.mean()`](https://rdrr.io/pkg/changepoint/man/cpt.mean.html) checks
-below instead ran on the whole series. The power is how often a check
-rejected when the last $`m`$ values were raised by 3 noise standard
-deviations. The size is how often it rejected when they were not.
+against those values; the `strucchange` and `cpt.mean()` checks below
+instead ran on the whole series. The power is how often a check rejected
+when the last $`m`$ values were raised by 3 noise standard deviations.
+The size is how often it rejected when they were not.
 
 The other checks were the sup-F test and the OLS-CUSUM test of
-`strucchange` (Zeileis et al., 2002),
-[`cpt.mean()`](https://rdrr.io/pkg/changepoint/man/cpt.mean.html) of
-`changepoint` (Killick and Eckley, 2014), and a t-test on the forecast
-errors of the last $`m`$ values. The sup-F test looks for a change near
-the end of the series in the regression of each value on the previous
-one. The OLS-CUSUM test looks for drift, over the whole series, in the
-cumulative sum of the errors of that regression.
-[`cpt.mean()`](https://rdrr.io/pkg/changepoint/man/cpt.mean.html)
-searches for changes in the mean, and it counts as rejecting when it
-places a change among the last $`m`$ values. `KFAS` (Helske, 2017) and
-`dlm` (Petris, 2010) each fitted their own autoregressive model and
-checked every tested value against its 95% forecast interval. Each
-interval had a level of $`1 - 0.05 / m`$, which splits the 5% error rate
-evenly over the $`m`$ values (a Bonferroni correction). The check then
-has a size of at most 0.05 when the parameters are known.
+`strucchange` (Zeileis et al., 2002), `cpt.mean()` of `changepoint`
+(Killick and Eckley, 2014), and a t-test on the forecast errors of the
+last $`m`$ values. The sup-F test looks for a change near the end of the
+series in the regression of each value on the previous one. The
+OLS-CUSUM test looks for drift, over the whole series, in the cumulative
+sum of the errors of that regression. `cpt.mean()` searches for changes
+in the mean, and it counts as rejecting when it places a change among
+the last $`m`$ values. `KFAS` (Helske, 2017) and `dlm` (Petris, 2010)
+each fitted their own autoregressive model and checked every tested
+value against its 95% forecast interval. Each interval had a level of
+$`1 - 0.05 / m`$, which splits the 5% error rate evenly over the $`m`$
+values (a Bonferroni correction). The check then has a size of at most
+0.05 when the parameters are known.
 
 | Check | Size, m = 1 | Power, m = 1 | Size, m = 5 | Power, m = 5 |
 |:---|---:|---:|---:|---:|
@@ -385,17 +402,15 @@ four forecast checks, the subsampling calibration had the lowest power,
 and 0.073), and the sup-F test came closer, at 0.038. Its power was
 0.810, against 0.852 for the chi-square calibration. At $`m = 3`$, a
 column the table omits, the sup-F test had a size of 0.237, far above
-0.05. The OLS-CUSUM test and
-[`cpt.mean()`](https://rdrr.io/pkg/changepoint/man/cpt.mean.html)
-rejected fewer than 5% of stable series. The OLS-CUSUM test rarely
-detected a change confined to the last few values, with a power of 0.021
-at $`m = 1`$ and 0.014 at $`m = 5`$.
-[`cpt.mean()`](https://rdrr.io/pkg/changepoint/man/cpt.mean.html)
-detected it in 0.088 of series at $`m = 1`$ and 0.645 at $`m = 5`$.
+0.05. The OLS-CUSUM test and `cpt.mean()` rejected fewer than 5% of
+stable series. The OLS-CUSUM test rarely detected a change confined to
+the last few values, with a power of 0.021 at $`m = 1`$ and 0.014 at
+$`m = 5`$. `cpt.mean()` detected it in 0.088 of series at $`m = 1`$ and
+0.645 at $`m = 5`$.
 
 `KFAS` was the slowest of the five packages. For one series at $`m`$ =
-3, it took 26 ms and `dlm` took 9 ms, each including its own fit. The
-two proxymix calibrations together took 8 ms, including the
+3, it took 17 ms and `dlm` took 6 ms, each including its own fit. The
+two proxymix calibrations together took 5 ms, including the
 [`arima()`](https://rdrr.io/r/stats/arima.html) fit that supplies the
 parameters. `strucchange` and `changepoint` each took less than 1 ms
 (median of five runs of 10 calls each, on one computer).
@@ -405,89 +420,91 @@ It is the simulation code for a single series. It needs `strucchange`,
 `changepoint`, `KFAS` and `dlm`, all on CRAN, and it is not run when
 this vignette is built.
 
-\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`strucchange`](https://zeileis.codeberg.page/strucchange/)`)`\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`changepoint`](https://github.com/rkillick/changepoint/)`)`\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`KFAS`](https://github.com/helske/KFAS)`)`\
-[`library`](https://rdrr.io/r/base/library.html)`(``dlm``)`\
-\
-`# one series of 100 values whose last m values are raised by 3`\
-[`set.seed`](https://rdrr.io/r/base/Random.html)`(``1L``)`\
-`n`` ``<-`` ``100L`\
-`m`` ``<-`` ``3L`\
-`y`` ``<-`` `[`as.numeric`](https://rdrr.io/r/base/numeric.html)`(`[`arima.sim`](https://rdrr.io/r/stats/arima.sim.html)`(`[`list`](https://rdrr.io/r/base/list.html)`(``ar ``=`` ``0.6``)``, n ``=`` ``n``)``)`\
-`y``[``(``n`` ``-`` ``m`` ``+`` ``1L``)``:``n``]`` ``<-`` ``y``[``(``n`` ``-`` ``m`` ``+`` ``1L``)``:``n``]`` ``+`` ``3`\
-`y_fit`` ``<-`` ``y``[`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``n`` ``-`` ``m``)``]`\
-`last`` ``<-`` ``(``n`` ``-`` ``m`` ``+`` ``1L``)``:``n`\
-\
-`# proxymix, with the autoregressive model fitted by arima()`\
-`ar`` ``<-`` `[`arima`](https://rdrr.io/r/stats/arima.html)`(``y_fit``, order ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``1L``, ``0L``, ``0L``)``)`\
-`a1`` ``<-`` `[`coef`](https://rdrr.io/r/stats/coef.html)`(``ar``)``[[``"ar1"``]``]`\
-`mu`` ``<-`` `[`coef`](https://rdrr.io/r/stats/coef.html)`(``ar``)``[[``"intercept"``]``]`\
-`s2`` ``<-`` ``ar``$``sigma2`\
-`prior`` ``<-`` `[`gmm`](https://max578.github.io/proxymix/reference/gmm.md)`(``weights ``=`` ``1``, means ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``mu``)``,`\
-`             covariances ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`matrix`](https://rdrr.io/r/base/matrix.html)`(``s2`` ``/`` ``(``1`` ``-`` ``a1``^``2``)``)``)``)`\
-`dynamics`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(``A ``=`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``a1``)``, b ``=`` ``mu`` ``*`` ``(``1`` ``-`` ``a1``)``, Q ``=`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``s2``)``)`\
-`measurement`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(``C ``=`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``1``)``, R ``=`` `[`matrix`](https://rdrr.io/r/base/matrix.html)`(``0``)``)`\
-`p_chisq`` ``<-`` `[`gmm_eos_test`](https://max578.github.io/proxymix/reference/gmm_eos_test.md)`(``prior``, ``dynamics``, ``measurement``, ``y``, m ``=`` ``m``,`\
-`                        method ``=`` ``"chisq"``)``$``p_value`\
-`p_andrews`` ``<-`` `[`gmm_eos_test`](https://max578.github.io/proxymix/reference/gmm_eos_test.md)`(``prior``, ``dynamics``, ``measurement``, ``y``, m ``=`` ``m``,`\
-`                          method ``=`` ``"andrews"``)``$``p_value`\
-`resid`` ``<-`` ``y``[``last``]`` ``-`` `[`predict`](https://rdrr.io/r/stats/predict.html)`(``ar``, n.ahead ``=`` ``m``)``$``pred`\
-`p_t`` ``<-`` ``if`` ``(``m`` ``>`` ``1L``)`` `[`t.test`](https://rdrr.io/r/stats/t.test.html)`(``resid``)``$``p.value`` ``else`` ``NA_real_`\
-\
-`# strucchange needs at least three observations after a break in an AR(1)`\
-`reg`` ``<-`` `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``y ``=`` ``y``[``-``1L``]``, y_lag ``=`` ``y``[``-``n``]``)`\
-`n_reg`` ``<-`` `[`nrow`](https://rdrr.io/r/base/nrow.html)`(``reg``)`\
-`p_supf`` ``<-`` ``if`` ``(``m`` ``>=`` ``3L``)`` ``{`\
-`  ``fs`` ``<-`` `[`Fstats`](https://rdrr.io/pkg/strucchange/man/Fstats.html)`(``y`` ``~`` ``y_lag``, data ``=`` ``reg``, from ``=`` ``n_reg`` ``-`` ``m``, to ``=`` ``n_reg`` ``-`` ``3L``)`\
-`  `[`unname`](https://rdrr.io/r/base/unname.html)`(`[`sctest`](https://rdrr.io/pkg/strucchange/man/sctest.html)`(``fs``)``$``p.value``)`\
-`}`` ``else`` ``NA_real_`\
-`p_cusum`` ``<-`` `[`unname`](https://rdrr.io/r/base/unname.html)`(`[`sctest`](https://rdrr.io/pkg/strucchange/man/sctest.html)`(`[`efp`](https://rdrr.io/pkg/strucchange/man/efp.html)`(``y`` ``~`` ``y_lag``, data ``=`` ``reg``,`\
-`                             type ``=`` ``"OLS-CUSUM"``)``)``$``p.value``)`\
-\
-`cp`` ``<-`` `[`cpts`](https://rdrr.io/pkg/changepoint/man/cpts.html)`(`[`cpt.mean`](https://rdrr.io/pkg/changepoint/man/cpt.mean.html)`(``y`` ``/`` `[`sd`](https://rdrr.io/r/stats/sd.html)`(``y_fit``)``)``)`\
-`p_cpt`` ``<-`` ``if`` ``(`[`any`](https://rdrr.io/r/base/any.html)`(``cp`` ``>=`` ``n`` ``-`` ``m``)``)`` ``0`` ``else`` ``1`\
-\
-`y_bar`` ``<-`` `[`mean`](https://rdrr.io/r/base/mean.html)`(``y_fit``)`\
-`kfas_update`` ``<-`` ``function``(``pars``, ``model``)`` ``{`\
-`  ``part`` ``<-`` `[`SSMarima`](https://rdrr.io/pkg/KFAS/man/SSModel.html)`(``ar ``=`` ``0.999`` ``*`` `[`tanh`](https://rdrr.io/r/base/Hyperbolic.html)`(``pars``[``1L``]``)``, Q ``=`` `[`exp`](https://rdrr.io/r/base/Log.html)`(``pars``[``2L``]``)``)`\
-`  ``model``[``"T"``, ``"arima"``]`` ``<-`` ``part``$``T`\
-`  ``model``[``"R"``, ``"arima"``]`` ``<-`` ``part``$``R`\
-`  ``model``[``"Q"``, ``"arima"``]`` ``<-`` ``part``$``Q`\
-`  ``model``[``"P1"``, ``"arima"``]`` ``<-`` ``part``$``P1`\
-`  ``model`\
-`}`\
-`kfas_fit`` ``<-`` `[`fitSSM`](https://rdrr.io/pkg/KFAS/man/fitSSM.html)`(`\
-`  `[`SSModel`](https://rdrr.io/pkg/KFAS/man/SSModel.html)`(`[`I`](https://rdrr.io/r/base/AsIs.html)`(``y_fit`` ``-`` ``y_bar``)`` ``~`` ``-``1`` ``+`` `[`SSMarima`](https://rdrr.io/pkg/KFAS/man/SSModel.html)`(``ar ``=`` ``0.5``, Q ``=`` ``1``)``, H ``=`` ``0``)``,`\
-`  inits ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)``, updatefn ``=`` ``kfas_update``, method ``=`` ``"BFGS"`\
-`)`\
-`kfas_par`` ``<-`` ``kfas_fit``$``optim.out``$``par`\
-`kfas_model`` ``<-`` `[`SSModel`](https://rdrr.io/pkg/KFAS/man/SSModel.html)`(`\
-`  `[`I`](https://rdrr.io/r/base/AsIs.html)`(``y`` ``-`` ``y_bar``)`` ``~`` ``-``1`` ``+`` `[`SSMarima`](https://rdrr.io/pkg/KFAS/man/SSModel.html)`(``ar ``=`` ``0.999`` ``*`` `[`tanh`](https://rdrr.io/r/base/Hyperbolic.html)`(``kfas_par``[``1L``]``)``,`\
-`                                Q ``=`` `[`exp`](https://rdrr.io/r/base/Log.html)`(``kfas_par``[``2L``]``)``)``,`\
-`  H ``=`` ``0`\
-`)`\
-`kfas_pred`` ``<-`` `[`predict`](https://rdrr.io/r/stats/predict.html)`(``kfas_model``, interval ``=`` ``"prediction"``, level ``=`` ``0.95``,`\
-`                     filtered ``=`` ``TRUE``)`\
-`kfas_z`` ``<-`` ``(``y``[``last``]`` ``-`` ``y_bar`` ``-`` ``kfas_pred``[``last``, ``"fit"``]``)`` ``/`\
-`  ``(``(``kfas_pred``[``last``, ``"upr"``]`` ``-`` ``kfas_pred``[``last``, ``"lwr"``]``)`` ``/`` ``(``2`` ``*`` `[`qnorm`](https://rdrr.io/r/stats/Normal.html)`(``0.975``)``)``)`\
-`p_kfas`` ``<-`` `[`min`](https://rdrr.io/r/base/Extremes.html)`(``1``, ``m`` ``*`` ``2`` ``*`` `[`pnorm`](https://rdrr.io/r/stats/Normal.html)`(``-`[`max`](https://rdrr.io/r/base/Extremes.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``kfas_z``)``)``)``)`\
-\
-`dlm_build`` ``<-`` ``function``(``pars``)`` ``{`\
-`  `[`dlmModARMA`](https://rdrr.io/pkg/dlm/man/dlmModARMA.html)`(``ar ``=`` ``0.999`` ``*`` `[`tanh`](https://rdrr.io/r/base/Hyperbolic.html)`(``pars``[``1L``]``)``, sigma2 ``=`` `[`exp`](https://rdrr.io/r/base/Log.html)`(``pars``[``2L``]``)``, dV ``=`` ``0``)`\
-`}`\
-`dlm_fit`` ``<-`` `[`dlmMLE`](https://rdrr.io/pkg/dlm/man/dlmMLE.html)`(``y_fit`` ``-`` ``y_bar``, parm ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``0``, ``0``)``, build ``=`` ``dlm_build``)`\
-`dlm_filt`` ``<-`` `[`dlmFilter`](https://rdrr.io/pkg/dlm/man/dlmFilter.html)`(``y`` ``-`` ``y_bar``, ``dlm_build``(``dlm_fit``$``par``)``)`\
-`dlm_var`` ``<-`` `[`unlist`](https://rdrr.io/r/base/unlist.html)`(`[`dlmSvd2var`](https://rdrr.io/pkg/dlm/man/dlmSvd2var.html)`(``dlm_filt``$``U.R``, ``dlm_filt``$``D.R``)``)`\
-`dlm_z`` ``<-`` ``(``y``[``last``]`` ``-`` ``y_bar`` ``-`` ``dlm_filt``$``f``[``last``]``)`` ``/`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(``dlm_var``[``last``]``)`\
-`p_dlm`` ``<-`` `[`min`](https://rdrr.io/r/base/Extremes.html)`(``1``, ``m`` ``*`` ``2`` ``*`` `[`pnorm`](https://rdrr.io/r/stats/Normal.html)`(``-`[`max`](https://rdrr.io/r/base/Extremes.html)`(`[`abs`](https://rdrr.io/r/base/MathFun.html)`(``dlm_z``)``)``)``)`\
-\
-[`c`](https://rdrr.io/r/base/c.html)`(``"proxymix chi-square"`` ``=`` ``p_chisq``, ``"proxymix subsampling"`` ``=`` ``p_andrews``,`\
-`  ``"strucchange sup-F"`` ``=`` ``p_supf``, ``"strucchange OLS-CUSUM"`` ``=`` ``p_cusum``,`\
-`  ``"changepoint cpt.mean"`` ``=`` ``p_cpt``, ``"KFAS forecast interval"`` ``=`` ``p_kfas``,`\
-`  ``"dlm forecast interval"`` ``=`` ``p_dlm``, ``"t-test on forecast residuals"`` ``=`` ``p_t``)`
+``` r
+
+library(proxymix)
+library(strucchange)
+library(changepoint)
+library(KFAS)
+library(dlm)
+
+# one series of 100 values whose last m values are raised by 3
+set.seed(1L)
+n <- 100L
+m <- 3L
+y <- as.numeric(arima.sim(list(ar = 0.6), n = n))
+y[(n - m + 1L):n] <- y[(n - m + 1L):n] + 3
+y_fit <- y[seq_len(n - m)]
+last <- (n - m + 1L):n
+
+# proxymix, with the autoregressive model fitted by arima()
+ar <- arima(y_fit, order = c(1L, 0L, 0L))
+a1 <- coef(ar)[["ar1"]]
+mu <- coef(ar)[["intercept"]]
+s2 <- ar$sigma2
+prior <- gmm(weights = 1, means = list(mu),
+             covariances = list(matrix(s2 / (1 - a1^2))))
+dynamics <- list(A = matrix(a1), b = mu * (1 - a1), Q = matrix(s2))
+measurement <- list(C = matrix(1), R = matrix(0))
+p_chisq <- gmm_eos_test(prior, dynamics, measurement, y, m = m,
+                        method = "chisq")$p_value
+p_andrews <- gmm_eos_test(prior, dynamics, measurement, y, m = m,
+                          method = "andrews")$p_value
+resid <- y[last] - predict(ar, n.ahead = m)$pred
+p_t <- if (m > 1L) t.test(resid)$p.value else NA_real_
+
+# strucchange needs at least three observations after a break in an AR(1)
+reg <- data.frame(y = y[-1L], y_lag = y[-n])
+n_reg <- nrow(reg)
+p_supf <- if (m >= 3L) {
+  fs <- Fstats(y ~ y_lag, data = reg, from = n_reg - m, to = n_reg - 3L)
+  unname(sctest(fs)$p.value)
+} else NA_real_
+p_cusum <- unname(sctest(efp(y ~ y_lag, data = reg,
+                             type = "OLS-CUSUM"))$p.value)
+
+cp <- cpts(cpt.mean(y / sd(y_fit)))
+p_cpt <- if (any(cp >= n - m)) 0 else 1
+
+y_bar <- mean(y_fit)
+kfas_update <- function(pars, model) {
+  part <- SSMarima(ar = 0.999 * tanh(pars[1L]), Q = exp(pars[2L]))
+  model["T", "arima"] <- part$T
+  model["R", "arima"] <- part$R
+  model["Q", "arima"] <- part$Q
+  model["P1", "arima"] <- part$P1
+  model
+}
+kfas_fit <- fitSSM(
+  SSModel(I(y_fit - y_bar) ~ -1 + SSMarima(ar = 0.5, Q = 1), H = 0),
+  inits = c(0, 0), updatefn = kfas_update, method = "BFGS"
+)
+kfas_par <- kfas_fit$optim.out$par
+kfas_model <- SSModel(
+  I(y - y_bar) ~ -1 + SSMarima(ar = 0.999 * tanh(kfas_par[1L]),
+                                Q = exp(kfas_par[2L])),
+  H = 0
+)
+kfas_pred <- predict(kfas_model, interval = "prediction", level = 0.95,
+                     filtered = TRUE)
+kfas_z <- (y[last] - y_bar - kfas_pred[last, "fit"]) /
+  ((kfas_pred[last, "upr"] - kfas_pred[last, "lwr"]) / (2 * qnorm(0.975)))
+p_kfas <- min(1, m * 2 * pnorm(-max(abs(kfas_z))))
+
+dlm_build <- function(pars) {
+  dlmModARMA(ar = 0.999 * tanh(pars[1L]), sigma2 = exp(pars[2L]), dV = 0)
+}
+dlm_fit <- dlmMLE(y_fit - y_bar, parm = c(0, 0), build = dlm_build)
+dlm_filt <- dlmFilter(y - y_bar, dlm_build(dlm_fit$par))
+dlm_var <- unlist(dlmSvd2var(dlm_filt$U.R, dlm_filt$D.R))
+dlm_z <- (y[last] - y_bar - dlm_filt$f[last]) / sqrt(dlm_var[last])
+p_dlm <- min(1, m * 2 * pnorm(-max(abs(dlm_z))))
+
+c("proxymix chi-square" = p_chisq, "proxymix subsampling" = p_andrews,
+  "strucchange sup-F" = p_supf, "strucchange OLS-CUSUM" = p_cusum,
+  "changepoint cpt.mean" = p_cpt, "KFAS forecast interval" = p_kfas,
+  "dlm forecast interval" = p_dlm, "t-test on forecast residuals" = p_t)
+```
 
 The [extended version of this
 article](https://max578.github.io/proxymix/articles/extended/end_of_sample.html)
@@ -613,45 +630,50 @@ regression models.* Journal of Statistical Software 7(2), 1–38.
 
 Running the code with `set.seed(20260621)`, as above, reproduces the
 example, the figures and the size study exactly. The comparison is read
-from stored results of a simulation run under proxymix 0.16.0,
+from stored results of a simulation run under proxymix 0.17.0,
 strucchange 1.6-0, changepoint 2.3, KFAS 1.6.0 and dlm 1.1-6.1, which
-took about 18 minutes on one core.
+took about 3 minutes on one core.
 
-\
-[`sessionInfo`](https://rdrr.io/r/utils/sessionInfo.html)`(``)`
+``` r
 
+sessionInfo()
 ```
+
+``` session-info
 #> R version 4.6.1 (2026-06-24)
-#> Platform: aarch64-apple-darwin23
-#> Running under: macOS Tahoe 26.6.2
+#> Platform: x86_64-pc-linux-gnu
+#> Running under: Ubuntu 24.04.5 LTS
 #> 
 #> Matrix products: default
-#> BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib 
-#> LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1
+#> BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 
+#> LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.26.so;  LAPACK version 3.12.0
 #> 
 #> locale:
-#> [1] en_AU.UTF-8/en_AU.UTF-8/en_AU.UTF-8/C/en_AU.UTF-8/en_AU.UTF-8
+#>  [1] LC_CTYPE=C.UTF-8       LC_NUMERIC=C           LC_TIME=C.UTF-8       
+#>  [4] LC_COLLATE=C.UTF-8     LC_MONETARY=C.UTF-8    LC_MESSAGES=C.UTF-8   
+#>  [7] LC_PAPER=C.UTF-8       LC_NAME=C              LC_ADDRESS=C          
+#> [10] LC_TELEPHONE=C         LC_MEASUREMENT=C.UTF-8 LC_IDENTIFICATION=C   
 #> 
-#> time zone: Australia/Adelaide
-#> tzcode source: internal
+#> time zone: UTC
+#> tzcode source: system (glibc)
 #> 
 #> attached base packages:
 #> [1] stats     graphics  grDevices utils     datasets  methods   base     
 #> 
 #> other attached packages:
-#> [1] proxymix_0.16.0
+#> [1] proxymix_0.17.0
 #> 
 #> loaded via a namespace (and not attached):
 #>  [1] mvnfast_0.2.8      gtable_0.3.6       jsonlite_2.0.0     dplyr_1.2.1       
-#>  [5] compiler_4.6.1     Rcpp_1.1.2         tidyselect_1.2.1   dichromat_2.0-1   
-#>  [9] jquerylib_0.1.4    systemfonts_1.3.2  scales_1.4.0       textshaping_1.0.5 
-#> [13] yaml_2.3.12        fastmap_1.2.0      ggplot2_4.0.3      R6_2.6.1          
-#> [17] labeling_0.4.3     generics_0.1.4     knitr_1.51         htmlwidgets_1.6.4 
-#> [21] tibble_3.3.1       desc_1.4.3         bslib_0.12.0       pillar_1.11.1     
-#> [25] RColorBrewer_1.1-3 rlang_1.3.0        cachem_1.1.0       xfun_0.60         
-#> [29] fs_2.1.0           sass_0.4.10        S7_0.2.2           otel_0.2.0        
-#> [33] cli_3.6.6          withr_3.0.3        pkgdown_2.2.1      magrittr_2.0.5    
-#> [37] digest_0.6.39      grid_4.6.1         lifecycle_1.0.5    vctrs_0.7.3       
-#> [41] evaluate_1.0.5     glue_1.8.1         farver_2.1.2       ragg_1.5.2        
-#> [45] rmarkdown_2.32     tools_4.6.1        pkgconfig_2.0.3    htmltools_0.5.9
+#>  [5] compiler_4.6.1     tidyselect_1.2.1   Rcpp_1.1.2         jquerylib_0.1.4   
+#>  [9] systemfonts_1.3.2  scales_1.4.0       textshaping_1.0.5  yaml_2.3.12       
+#> [13] fastmap_1.2.0      ggplot2_4.0.3      R6_2.6.1           labeling_0.4.3    
+#> [17] generics_0.1.4     knitr_1.52         tibble_3.3.1       desc_1.4.3        
+#> [21] bslib_0.12.0       pillar_1.11.1      RColorBrewer_1.1-3 rlang_1.3.0       
+#> [25] cachem_1.1.0       xfun_0.62          fs_2.1.0           sass_0.4.10       
+#> [29] S7_0.2.2           otel_0.2.0         cli_3.6.6          pkgdown_2.2.1     
+#> [33] withr_3.0.3        magrittr_2.0.5     digest_0.6.39      grid_4.6.1        
+#> [37] lifecycle_1.0.5    vctrs_0.7.3        evaluate_1.0.5     glue_1.8.1        
+#> [41] farver_2.1.2       ragg_1.5.2         rmarkdown_2.32     tools_4.6.1       
+#> [45] pkgconfig_2.0.3    htmltools_0.5.9
 ```

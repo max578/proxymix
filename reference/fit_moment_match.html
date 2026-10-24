@@ -9,7 +9,7 @@ the exact moment match: mu is the target mean and Sigma is the target
 covariance. When N &amp;gt; 1, the function returns the deterministic
 moment-seed of init_moment_seed() wrapped as a gmm_fit, without
 iterative refinement — useful as a starting point for the iterative
-regimes."></head><body>
+regimes."><meta property="og:image" content="https://max578.github.io/proxymix/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -17,7 +17,7 @@ regimes."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">proxymix</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.16.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.17.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -34,6 +34,7 @@ regimes."></head><body>
     <li><a class="dropdown-item" href="../articles/density_shapes.html">How well a mixture proxies four awkward shapes</a></li>
     <li><a class="dropdown-item" href="../articles/operator_calculus.html">The closed-form operator calculus on a mixture</a></li>
     <li><a class="dropdown-item" href="../articles/from_kde.html">Compressing a kernel density estimate into a mixture</a></li>
+    <li><a class="dropdown-item" href="../articles/cf_targets.html">Fitting a mixture to a characteristic function</a></li>
     <li><a class="dropdown-item" href="../articles/many_methods.html">One mixture, many methods</a></li>
     <li><a class="dropdown-item" href="../articles/entropy.html">Reading the entropy of a fitted mixture</a></li>
     <li><a class="dropdown-item" href="../articles/calibration.html">Mapping the optima of an objective</a></li>
@@ -54,9 +55,8 @@ regimes."></head><body>
 </nav><div class="container template-reference-topic">
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Closed-form moment-matching fit</h1>
-      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/HEAD/R/fit_moment_match.R" class="external-link"><code>R/fit_moment_match.R</code></a></small>
+      <img src="../logo.png" class="logo" alt=""><h1>Closed-form moment-matching fit</h1>
+      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/main/R/fit_moment_match.R" class="external-link"><code>R/fit_moment_match.R</code></a></small>
       <div class="d-none name"><code>fit_moment_match.Rd</code></div>
     </div>
 
@@ -114,6 +114,10 @@ are sorted by descending weight and (as a tiebreaker) by descending
     <div class="dont-index"><p>Other fitting:
 <code><a href="fit_em_samples.html">fit_em_samples()</a></code>,
 <code><a href="fit_kld_em.html">fit_kld_em()</a></code>,
+<code><a href="fit_mppca_samples.html">fit_mppca_samples()</a></code>,
+<code><a href="from_cf.html">from_cf()</a></code>,
+<code><a href="from_cf_elliptical.html">from_cf_elliptical()</a></code>,
+<code><a href="from_cf_sources.html">from_cf_sources()</a></code>,
 <code><a href="from_kde.html">from_kde()</a></code>,
 <code><a href="from_objective.html">from_objective()</a></code>,
 <code><a href="select_N.html">select_N()</a></code></p></div>

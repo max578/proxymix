@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../../index.html">proxymix</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.16.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.17.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,6 +40,7 @@
     <li><a class="dropdown-item" href="../../articles/density_shapes.html">How well a mixture proxies four awkward shapes</a></li>
     <li><a class="dropdown-item" href="../../articles/operator_calculus.html">The closed-form operator calculus on a mixture</a></li>
     <li><a class="dropdown-item" href="../../articles/from_kde.html">Compressing a kernel density estimate into a mixture</a></li>
+    <li><a class="dropdown-item" href="../../articles/cf_targets.html">Fitting a mixture to a characteristic function</a></li>
     <li><a class="dropdown-item" href="../../articles/many_methods.html">One mixture, many methods</a></li>
     <li><a class="dropdown-item" href="../../articles/entropy.html">Reading the entropy of a fitted mixture</a></li>
     <li><a class="dropdown-item" href="../../articles/calibration.html">Mapping the optima of an objective</a></li>
@@ -69,11 +70,10 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>One mixture, many methods</h1>
+      <img src="../../logo.png" class="logo" alt=""><h1>One mixture, many methods</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/HEAD/vignettes/articles/extended/many_methods.Rmd" class="external-link"><code>vignettes/articles/extended/many_methods.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/main/vignettes/articles/extended/many_methods.Rmd" class="external-link"><code>vignettes/articles/extended/many_methods.Rmd</code></a></small>
       <div class="d-none name"><code>many_methods.Rmd</code></div>
     </div>
 
@@ -307,7 +307,7 @@ both read off a mixture by the same conditioning operation.
 </div>
 <p><strong>Idea.</strong> Conditioning a per-point kernel density
 estimate gives responsibilities
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>π</mi><mi>i</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo><mo>∝</mo><mi mathvariant="script">𝒩</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo>∣</mo><msub><mi>x</mi><mi>i</mi></msub><mo>,</mo><msup><mi>h</mi><mn>2</mn></msup><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\pi_i(x) \propto \mathcal{N}(x \mid x_i, h^2)</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>π</mi><mi>i</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo><mo>∝</mo><mi>𝒩</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo>∣</mo><msub><mi>x</mi><mi>i</mi></msub><mo>,</mo><msup><mi>h</mi><mn>2</mn></msup><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\pi_i(x) \propto \mathcal{N}(x \mid x_i, h^2)</annotation></semantics></math>
 and per-component means
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>y</mi><mi>i</mi></msub><annotation encoding="application/x-tex">y_i</annotation></semantics></math>,
 so
@@ -387,7 +387,7 @@ separated.</caption>
 assignment to cluster
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>
 is its posterior responsibility
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>π</mi><mi>k</mi></msub><mspace width="0.167em"></mspace><mi mathvariant="script">𝒩</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo>∣</mo><msub><mi>μ</mi><mi>k</mi></msub><mo>,</mo><msub><mi mathvariant="normal">Σ</mi><mi>k</mi></msub><mo stretchy="false" form="postfix">)</mo><mi>/</mi><msub><mo>∑</mo><mi>j</mi></msub><msub><mi>π</mi><mi>j</mi></msub><mspace width="0.167em"></mspace><mi mathvariant="script">𝒩</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo>∣</mo><msub><mi>μ</mi><mi>j</mi></msub><mo>,</mo><msub><mi mathvariant="normal">Σ</mi><mi>j</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\pi_k\,\mathcal{N}(x \mid \mu_k, \Sigma_k) /
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>π</mi><mi>k</mi></msub><mspace width="0.167em"></mspace><mi>𝒩</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo>∣</mo><msub><mi>μ</mi><mi>k</mi></msub><mo>,</mo><msub><mi mathvariant="normal">Σ</mi><mi>k</mi></msub><mo stretchy="false" form="postfix">)</mo><mi>/</mi><msub><mo>∑</mo><mi>j</mi></msub><msub><mi>π</mi><mi>j</mi></msub><mspace width="0.167em"></mspace><mi>𝒩</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo>∣</mo><msub><mi>μ</mi><mi>j</mi></msub><mo>,</mo><msub><mi mathvariant="normal">Σ</mi><mi>j</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\pi_k\,\mathcal{N}(x \mid \mu_k, \Sigma_k) /
 \sum_j \pi_j\,\mathcal{N}(x \mid \mu_j, \Sigma_j)</annotation></semantics></math>.</p>
 </div>
 <div class="section level3">
@@ -705,7 +705,7 @@ identify.</p>
 <span><span class="co">#&gt;   Confounding gap (value at risk if a latent regime confounds):</span></span>
 <span><span class="co">#&gt;                mean |Delta| = 1.12, max |Delta| = 2.534</span></span>
 <span><span class="co">#&gt;   NOT identified : the individual counterfactual law</span></span>
-<span><span class="co">#&gt;                    (its variance and tail probabilities).</span></span>
+<span><span class="co">#&gt;                    (per-unit means assume a kept residual).</span></span>
 <span><span class="co">#&gt; ===========================================================</span></span></code></pre></div>
 <p>On these data the confounding gap in the report equals the whole
 estimated effect and is not a separate check on it. Each of the two
@@ -755,18 +755,18 @@ on the data fitted above.</caption>
 <td align="left">
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>K</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">K = 1</annotation></semantics></math>
 conditional slope equals the lm coefficient</td>
-<td align="left">5.6e-16</td>
+<td align="left">0.0e+00</td>
 </tr>
 <tr class="even">
 <td align="left">Per-point KDE conditional mean equals
 Nadaraya-Watson</td>
-<td align="left">3.1e-15</td>
+<td align="left">4.4e-16</td>
 </tr>
 <tr class="odd">
 <td align="left">
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">N = 1</annotation></semantics></math>
 eigenvectors equal the prcomp rotation</td>
-<td align="left">1.0e-15</td>
+<td align="left">1.1e-16</td>
 </tr>
 <tr class="even">
 <td align="left">Ridged conditional slope equals the ridge closed
@@ -782,7 +782,7 @@ contrast</td>
 </table>
 <p><strong>Regression.</strong> At one component the conditional slope
 and the <code>lm</code> coefficient differ by
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>5.6</mn><mo>×</mo><msup><mn>10</mn><mrow><mi>−</mi><mn>16</mn></mrow></msup></mrow><annotation encoding="application/x-tex">5.6 \times 10^{-16}</annotation></semantics></math>,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>0.0</mn><mo>×</mo><msup><mn>10</mn><mn>0</mn></msup></mrow><annotation encoding="application/x-tex">0.0 \times 10^{0}</annotation></semantics></math>,
 which is the double-precision floor: the substitution is an identity,
 not an approximation. At three components the same conditioning
 operation follows the bend in the figure that the single line cannot.
@@ -793,7 +793,7 @@ classical inference: no standard errors or
 come back by default, and the components are Gaussian.</p>
 <p><strong>Kernel regression.</strong> The conditioned per-point kernel
 density estimate and the Nadaraya-Watson smoother agree to
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>3.1</mn><mo>×</mo><msup><mn>10</mn><mrow><mi>−</mi><mn>15</mn></mrow></msup></mrow><annotation encoding="application/x-tex">3.1 \times 10^{-15}</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>4.4</mn><mo>×</mo><msup><mn>10</mn><mrow><mi>−</mi><mn>16</mn></mrow></msup></mrow><annotation encoding="application/x-tex">4.4 \times 10^{-16}</annotation></semantics></math>
 over the 21 query points. The same operation also returns the full
 conditional density – predictive variance, quantiles, multimodality –
 which the bare Nadaraya-Watson mean does not, and it works in the
@@ -816,7 +816,7 @@ at very large
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>.</p>
 <p><strong>Principal components.</strong> The eigenvectors of the
 one-component covariance and the <code>prcomp</code> rotation differ by
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1.0</mn><mo>×</mo><msup><mn>10</mn><mrow><mi>−</mi><mn>15</mn></mrow></msup></mrow><annotation encoding="application/x-tex">1.0 \times 10^{-15}</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1.1</mn><mo>×</mo><msup><mn>10</mn><mrow><mi>−</mi><mn>16</mn></mrow></msup></mrow><annotation encoding="application/x-tex">1.1 \times 10^{-16}</annotation></semantics></math>
 once the sign convention of each axis is accounted for. At
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>K</mi><mo>&gt;</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">K &gt; 1</annotation></semantics></math>
 the same read gives a local analysis inside each cluster, which
@@ -1050,6 +1050,9 @@ outright; it does not make the assumption true.</p>
 <div class="section level2">
 <h2 id="numerical-illustration">Numerical illustration<a class="anchor" aria-label="anchor" href="#numerical-illustration"></a>
 </h2>
+<p>One of glmnet, MASS, grf, tmle, MatchIt, mgcv, sandwich or the
+penguins data (R 4.5.0 or later) is not available on this build, so part
+of the real-data illustration is skipped.</p>
 <div class="section level3">
 <h3 id="the-classical-substitutions-on-the-palmer-penguins">The classical substitutions on the Palmer penguins<a class="anchor" aria-label="anchor" href="#the-classical-substitutions-on-the-palmer-penguins"></a>
 </h3>
@@ -1129,7 +1132,7 @@ is the standard deviation of body mass with divisor
 <span>  lambda <span class="op">=</span> <span class="va">lambda_pen</span><span class="op">)</span><span class="op">)</span><span class="op">[</span><span class="op">-</span><span class="fl">1L</span><span class="op">]</span></span>
 <span><span class="va">diff_massridge</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="fu">ridge_slopes</span><span class="op">(</span><span class="va">lambda_pen</span> <span class="op">/</span> <span class="op">(</span><span class="va">n_peng</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span> <span class="op">-</span></span>
 <span>                            <span class="va">coef_massridge</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">coef_glmnet</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="fu">glmnet</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/glmnet/man/glmnet.html" class="external-link">glmnet</a></span><span class="op">(</span></span>
+<span><span class="va">coef_glmnet</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="fu">glmnet</span><span class="fu">::</span><span class="fu"><a href="https://glmnet.stanford.edu/reference/glmnet.html" class="external-link">glmnet</a></span><span class="op">(</span></span>
 <span>  <span class="va">X_pred</span>, <span class="va">y_peng</span>, alpha <span class="op">=</span> <span class="fl">0</span>, lambda <span class="op">=</span> <span class="va">lambda_pen</span>,</span>
 <span>  control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>thresh <span class="op">=</span> <span class="fl">1e-20</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">[</span><span class="op">-</span><span class="fl">1L</span><span class="op">]</span></span>
 <span><span class="va">diff_glmnet</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span></span>
@@ -1210,7 +1213,7 @@ quantities compared.</caption>
 <tr class="odd">
 <td align="left">lm(), R 4.6.1</td>
 <td align="left">three slopes, g per unit</td>
-<td align="right">4.2e-13</td>
+<td align="right">3.8e-13</td>
 </tr>
 <tr class="even">
 <td align="left">ksmooth(), R 4.6.1</td>
@@ -1220,7 +1223,7 @@ quantities compared.</caption>
 <tr class="odd">
 <td align="left">Nadaraya-Watson, untruncated kernel</td>
 <td align="left">smoothed mass at 10 flipper lengths, g</td>
-<td align="right">1.5e-11</td>
+<td align="right">9.1e-13</td>
 </tr>
 <tr class="even">
 <td align="left">kmeans(), R 4.6.1</td>
@@ -1230,17 +1233,17 @@ quantities compared.</caption>
 <tr class="odd">
 <td align="left">prcomp(), R 4.6.1</td>
 <td align="left">four by four rotation, unit free</td>
-<td align="right">5.5e-14</td>
+<td align="right">1.0e-12</td>
 </tr>
 <tr class="even">
-<td align="left">MASS::lm.ridge(), MASS 7.3-66</td>
+<td align="left">MASS::lm.ridge(), MASS 7.3-65</td>
 <td align="left">three slopes at
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>=</mo><mn>5</mn></mrow><annotation encoding="application/x-tex">\lambda = 5</annotation></semantics></math>,
 g per unit</td>
-<td align="right">2.8e-13</td>
+<td align="right">5.2e-14</td>
 </tr>
 <tr class="odd">
-<td align="left">glmnet ridge, glmnet 5.0</td>
+<td align="left">glmnet ridge, glmnet 5.1</td>
 <td align="left">three slopes at
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>=</mo><mn>5</mn></mrow><annotation encoding="application/x-tex">\lambda = 5</annotation></semantics></math>,
 g per unit</td>
@@ -1251,14 +1254,14 @@ g per unit</td>
 <p>The regression, principal-component and <code>lm.ridge()</code> reads
 agree with their tools to a difference, relative to the largest quantity
 compared, of at most
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>5.5</mn><mo>×</mo><msup><mn>10</mn><mrow><mi>−</mi><mn>14</mn></mrow></msup></mrow><annotation encoding="application/x-tex">5.5 \times 10^{-14}</annotation></semantics></math>,
-about 13 significant digits; the <code>glmnet</code> read agrees to the
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1.0</mn><mo>×</mo><msup><mn>10</mn><mrow><mi>−</mi><mn>12</mn></mrow></msup></mrow><annotation encoding="application/x-tex">1.0 \times 10^{-12}</annotation></semantics></math>,
+about 11 significant digits; the <code>glmnet</code> read agrees to the
 coordinate-descent tolerance, an absolute difference of
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1.5</mn><mo>×</mo><msup><mn>10</mn><mrow><mi>−</mi><mn>8</mn></mrow></msup></mrow><annotation encoding="application/x-tex">1.5 \times 10^{-8}</annotation></semantics></math>.
 The kernel read differs from <code><a href="https://rdrr.io/r/stats/ksmooth.html" class="external-link">ksmooth()</a></code> by 0.15 g on masses
 between 3475 and 5438 g, all of it from the cut-off, and agrees with the
 untruncated estimator to
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1.5</mn><mo>×</mo><msup><mn>10</mn><mrow><mi>−</mi><mn>11</mn></mrow></msup></mrow><annotation encoding="application/x-tex">1.5 \times 10^{-11}</annotation></semantics></math>.
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>9.1</mn><mo>×</mo><msup><mn>10</mn><mrow><mi>−</mi><mn>13</mn></mrow></msup></mrow><annotation encoding="application/x-tex">9.1 \times 10^{-13}</annotation></semantics></math>.
 Apart from the kernel cut-off, clustering is the one row that is not an
 identity. <code><a href="https://rdrr.io/r/stats/kmeans.html" class="external-link">kmeans()</a></code> and the three-component mixture place
 59.1 per cent of the birds in the same cluster and their matched centres
@@ -1303,7 +1306,7 @@ learners in tmle’s SuperLearner library:</p>
 <p>Race is a three-level factor and enters the mixture as two
 indicators.</p>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">lal</span> <span class="op">&lt;-</span> <span class="fu">MatchIt</span><span class="fu">::</span><span class="va"><a href="https://kosukeimai.github.io/MatchIt/reference/lalonde.html" class="external-link">lalonde</a></span></span>
+<code class="sourceCode R"><span><span class="va">lal</span> <span class="op">&lt;-</span> <span class="fu">MatchIt</span><span class="fu">::</span><span class="va">lalonde</span></span>
 <span><span class="va">lal</span><span class="op">$</span><span class="va">black</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">lal</span><span class="op">$</span><span class="va">race</span> <span class="op">==</span> <span class="st">"black"</span><span class="op">)</span></span>
 <span><span class="va">lal</span><span class="op">$</span><span class="va">hispan</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">lal</span><span class="op">$</span><span class="va">race</span> <span class="op">==</span> <span class="st">"hispan"</span><span class="op">)</span></span>
 <span><span class="va">covs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"age"</span>, <span class="st">"educ"</span>, <span class="st">"black"</span>, <span class="st">"hispan"</span>, <span class="st">"married"</span>, <span class="st">"nodegree"</span>,</span>
@@ -1328,28 +1331,17 @@ percentile interval for the averaged effect.</p>
 <span><span class="va">ens_lal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../../reference/gmm_fit_ensemble.html">gmm_fit_ensemble</a></span><span class="op">(</span><span class="va">model_lal</span><span class="op">@</span><span class="va">fit</span>, B <span class="op">=</span> <span class="fl">200L</span>, seed <span class="op">=</span> <span class="fl">2L</span><span class="op">)</span></span>
 <span><span class="va">ci_lal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../../reference/proxy_functional_ci.html">proxy_functional_ci</a></span><span class="op">(</span><span class="va">ens_lal</span>, <span class="va">att_of</span>, level <span class="op">=</span> <span class="fl">0.95</span><span class="op">)</span></span>
 <span><span class="va">se_lal</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">ens_lal</span><span class="op">$</span><span class="va">members</span>, <span class="va">att_of</span>, <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">1L</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>The ensemble holds 200 bootstrap refits. The sweep over one to four
-components warned twice that the expectation-maximisation objective
-decreased, in the three-component fit, where the 1974 and 1975 earnings
-are each zero for about 40 per cent of the men and a component can
-collapse onto them; the fit selected by BIC has 4 component, and the
-warnings do not concern it.</p>
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">cf_lal</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/grf/man/causal_forest.html" class="external-link">causal_forest</a></span><span class="op">(</span><span class="va">lal</span><span class="op">[</span>, <span class="va">covs</span><span class="op">]</span>, <span class="va">lal</span><span class="op">$</span><span class="va">re78</span>, <span class="va">lal</span><span class="op">$</span><span class="va">treat</span>,</span>
+<code class="sourceCode R"><span><span class="va">cf_lal</span> <span class="op">&lt;-</span> <span class="fu">causal_forest</span><span class="op">(</span><span class="va">lal</span><span class="op">[</span>, <span class="va">covs</span><span class="op">]</span>, <span class="va">lal</span><span class="op">$</span><span class="va">re78</span>, <span class="va">lal</span><span class="op">$</span><span class="va">treat</span>,</span>
 <span>                        num.threads <span class="op">=</span> <span class="fl">1L</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
-<span><span class="va">att_grf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/grf/man/average_treatment_effect.html" class="external-link">average_treatment_effect</a></span><span class="op">(</span><span class="va">cf_lal</span>, target.sample <span class="op">=</span> <span class="st">"treated"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in average_treatment_effect(cf_lal, target.sample =</span></span>
-<span><span class="co">#&gt; "treated"): Estimated treatment propensities take values between</span></span>
-<span><span class="co">#&gt; 0.027 and 0.959 and in particular get very close to 0 and 1. In this</span></span>
-<span><span class="co">#&gt; case, using `target.sample=overlap`, or filtering data as in Crump,</span></span>
-<span><span class="co">#&gt; Hotz, Imbens, and Mitnik (Biometrika, 2009) may be helpful.</span></span>
+<span><span class="va">att_grf</span> <span class="op">&lt;-</span> <span class="fu">average_treatment_effect</span><span class="op">(</span><span class="va">cf_lal</span>, target.sample <span class="op">=</span> <span class="st">"treated"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">match_lal</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://kosukeimai.github.io/MatchIt/reference/matchit.html" class="external-link">matchit</a></span><span class="op">(</span><span class="va">treat</span> <span class="op">~</span> <span class="va">age</span> <span class="op">+</span> <span class="va">educ</span> <span class="op">+</span> <span class="va">race</span> <span class="op">+</span> <span class="va">married</span> <span class="op">+</span> <span class="va">nodegree</span> <span class="op">+</span></span>
+<span><span class="va">match_lal</span> <span class="op">&lt;-</span> <span class="fu">matchit</span><span class="op">(</span><span class="va">treat</span> <span class="op">~</span> <span class="va">age</span> <span class="op">+</span> <span class="va">educ</span> <span class="op">+</span> <span class="va">race</span> <span class="op">+</span> <span class="va">married</span> <span class="op">+</span> <span class="va">nodegree</span> <span class="op">+</span></span>
 <span>                       <span class="va">re74</span> <span class="op">+</span> <span class="va">re75</span>, data <span class="op">=</span> <span class="va">lal</span>, method <span class="op">=</span> <span class="st">"nearest"</span><span class="op">)</span></span>
-<span><span class="va">matched</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://kosukeimai.github.io/MatchIt/reference/match_data.html" class="external-link">match.data</a></span><span class="op">(</span><span class="va">match_lal</span><span class="op">)</span></span>
+<span><span class="va">matched</span> <span class="op">&lt;-</span> <span class="fu">match.data</span><span class="op">(</span><span class="va">match_lal</span><span class="op">)</span></span>
 <span><span class="va">fit_matched</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">re78</span> <span class="op">~</span> <span class="va">treat</span> <span class="op">+</span> <span class="va">age</span> <span class="op">+</span> <span class="va">educ</span> <span class="op">+</span> <span class="va">race</span> <span class="op">+</span> <span class="va">married</span> <span class="op">+</span> <span class="va">nodegree</span> <span class="op">+</span></span>
 <span>                    <span class="va">re74</span> <span class="op">+</span> <span class="va">re75</span>, data <span class="op">=</span> <span class="va">matched</span>, weights <span class="op">=</span> <span class="va">weights</span><span class="op">)</span></span>
-<span><span class="va">v_matched</span> <span class="op">&lt;-</span> <span class="fu">sandwich</span><span class="fu">::</span><span class="fu"><a href="https://zeileis.codeberg.page/sandwich/reference/vcovCL.html" class="external-link">vcovCL</a></span><span class="op">(</span><span class="va">fit_matched</span>, cluster <span class="op">=</span> <span class="op">~</span><span class="va">subclass</span><span class="op">)</span></span>
+<span><span class="va">v_matched</span> <span class="op">&lt;-</span> <span class="fu">sandwich</span><span class="fu">::</span><span class="fu">vcovCL</span><span class="op">(</span><span class="va">fit_matched</span>, cluster <span class="op">=</span> <span class="op">~</span><span class="va">subclass</span><span class="op">)</span></span>
 <span><span class="va">att_match</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fit_matched</span><span class="op">)</span><span class="op">[[</span><span class="st">"treat"</span><span class="op">]</span><span class="op">]</span>,</span>
 <span>               <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="va">v_matched</span><span class="op">[</span><span class="st">"treat"</span>, <span class="st">"treat"</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
@@ -1374,83 +1366,20 @@ with its default SuperLearner (Polley et al., 2026) libraries, which
 include a Bayesian additive regression tree learner. This chunk is
 complete and runs as shown, but it took about 2.5 minutes on one core (R
 4.6.1, Apple silicon); the results below are read from its stored
-output. For a quick run, give <code><a href="https://rdrr.io/pkg/tmle/man/tmle.html" class="external-link">tmle()</a></code> the arguments
+output. For a quick run, give <code>tmle()</code> the arguments
 <code>Q.SL.library = "SL.glm", g.SL.library = "SL.glm"</code> on its
 line, which fits the linear models alone.</p>
 <div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://CRAN.R-project.org/package=tmle" class="external-link">tmle</a></span><span class="op">)</span></span>
-<span><span class="va">lal</span> <span class="op">&lt;-</span> <span class="fu">MatchIt</span><span class="fu">::</span><span class="va"><a href="https://kosukeimai.github.io/MatchIt/reference/lalonde.html" class="external-link">lalonde</a></span></span>
+<span><span class="va">lal</span> <span class="op">&lt;-</span> <span class="fu">MatchIt</span><span class="fu">::</span><span class="va">lalonde</span></span>
 <span><span class="va">lal</span><span class="op">$</span><span class="va">black</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">lal</span><span class="op">$</span><span class="va">race</span> <span class="op">==</span> <span class="st">"black"</span><span class="op">)</span></span>
 <span><span class="va">lal</span><span class="op">$</span><span class="va">hispan</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">lal</span><span class="op">$</span><span class="va">race</span> <span class="op">==</span> <span class="st">"hispan"</span><span class="op">)</span></span>
 <span><span class="va">covs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"age"</span>, <span class="st">"educ"</span>, <span class="st">"black"</span>, <span class="st">"hispan"</span>, <span class="st">"married"</span>, <span class="st">"nodegree"</span>,</span>
 <span>          <span class="st">"re74"</span>, <span class="st">"re75"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">20260925</span><span class="op">)</span></span>
-<span><span class="va">fit_tmle</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/tmle/man/tmle.html" class="external-link">tmle</a></span><span class="op">(</span>Y <span class="op">=</span> <span class="va">lal</span><span class="op">$</span><span class="va">re78</span>, A <span class="op">=</span> <span class="va">lal</span><span class="op">$</span><span class="va">treat</span>, W <span class="op">=</span> <span class="va">lal</span><span class="op">[</span>, <span class="va">covs</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">fit_tmle</span> <span class="op">&lt;-</span> <span class="fu">tmle</span><span class="op">(</span>Y <span class="op">=</span> <span class="va">lal</span><span class="op">$</span><span class="va">re78</span>, A <span class="op">=</span> <span class="va">lal</span><span class="op">$</span><span class="va">treat</span>, W <span class="op">=</span> <span class="va">lal</span><span class="op">[</span>, <span class="va">covs</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">att_tmle</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">fit_tmle</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">ATT</span><span class="op">$</span><span class="va">psi</span>,</span>
 <span>              <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="va">fit_tmle</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">ATT</span><span class="op">$</span><span class="va">var.psi</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<table style="width:99%;" class="table">
-<caption>The average effect of the programme on the earnings of the 185
-treated men, with each method’s own standard error: a bootstrap standard
-deviation and percentile interval for proxymix, the methods’ own
-standard errors and normal intervals otherwise.</caption>
-<colgroup>
-<col width="40%">
-<col width="31%">
-<col width="4%">
-<col width="11%">
-<col width="11%">
-</colgroup>
-<thead><tr class="header">
-<th align="left">Method</th>
-<th align="right">Effect on the treated, USD</th>
-<th align="right">SE</th>
-<th align="right">95% lower</th>
-<th align="right">95% upper</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">proxymix 0.16.0, one joint mixture</td>
-<td align="right">1282</td>
-<td align="right">741</td>
-<td align="right">-235</td>
-<td align="right">2652</td>
-</tr>
-<tr class="even">
-<td align="left">grf 2.6.1, causal forest</td>
-<td align="right">681</td>
-<td align="right">977</td>
-<td align="right">-1233</td>
-<td align="right">2595</td>
-</tr>
-<tr class="odd">
-<td align="left">tmle 2.1.1, default libraries</td>
-<td align="right">1149</td>
-<td align="right">932</td>
-<td align="right">-677</td>
-<td align="right">2975</td>
-</tr>
-<tr class="even">
-<td align="left">MatchIt 4.7.2, matching then lm()</td>
-<td align="right">1345</td>
-<td align="right">719</td>
-<td align="right">-64</td>
-<td align="right">2754</td>
-</tr>
-<tr class="odd">
-<td align="left">mgcv 1.9-4 T-learner</td>
-<td align="right">1812</td>
-<td align="right">887</td>
-<td align="right">74</td>
-<td align="right">3550</td>
-</tr>
-</tbody>
-</table>
-<p>The five point estimates run from 681 to 1812 USD, with standard
-errors from 719 to 977 USD; every interval overlaps every other, and 1
-of the five excludes zero. The causal forest, which lets the effect vary
-with every covariate, is the lowest. One dataset without a known answer
-cannot say which is right, so the simulation below scores the same
-methods against a known effect.</p>
 </div>
 <div class="section level3">
 <h3 id="a-simulation-benchmark">A simulation benchmark<a class="anchor" aria-label="anchor" href="#a-simulation-benchmark"></a>
@@ -1478,12 +1407,12 @@ the treated is above 1 because treated units have larger
 <p>Each method estimates the per-unit effect at every unit of its
 dataset and one average effect with a 95 per cent interval. proxymix
 chooses its component count by BIC and takes its interval from a
-100-member bootstrap ensemble, against 200 on the job-training data. The
-causal forest, tmle and the T-learner estimate the average effect, and
-nearest-neighbour matching the effect on the treated. The matched
-outcome regression carries treatment-by-covariate interactions so that
-it also returns a per-unit effect. Each average is scored against its
-value in that dataset: the mean of the known
+100-member bootstrap ensemble. The causal forest, tmle and the T-learner
+estimate the average effect, and nearest-neighbour matching the effect
+on the treated. The matched outcome regression carries
+treatment-by-covariate interactions so that it also returns a per-unit
+effect. Each average is scored against its value in that dataset: the
+mean of the known
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>τ</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\tau(x)</annotation></semantics></math>
 over the dataset’s units, or over its treated units for matching. tmle
 runs with a SuperLearner library of a linear model, a lasso-penalised
@@ -1491,7 +1420,7 @@ linear model (<code>SL.glmnet</code> at its default
 <code>alpha = 1</code>, with a cross-validated penalty) and a
 generalised additive model, in place of its default library, whose
 regression-tree learner took about two minutes per dataset. This chunk
-is complete and runs as shown, but it took about 17 minutes on one core
+is complete and runs as shown, but it took about 11 minutes on one core
 (R 4.6.1, Apple silicon); the results below are read from its stored
 output. For a quick run, change the line <code>n_rep &lt;- 200L</code>
 to <code>n_rep &lt;- 20L</code>.</p>
@@ -1548,8 +1477,8 @@ to <code>n_rep &lt;- 20L</code>.</p>
 <span>                    <span class="va">ci</span><span class="op">$</span><span class="va">estimate</span>, <span class="cn">NA</span>, <span class="va">ci</span><span class="op">$</span><span class="va">conf.low</span>, <span class="va">ci</span><span class="op">$</span><span class="va">conf.high</span>, <span class="va">ate_true</span><span class="op">)</span></span>
 <span></span>
 <span>  <span class="co"># causal forest</span></span>
-<span>  <span class="va">cf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/grf/man/causal_forest.html" class="external-link">causal_forest</a></span><span class="op">(</span><span class="va">X</span>, <span class="va">d</span><span class="op">$</span><span class="va">y</span>, <span class="va">d</span><span class="op">$</span><span class="va">t</span>, num.threads <span class="op">=</span> <span class="fl">1L</span>, seed <span class="op">=</span> <span class="va">r</span><span class="op">)</span></span>
-<span>  <span class="va">ate_cf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/grf/man/average_treatment_effect.html" class="external-link">average_treatment_effect</a></span><span class="op">(</span><span class="va">cf</span><span class="op">)</span></span>
+<span>  <span class="va">cf</span> <span class="op">&lt;-</span> <span class="fu">causal_forest</span><span class="op">(</span><span class="va">X</span>, <span class="va">d</span><span class="op">$</span><span class="va">y</span>, <span class="va">d</span><span class="op">$</span><span class="va">t</span>, num.threads <span class="op">=</span> <span class="fl">1L</span>, seed <span class="op">=</span> <span class="va">r</span><span class="op">)</span></span>
+<span>  <span class="va">ate_cf</span> <span class="op">&lt;-</span> <span class="fu">average_treatment_effect</span><span class="op">(</span><span class="va">cf</span><span class="op">)</span></span>
 <span>  <span class="va">out_cf</span> <span class="op">&lt;-</span> <span class="fu">row_out</span><span class="op">(</span><span class="st">"grf"</span>, <span class="st">"ATE"</span>, <span class="fu">rmse</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">cf</span><span class="op">)</span><span class="op">$</span><span class="va">predictions</span>, <span class="va">d</span><span class="op">$</span><span class="va">tau</span><span class="op">)</span>,</span>
 <span>                    <span class="va">ate_cf</span><span class="op">[[</span><span class="st">"estimate"</span><span class="op">]</span><span class="op">]</span>, <span class="va">ate_cf</span><span class="op">[[</span><span class="st">"std.err"</span><span class="op">]</span><span class="op">]</span>,</span>
 <span>                    <span class="va">ate_cf</span><span class="op">[[</span><span class="st">"estimate"</span><span class="op">]</span><span class="op">]</span> <span class="op">-</span> <span class="va">z</span> <span class="op">*</span> <span class="va">ate_cf</span><span class="op">[[</span><span class="st">"std.err"</span><span class="op">]</span><span class="op">]</span>,</span>
@@ -1557,17 +1486,17 @@ to <code>n_rep &lt;- 20L</code>.</p>
 <span>                    <span class="va">ate_true</span><span class="op">)</span></span>
 <span></span>
 <span>  <span class="co"># tmle, no per-unit effect</span></span>
-<span>  <span class="va">fit_tmle</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/tmle/man/tmle.html" class="external-link">tmle</a></span><span class="op">(</span>Y <span class="op">=</span> <span class="va">d</span><span class="op">$</span><span class="va">y</span>, A <span class="op">=</span> <span class="va">d</span><span class="op">$</span><span class="va">t</span>, W <span class="op">=</span> <span class="va">X</span>, Q.SL.library <span class="op">=</span> <span class="va">sl_lib</span>,</span>
+<span>  <span class="va">fit_tmle</span> <span class="op">&lt;-</span> <span class="fu">tmle</span><span class="op">(</span>Y <span class="op">=</span> <span class="va">d</span><span class="op">$</span><span class="va">y</span>, A <span class="op">=</span> <span class="va">d</span><span class="op">$</span><span class="va">t</span>, W <span class="op">=</span> <span class="va">X</span>, Q.SL.library <span class="op">=</span> <span class="va">sl_lib</span>,</span>
 <span>                   g.SL.library <span class="op">=</span> <span class="va">sl_lib</span><span class="op">)</span></span>
 <span>  <span class="va">est_tmle</span> <span class="op">&lt;-</span> <span class="va">fit_tmle</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">ATE</span></span>
 <span>  <span class="va">out_tmle</span> <span class="op">&lt;-</span> <span class="fu">row_out</span><span class="op">(</span><span class="st">"tmle"</span>, <span class="st">"ATE"</span>, <span class="cn">NA</span>, <span class="va">est_tmle</span><span class="op">$</span><span class="va">psi</span>, <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="va">est_tmle</span><span class="op">$</span><span class="va">var.psi</span><span class="op">)</span>,</span>
 <span>                      <span class="va">est_tmle</span><span class="op">$</span><span class="va">CI</span><span class="op">[</span><span class="fl">1L</span><span class="op">]</span>, <span class="va">est_tmle</span><span class="op">$</span><span class="va">CI</span><span class="op">[</span><span class="fl">2L</span><span class="op">]</span>, <span class="va">ate_true</span><span class="op">)</span></span>
 <span></span>
 <span>  <span class="co"># nearest-neighbour matching, then an interacted outcome regression</span></span>
-<span>  <span class="va">mm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://kosukeimai.github.io/MatchIt/reference/matchit.html" class="external-link">matchit</a></span><span class="op">(</span><span class="va">t</span> <span class="op">~</span> <span class="va">x1</span> <span class="op">+</span> <span class="va">x2</span>, data <span class="op">=</span> <span class="va">d</span>, method <span class="op">=</span> <span class="st">"nearest"</span><span class="op">)</span></span>
-<span>  <span class="va">md</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://kosukeimai.github.io/MatchIt/reference/match_data.html" class="external-link">match.data</a></span><span class="op">(</span><span class="va">mm</span><span class="op">)</span></span>
+<span>  <span class="va">mm</span> <span class="op">&lt;-</span> <span class="fu">matchit</span><span class="op">(</span><span class="va">t</span> <span class="op">~</span> <span class="va">x1</span> <span class="op">+</span> <span class="va">x2</span>, data <span class="op">=</span> <span class="va">d</span>, method <span class="op">=</span> <span class="st">"nearest"</span><span class="op">)</span></span>
+<span>  <span class="va">md</span> <span class="op">&lt;-</span> <span class="fu">match.data</span><span class="op">(</span><span class="va">mm</span><span class="op">)</span></span>
 <span>  <span class="va">fit_lm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">t</span> <span class="op">*</span> <span class="op">(</span><span class="va">x1</span> <span class="op">+</span> <span class="va">x2</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">md</span>, weights <span class="op">=</span> <span class="va">weights</span><span class="op">)</span></span>
-<span>  <span class="va">V</span> <span class="op">&lt;-</span> <span class="fu">sandwich</span><span class="fu">::</span><span class="fu"><a href="https://zeileis.codeberg.page/sandwich/reference/vcovCL.html" class="external-link">vcovCL</a></span><span class="op">(</span><span class="va">fit_lm</span>, cluster <span class="op">=</span> <span class="op">~</span><span class="va">subclass</span><span class="op">)</span></span>
+<span>  <span class="va">V</span> <span class="op">&lt;-</span> <span class="fu">sandwich</span><span class="fu">::</span><span class="fu">vcovCL</span><span class="op">(</span><span class="va">fit_lm</span>, cluster <span class="op">=</span> <span class="op">~</span><span class="va">subclass</span><span class="op">)</span></span>
 <span>  <span class="va">d1</span> <span class="op">&lt;-</span> <span class="va">d</span></span>
 <span>  <span class="va">d1</span><span class="op">$</span><span class="va">t</span> <span class="op">&lt;-</span> <span class="fl">1L</span></span>
 <span>  <span class="va">d0</span> <span class="op">&lt;-</span> <span class="va">d</span></span>
@@ -1685,6 +1614,11 @@ per-unit effect, so its per-unit RMSE is empty.</caption>
 </tr>
 </tbody>
 </table>
+<pre><code><span><span class="co">#&gt; Warning: 1 mixture component collapsed onto a few samples; the fit is flagged</span></span>
+<span><span class="co">#&gt; as degenerate.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Component index (returned order): 4. Smallest effective size 3 in</span></span>
+<span><span class="co">#&gt;   dimension 4.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Consider a smaller `N`, more starts, or `anneal = TRUE`.</span></span></code></pre>
 <p>On the average effect the five methods are close. Four intervals
 cover their target within 1.0 Monte Carlo standard errors of the nominal
 rate: proxymix in 0.935 of datasets, the causal forest and tmle in 0.965
@@ -1809,7 +1743,7 @@ machine learning.</em> Proceedings of the National Academy of Sciences
 Probability and Its Applications 9(1), 141–142. <a href="https://doi.org/10.1137/1109020" class="external-link uri">https://doi.org/10.1137/1109020</a>.</li>
 <li>Polley, E., LeDell, E., Kennedy, C. and van der Laan, M. (2026).
 <em>SuperLearner: Super Learner Prediction.</em> R package version
-2.0-41. <a href="https://doi.org/10.32614/CRAN.package.SuperLearner" class="external-link uri">https://doi.org/10.32614/CRAN.package.SuperLearner</a>.</li>
+2.0.41. <a href="https://doi.org/10.32614/CRAN.package.SuperLearner" class="external-link uri">https://doi.org/10.32614/CRAN.package.SuperLearner</a>.</li>
 <li>Tipping, M. E. and Bishop, C. M. (1999). <em>Probabilistic principal
 component analysis.</em> Journal of the Royal Statistical Society B
 61(3), 611–622. <a href="https://doi.org/10.1111/1467-9868.00196" class="external-link uri">https://doi.org/10.1111/1467-9868.00196</a>.</li>
@@ -1842,15 +1776,15 @@ job-training fit are given <code>seed = 1L</code>, the bootstrap
 ensemble <code>seed = 2L</code>, and the causal forest
 <code>seed = 1L</code>. The stored tmle estimate comes from the code
 shown, run after <code>set.seed(20260925)</code> on 25 September 2026
-with R 4.6.1, tmle 2.1.1 and SuperLearner 2.0-41, in about 2.5 minutes,
+with R 4.6.1, tmle 2.1.1 and SuperLearner 2.0.41, in about 2.5 minutes,
 and the run raised 0 warnings. In the simulation each dataset is
 generated after <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> with its own index, which also
 seeds the mixture fit, its ensemble and the forest. The stored
-simulation results come from the code shown, run on 28 September 2026
-with R 4.6.1, proxymix 0.16.0, grf 2.6.1, tmle 2.1.1, SuperLearner
-2.0-41, MatchIt 4.7.2, mgcv 1.9-4 and sandwich 3.1-3, and the run raised
-0 warnings.</p>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+simulation results come from the code shown, run on 21 October 2026 with
+R 4.6.1, proxymix 0.17.0, grf 2.6.1, tmle 2.1.1, SuperLearner 2.0.41,
+MatchIt 4.7.2, mgcv 1.9-4 and sandwich 3.1.3, and the run raised 56
+warnings.</p>
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">old_opt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>width <span class="op">=</span> <span class="fl">72L</span><span class="op">)</span></span>
 <span><span class="va">si_vec</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/trimws.html" class="external-link">trimws</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/capture.output.html" class="external-link">capture.output</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>, <span class="st">"right"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span><span class="va">old_opt</span><span class="op">)</span></span>
@@ -1860,51 +1794,52 @@ with R 4.6.1, proxymix 0.16.0, grf 2.6.1, tmle 2.1.1, SuperLearner
 <span>                         <span class="va">si_vec</span><span class="op">[</span><span class="va">long_vec</span><span class="op">]</span>, perl <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="va">si_vec</span><span class="op">)</span></span>
 <span><span class="co">#&gt; R version 4.6.1 (2026-06-24)</span></span>
-<span><span class="co">#&gt; Platform: aarch64-apple-darwin23</span></span>
-<span><span class="co">#&gt; Running under: macOS Tahoe 26.6.2</span></span>
+<span><span class="co">#&gt; Platform: x86_64-pc-linux-gnu</span></span>
+<span><span class="co">#&gt; Running under: Ubuntu 24.04.5 LTS</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Matrix products: default</span></span>
-<span><span class="co">#&gt; BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/</span></span>
-<span><span class="co">#&gt;         libRblas.0.dylib</span></span>
-<span><span class="co">#&gt; LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/</span></span>
-<span><span class="co">#&gt;         libRlapack.dylib;  LAPACK version 3.12.1</span></span>
+<span><span class="co">#&gt; BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3</span></span>
+<span><span class="co">#&gt; LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/</span></span>
+<span><span class="co">#&gt;         libopenblasp-r0.3.26.so;  LAPACK version 3.12.0</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; locale:</span></span>
-<span><span class="co">#&gt; [1] en_AU.UTF-8/en_AU.UTF-8/en_AU.UTF-8/C/en_AU.UTF-8/en_AU.UTF-8</span></span>
+<span><span class="co">#&gt;  [1] LC_CTYPE=C.UTF-8       LC_NUMERIC=C</span></span>
+<span><span class="co">#&gt;  [3] LC_TIME=C.UTF-8        LC_COLLATE=C.UTF-8</span></span>
+<span><span class="co">#&gt;  [5] LC_MONETARY=C.UTF-8    LC_MESSAGES=C.UTF-8</span></span>
+<span><span class="co">#&gt;  [7] LC_PAPER=C.UTF-8       LC_NAME=C</span></span>
+<span><span class="co">#&gt;  [9] LC_ADDRESS=C           LC_TELEPHONE=C</span></span>
+<span><span class="co">#&gt; [11] LC_MEASUREMENT=C.UTF-8 LC_IDENTIFICATION=C</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; time zone: Australia/Adelaide</span></span>
-<span><span class="co">#&gt; tzcode source: internal</span></span>
+<span><span class="co">#&gt; time zone: UTC</span></span>
+<span><span class="co">#&gt; tzcode source: system (glibc)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; attached base packages:</span></span>
-<span><span class="co">#&gt; [1] splines   stats     graphics  grDevices utils     datasets</span></span>
-<span><span class="co">#&gt; [7] methods   base</span></span>
+<span><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods</span></span>
+<span><span class="co">#&gt; [7] base</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; other attached packages:</span></span>
-<span><span class="co">#&gt;  [1] mgcv_1.9-4          nlme_3.1-171        MatchIt_4.7.2</span></span>
-<span><span class="co">#&gt;  [4] tmle_2.1.1          SuperLearner_2.0-41 gam_1.22-7</span></span>
-<span><span class="co">#&gt;  [7] foreach_1.5.2       nnls_1.6            glmnet_5.0</span></span>
-<span><span class="co">#&gt; [10] Matrix_1.7-6        grf_2.6.1           proxymix_0.16.0</span></span>
+<span><span class="co">#&gt; [1] proxymix_0.17.0</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
-<span><span class="co">#&gt;  [1] sandwich_3.1-3      sass_0.4.10         generics_0.1.4</span></span>
-<span><span class="co">#&gt;  [4] shape_1.4.6.1       lattice_0.23-1      digest_0.6.39</span></span>
-<span><span class="co">#&gt;  [7] magrittr_2.0.5      evaluate_1.0.5      grid_4.6.1</span></span>
-<span><span class="co">#&gt; [10] RColorBrewer_1.1-3  iterators_1.0.14    fastmap_1.2.0</span></span>
-<span><span class="co">#&gt; [13] jsonlite_2.0.0      backports_1.5.1     survival_3.8-11</span></span>
-<span><span class="co">#&gt; [16] viridisLite_0.4.3   scales_1.4.0        codetools_0.2-20</span></span>
-<span><span class="co">#&gt; [19] textshaping_1.0.5   jquerylib_0.1.4     cli_3.6.6</span></span>
-<span><span class="co">#&gt; [22] chk_0.10.0          rlang_1.3.0         withr_3.0.3</span></span>
-<span><span class="co">#&gt; [25] cachem_1.1.0        yaml_2.3.12         otel_0.2.0</span></span>
-<span><span class="co">#&gt; [28] tools_4.6.1         dplyr_1.2.1         ggplot2_4.0.3</span></span>
-<span><span class="co">#&gt; [31] vctrs_0.7.3         R6_2.6.1            zoo_1.9-0</span></span>
-<span><span class="co">#&gt; [34] lifecycle_1.0.5     fs_2.1.0            htmlwidgets_1.6.4</span></span>
-<span><span class="co">#&gt; [37] MASS_7.3-66         ragg_1.5.2          pkgconfig_2.0.3</span></span>
+<span><span class="co">#&gt;  [1] sass_0.4.10         generics_0.1.4      shape_1.4.6.1</span></span>
+<span><span class="co">#&gt;  [4] lattice_0.22-9      digest_0.6.39       magrittr_2.0.5</span></span>
+<span><span class="co">#&gt;  [7] evaluate_1.0.5      grid_4.6.1          RColorBrewer_1.1-3</span></span>
+<span><span class="co">#&gt; [10] iterators_1.0.14    fastmap_1.2.0       foreach_1.5.2</span></span>
+<span><span class="co">#&gt; [13] jsonlite_2.0.0      Matrix_1.7-5        glmnet_5.1</span></span>
+<span><span class="co">#&gt; [16] survival_3.8-6      mgcv_1.9-4          viridisLite_0.4.3</span></span>
+<span><span class="co">#&gt; [19] scales_1.4.0        codetools_0.2-20    textshaping_1.0.5</span></span>
+<span><span class="co">#&gt; [22] jquerylib_0.1.4     cli_3.6.6           rlang_1.3.0</span></span>
+<span><span class="co">#&gt; [25] splines_4.6.1       withr_3.0.3         cachem_1.1.0</span></span>
+<span><span class="co">#&gt; [28] yaml_2.3.12         otel_0.2.0          tools_4.6.1</span></span>
+<span><span class="co">#&gt; [31] dplyr_1.2.1         ggplot2_4.0.3       vctrs_0.7.3</span></span>
+<span><span class="co">#&gt; [34] R6_2.6.1            lifecycle_1.0.5     fs_2.1.0</span></span>
+<span><span class="co">#&gt; [37] MASS_7.3-65         ragg_1.5.2          pkgconfig_2.0.3</span></span>
 <span><span class="co">#&gt; [40] desc_1.4.3          pkgdown_2.2.1       pillar_1.11.1</span></span>
 <span><span class="co">#&gt; [43] bslib_0.12.0        gtable_0.3.6        glue_1.8.1</span></span>
 <span><span class="co">#&gt; [46] data.table_1.18.6.1 Rcpp_1.1.2          systemfonts_1.3.2</span></span>
-<span><span class="co">#&gt; [49] xfun_0.60           tibble_3.3.1        tidyselect_1.2.1</span></span>
-<span><span class="co">#&gt; [52] knitr_1.51          dichromat_2.0-1     farver_2.1.2</span></span>
-<span><span class="co">#&gt; [55] htmltools_0.5.9     rmarkdown_2.32      labeling_0.4.3</span></span>
+<span><span class="co">#&gt; [49] xfun_0.62           tibble_3.3.1        tidyselect_1.2.1</span></span>
+<span><span class="co">#&gt; [52] knitr_1.52          farver_2.1.2        htmltools_0.5.9</span></span>
+<span><span class="co">#&gt; [55] nlme_3.1-169        rmarkdown_2.32      labeling_0.4.3</span></span>
 <span><span class="co">#&gt; [58] compiler_4.6.1      S7_0.2.2            mvnfast_0.2.8</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

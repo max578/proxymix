@@ -5,7 +5,7 @@ the target it was fitted to, the regime used, and the iteration
 diagnostics."><meta property="og:description" content="A gmm_fit is the result of fit_proxymix() (or one of the regime-specific
 fitters). It inherits the mixture parameters of gmm and adds a record of
 the target it was fitted to, the regime used, and the iteration
-diagnostics."></head><body>
+diagnostics."><meta property="og:image" content="https://max578.github.io/proxymix/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -13,7 +13,7 @@ diagnostics."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">proxymix</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.16.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.17.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -30,6 +30,7 @@ diagnostics."></head><body>
     <li><a class="dropdown-item" href="../articles/density_shapes.html">How well a mixture proxies four awkward shapes</a></li>
     <li><a class="dropdown-item" href="../articles/operator_calculus.html">The closed-form operator calculus on a mixture</a></li>
     <li><a class="dropdown-item" href="../articles/from_kde.html">Compressing a kernel density estimate into a mixture</a></li>
+    <li><a class="dropdown-item" href="../articles/cf_targets.html">Fitting a mixture to a characteristic function</a></li>
     <li><a class="dropdown-item" href="../articles/many_methods.html">One mixture, many methods</a></li>
     <li><a class="dropdown-item" href="../articles/entropy.html">Reading the entropy of a fitted mixture</a></li>
     <li><a class="dropdown-item" href="../articles/calibration.html">Mapping the optima of an objective</a></li>
@@ -50,9 +51,8 @@ diagnostics."></head><body>
 </nav><div class="container template-reference-topic">
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>A fitted Gaussian-mixture proxy</h1>
-      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/HEAD/R/proxymix-classes.R" class="external-link"><code>R/proxymix-classes.R</code></a></small>
+      <img src="../logo.png" class="logo" alt=""><h1>A fitted Gaussian-mixture proxy</h1>
+      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/main/R/proxymix-classes.R" class="external-link"><code>R/proxymix-classes.R</code></a></small>
       <div class="d-none name"><code>gmm_fit.Rd</code></div>
     </div>
 
@@ -93,7 +93,7 @@ diagnostics.</p>
 
 
 <dt id="arg-regime">regime<a class="anchor" aria-label="anchor" href="#arg-regime"></a></dt>
-<dd><p>One of <code>"moment"</code>, <code>"sample"</code>, <code>"kld"</code>.</p></dd>
+<dd><p>One of <code>"moment"</code>, <code>"sample"</code>, <code>"kld"</code>, <code>"cf"</code>.</p></dd>
 
 
 <dt id="arg-diagnostics">diagnostics<a class="anchor" aria-label="anchor" href="#arg-diagnostics"></a></dt>

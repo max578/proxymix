@@ -5,7 +5,7 @@
 The unified fitting verb and its dispatcher.
 
 - [`fit_proxymix()`](https://max578.github.io/proxymix/reference/fit_proxymix.md)
-  : Fit a Gaussian-mixture proxy to a target density
+  : Fit a Gaussian-mixture proxy to a target distribution
 
 ## Classes
 
@@ -38,11 +38,13 @@ The S7 class hierarchy.
 
 ## Target constructors
 
-Ways to build a `gmm_target` — from samples, from a log-density, or from
-a built-in.
+Ways to build a `gmm_target` — from samples, from a log-density, from a
+characteristic function, or from a built-in.
 
 - [`banana_target()`](https://max578.github.io/proxymix/reference/banana_target.md)
   : Banana-shaped 2-D target
+- [`cf_target()`](https://max578.github.io/proxymix/reference/cf_target.md)
+  : A target given by its characteristic function
 - [`donut_target()`](https://max578.github.io/proxymix/reference/donut_target.md)
   : Donut-shaped 2-D target
 - [`epanechnikov_target()`](https://max578.github.io/proxymix/reference/epanechnikov_target.md)
@@ -56,7 +58,9 @@ a built-in.
 
 ## Fitting regimes
 
-The three KL-optimal fitting regimes from Hoek and Elliott (2024).
+The three KL-optimal fitting regimes of van der Hoek and Elliott (2024),
+and fits to a characteristic function with bounds on the Kolmogorov
+distance.
 
 - [`fit_em_samples()`](https://max578.github.io/proxymix/reference/fit_em_samples.md)
   : Classical EM fit on samples
@@ -64,6 +68,15 @@ The three KL-optimal fitting regimes from Hoek and Elliott (2024).
   : Importance-sampled KLD-EM fit (regime iii)
 - [`fit_moment_match()`](https://max578.github.io/proxymix/reference/fit_moment_match.md)
   : Closed-form moment-matching fit
+- [`fit_mppca_samples()`](https://max578.github.io/proxymix/reference/fit_mppca_samples.md)
+  : Mixture of probabilistic PCA fitted to samples
+- [`from_cf()`](https://max578.github.io/proxymix/reference/from_cf.md)
+  : Fit a Gaussian mixture to a characteristic function
+- [`from_cf_elliptical()`](https://max578.github.io/proxymix/reference/from_cf_elliptical.md)
+  : Fit concentric normals to an elliptical characteristic function
+- [`from_cf_sources()`](https://max578.github.io/proxymix/reference/from_cf_sources.md)
+  : Fit a characteristic function that is a linear mix of independent
+  sources
 - [`from_kde()`](https://max578.github.io/proxymix/reference/from_kde.md)
   : Compile a kernel-density estimate into a Gaussian-mixture proxy
 - [`from_objective()`](https://max578.github.io/proxymix/reference/from_objective.md)
@@ -79,6 +92,8 @@ Density, sampling, marginalisation, conditioning, divergence.
   Density of a Gaussian mixture
 - [`gmm_canonicalise()`](https://max578.github.io/proxymix/reference/gmm_canonicalise.md)
   : Canonicalise the component ordering of a Gaussian mixture
+- [`gmm_cf()`](https://max578.github.io/proxymix/reference/gmm_cf.md) :
+  Characteristic function of a Gaussian mixture
 - [`gmm_conditionalise()`](https://max578.github.io/proxymix/reference/gmm_conditionalise.md)
   : Conditional of a Gaussian mixture
 - [`gmm_divergence()`](https://max578.github.io/proxymix/reference/gmm_divergence.md)
@@ -135,13 +150,13 @@ an identification audit.
   : Fit an uplift / next-best-action model from a data frame
 
 - [`gmm_cf_mean()`](https://max578.github.io/proxymix/reference/gmm_cf_mean.md)
-  : The identified counterfactual mean
+  : The counterfactual mean
 
 - [`gmm_cf_tail_prob()`](https://max578.github.io/proxymix/reference/gmm_cf_tail_prob.md)
-  : Refused: a tail probability of an individual counterfactual law
+  : A counterfactual tail probability
 
 - [`gmm_cf_variance()`](https://max578.github.io/proxymix/reference/gmm_cf_variance.md)
-  : Refused: the variance of an individual counterfactual law
+  : The counterfactual variance
 
 - [`gmm_counterfactual()`](https://max578.github.io/proxymix/reference/gmm_counterfactual.md)
   : Counterfactual law of one unit (abduction, action, prediction)
@@ -280,6 +295,9 @@ KLD trace, ESS, Hellinger MC, information criteria.
   : Effective sample size of the importance-sampling weights
 - [`gmm_anneal_path()`](https://max578.github.io/proxymix/reference/gmm_anneal_path.md)
   : Phase-transition component discovery by deterministic annealing
+- [`gmm_cf_distance()`](https://max578.github.io/proxymix/reference/gmm_cf_distance.md)
+  : Kolmogorov distance between a characteristic-function target and a
+  mixture
 - [`gmm_conditional_entropy()`](https://max578.github.io/proxymix/reference/gmm_conditional_entropy.md)
   : Renyi-2 or Shannon entropy of a conditional Gaussian mixture
 - [`gmm_entropy()`](https://max578.github.io/proxymix/reference/gmm_entropy.md)

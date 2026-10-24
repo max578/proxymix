@@ -1,10 +1,14 @@
 # Mapping the optima of an objective
 
-\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`proxymix`](https://github.com/max578/proxymix)`)`
+``` r
 
-\
-`has_ggplot2`` ``<-`` `[`requireNamespace`](https://rdrr.io/r/base/ns-load.html)`(``"ggplot2"``, quietly ``=`` ``TRUE``)`
+library(proxymix)
+```
+
+``` r
+
+has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
+```
 
 ## The problem
 
@@ -93,17 +97,19 @@ and $`\theta = 2`$. The call below fits a map with six components, using
 3,000 trial points at each of five temperatures, and then finds its
 modes.
 
-\
-[`set.seed`](https://rdrr.io/r/base/Random.html)`(``20260619``)`\
-\
-`f`` ``<-`` ``function``(``v``)`` ``(``v``[``1``]``^``2`` ``-`` ``4``)``^``2`\
-\
-`fit`` ``<-`` `[`from_objective`](https://max578.github.io/proxymix/reference/from_objective.md)`(``f``, lower ``=`` ``-``5``, upper ``=`` ``5``, N ``=`` ``6L``,`\
-`                      is_size ``=`` ``3000L``, n_steps ``=`` ``5L``, seed ``=`` ``1L``)`\
-\
-`modes`` ``<-`` `[`gmm_modes`](https://max578.github.io/proxymix/reference/gmm_modes.md)`(``fit``)`\
-[`sort`](https://rdrr.io/r/base/sort.html)`(`[`round`](https://rdrr.io/r/base/Round.html)`(``modes``$``modes``[``, ``1``]``, ``3``)``)`\
-`#> [1] -2.034  2.031`
+``` r
+
+set.seed(20260619)
+
+f <- function(v) (v[1]^2 - 4)^2
+
+fit <- from_objective(f, lower = -5, upper = 5, N = 6L,
+                      is_size = 3000L, n_steps = 5L, seed = 1L)
+
+modes <- gmm_modes(fit)
+sort(round(modes$modes[, 1], 3))
+#> [1] -2.034  2.031
+```
 
 ### Check the fit before using it
 
@@ -113,12 +119,14 @@ number of equally weighted points that the weighted sample is worth. A
 value far below the number of trial points means the map depends on a
 few points and should not be trusted.
 
-\
-`ess_1d`` ``<-`` `[`ess_summary`](https://max578.github.io/proxymix/reference/ess_summary.md)`(``fit``)`\
-[`c`](https://rdrr.io/r/base/c.html)`(``ess ``=`` `[`round`](https://rdrr.io/r/base/Round.html)`(``ess_1d``$``ess``, ``1``)``, is_size ``=`` ``ess_1d``$``is_size``,`\
-`  ess_relative ``=`` `[`round`](https://rdrr.io/r/base/Round.html)`(``ess_1d``$``ess_relative``, ``3``)``)`\
-`#>          ess      is_size ess_relative `\
-`#>     1565.100     3000.000        0.522`
+``` r
+
+ess_1d <- ess_summary(fit)
+c(ess = round(ess_1d$ess, 1), is_size = ess_1d$is_size,
+  ess_relative = round(ess_1d$ess_relative, 3))
+#>          ess      is_size ess_relative 
+#>     1565.100     3000.000        0.522
+```
 
 ### Four minima in two dimensions
 
@@ -126,41 +134,45 @@ Himmelblau’s function has four minima, all with the same value of zero.
 An optimiser run from one starting point returns one of them. The map
 below has ten components, which leaves room for one on each basin.
 
-\
-`himmelblau`` ``<-`` ``function``(``v``)`` ``{`\
-`  ``x`` ``<-`` ``v``[``1``]`\
-`  ``y`` ``<-`` ``v``[``2``]`\
-`  ``(``x`` ``*`` ``x`` ``+`` ``y`` ``-`` ``11``)``^``2`` ``+`` ``(``x`` ``+`` ``y`` ``*`` ``y`` ``-`` ``7``)``^``2`\
-`}`\
-\
-`fit2`` ``<-`` `[`from_objective`](https://max578.github.io/proxymix/reference/from_objective.md)`(``himmelblau``, lower ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``-``5``, ``-``5``)``, upper ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``5``, ``5``)``,`\
-`                       N ``=`` ``10L``, is_size ``=`` ``4000L``, n_steps ``=`` ``6L``, seed ``=`` ``1L``)`\
-\
-`found`` ``<-`` `[`gmm_modes`](https://max578.github.io/proxymix/reference/gmm_modes.md)`(``fit2``)`\
-`found``$``n`\
-`#> [1] 4`
+``` r
+
+himmelblau <- function(v) {
+  x <- v[1]
+  y <- v[2]
+  (x * x + y - 11)^2 + (x + y * y - 7)^2
+}
+
+fit2 <- from_objective(himmelblau, lower = c(-5, -5), upper = c(5, 5),
+                       N = 10L, is_size = 4000L, n_steps = 6L, seed = 1L)
+
+found <- gmm_modes(fit2)
+found$n
+#> [1] 4
+```
 
 The four minima of Himmelblau’s function are known exactly. The code
 below pairs each mode with the nearest true minimum and measures the
 distance between the two. It also evaluates the objective at each mode.
 
-\
-`truth`` ``<-`` `[`rbind`](https://rdrr.io/r/base/cbind.html)`(`[`c`](https://rdrr.io/r/base/c.html)`(``3``, ``2``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``-``2.805118``, ``3.131312``)``,`\
-`               `[`c`](https://rdrr.io/r/base/c.html)`(``-``3.779310``, ``-``3.283186``)``, `[`c`](https://rdrr.io/r/base/c.html)`(``3.584428``, ``-``1.848126``)``)`\
-\
-`pair_dist`` ``<-`` `[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(`[`dist`](https://rdrr.io/r/stats/dist.html)`(`[`rbind`](https://rdrr.io/r/base/cbind.html)`(``found``$``modes``, ``truth``)``)``)`\
-`n_found`` ``<-`` `[`nrow`](https://rdrr.io/r/base/nrow.html)`(``found``$``modes``)`\
-`pair_dist`` ``<-`` ``pair_dist``[`[`seq_len`](https://rdrr.io/r/base/seq.html)`(``n_found``)``, ``n_found`` ``+`` `[`seq_len`](https://rdrr.io/r/base/seq.html)`(`[`nrow`](https://rdrr.io/r/base/nrow.html)`(``truth``)``)``]`\
-`nearest`` ``<-`` `[`apply`](https://rdrr.io/r/base/apply.html)`(``pair_dist``, ``1L``, ``which.min``)`\
-`gap`` ``<-`` `[`apply`](https://rdrr.io/r/base/apply.html)`(``pair_dist``, ``1L``, ``min``)`\
-`f_at_mode`` ``<-`` `[`apply`](https://rdrr.io/r/base/apply.html)`(``found``$``modes``, ``1L``, ``himmelblau``)`\
-\
-`all_distinct`` ``<-`` `[`length`](https://rdrr.io/r/base/length.html)`(`[`unique`](https://rdrr.io/r/base/unique.html)`(``nearest``)``)`` ``==`` `[`nrow`](https://rdrr.io/r/base/nrow.html)`(``truth``)`\
-`worst_gap`` ``<-`` `[`max`](https://rdrr.io/r/base/Extremes.html)`(``gap``)`\
-[`c`](https://rdrr.io/r/base/c.html)`(``modes_found ``=`` ``found``$``n``, one_per_minimum ``=`` ``all_distinct``,`\
-`  worst_gap ``=`` `[`round`](https://rdrr.io/r/base/Round.html)`(``worst_gap``, ``3``)``)`\
-`#>     modes_found one_per_minimum       worst_gap `\
-`#>           4.000           1.000           0.117`
+``` r
+
+truth <- rbind(c(3, 2), c(-2.805118, 3.131312),
+               c(-3.779310, -3.283186), c(3.584428, -1.848126))
+
+pair_dist <- as.matrix(dist(rbind(found$modes, truth)))
+n_found <- nrow(found$modes)
+pair_dist <- pair_dist[seq_len(n_found), n_found + seq_len(nrow(truth))]
+nearest <- apply(pair_dist, 1L, which.min)
+gap <- apply(pair_dist, 1L, min)
+f_at_mode <- apply(found$modes, 1L, himmelblau)
+
+all_distinct <- length(unique(nearest)) == nrow(truth)
+worst_gap <- max(gap)
+c(modes_found = found$n, one_per_minimum = all_distinct,
+  worst_gap = round(worst_gap, 3))
+#>     modes_found one_per_minimum       worst_gap 
+#>           4.000           1.000           0.117
+```
 
 | Mode $`x_1`$ | Mode $`x_2`$ | True $`x_1`$ | True $`x_2`$ | Distance | Objective at mode | Height of map |
 |---:|---:|---:|---:|---:|---:|---:|
@@ -177,36 +189,38 @@ The figure shows the modes and the true minima on the surface of the
 objective. A basin with no mode in it would appear as a light patch with
 no orange point.
 
-\
-`xs`` ``<-`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``5``, ``5``, length.out ``=`` ``140L``)`\
-`ys`` ``<-`` `[`seq`](https://rdrr.io/r/base/seq.html)`(``-``5``, ``5``, length.out ``=`` ``140L``)`\
-`surface`` ``<-`` `[`expand.grid`](https://rdrr.io/r/base/expand.grid.html)`(``x1 ``=`` ``xs``, x2 ``=`` ``ys``)`\
-`surface``$``log_f`` ``<-`` `[`log1p`](https://rdrr.io/r/base/Log.html)`(`\
-`  `[`apply`](https://rdrr.io/r/base/apply.html)`(`[`as.matrix`](https://rdrr.io/r/base/matrix.html)`(``surface``[``, `[`c`](https://rdrr.io/r/base/c.html)`(``"x1"``, ``"x2"``)``]``)``, ``1L``, ``himmelblau``)`\
-`)`\
-\
-`mode_df`` ``<-`` `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``x1 ``=`` ``found``$``modes``[``, ``1``]``, x2 ``=`` ``found``$``modes``[``, ``2``]``)`\
-`truth_df`` ``<-`` `[`data.frame`](https://rdrr.io/r/base/data.frame.html)`(``x1 ``=`` ``truth``[``, ``1``]``, x2 ``=`` ``truth``[``, ``2``]``)`\
-\
-`ggplot2``::`[`ggplot`](https://ggplot2.tidyverse.org/reference/ggplot.html)`(``surface``, ``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``x1``, ``x2``)``)`` ``+`\
-`  ``ggplot2``::`[`geom_raster`](https://ggplot2.tidyverse.org/reference/geom_tile.html)`(``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``fill ``=`` ``log_f``)``, interpolate ``=`` ``TRUE``)`` ``+`\
-`  ``ggplot2``::`[`geom_contour`](https://ggplot2.tidyverse.org/reference/geom_contour.html)`(``ggplot2``::`[`aes`](https://ggplot2.tidyverse.org/reference/aes.html)`(``z ``=`` ``log_f``)``, colour ``=`` ``"white"``,`\
-`                        linewidth ``=`` ``0.2``, alpha ``=`` ``0.6``, bins ``=`` ``8L``)`` ``+`\
-`  ``ggplot2``::`[`geom_point`](https://ggplot2.tidyverse.org/reference/geom_point.html)`(``data ``=`` ``truth_df``, shape ``=`` ``4``, size ``=`` ``4``, stroke ``=`` ``1.4``,`\
-`                      colour ``=`` ``"#000000"``)`` ``+`\
-`  ``ggplot2``::`[`geom_point`](https://ggplot2.tidyverse.org/reference/geom_point.html)`(``data ``=`` ``mode_df``, shape ``=`` ``21``, size ``=`` ``3``, stroke ``=`` ``1``,`\
-`                      fill ``=`` ``"#D55E00"``, colour ``=`` ``"#000000"``)`` ``+`\
-`  ``ggplot2``::`[`scale_fill_viridis_c`](https://ggplot2.tidyverse.org/reference/scale_viridis.html)`(``name ``=`` ``"log(1 + f)"``, option ``=`` ``"mako"``,`\
-`                                direction ``=`` ``-``1``)`` ``+`\
-`  ``ggplot2``::`[`coord_equal`](https://ggplot2.tidyverse.org/reference/coord_fixed.html)`(``expand ``=`` ``FALSE``)`` ``+`\
-`  ``ggplot2``::`[`labs`](https://ggplot2.tidyverse.org/reference/labs.html)`(`\
-`    title ``=`` ``"One fit, four basins of Himmelblau's function"``,`\
-`    subtitle ``=`` ``"crosses: true minima; filled circles: modes of the map"``,`\
-`    x ``=`` `[`expression`](https://rdrr.io/r/base/expression.html)`(``x``[``1``]``)``, y ``=`` `[`expression`](https://rdrr.io/r/base/expression.html)`(``x``[``2``]``)`\
-`  ``)`` ``+`\
-`  ``ggplot2``::`[`theme_minimal`](https://ggplot2.tidyverse.org/reference/ggtheme.html)`(``base_size ``=`` ``11``)`` ``+`\
-`  ``ggplot2``::`[`theme`](https://ggplot2.tidyverse.org/reference/theme.html)`(``plot.title ``=`` ``ggplot2``::`[`element_text`](https://ggplot2.tidyverse.org/reference/element.html)`(``face ``=`` ``"bold"``)``,`\
-`                 panel.grid ``=`` ``ggplot2``::`[`element_blank`](https://ggplot2.tidyverse.org/reference/element.html)`(``)``)`
+``` r
+
+xs <- seq(-5, 5, length.out = 140L)
+ys <- seq(-5, 5, length.out = 140L)
+surface <- expand.grid(x1 = xs, x2 = ys)
+surface$log_f <- log1p(
+  apply(as.matrix(surface[, c("x1", "x2")]), 1L, himmelblau)
+)
+
+mode_df <- data.frame(x1 = found$modes[, 1], x2 = found$modes[, 2])
+truth_df <- data.frame(x1 = truth[, 1], x2 = truth[, 2])
+
+ggplot2::ggplot(surface, ggplot2::aes(x1, x2)) +
+  ggplot2::geom_raster(ggplot2::aes(fill = log_f), interpolate = TRUE) +
+  ggplot2::geom_contour(ggplot2::aes(z = log_f), colour = "white",
+                        linewidth = 0.2, alpha = 0.6, bins = 8L) +
+  ggplot2::geom_point(data = truth_df, shape = 4, size = 4, stroke = 1.4,
+                      colour = "#000000") +
+  ggplot2::geom_point(data = mode_df, shape = 21, size = 3, stroke = 1,
+                      fill = "#D55E00", colour = "#000000") +
+  ggplot2::scale_fill_viridis_c(name = "log(1 + f)", option = "mako",
+                                direction = -1) +
+  ggplot2::coord_equal(expand = FALSE) +
+  ggplot2::labs(
+    title = "One fit, four basins of Himmelblau's function",
+    subtitle = "crosses: true minima; filled circles: modes of the map",
+    x = expression(x[1]), y = expression(x[2])
+  ) +
+  ggplot2::theme_minimal(base_size = 11) +
+  ggplot2::theme(plot.title = ggplot2::element_text(face = "bold"),
+                 panel.grid = ggplot2::element_blank())
+```
 
 ![Surface of Himmelblau's function on a log scale as a shaded raster
 with contour lines, the four modes of the map as orange circles and the
@@ -314,42 +328,46 @@ The session seed is 20260619. Both fits also pass `seed = 1L` to
 so the trial points are the same on every run whatever the random-number
 state before the call.
 
-\
-[`sessionInfo`](https://rdrr.io/r/utils/sessionInfo.html)`(``)`
+``` r
 
+sessionInfo()
 ```
+
+``` session-info
 #> R version 4.6.1 (2026-06-24)
-#> Platform: aarch64-apple-darwin23
-#> Running under: macOS Tahoe 26.6.2
+#> Platform: x86_64-pc-linux-gnu
+#> Running under: Ubuntu 24.04.5 LTS
 #> 
 #> Matrix products: default
-#> BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib 
-#> LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1
+#> BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 
+#> LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.26.so;  LAPACK version 3.12.0
 #> 
 #> locale:
-#> [1] en_AU.UTF-8/en_AU.UTF-8/en_AU.UTF-8/C/en_AU.UTF-8/en_AU.UTF-8
+#>  [1] LC_CTYPE=C.UTF-8       LC_NUMERIC=C           LC_TIME=C.UTF-8       
+#>  [4] LC_COLLATE=C.UTF-8     LC_MONETARY=C.UTF-8    LC_MESSAGES=C.UTF-8   
+#>  [7] LC_PAPER=C.UTF-8       LC_NAME=C              LC_ADDRESS=C          
+#> [10] LC_TELEPHONE=C         LC_MEASUREMENT=C.UTF-8 LC_IDENTIFICATION=C   
 #> 
-#> time zone: Australia/Adelaide
-#> tzcode source: internal
+#> time zone: UTC
+#> tzcode source: system (glibc)
 #> 
 #> attached base packages:
 #> [1] stats     graphics  grDevices utils     datasets  methods   base     
 #> 
 #> other attached packages:
-#> [1] proxymix_0.16.0
+#> [1] proxymix_0.17.0
 #> 
 #> loaded via a namespace (and not attached):
 #>  [1] mvnfast_0.2.8      gtable_0.3.6       jsonlite_2.0.0     dplyr_1.2.1       
-#>  [5] compiler_4.6.1     Rcpp_1.1.2         tidyselect_1.2.1   dichromat_2.0-1   
-#>  [9] jquerylib_0.1.4    systemfonts_1.3.2  scales_1.4.0       textshaping_1.0.5 
-#> [13] yaml_2.3.12        fastmap_1.2.0      ggplot2_4.0.3      R6_2.6.1          
-#> [17] labeling_0.4.3     generics_0.1.4     isoband_0.3.0      knitr_1.51        
-#> [21] htmlwidgets_1.6.4  tibble_3.3.1       desc_1.4.3         bslib_0.12.0      
-#> [25] pillar_1.11.1      RColorBrewer_1.1-3 rlang_1.3.0        cachem_1.1.0      
-#> [29] xfun_0.60          fs_2.1.0           sass_0.4.10        S7_0.2.2          
-#> [33] otel_0.2.0         viridisLite_0.4.3  cli_3.6.6          pkgdown_2.2.1     
-#> [37] withr_3.0.3        magrittr_2.0.5     digest_0.6.39      grid_4.6.1        
-#> [41] lifecycle_1.0.5    vctrs_0.7.3        evaluate_1.0.5     glue_1.8.1        
-#> [45] farver_2.1.2       ragg_1.5.2         rmarkdown_2.32     tools_4.6.1       
-#> [49] pkgconfig_2.0.3    htmltools_0.5.9
+#>  [5] compiler_4.6.1     tidyselect_1.2.1   Rcpp_1.1.2         jquerylib_0.1.4   
+#>  [9] systemfonts_1.3.2  scales_1.4.0       textshaping_1.0.5  yaml_2.3.12       
+#> [13] fastmap_1.2.0      ggplot2_4.0.3      R6_2.6.1           labeling_0.4.3    
+#> [17] generics_0.1.4     isoband_0.3.0      knitr_1.52         tibble_3.3.1      
+#> [21] desc_1.4.3         bslib_0.12.0       pillar_1.11.1      RColorBrewer_1.1-3
+#> [25] rlang_1.3.0        cachem_1.1.0       xfun_0.62          fs_2.1.0          
+#> [29] sass_0.4.10        S7_0.2.2           otel_0.2.0         viridisLite_0.4.3 
+#> [33] cli_3.6.6          pkgdown_2.2.1      withr_3.0.3        magrittr_2.0.5    
+#> [37] digest_0.6.39      grid_4.6.1         lifecycle_1.0.5    vctrs_0.7.3       
+#> [41] evaluate_1.0.5     glue_1.8.1         farver_2.1.2       ragg_1.5.2        
+#> [45] rmarkdown_2.32     tools_4.6.1        pkgconfig_2.0.3    htmltools_0.5.9
 ```

@@ -1,11 +1,11 @@
-# Refused: a tail probability of an individual counterfactual law
+# A counterfactual tail probability
 
-Like
-[`gmm_cf_variance()`](https://max578.github.io/proxymix/reference/gmm_cf_variance.md),
-a per-unit counterfactual tail probability \\P(Y\_{t'} \> c \mid y, t,
-x)\\ is not identified – it is a functional of the unidentified
-counterfactual law, not of its identified mean. This accessor refuses
-rather than mislead.
+Returns \\P(Y\_{t'} \> c \mid y, t, x)\\ for a
+[gmm_counterfactual_law](https://max578.github.io/proxymix/reference/gmm_counterfactual_law.md):
+the total weight of the atoms above the threshold `c`. The law is
+discrete, so the probability changes only where `c` crosses an atom. It
+rests on the same kept-residual assumption as
+[`gmm_cf_mean()`](https://max578.github.io/proxymix/reference/gmm_cf_mean.md).
 
 ## Usage
 
@@ -17,8 +17,7 @@ gmm_cf_tail_prob(x, threshold)
 
 - x:
 
-  A
-  [gmm_counterfactual_law](https://max578.github.io/proxymix/reference/gmm_counterfactual_law.md).
+  A `gmm_counterfactual_law`.
 
 - threshold:
 
@@ -26,7 +25,7 @@ gmm_cf_tail_prob(x, threshold)
 
 ## Value
 
-Never returns; always raises a `proxymix_not_identified` error.
+Numeric scalar in `[0, 1]`.
 
 ## See also
 
@@ -52,13 +51,11 @@ Other decision:
 ## Examples
 
 ``` r
-g <- gmm(weights = 1, means = list(c(0, 0, 0)),
-         covariances = list(diag(3)))
-cf <- gmm_counterfactual(g, evidence = c(1, 0, 0.2),
+g <- gmm(weights = c(0.6, 0.4),
+         means = list(c(0, 0, 0), c(2, 1, 1)),
+         covariances = list(diag(3), diag(3)))
+cf <- gmm_counterfactual(g, evidence = c(1.2, 0, 0.5),
                          do = c(NA, 1, NA), query = 1L)
-try(gmm_cf_tail_prob(cf, threshold = 2))
-#> Error in gmm_cf_tail_prob(cf, threshold = 2) : 
-#>   Individual counterfactual tail probabilities are not identified.
-#> ℹ They are functionals of the unidentified counterfactual law, not its mean.
-#> ℹ Only the counterfactual mean is identified; see `gmm_cf_mean()`.
+gmm_cf_tail_prob(cf, threshold = 2)
+#> [1] 0
 ```

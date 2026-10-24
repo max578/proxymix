@@ -5,7 +5,7 @@ attached samples are drawn from that same mixture. Useful for sanity-
 checking the three fitting regimes against ground truth."><meta property="og:description" content="A toy three-component planar mixture target where everything is known
 exactly: the log_density matches the GMM density formula and the
 attached samples are drawn from that same mixture. Useful for sanity-
-checking the three fitting regimes against ground truth."></head><body>
+checking the three fitting regimes against ground truth."><meta property="og:image" content="https://max578.github.io/proxymix/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -13,7 +13,7 @@ checking the three fitting regimes against ground truth."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">proxymix</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.16.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.17.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -30,6 +30,7 @@ checking the three fitting regimes against ground truth."></head><body>
     <li><a class="dropdown-item" href="../articles/density_shapes.html">How well a mixture proxies four awkward shapes</a></li>
     <li><a class="dropdown-item" href="../articles/operator_calculus.html">The closed-form operator calculus on a mixture</a></li>
     <li><a class="dropdown-item" href="../articles/from_kde.html">Compressing a kernel density estimate into a mixture</a></li>
+    <li><a class="dropdown-item" href="../articles/cf_targets.html">Fitting a mixture to a characteristic function</a></li>
     <li><a class="dropdown-item" href="../articles/many_methods.html">One mixture, many methods</a></li>
     <li><a class="dropdown-item" href="../articles/entropy.html">Reading the entropy of a fitted mixture</a></li>
     <li><a class="dropdown-item" href="../articles/calibration.html">Mapping the optima of an objective</a></li>
@@ -50,9 +51,8 @@ checking the three fitting regimes against ground truth."></head><body>
 </nav><div class="container template-reference-topic">
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Three-component Gaussian-mixture target</h1>
-      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/HEAD/R/gmm_target_constructors.R" class="external-link"><code>R/gmm_target_constructors.R</code></a></small>
+      <img src="../logo.png" class="logo" alt=""><h1>Three-component Gaussian-mixture target</h1>
+      <small class="dont-index">Source: <a href="https://github.com/max578/proxymix/blob/main/R/gmm_target_constructors.R" class="external-link"><code>R/gmm_target_constructors.R</code></a></small>
       <div class="d-none name"><code>mixture_target.Rd</code></div>
     </div>
 
@@ -92,6 +92,7 @@ checking the three fitting regimes against ground truth.</p>
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p>Other targets:
 <code><a href="banana_target.html">banana_target()</a></code>,
+<code><a href="cf_target.html">cf_target()</a></code>,
 <code><a href="donut_target.html">donut_target()</a></code>,
 <code><a href="epanechnikov_target.html">epanechnikov_target()</a></code>,
 <code><a href="gmm_target_from_samples.html">gmm_target_from_samples()</a></code>,

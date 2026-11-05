@@ -19,7 +19,11 @@ gmm_impute(
 \item{data}{A numeric matrix or data frame with \code{NA} for missing entries.}
 
 \item{N}{Number of mixture components. \code{NULL} (the default) selects it by
-the Bayesian information criterion over \code{1:6}.}
+the Bayesian information criterion over \code{1:6}, among fits in which no
+component holds a column constant or sits on a few rows. With a censored
+or missing-not-at-random mechanism each candidate is fitted and scored
+under that mechanism. A column with at most ten distinct values raises a
+warning of class \code{proxymix_discrete_columns}.}
 
 \item{m}{Number of completed datasets to draw. Default \code{20L}.}
 

@@ -69,7 +69,15 @@ audit -- see \code{\link[=proxy_cate]{proxy_cate()}}, \code{\link[=proxy_decide]
 \details{
 The component count \code{N} may be fixed or chosen automatically. With
 \code{N = "auto"} the function sweeps \code{n_grid} and keeps the K that minimises the
-joint BIC; the full BIC trace is stored in the model's metadata. The
+joint BIC; the full BIC trace is stored in the model's metadata. A binary
+or other discrete column can be held constant inside a component, where its
+density is limited only by the ridge, so the BIC floors the variance of a
+column with at most ten distinct values at \code{spacing^2 / 12}. Fits at
+different \code{N} start from the same random state, so \code{N = "auto"} and the
+same fixed \code{N} agree at one \code{seed}. With discrete covariates many optima
+fit about equally well and the effects can differ between them, even in sign,
+so a warning of class \code{proxymix_discrete_columns} is raised; compare several
+seeds before reading an effect. The
 treatment is binary at this version (\verb{\{t0, t1\}}); a continuous dose is a
 future extension.
 }

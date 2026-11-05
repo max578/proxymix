@@ -60,7 +60,9 @@
 #' Renyi-2 or Shannon entropy of a Gaussian mixture
 #'
 #' Computes the order-2 Renyi entropy (the default) or the Shannon differential
-#' entropy of a Gaussian mixture. The quadratic (order-2) Renyi entropy \eqn{H_2(g) = -\log \int g(x)^2 \, dx} is available in
+#' entropy of a Gaussian mixture. These are different quantities: to compare
+#' with a published Shannon entropy, such as that of a normal distribution, use
+#' `order = "shannon"`. The quadratic (order-2) Renyi entropy \eqn{H_2(g) = -\log \int g(x)^2 \, dx} is available in
 #' closed form, because \eqn{\int g^2} is a finite sum of Gaussian-density
 #' evaluations. Shannon entropy has no closed form for a mixture (the integrand
 #' carries the logarithm of a sum) and is estimated by Monte Carlo, reported
@@ -191,9 +193,13 @@ gmm_divergence <- function(p, q, type = c("cs", "kl"), n_mc = 5000L) {
 #' Cauchy-Schwarz mutual information between two coordinate blocks
 #'
 #' Measures the dependence between two disjoint coordinate blocks of a fitted
-#' joint Gaussian mixture as the Cauchy-Schwarz divergence between the joint
-#' over the two blocks and the product of their marginals,
+#' joint Gaussian mixture. The default is the Cauchy-Schwarz divergence between
+#' the joint over the two blocks and the product of their marginals,
 #' \deqn{I_{\mathrm{CS}}(A; B) = D_{\mathrm{CS}}(p_{AB},\ p_A\, p_B).}
+#' This is not the Shannon mutual information and is not on its scale, so it
+#' must not be converted to bits. `measure = "shannon"` estimates the Shannon
+#' value, the Kullback-Leibler divergence between the same two distributions,
+#' by Monte Carlo, in nats.
 #' The product of the marginals is itself a Gaussian mixture, so the quantity is
 #' closed-form. It is non-negative and zero exactly when the two blocks are
 #' independent. (The naive combination \eqn{H_2(A) + H_2(B) - H_2(A, B)} is
@@ -203,8 +209,14 @@ gmm_divergence <- function(p, q, type = c("cs", "kl"), n_mc = 5000L) {
 #' @param g A [gmm] (or [gmm_fit]) joint mixture.
 #' @param block_a,block_b Disjoint integer vectors of coordinate indices (in
 #'   `1..p`) naming the two blocks.
+#' @param measure `"cauchy_schwarz"` (closed form, the default) or `"shannon"`
+#'   (Monte Carlo).
+#' @param n_mc Number of Monte Carlo samples for `measure = "shannon"`.
+#' @param seed Optional integer seed for the Monte Carlo draw.
 #'
-#' @returns A non-negative numeric scalar.
+#' @returns For `measure = "cauchy_schwarz"`, a non-negative numeric scalar. For
+#'   `measure = "shannon"`, a list with components `mc` (the estimate in nats),
+#'   `mc_se` (its standard error) and `n_mc`.
 #' @family diagnostics
 #' @seealso [gmm_entropy()], [gmm_divergence()]
 #' @export
@@ -213,11 +225,16 @@ gmm_divergence <- function(p, q, type = c("cs", "kl"), n_mc = 5000L) {
 #' s <- matrix(c(1, 0.7, 0.7, 1), 2, 2)
 #' g <- gmm(weights = 1, means = list(c(0, 0)), covariances = list(s))
 #' gmm_mutual_information(g, 1L, 2L)
-gmm_mutual_information <- function(g, block_a, block_b) {
+#' ## Shannon value; for this normal it is -log(1 - 0.7^2) / 2, about 0.337.
+#' gmm_mutual_information(g, 1L, 2L, measure = "shannon", n_mc = 2000L, seed = 1L)
+gmm_mutual_information <- function(g, block_a, block_b,
+                                   measure = c("cauchy_schwarz", "shannon"),
+                                   n_mc = 5000L, seed = NULL) {
   if (!S7::S7_inherits(g, gmm)) {
     cli::cli_abort("`g` must be a {.cls gmm} object.")
   }
   .check_quality(g, "gmm_mutual_information")
+  measure <- rlang::arg_match(measure)
   p <- gmm_dim(g)
   block_a <- as.integer(block_a)
   block_b <- as.integer(block_b)
@@ -231,7 +248,17 @@ gmm_mutual_information <- function(g, block_a, block_b) {
   ga <- gmm_marginalise(g, keep = block_a)
   gb <- gmm_marginalise(g, keep = block_b)
   gab <- gmm_marginalise(g, keep = c(block_a, block_b))
-  gmm_divergence(gab, .product_of_marginals(ga, gb), type = "cs")
+  if (measure == "cauchy_schwarz") {
+    return(gmm_divergence(gab, .product_of_marginals(ga, gb), type = "cs"))
+  }
+  n_mc <- as.integer(n_mc)
+  draw <- function() rgmm(n_mc, gab)
+  x <- if (is.null(seed)) draw() else withr::with_seed(seed, draw())
+  in_a <- seq_along(block_a)
+  ratio <- dgmm(x, gab, log = TRUE) -
+    dgmm(x[, in_a, drop = FALSE], ga, log = TRUE) -
+    dgmm(x[, -in_a, drop = FALSE], gb, log = TRUE)
+  list(mc = mean(ratio), mc_se = stats::sd(ratio) / sqrt(n_mc), n_mc = n_mc)
 }
 
 #' Renyi-2 or Shannon entropy of a conditional Gaussian mixture

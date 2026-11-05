@@ -135,6 +135,7 @@ symmetrise <- function(S) 0.5 * (S + t(S))
       kld_approx        = worst("kld_approx", max),
       validation_gap    = worst("validation_gap", max, abs),
       heldout_kld       = worst("heldout_kld", max),
+      heldout_kld_se    = worst("heldout_kld_se", max),
       cf_upper          = NA_real_,
       quality_sources   = lapply(gs, function(g) {
         list(name = g@name, quality = g@metadata$quality)
@@ -232,4 +233,14 @@ as_input_matrix <- function(x, p) {
     return(matrix(x, nrow = 1L))
   }
   cli::cli_abort("`x` must be a numeric matrix or vector.")
+}
+
+## Variance of a value spread evenly over its own cell, for columns with at most
+## ten distinct values, and zero for the rest.
+.discrete_variance_floor <- function(M) {
+  vapply(seq_len(ncol(M)), function(j) {
+    values <- sort(unique(M[, j]))
+    if (length(values) < 2L || length(values) > 10L) return(0)
+    min(diff(values))^2 / 12
+  }, numeric(1L))
 }

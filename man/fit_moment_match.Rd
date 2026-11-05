@@ -9,8 +9,8 @@ fit_moment_match(target, N = 1L, ridge_eps = 1e-06, canonicalise = TRUE)
 \arguments{
 \item{target}{A \link{gmm_target}.}
 
-\item{N}{Number of components. \code{N >= 2} returns a moment-seeded mixture
-without iterative refinement.}
+\item{N}{Number of components. \code{N >= 2} returns a mixture with the target's
+mean and covariance, without iterative refinement.}
 
 \item{ridge_eps}{Ridge added to the empirical covariance for numerical
 stability.}
@@ -26,10 +26,13 @@ A \link{gmm_fit} with \code{regime = "moment"}.
 \description{
 Implements regime (i) of Hoek and Elliott (2024). When \code{N == 1}, this is
 the exact moment match: \code{mu} is the target mean and \code{Sigma} is the target
-covariance. When \code{N > 1}, the function returns the deterministic
-moment-seed of \code{\link[=init_moment_seed]{init_moment_seed()}} wrapped as a \link{gmm_fit}, without
-iterative refinement — useful as a starting point for the iterative
-regimes.
+covariance. When \code{N > 1}, the function returns an equal-weight mixture
+spread along the first principal direction whose mean and covariance also
+equal the target's exactly. Half of the variance along that direction lies
+between components, which keeps two components from forming two peaks.
+Moments do not determine the shape of a distribution, so this mixture adds
+no information to the \code{N = 1} fit: it is a starting point for the iterative
+regimes, and a message says so.
 }
 \details{
 Either the \code{target} must carry an \code{n} by \code{p} \code{samples} matrix, or its

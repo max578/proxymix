@@ -321,6 +321,13 @@ gmm_kld <- function(p, q, n_mc = 5000L, variational = TRUE) {
     num <- log(rowSums(matrix(rep(pi_p, each = Kp), nrow = Kp) * exp(-kl_pp)))
     den <- log(rowSums(matrix(rep(pi_q, each = Kp), nrow = Kp) * exp(-kl_pq)))
     var_est <- sum(pi_p * (num - den))
+    if (var_est < 0) {
+      cli::cli_warn(
+        c("The variational approximation is negative ({signif(var_est, 3)}), which no divergence can be.",
+          "i" = "It is reliable only for well-separated components. Use {.field mc}."),
+        class = "proxymix_negative_variational"
+      )
+    }
   }
 
   list(mc = mc, mc_se = mc_se, variational = var_est, n_mc = n_mc)

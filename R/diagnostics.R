@@ -181,7 +181,7 @@ ess_summary <- function(fit) {
 #' @returns A list with elements `regime`, `converged`, `degenerate`,
 #'   `ess`, `ess_relative`, `min_component_ess`, `max_weight`,
 #'   `support_fraction`, `kld_final`, `kld_approx`, `validation_gap`, and
-#'   `heldout_kld` (fields not applicable to the regime are `NA`), or `NULL`
+#'   `heldout_kld`, `heldout_kld_se` (fields not applicable to the regime are `NA`), or `NULL`
 #'   for a mixture that was never fitted (e.g. built directly with [gmm()]).
 #'   A certificate produced by an operator over several operands has
 #'   `regime = "composite"`, the conservative worst-case value of each numeric field across the
@@ -193,7 +193,10 @@ ess_summary <- function(fit) {
 #'   the KL divergence from the target to the proxy estimated on the
 #'   validation draws. For a target with an unknown normalising constant it
 #'   is `validation_kld` minus a log normalising constant estimated from the
-#'   same draws. `kld_approx` is half the importance-weighted variance of
+#'   same draws, so its error includes that of the constant: it can read
+#'   below zero on a close fit, and `heldout_kld_se` is its standard error,
+#'   usually much larger than `validation_mc_se`. To compare fits to one
+#'   target, use `validation_kld` on a shared seed. `kld_approx` is half the importance-weighted variance of
 #'   `log f - log g` over the fitting draws. It approximates the KL
 #'   divergence only when the proxy is close to the target, and it does not
 #'   depend on the target's normalising constant. Both are `NA` outside

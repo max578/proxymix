@@ -363,7 +363,8 @@ proxy_cate <- function(model,
   n_units <- nrow(X)
   res <- .cate_batch(cache, g, z_idx, x_idx, X, t1, t0, model@assume)
   cov_vec <- .coverage_batch(g, z_idx, arms, X)
-  flag <- (!res$covered) | (cov_vec < 0.01)
+  e_vec <- .arm_propensity(g, model@roles$treatment, x_idx, t1, t0, X)
+  flag <- (!res$covered) | (cov_vec < 0.01) | (pmin(e_vec, 1 - e_vec) < 0.01)
   if (response_binary) {
     tau <- .response_prob_batch(cache, g, z_idx, x_idx, X, t1,
                                 model@assume, threshold) -
@@ -495,17 +496,20 @@ proxy_predict <- function(model, newdata, t,
 #' diagnostic. For each treatment arm the squared Mahalanobis distance to the
 #' nearest regime centre is converted to an upper-tail chi-square coverage
 #' probability; the reported `coverage` is the minimum across arms, since the
-#' treatment effect needs both arms supported. Units below `floor` are flagged
-#' and excluded from [proxy_policy_value()] by default.
+#' treatment effect needs both arms supported. `propensity` is the fit's
+#' probability of the arm `t1` at those covariates: near zero or one, the
+#' components the unit belongs to hold one arm only, whatever the distance to
+#' some other component. A unit is flagged when `coverage`, `propensity` or
+#' `1 - propensity` is below `floor`. Flagged units are excluded from
+#' [proxy_policy_value()] by default.
 #'
 #' @param model An [uplift_model].
 #' @param newdata A data frame carrying the covariate columns.
 #' @param t1,t0 The treated and control treatment values. Default the treatment levels observed at fit time (`model@treatment_levels`); a value matching neither observed level aborts.
-#' @param floor Coverage probability below which a unit is flagged. Default
-#'   `0.01`.
+#' @param floor Probability below which a unit is flagged. Default `0.01`.
 #'
 #' @returns A [data.table::data.table] with columns `id`, `coverage`,
-#'   `overlap_flag`.
+#'   `propensity`, `overlap_flag`.
 #' @family decision
 #' @export
 #' @examples
@@ -526,10 +530,13 @@ proxy_overlap <- function(model, newdata, t1 = NULL, t0 = NULL, floor = 0.01) {
   X <- .newdata_x(model, newdata)
   arms <- c(t0, t1)
   cov_vec <- .coverage_batch(g, z_idx, arms, X)
+  e_vec <- .arm_propensity(g, model@roles$treatment, model@roles$covariate,
+                           t1, t0, X)
   dt <- data.table::data.table(
     id = seq_len(nrow(X)),
     coverage = cov_vec,
-    overlap_flag = cov_vec < floor
+    propensity = e_vec,
+    overlap_flag = cov_vec < floor | pmin(e_vec, 1 - e_vec) < floor
   )
   return(dt[])
 }

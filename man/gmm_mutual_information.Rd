@@ -4,22 +4,42 @@
 \alias{gmm_mutual_information}
 \title{Cauchy-Schwarz mutual information between two coordinate blocks}
 \usage{
-gmm_mutual_information(g, block_a, block_b)
+gmm_mutual_information(
+  g,
+  block_a,
+  block_b,
+  measure = c("cauchy_schwarz", "shannon"),
+  n_mc = 5000L,
+  seed = NULL
+)
 }
 \arguments{
 \item{g}{A \link{gmm} (or \link{gmm_fit}) joint mixture.}
 
 \item{block_a, block_b}{Disjoint integer vectors of coordinate indices (in
 \verb{1..p}) naming the two blocks.}
+
+\item{measure}{\code{"cauchy_schwarz"} (closed form, the default) or \code{"shannon"}
+(Monte Carlo).}
+
+\item{n_mc}{Number of Monte Carlo samples for \code{measure = "shannon"}.}
+
+\item{seed}{Optional integer seed for the Monte Carlo draw.}
 }
 \value{
-A non-negative numeric scalar.
+For \code{measure = "cauchy_schwarz"}, a non-negative numeric scalar. For
+\code{measure = "shannon"}, a list with components \code{mc} (the estimate in nats),
+\code{mc_se} (its standard error) and \code{n_mc}.
 }
 \description{
 Measures the dependence between two disjoint coordinate blocks of a fitted
-joint Gaussian mixture as the Cauchy-Schwarz divergence between the joint
-over the two blocks and the product of their marginals,
+joint Gaussian mixture. The default is the Cauchy-Schwarz divergence between
+the joint over the two blocks and the product of their marginals,
 \deqn{I_{\mathrm{CS}}(A; B) = D_{\mathrm{CS}}(p_{AB},\ p_A\, p_B).}
+This is not the Shannon mutual information and is not on its scale, so it
+must not be converted to bits. \code{measure = "shannon"} estimates the Shannon
+value, the Kullback-Leibler divergence between the same two distributions,
+by Monte Carlo, in nats.
 The product of the marginals is itself a Gaussian mixture, so the quantity is
 closed-form. It is non-negative and zero exactly when the two blocks are
 independent. (The naive combination \eqn{H_2(A) + H_2(B) - H_2(A, B)} is
@@ -31,6 +51,8 @@ over independent blocks and that difference can be negative.)
 s <- matrix(c(1, 0.7, 0.7, 1), 2, 2)
 g <- gmm(weights = 1, means = list(c(0, 0)), covariances = list(s))
 gmm_mutual_information(g, 1L, 2L)
+## Shannon value; for this normal it is -log(1 - 0.7^2) / 2, about 0.337.
+gmm_mutual_information(g, 1L, 2L, measure = "shannon", n_mc = 2000L, seed = 1L)
 }
 \seealso{
 \code{\link[=gmm_entropy]{gmm_entropy()}}, \code{\link[=gmm_divergence]{gmm_divergence()}}

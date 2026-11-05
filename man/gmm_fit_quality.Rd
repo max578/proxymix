@@ -13,7 +13,7 @@ gmm_fit_quality(g)
 A list with elements \code{regime}, \code{converged}, \code{degenerate},
 \code{ess}, \code{ess_relative}, \code{min_component_ess}, \code{max_weight},
 \code{support_fraction}, \code{kld_final}, \code{kld_approx}, \code{validation_gap}, and
-\code{heldout_kld} (fields not applicable to the regime are \code{NA}), or \code{NULL}
+\code{heldout_kld}, \code{heldout_kld_se} (fields not applicable to the regime are \code{NA}), or \code{NULL}
 for a mixture that was never fitted (e.g. built directly with \code{\link[=gmm]{gmm()}}).
 A certificate produced by an operator over several operands has
 \code{regime = "composite"}, the conservative worst-case value of each numeric field across the
@@ -25,7 +25,10 @@ held-out \code{validation_kld} (see \code{\link[=ess_summary]{ess_summary()}}) m
 the KL divergence from the target to the proxy estimated on the
 validation draws. For a target with an unknown normalising constant it
 is \code{validation_kld} minus a log normalising constant estimated from the
-same draws. \code{kld_approx} is half the importance-weighted variance of
+same draws, so its error includes that of the constant: it can read
+below zero on a close fit, and \code{heldout_kld_se} is its standard error,
+usually much larger than \code{validation_mc_se}. To compare fits to one
+target, use \code{validation_kld} on a shared seed. \code{kld_approx} is half the importance-weighted variance of
 \verb{log f - log g} over the fitting draws. It approximates the KL
 divergence only when the proxy is close to the target, and it does not
 depend on the target's normalising constant. Both are \code{NA} outside

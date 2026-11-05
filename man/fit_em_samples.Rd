@@ -8,8 +8,8 @@ fit_em_samples(
   target,
   N = 2L,
   init = NULL,
-  max_iter = 100L,
-  tol = 1e-06,
+  max_iter = 500L,
+  tol = 1e-08,
   ridge_eps = 1e-06,
   n_starts = 5L,
   anneal = FALSE,
@@ -27,14 +27,19 @@ fit_em_samples(
 
 \item{max_iter}{Maximum number of EM iterations.}
 
-\item{tol}{Relative-log-likelihood convergence tolerance.}
+\item{tol}{Relative-log-likelihood convergence tolerance. Because it is
+relative, a log-likelihood near -500 stops on a change near \code{500 * tol}.}
 
 \item{ridge_eps}{Relative ridge. At every M-step, \code{ridge_eps} times
 each coordinate's sample variance is added to that coordinate's
 diagonal entry of each component covariance.}
 
 \item{n_starts}{Number of multi-start initialisations (only when \code{init}
-is \code{NULL}). The best fit by final log-likelihood is returned.}
+is \code{NULL}): one k-means start and \code{n_starts - 1} random starts. The best
+fit by final log-likelihood is returned. With \code{seed = NULL} every start
+uses the ambient random stream, so \code{\link[=set.seed]{set.seed()}} controls them and a
+different stream can reach a different optimum; several seeds, or more
+starts, show how stable a fit is.}
 
 \item{anneal}{Logical. If \code{TRUE}, a deterministic-annealing warm-start
 (see \code{\link[=gmm_anneal_path]{gmm_anneal_path()}}) replaces the multi-start: the components are
@@ -48,8 +53,9 @@ the annealing warm-start. \code{NULL} (the default) uses a geometric schedule
 from \code{10} down to \code{1} in covariance-whitened units. Ignored when
 \code{anneal = FALSE}.}
 
-\item{seed}{Optional integer seed for the annealing perturbations (the
-warm-start is deterministic given a seed). Ignored when \code{anneal = FALSE}.}
+\item{seed}{Optional integer seed for the starts, or for the annealing
+perturbations when \code{anneal = TRUE}. The fit is then reproducible and the
+random-number state is not disturbed by the k-means start.}
 
 \item{canonicalise}{Logical. If \code{TRUE} (the default), the fitted
 mixture is post-processed by \code{\link[=gmm_canonicalise]{gmm_canonicalise()}} so that components

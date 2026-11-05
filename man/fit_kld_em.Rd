@@ -10,7 +10,7 @@ fit_kld_em(
   proposal = NULL,
   is_size = 5000L,
   init = NULL,
-  max_iter = 100L,
+  max_iter = 1000L,
   tol = 1e-05,
   ridge_eps = 1e-06,
   min_ess = 50,
@@ -40,12 +40,18 @@ declares a bounded or one-sided \code{support}, otherwise a multivariate-t with
 \code{df = 5} in \code{target@n_dim} dimensions. The automatic choice is announced
 with a one-line message so it is never silent.}
 
-\item{is_size}{Number of importance-sampling draws used for fitting.}
+\item{is_size}{Number of importance-sampling draws used for fitting. A fit
+depends on these draws and on its local optimum, so compare two routes or
+proposals over several seeds rather than at one.}
 
 \item{init}{A \link{gmm} initialisation, or \code{NULL} to use a kmeans pass on
 the importance-resampled draws.}
 
-\item{max_iter}{Maximum number of EM iterations.}
+\item{max_iter}{Maximum number of EM iterations. The fit stops earlier when
+it meets \code{tol}, and \code{converged} is \code{FALSE} if it does not. With
+\code{adapt = "pmc"} the fit compares itself every 50 iterations with its state
+50 iterations earlier, on a fresh batch of draws, and stops when the gain
+is within one standard error of that paired comparison.}
 
 \item{tol}{Convergence tolerance on the relative change in the
 importance-weighted EM objective \verb{Q(theta) = sum_n W_n log g(x_n)}.
@@ -84,7 +90,9 @@ is precise. The default \code{NULL} draws batches of \code{is_size} until the
 standard error is at most a tenth of the estimate (at most 0.001 when
 the estimate is below 0.01), stopping at \code{10 * is_size} draws. When the
 target's normalising constant is unknown, the goal is a standard error
-of 0.001. A number draws exactly that many; \code{0L} skips validation.}
+of 0.001 for \code{validation_kld}. That goal does not bound \code{heldout_kld},
+whose error is also that of the estimated constant: see \code{heldout_kld_se}.
+A number draws exactly that many; \code{0L} skips validation.}
 
 \item{validation_proposal}{Optional \link{is_proposal} for the validation
 sample. Defaults to the same proposal used for fitting.}
@@ -131,8 +139,9 @@ contains, among others, \code{kld_trace}, \code{kld_final} (in-sample),
 \code{kld_is_shifted}, \code{kld_final_absolute} (when computable), \code{ess},
 \code{ess_relative} (\code{ess / is_size}), \code{max_weight}, \code{support_fraction},
 \code{mc_se_kld}, \code{validation_kld} (held-out), \code{validation_ess},
-\code{validation_max_weight}, and \code{heldout_kld}, the held-out estimate of the
-KL divergence that \code{\link[=gmm_fit_quality]{gmm_fit_quality()}} describes.
+\code{validation_max_weight}, \code{heldout_kld}, the held-out estimate of the KL
+divergence that \code{\link[=gmm_fit_quality]{gmm_fit_quality()}} describes, and \code{heldout_kld_se}, its
+standard error.
 }
 \description{
 Implements regime (iii) of Hoek and Elliott (2024). Minimises

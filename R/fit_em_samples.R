@@ -13,12 +13,17 @@
 #' @param N Number of mixture components.
 #' @param init A [gmm] initialisation, or `NULL` to use [init_kmeans()].
 #' @param max_iter Maximum number of EM iterations.
-#' @param tol Relative-log-likelihood convergence tolerance.
+#' @param tol Relative-log-likelihood convergence tolerance. Because it is
+#'   relative, a log-likelihood near -500 stops on a change near `500 * tol`.
 #' @param ridge_eps Relative ridge. At every M-step, `ridge_eps` times
 #'   each coordinate's sample variance is added to that coordinate's
 #'   diagonal entry of each component covariance.
 #' @param n_starts Number of multi-start initialisations (only when `init`
-#'   is `NULL`). The best fit by final log-likelihood is returned.
+#'   is `NULL`): one k-means start and `n_starts - 1` random starts. The best
+#'   fit by final log-likelihood is returned. With `seed = NULL` every start
+#'   uses the ambient random stream, so [set.seed()] controls them and a
+#'   different stream can reach a different optimum; several seeds, or more
+#'   starts, show how stable a fit is.
 #' @param anneal Logical. If `TRUE`, a deterministic-annealing warm-start
 #'   (see [gmm_anneal_path()]) replaces the multi-start: the components are
 #'   annealed from a high temperature down to one, and the resulting
@@ -29,8 +34,9 @@
 #'   the annealing warm-start. `NULL` (the default) uses a geometric schedule
 #'   from `10` down to `1` in covariance-whitened units. Ignored when
 #'   `anneal = FALSE`.
-#' @param seed Optional integer seed for the annealing perturbations (the
-#'   warm-start is deterministic given a seed). Ignored when `anneal = FALSE`.
+#' @param seed Optional integer seed for the starts, or for the annealing
+#'   perturbations when `anneal = TRUE`. The fit is then reproducible and the
+#'   random-number state is not disturbed by the k-means start.
 #' @param canonicalise Logical. If `TRUE` (the default), the fitted
 #'   mixture is post-processed by [gmm_canonicalise()] so that components
 #'   are sorted by descending weight and (as a tiebreaker) by descending
@@ -56,8 +62,8 @@
 #' fit@diagnostics$loglik_final
 fit_em_samples <- function(target, N = 2L,
                            init = NULL,
-                           max_iter = 100L,
-                           tol = 1e-6,
+                           max_iter = 500L,
+                           tol = 1e-8,
                            ridge_eps = 1e-6,
                            n_starts = 5L,
                            anneal = FALSE,
@@ -100,9 +106,8 @@ fit_em_samples <- function(target, N = 2L,
 
   ## Multi-start: kmeans + (n_starts - 1) random restarts. A supplied `seed`
   ## drives both the kmeans start and the restart draws, so the multi-start
-  ## is reproducible end-to-end; without one, the restarts keep their
-  ## historical fixed seeds (identical across calls, documented) and kmeans
-  ## uses the ambient stream.
+  ## is reproducible end-to-end; without one, all starts use the ambient
+  ## stream, so set.seed() reaches them.
   inits <- vector("list", max(1L, n_starts))
   inits[[1L]] <- if (is.null(seed)) {
     init_kmeans(samples, N = N, ridge_eps = ridge_eps)
@@ -117,7 +122,7 @@ fit_em_samples <- function(target, N = 2L,
       inits[[1L + i]] <- init_random(
         N = N, p = p, centre = mu_global,
         scale = mean(sd_global), sigma_diag = mean(sd_global^2),
-        seed = if (is.null(seed)) 1000L + i else as.integer(seed) + i
+        seed = if (is.null(seed)) NULL else as.integer(seed) + i
       )
     }
   }
@@ -302,7 +307,8 @@ em_samples_one_run <- function(samples, init, target,
       kld_final = NA_real_,
       kld_approx = NA_real_,
       validation_gap = NA_real_,
-      heldout_kld = NA_real_
+      heldout_kld = NA_real_,
+      heldout_kld_se = NA_real_
     ))
   )
 }

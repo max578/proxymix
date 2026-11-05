@@ -151,6 +151,34 @@
   apply(cover, 1L, min)
 }
 
+## Estimated probability of the arm `t1` given each row of covariates: the
+## responsibilities on the covariates alone weight, in each component, the
+## chance that the treatment given the covariates falls nearer `t1` than `t0`.
+## Masses, not densities, so that a component with one arm near the ridge does
+## not outweigh one with both. Zero or one means the fit has one arm there.
+.arm_propensity <- function(g, t_idx, x_idx, t1, t0, X) {
+  K <- gmm_n_components(g)
+  n <- nrow(X)
+  log_r <- matrix(0, n, K)
+  p_arm <- matrix(0, n, K)
+  mid <- (t1 + t0) / 2
+  for (k in seq_len(K)) {
+    S <- g@covariances[[k]]
+    Pxx <- chol2inv(chol(S[x_idx, x_idx, drop = FALSE]))
+    D <- sweep(X, 2L, g@means[[k]][x_idx])
+    slope <- as.numeric(S[t_idx, x_idx, drop = FALSE] %*% Pxx)
+    m_t <- g@means[[k]][t_idx] + as.numeric(D %*% slope)
+    v_t <- max(S[t_idx, t_idx] - sum(slope * S[x_idx, t_idx]), 1e-300)
+    z <- (m_t - mid) / sqrt(v_t)
+    p_arm[, k] <- stats::pnorm(if (t1 > t0) z else -z)
+    log_r[, k] <- log(g@weights[k]) -
+      0.5 * as.numeric(determinant(S[x_idx, x_idx, drop = FALSE])$modulus) -
+      0.5 * rowSums((D %*% Pxx) * D)
+  }
+  r <- exp(log_r - apply(log_r, 1L, max))
+  rowSums(r * p_arm) / rowSums(r)
+}
+
 ## Per-unit positivity / mass coverage --------------------------------------
 
 ## Coverage of a (treatment, covariate) configuration by the fitted joint. For

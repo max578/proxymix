@@ -174,15 +174,58 @@
   -2 * loglik + npar * log(n)
 }
 
-## Choose K over `candidates` by BIC on the full (incomplete) data.
-.select_k <- function(X, candidates, max_iter, tol, ridge_eps) {
+## TRUE when a component sits on fewer than p + 1 rows or holds some column
+## constant, at or near the ridge: its density then grows with the likelihood
+## while the imputations from it become a spike.
+.mixture_collapsed <- function(g, X, ridge_eps) {
+  n <- nrow(X)
+  p <- ncol(X)
+  col_var <- apply(X, 2L, stats::var, na.rm = TRUE)
+  floor_var <- pmax(100 * ridge_eps, 1e-4 * col_var)
+  thin <- g@weights * n < p + 1L
+  flat <- vapply(g@covariances, function(S) any(diag(S) < floor_var), logical(1L))
+  any(thin | flat)
+}
+
+## Choose K over `candidates` by BIC on the full (incomplete) data, among fits
+## with no collapsed component. `fit_k` fits one K under the mechanism in use.
+.select_k <- function(X, candidates, ridge_eps, fit_k) {
   p <- ncol(X)
   n <- nrow(X)
-  bics <- vapply(candidates, function(K) {
-    fit <- .fit_em_missing(X, K, max_iter = max_iter, tol = tol, ridge_eps = ridge_eps)
-    .mixture_bic(fit$loglik, K, p, n)
-  }, numeric(1))
-  candidates[which.min(bics)]
+  scored <- lapply(candidates, function(K) {
+    fit <- fit_k(K)
+    list(
+      bic = .mixture_bic(fit$loglik, K, p, n),
+      collapsed = K > 1L && .mixture_collapsed(fit$gmm, X, ridge_eps)
+    )
+  })
+  bics <- vapply(scored, function(z) z$bic, numeric(1))
+  collapsed <- vapply(scored, function(z) z$collapsed, logical(1))
+  best <- .best_uncollapsed(bics, collapsed)
+  if (best != which.min(bics)) {
+    cli::cli_inform(
+      c("Chose N = {candidates[best]}, the smallest BIC with no collapsed component.",
+        "i" = "N = {candidates[which.min(bics)]} has a smaller BIC but holds a column constant or sits on a few rows.")
+    )
+  }
+  candidates[best]
+}
+
+## Warn when a column has few distinct values: a Gaussian component can hold it
+## constant, which makes the likelihood, and any choice read from it, depend on
+## the ridge.
+.warn_discrete_columns <- function(X, var_names) {
+  few <- vapply(seq_len(ncol(X)), function(j) {
+    length(unique(X[!is.na(X[, j]), j])) <= 10L
+  }, logical(1L))
+  if (any(few)) {
+    cli::cli_warn(
+      c("{sum(few)} column{?s} of {.arg data} {?has/have} at most ten distinct values: {.val {var_names[few]}}.",
+        "i" = "A component can hold such a column constant, so the likelihood, and anything chosen or read from it, depends on {.arg ridge_eps}, and which optimum is reached can change with the seed. Check a small fixed {.arg N} and several seeds."),
+      class = "proxymix_discrete_columns"
+    )
+  }
+  invisible(NULL)
 }
 
 # ---------------------------------------------------------------------------
@@ -329,7 +372,11 @@ gmm_imputation <- S7::new_class(
 #'
 #' @param data A numeric matrix or data frame with `NA` for missing entries.
 #' @param N Number of mixture components. `NULL` (the default) selects it by
-#'   the Bayesian information criterion over `1:6`.
+#'   the Bayesian information criterion over `1:6`, among fits in which no
+#'   component holds a column constant or sits on a few rows. With a censored
+#'   or missing-not-at-random mechanism each candidate is fitted and scored
+#'   under that mechanism. A column with at most ten distinct values raises a
+#'   warning of class `proxymix_discrete_columns`.
 #' @param m Number of completed datasets to draw. Default `20L`.
 #' @param mechanism A missingness mechanism: [mar()], [censored()], or [mnar()].
 #'   The string `"mar"` is also accepted. Default [mar()].
@@ -414,10 +461,20 @@ gmm_impute <- function(data, N = NULL, m = 20L, mechanism = mar(),
     set.seed(seed)
   }
 
+  .warn_discrete_columns(X, var_names)
   col_means <- colMeans(X, na.rm = TRUE)
   if (is.null(N)) {
     kmax <- min(6L, max(1L, floor(n / (5L * p))))
-    N <- .select_k(X, seq_len(kmax), max_iter, tol, ridge_eps)
+    fit_k <- function(K) {
+      if (gated) {
+        .fit_em_gated(X, K, cj, gate, max_iter = max_iter, tol = tol,
+                      ridge_eps = ridge_eps, fallback_mean = col_means)
+      } else {
+        .fit_em_missing(X, K, max_iter = max_iter, tol = tol,
+                        ridge_eps = ridge_eps)
+      }
+    }
+    N <- .select_k(X, seq_len(kmax), ridge_eps, fit_k)
   }
   N <- as.integer(N)
   if (length(N) != 1L || is.na(N) || N < 1L) {

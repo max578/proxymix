@@ -13,12 +13,11 @@ proxy_overlap(model, newdata, t1 = NULL, t0 = NULL, floor = 0.01)
 
 \item{t1, t0}{The treated and control treatment values. Default the treatment levels observed at fit time (\code{model@treatment_levels}); a value matching neither observed level aborts.}
 
-\item{floor}{Coverage probability below which a unit is flagged. Default
-\code{0.01}.}
+\item{floor}{Probability below which a unit is flagged. Default \code{0.01}.}
 }
 \value{
 A \link[data.table:data.table]{data.table::data.table} with columns \code{id}, \code{coverage},
-\code{overlap_flag}.
+\code{propensity}, \code{overlap_flag}.
 }
 \description{
 Flags units whose \verb{(treatment, covariate)} configuration is poorly covered
@@ -26,8 +25,12 @@ by the fitted joint -- the proxy's mass coverage is the positivity
 diagnostic. For each treatment arm the squared Mahalanobis distance to the
 nearest regime centre is converted to an upper-tail chi-square coverage
 probability; the reported \code{coverage} is the minimum across arms, since the
-treatment effect needs both arms supported. Units below \code{floor} are flagged
-and excluded from \code{\link[=proxy_policy_value]{proxy_policy_value()}} by default.
+treatment effect needs both arms supported. \code{propensity} is the fit's
+probability of the arm \code{t1} at those covariates: near zero or one, the
+components the unit belongs to hold one arm only, whatever the distance to
+some other component. A unit is flagged when \code{coverage}, \code{propensity} or
+\code{1 - propensity} is below \code{floor}. Flagged units are excluded from
+\code{\link[=proxy_policy_value]{proxy_policy_value()}} by default.
 }
 \examples{
 set.seed(1)

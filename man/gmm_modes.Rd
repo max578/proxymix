@@ -4,7 +4,14 @@
 \alias{gmm_modes}
 \title{Modes of a Gaussian mixture}
 \usage{
-gmm_modes(object, starts = NULL, tol = 1e-05, dedup = NULL, max_iter = 200L)
+gmm_modes(
+  object,
+  starts = NULL,
+  tol = 1e-05,
+  dedup = NULL,
+  max_iter = 200L,
+  min_height = 0
+)
 }
 \arguments{
 \item{object}{A \link{gmm} or \link{gmm_fit}.}
@@ -20,6 +27,11 @@ same mode. Default \code{NULL} derives a small fraction of the spread of the
 component means.}
 
 \item{max_iter}{Maximum mean-shift iterations per start. Default \code{200L}.}
+
+\item{min_height}{Keep only modes whose density is at least this fraction of
+the highest mode's. The default \code{0} keeps them all, including a mode of
+negligible density, so a count of \code{n} is not by itself a count of the
+visible peaks.}
 }
 \value{
 A list with \code{modes} (an \code{n}-by-\code{p} matrix of distinct modes,

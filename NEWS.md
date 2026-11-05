@@ -1,3 +1,54 @@
+# proxymix (development version)
+
+### Changes to results
+
+* `fit_kld_em()` now allows `max_iter = 1000L` by default, up from `100L`, and
+  still stops when it meets `tol`. On easy targets the old limit often ended
+  fits early, with `converged = FALSE` and a less accurate fit.
+* `fit_em_samples()` now defaults to `max_iter = 500L` and `tol = 1e-8`, because
+  the old tolerance could stop a fit early with `converged = TRUE`. With
+  `seed = NULL`, its random starts now follow `set.seed()`. They used to be a
+  fixed list, so changing the seed could not reveal an unstable fit.
+* `select_N()` gains `n_starts`, default `20L`, for samples, and no longer
+  chooses a fit with a collapsed component when another candidate has none.
+* `fit_proxymix(regime = "moment")` at `N >= 2` now returns a mixture with exactly
+  the target's mean and covariance. It used to return up to about three times
+  the variance. A message says the mixture adds nothing to `N = 1`.
+* `fit_uplift(N = "auto")` scores a discrete column with a variance floor, so its
+  choice no longer follows `ridge_eps`, and each `N` starts from the same random
+  state, so the result no longer depends on the fits made before it. It uses 20
+  starts per fit on samples unless `n_starts` is given.
+* `gmm_impute(N = NULL)` skips fits in which a component holds a column constant
+  or sits on a few rows. Under a censored or missing-not-at-random mechanism it
+  scores each `N` with that mechanism's own fit, which removes imputations
+  concentrated on a spike.
+* `proxy_overlap()` gains a `propensity` column, and it and `proxy_cate()` now
+  flag a unit whose components hold only one treatment arm.
+* With `adapt = "pmc"`, `fit_kld_em()` now stops when a paired comparison on
+  fresh draws finds no further gain over 50 iterations. It used to run to
+  `max_iter` every time.
+
+### Bug fixes
+
+* `from_cf()` no longer warns of heavy tails, and `from_cf_sources()` no longer
+  refuses, a target with finite variance that mixes scales. An axis with a low
+  tail index is read again at much lower frequencies. Stable laws still warn.
+* `fit_kld_em(adapt = "pmc")` no longer warns that the objective decreased when
+  the only change was a fresh batch of draws.
+
+### New features
+
+* `heldout_kld_se` in the diagnostics and in `gmm_fit_quality()` gives the
+  standard error of `heldout_kld`, including that of an estimated normalising
+  constant, which `validation_mc_se` leaves out.
+* `gmm_mutual_information()` gains `measure = "shannon"`, a Monte Carlo estimate
+  in nats. The default remains the Cauchy-Schwarz divergence.
+* `gmm_modes()` gains `min_height`, to ignore modes of negligible density.
+* `gmm_impute()` warns with class `proxymix_discrete_columns` on a column with at
+  most ten distinct values, and `fit_uplift()` on such a covariate, because
+  different seeds can then reach different optima with different effects; and `gmm_kld()` warns with class
+  `proxymix_negative_variational` when the variational value falls below zero.
+
 # proxymix 0.17.0
 
 ### New features

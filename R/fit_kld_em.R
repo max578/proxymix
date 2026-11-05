@@ -58,10 +58,16 @@
 #'   declares a bounded or one-sided `support`, otherwise a multivariate-t with
 #'   `df = 5` in `target@n_dim` dimensions. The automatic choice is announced
 #'   with a one-line message so it is never silent.
-#' @param is_size Number of importance-sampling draws used for fitting.
+#' @param is_size Number of importance-sampling draws used for fitting. A fit
+#'   depends on these draws and on its local optimum, so compare two routes or
+#'   proposals over several seeds rather than at one.
 #' @param init A [gmm] initialisation, or `NULL` to use a kmeans pass on
 #'   the importance-resampled draws.
-#' @param max_iter Maximum number of EM iterations.
+#' @param max_iter Maximum number of EM iterations. The fit stops earlier when
+#'   it meets `tol`, and `converged` is `FALSE` if it does not. With
+#'   `adapt = "pmc"` the fit compares itself every 50 iterations with its state
+#'   50 iterations earlier, on a fresh batch of draws, and stops when the gain
+#'   is within one standard error of that paired comparison.
 #' @param tol Convergence tolerance on the relative change in the
 #'   importance-weighted EM objective `Q(theta) = sum_n W_n log g(x_n)`.
 #'   `Q` is invariant to the target's normalising constant, so the
@@ -94,7 +100,9 @@
 #'   standard error is at most a tenth of the estimate (at most 0.001 when
 #'   the estimate is below 0.01), stopping at `10 * is_size` draws. When the
 #'   target's normalising constant is unknown, the goal is a standard error
-#'   of 0.001. A number draws exactly that many; `0L` skips validation.
+#'   of 0.001 for `validation_kld`. That goal does not bound `heldout_kld`,
+#'   whose error is also that of the estimated constant: see `heldout_kld_se`.
+#'   A number draws exactly that many; `0L` skips validation.
 #' @param validation_proposal Optional [is_proposal] for the validation
 #'   sample. Defaults to the same proposal used for fitting.
 #' @param validation_seed Optional integer seed used when drawing the
@@ -130,8 +138,9 @@
 #'   `kld_is_shifted`, `kld_final_absolute` (when computable), `ess`,
 #'   `ess_relative` (`ess / is_size`), `max_weight`, `support_fraction`,
 #'   `mc_se_kld`, `validation_kld` (held-out), `validation_ess`,
-#'   `validation_max_weight`, and `heldout_kld`, the held-out estimate of the
-#'   KL divergence that [gmm_fit_quality()] describes.
+#'   `validation_max_weight`, `heldout_kld`, the held-out estimate of the KL
+#'   divergence that [gmm_fit_quality()] describes, and `heldout_kld_se`, its
+#'   standard error.
 #' @family fitting
 #' @references Cappé, O., Douc, R., Guillin, A., Marin, J.-M. and
 #'   Robert, C. P. (2008) Adaptive importance sampling in general mixture
@@ -160,7 +169,7 @@ fit_kld_em <- function(target,
                        proposal = NULL,
                        is_size = 5000L,
                        init = NULL,
-                       max_iter = 100L,
+                       max_iter = 1000L,
                        tol = 1e-5,
                        ridge_eps = 1e-6,
                        min_ess = 50,
@@ -355,6 +364,8 @@ fit_kld_em <- function(target,
   n_refresh <- 0L
   ess_history <- ess
   batch_start <- 0L
+  batch_id <- integer(0L)
+  pmc_checkpoint <- NULL
   esc <- 1
   force_refresh <- FALSE
   for (it in seq_len(max_iter)) {
@@ -375,6 +386,29 @@ fit_kld_em <- function(target,
     weighted_obj <- sum(W * log_g)
     kld_trace <- c(kld_trace, kld)
     weighted_obj_trace <- c(weighted_obj_trace, weighted_obj)
+    batch_id <- c(batch_id, n_refresh)
+
+    ## Under PMC the objective keeps moving on each fresh draw, and its error
+    ## across batches is larger than the improvement left to find. So the
+    ## stopping rule is paired: on draws neither state was fitted to, compare
+    ## the current state with the one 50 iterations back, and stop when the gain
+    ## is within one standard error.
+    if (adapt == "pmc" && it - 1L == batch_start && batch_start > 0L &&
+          batch_start %% 50L == 0L && ess >= min_ess) {
+      if (!is.null(pmc_checkpoint)) {
+        log_g_before <- dgmm_log_via_components(
+          x, pmc_checkpoint$weights, pmc_checkpoint$means, pmc_checkpoint$covs
+        )
+        pair <- log_g - log_g_before
+        gain <- sum(W * pair)
+        gain_se <- sqrt(sum(W^2 * (pair - gain)^2))
+        if (gain <= max(gain_se, tol * abs(weighted_obj))) {
+          converged <- TRUE
+          break
+        }
+      }
+      pmc_checkpoint <- list(weights = weights, means = means, covs = covs)
+    }
 
     ## Convergence is judged on the importance-weighted EM objective
     ## Q(theta) = sum_n W_n log g(x_n), never on the KLD trace: for an
@@ -495,12 +529,13 @@ fit_kld_em <- function(target,
     }
   }
 
-  ## The IS-weighted EM objective is monotone under exact updates. An
-  ## empty-component reseed is a deliberate restart-like intervention that
-  ## legitimately dips the objective, so the invariant is only asserted for
-  ## reseed-free runs.
-  if (n_reseeds == 0L && length(weighted_obj_trace) > 2L) {
-    worst_drop <- min(diff(weighted_obj_trace))
+  ## The IS-weighted EM objective is monotone under exact updates on one set
+  ## of draws, so a PMC refresh boundary is not compared. An empty-component
+  ## reseed is a deliberate restart-like intervention that legitimately dips
+  ## the objective, so the invariant is only asserted for reseed-free runs.
+  same_batch <- diff(batch_id) == 0L
+  if (n_reseeds == 0L && any(same_batch) && length(weighted_obj_trace) > 2L) {
+    worst_drop <- min(diff(weighted_obj_trace)[same_batch])
     if (worst_drop < -1e-6 * max(1, abs(weighted_obj_trace[1L]))) {
       cli::cli_warn(
         c("The importance-weighted EM objective decreased by {signif(-worst_drop, 3)} during fitting.",
@@ -583,8 +618,14 @@ fit_kld_em <- function(target,
       lw_v <- lw_v[is.finite(lw_v)]
       log_z_v <- max(lw_v) + log(sum(exp(lw_v - max(lw_v)))) -
         log(length(log_f_v))
-      c(wts, list(kld = est, mc_se = se, n = length(log_f_v),
-                  log_z = log_z_v))
+      ## Delta-method standard error of `est - log_z_v`: the self-normalised
+      ## estimate and the estimated constant share the same draws.
+      n_v <- length(log_f_v)
+      term <- 1 / n_v - wts$W
+      term[finite_v] <- term[finite_v] +
+        wts$W[finite_v] * (d_v[finite_v] - est)
+      c(wts, list(kld = est, mc_se = se, n = n_v,
+                  log_z = log_z_v, heldout_se = sqrt(sum(term^2))))
     }
     vdraws <- if (is.null(v_seed)) {
       draw_validation()
@@ -604,6 +645,8 @@ fit_kld_em <- function(target,
       validation_log_z = vdraws$log_z,
       heldout_kld = if (is.finite(val_kld_absolute)) val_kld_absolute
         else val_kld - vdraws$log_z,
+      heldout_kld_se = if (is.finite(val_kld_absolute)) val_mc_se
+        else vdraws$heldout_se,
       validation_ess = vdraws$ess,
       validation_ess_relative = vdraws$ess / validation_size,
       validation_max_weight = vdraws$max_weight,
@@ -618,6 +661,7 @@ fit_kld_em <- function(target,
       validation_kld_absolute = NA_real_,
       validation_log_z = NA_real_,
       heldout_kld = NA_real_,
+      heldout_kld_se = NA_real_,
       validation_ess = NA_real_,
       validation_ess_relative = NA_real_,
       validation_max_weight = NA_real_,
@@ -679,7 +723,8 @@ fit_kld_em <- function(target,
     } else {
       NA_real_
     },
-    heldout_kld = validation_diag$heldout_kld
+    heldout_kld = validation_diag$heldout_kld,
+    heldout_kld_se = validation_diag$heldout_kld_se
   )
 
   fit <- gmm_fit(

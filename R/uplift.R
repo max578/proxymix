@@ -120,17 +120,38 @@ S7::method(print, uplift_model) <- function(x, ...) {
 ## Bayesian-information-criterion sweep for the component count -------------
 
 ## Selects K by minimising BIC of the joint fit on the training matrix. The
-## mixture log-likelihood is read directly off `dgmm()`, so the sweep is
-## regime-agnostic (it does not depend on a fitter storing `bic`).
+## mixture log-likelihood is read off `dgmm()`, so the sweep is regime-agnostic.
+## A component holding a discrete column constant has a density limited only by
+## the ridge, so the score floors such a column's variance at spacing^2 / 12,
+## that of a value spread evenly over its own cell. Every K starts from the same
+## random state, so the optimum reached at K does not depend on the earlier K.
+.fit_uplift_k <- function(target, k, regime, ...) {
+  args <- list(...)
+  uses_em <- regime == "sample" || (regime == "auto" && k > 1L)
+  if (uses_em && is.null(args$n_starts)) args$n_starts <- 20L
+  do.call(fit_proxymix, c(list(target = target, N = k, regime = regime), args))
+}
+
 .select_k_bic <- function(target, M, n_grid, regime, ...) {
   n <- nrow(M)
   p <- ncol(M)
+  floor_var <- .discrete_variance_floor(M)
+  fit_seed <- sample.int(.Machine$integer.max, 1L)
   fits <- vector("list", length(n_grid))
   bic <- numeric(length(n_grid))
   for (i in seq_along(n_grid)) {
     k <- n_grid[i]
-    fits[[i]] <- fit_proxymix(target, N = k, regime = regime, ...)
-    loglik <- sum(dgmm(M, fits[[i]], log = TRUE))
+    fits[[i]] <- withr::with_seed(
+      fit_seed, .fit_uplift_k(target, k, regime, ...)
+    )
+    scored <- gmm(
+      weights = fits[[i]]@weights,
+      means = fits[[i]]@means,
+      covariances = lapply(fits[[i]]@covariances, function(S) {
+        S + diag(floor_var, p)
+      })
+    )
+    loglik <- sum(dgmm(M, scored, log = TRUE))
     n_par <- k * (p + p * (p + 1L) / 2L) + (k - 1L)
     bic[i] <- -2 * loglik + n_par * log(n)
   }
@@ -152,7 +173,15 @@ S7::method(print, uplift_model) <- function(x, ...) {
 #'
 #' The component count `N` may be fixed or chosen automatically. With
 #' `N = "auto"` the function sweeps `n_grid` and keeps the K that minimises the
-#' joint BIC; the full BIC trace is stored in the model's metadata. The
+#' joint BIC; the full BIC trace is stored in the model's metadata. A binary
+#' or other discrete column can be held constant inside a component, where its
+#' density is limited only by the ridge, so the BIC floors the variance of a
+#' column with at most ten distinct values at `spacing^2 / 12`. Fits at
+#' different `N` start from the same random state, so `N = "auto"` and the
+#' same fixed `N` agree at one `seed`. With discrete covariates many optima
+#' fit about equally well and the effects can differ between them, even in sign,
+#' so a warning of class `proxymix_discrete_columns` is raised; compare several
+#' seeds before reading an effect. The
 #' treatment is binary at this version (`{t0, t1}`); a continuous dose is a
 #' future extension.
 #'
@@ -250,6 +279,8 @@ fit_uplift <- function(data,
 
   target <- gmm_target_from_samples(M, name = "uplift_joint")
 
+  .warn_discrete_columns(M[, -(1:2), drop = FALSE], covariates)
+
   # Fit (fixed K or BIC-selected) ---------------------------------------------
   if (identical(N, "auto")) {
     sel <- .select_k_bic(target, M, n_grid = as.integer(n_grid),
@@ -260,7 +291,10 @@ fit_uplift <- function(data,
     cli::cli_inform("Selected K = {K} by BIC.")
   } else {
     K <- as.integer(N)
-    fit <- fit_proxymix(target, N = K, regime = regime, ...)
+    fit <- withr::with_seed(
+      sample.int(.Machine$integer.max, 1L),
+      .fit_uplift_k(target, K, regime, ...)
+    )
     bic_trace <- NULL
   }
 

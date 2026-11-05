@@ -2,27 +2,31 @@
 ##
 ## Closed-form moment-matching fit.
 ##   N == 1 : exact moment match, mu = E[x], Sigma = Cov(x).
-##   N > 1  : moment-seeded mixture along the principal direction (see
-##            `init_moment_seed()`). No iterative refinement is applied;
-##            the result is a deterministic seed that the user can then
-##            feed into regime (ii) or (iii) for further refinement.
+##   N > 1  : equal-weight mixture spread along the principal direction, with
+##            within-component covariance reduced so that the mixture's mean
+##            and covariance equal the target's exactly. Moments do not
+##            determine a shape, so the result is a seed for regime (ii) or
+##            (iii) and says so.
 
 #' Closed-form moment-matching fit
 #'
 #' Implements regime (i) of Hoek and Elliott (2024). When `N == 1`, this is
 #' the exact moment match: `mu` is the target mean and `Sigma` is the target
-#' covariance. When `N > 1`, the function returns the deterministic
-#' moment-seed of [init_moment_seed()] wrapped as a [gmm_fit], without
-#' iterative refinement — useful as a starting point for the iterative
-#' regimes.
+#' covariance. When `N > 1`, the function returns an equal-weight mixture
+#' spread along the first principal direction whose mean and covariance also
+#' equal the target's exactly. Half of the variance along that direction lies
+#' between components, which keeps two components from forming two peaks.
+#' Moments do not determine the shape of a distribution, so this mixture adds
+#' no information to the `N = 1` fit: it is a starting point for the iterative
+#' regimes, and a message says so.
 #'
 #' Either the `target` must carry an `n` by `p` `samples` matrix, or its
 #' `metadata` slot must contain pre-computed `moments` of the form
 #' `list(mean = <p-vec>, cov = <p-by-p>)`.
 #'
 #' @param target A [gmm_target].
-#' @param N Number of components. `N >= 2` returns a moment-seeded mixture
-#'   without iterative refinement.
+#' @param N Number of components. `N >= 2` returns a mixture with the target's
+#'   mean and covariance, without iterative refinement.
 #' @param ridge_eps Ridge added to the empirical covariance for numerical
 #'   stability.
 #' @param canonicalise Logical. If `TRUE` (the default), the fitted
@@ -85,13 +89,19 @@ fit_moment_match <- function(target, N = 1L, ridge_eps = 1e-6,
     return(if (isTRUE(canonicalise)) gmm_canonicalise(g) else g)
   }
 
-  ## N > 1: spread N component means along PC1.
+  # N > 1: spread the means along PC1, keeping the moments exact -------------
   eig <- eigen(S_hat, symmetric = TRUE)
   pc1 <- eig$vectors[, 1L]
-  sd1 <- sqrt(eig$values[1L])
-  offsets <- seq(-1, 1, length.out = N) * 1.5 * sd1
+  var_between <- 0.5 * eig$values[1L]
+  offsets <- seq(-1, 1, length.out = N)
+  offsets <- offsets * sqrt(var_between / mean(offsets^2))
   means <- lapply(offsets, function(d) as.numeric(mu_hat + d * pc1))
-  covs <- replicate(N, S_hat, simplify = FALSE)
+  S_within <- symmetrise(S_hat - var_between * tcrossprod(pc1))
+  covs <- replicate(N, S_within, simplify = FALSE)
+  cli::cli_inform(c(
+    "Moments do not determine a shape: this {N}-component mixture adds nothing to {.code N = 1}.",
+    "i" = "It has the target's mean and covariance. Use it as {.arg init} for regime {.val sample} or {.val kld}."
+  ))
   g <- gmm_fit(
     weights = rep(1 / N, N),
     means = means,
@@ -102,7 +112,7 @@ fit_moment_match <- function(target, N = 1L, ridge_eps = 1e-6,
       n_used = n_used,
       empirical_mean = mu_hat,
       empirical_cov = S_hat,
-      note = "moment-seeded mixture along PC1; no iterative refinement"
+      note = "equal-weight mixture along PC1 with the target's mean and covariance; no iterative refinement"
     ),
     converged = TRUE,
     iterations = 0L,
@@ -128,6 +138,7 @@ fit_moment_match <- function(target, N = 1L, ridge_eps = 1e-6,
     kld_final = NA_real_,
     kld_approx = NA_real_,
     validation_gap = NA_real_,
-    heldout_kld = NA_real_
+    heldout_kld = NA_real_,
+    heldout_kld_se = NA_real_
   )
 }

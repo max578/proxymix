@@ -8,7 +8,10 @@
 #'
 #' Fits every candidate component count and chooses one by a
 #' regime-appropriate criterion. With samples (regime ii) the choice is
-#' the smallest BIC. With an evaluable-only target (regime iii) each
+#' the smallest BIC among fits with no collapsed component; a collapsed
+#' component sits on a few points or on tied values, where the likelihood
+#' grows without the fit improving. It is chosen only when every candidate
+#' collapses. With an evaluable-only target (regime iii) each
 #' candidate is scored by its held-out validation KLD -- an independent
 #' importance draw the fit never trained on -- and the choice follows the
 #' one-standard-error rule: the smallest `N` whose validation score is
@@ -22,6 +25,10 @@
 #'   samples, `"kld"` otherwise), `"sample"`, or `"kld"`.
 #' @param seed Optional integer seed shared across candidates (paired
 #'   fits).
+#' @param n_starts For regime `"sample"`, the number of starts per candidate,
+#'   default `20L`: comparing candidates needs each at its best optimum, and
+#'   a table from too few starts need not improve with `N`. Ignored for regime
+#'   `"kld"`.
 #' @param ... Forwarded to the regime's fitter ([fit_em_samples()] or
 #'   [fit_kld_em()]).
 #'
@@ -38,7 +45,7 @@
 #' sel$best_n
 select_N <- function(target, candidates = 1:6,
                      regime = c("auto", "sample", "kld"),
-                     seed = NULL, ...) {
+                     seed = NULL, n_starts = 20L, ...) {
   if (!S7::S7_inherits(target, gmm_target)) {
     cli::cli_abort("`target` must be a {.cls gmm_target}.")
   }
@@ -57,7 +64,7 @@ select_N <- function(target, candidates = 1:6,
     }
     fits <- lapply(candidates, function(N) {
       withCallingHandlers(
-        fit_em_samples(target, N = N, seed = seed, ...),
+        fit_em_samples(target, N = N, seed = seed, n_starts = n_starts, ...),
         proxymix_component_collapse = function(w) invokeRestart("muffleWarning")
       )
     })
@@ -66,7 +73,14 @@ select_N <- function(target, candidates = 1:6,
     collapsed <- vapply(fits, function(f) {
       length(f@diagnostics$collapsed_components) > 0L
     }, logical(1L))
-    best <- which.min(bics)
+    best <- .best_uncollapsed(bics, collapsed)
+    lowest <- which.min(bics)
+    if (best != lowest && !collapsed[best]) {
+      cli::cli_inform(
+        c("Chose N = {candidates[best]}, the smallest BIC with no collapsed component.",
+          "i" = "N = {candidates[lowest]} has a smaller BIC but a collapsed component.")
+      )
+    }
     tab <- data.frame(N = candidates, bic = bics, icl = icls,
                       collapsed = collapsed,
                       chosen = seq_along(candidates) == best)
@@ -110,6 +124,13 @@ select_N <- function(target, candidates = 1:6,
          regime = regime, table = tab),
     class = "proxymix_selection"
   )
+}
+
+## Index of the smallest criterion among uncollapsed fits, or of the smallest
+## overall when every fit has collapsed.
+.best_uncollapsed <- function(criterion, collapsed) {
+  if (all(collapsed)) return(which.min(criterion))
+  which(!collapsed)[which.min(criterion[!collapsed])]
 }
 
 #' @export

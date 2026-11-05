@@ -410,6 +410,10 @@ from_objective <- function(objective, lower, upper,
 #'   same mode. Default `NULL` derives a small fraction of the spread of the
 #'   component means.
 #' @param max_iter Maximum mean-shift iterations per start. Default `200L`.
+#' @param min_height Keep only modes whose density is at least this fraction of
+#'   the highest mode's. The default `0` keeps them all, including a mode of
+#'   negligible density, so a count of `n` is not by itself a count of the
+#'   visible peaks.
 #'
 #' @returns A list with `modes` (an `n`-by-`p` matrix of distinct modes,
 #'   ordered by descending mixture density), `density` (the mixture density
@@ -425,7 +429,11 @@ from_objective <- function(objective, lower, upper,
 #' )
 #' gmm_modes(g)$modes
 gmm_modes <- function(object, starts = NULL, tol = 1e-5,
-                      dedup = NULL, max_iter = 200L) {
+                      dedup = NULL, max_iter = 200L, min_height = 0) {
+  if (!is.numeric(min_height) || length(min_height) != 1L ||
+        is.na(min_height) || min_height < 0 || min_height > 1) {
+    cli::cli_abort("`min_height` must be a single number between 0 and 1.")
+  }
   if (!S7::S7_inherits(object, gmm)) {
     cli::cli_abort("`object` must be a {.cls gmm} object.")
   }
@@ -500,5 +508,7 @@ gmm_modes <- function(object, starts = NULL, tol = 1e-5,
       }
     }
   }
-  list(modes = modes, density = dens[keep], n = nrow(modes))
+  high <- dens[keep] >= min_height * dens[keep[1L]]
+  list(modes = modes[high, , drop = FALSE], density = dens[keep][high],
+       n = sum(high))
 }

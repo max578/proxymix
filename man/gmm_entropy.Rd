@@ -23,7 +23,9 @@ scalar. For \code{order = "shannon"}, a list with components \code{mc} (the esti
 }
 \description{
 Computes the order-2 Renyi entropy (the default) or the Shannon differential
-entropy of a Gaussian mixture. The quadratic (order-2) Renyi entropy \eqn{H_2(g) = -\log \int g(x)^2 \, dx} is available in
+entropy of a Gaussian mixture. These are different quantities: to compare
+with a published Shannon entropy, such as that of a normal distribution, use
+\code{order = "shannon"}. The quadratic (order-2) Renyi entropy \eqn{H_2(g) = -\log \int g(x)^2 \, dx} is available in
 closed form, because \eqn{\int g^2} is a finite sum of Gaussian-density
 evaluations. Shannon entropy has no closed form for a mixture (the integrand
 carries the logarithm of a sum) and is estimated by Monte Carlo, reported

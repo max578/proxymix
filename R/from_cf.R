@@ -431,6 +431,21 @@
   }, numeric(1L))
 }
 
+## A target that mixes scales has a low slope at these frequencies even with
+## every moment finite, because the slope reaches 2 only below one over its
+## largest scale. An axis reading low is read again far below the half-height
+## frequency. A stable law has the same slope at every frequency.
+.cf_tail_index_refined <- function(phi, p, th, index) {
+  vapply(seq_len(p), function(d) {
+    if (index[d] >= 1.9) return(index[d])
+    Tm <- matrix(0, 2L, p)
+    Tm[, d] <- c(1e-5, 1e-4) * th[d]
+    v <- -log(Mod(phi(Tm)))
+    low <- log(v[2L] / v[1L]) / log(10)
+    if (is.finite(low)) low else index[d]
+  }, numeric(1L))
+}
+
 ## Phase of the characteristic function at `t` along axis `d`, unwrapped by
 ## doubling from a small frequency: psi(2s) = 2 psi(s) + Arg(cf(2s) / cf(s)^2).
 .cf_unwrapped_phase <- function(phi, p, d, t, n_double = 20L) {
@@ -459,9 +474,9 @@
 }
 
 ## Mean and covariance by differencing the log characteristic function at
-## zero. Both must exist.
-.cf_moments <- function(phi, p, th) {
-  h <- 0.02 * th
+## zero. Both must exist. A target mixing scales needs a smaller step.
+.cf_moments <- function(phi, p, th, step = 0.02) {
+  h <- step * th
   lp <- function(v) log(phi(matrix(v, 1L, p)))
   e <- function(d) {
     v <- numeric(p)
@@ -520,9 +535,9 @@
 ## `A A'` are the target's mean and covariance; otherwise `mu` comes from
 ## the phase of the characteristic function and `A` is diagonal, set by
 ## the half-height frequency of each axis.
-.cf_standardise <- function(phi, p, th, heavy) {
+.cf_standardise <- function(phi, p, th, heavy, step = 0.02) {
   if (!heavy) {
-    mo <- .cf_moments(phi, p, th)
+    mo <- .cf_moments(phi, p, th, step)
     ev <- eigen(mo$cov, symmetric = TRUE, only.values = TRUE)$values
     if (all(is.finite(ev)) && min(ev) > 1e-10 * max(ev)) {
       return(list(
@@ -660,8 +675,12 @@
 #' A Gaussian mixture has finite moments of every order, so it cannot
 #' reproduce infinite-variance tails and fits the centre only. The tail
 #' index is read from \eqn{-\log|\varphi|} near zero. It is 2 when the
-#' variance is finite and equals the stability index for a stable law. When
-#' it is below 1.9 a warning of class `proxymix_cf_heavy_tail` is raised.
+#' variance is finite and equals the stability index for a stable law. A
+#' target that mixes scales reads low at the usual frequencies, so an axis
+#' reading low is read again at frequencies 1e-5 to 1e-4 of the half-height
+#' frequency. When the index is still below 1.9 a warning of class
+#' `proxymix_cf_heavy_tail` is raised. Scales more than about 1e4 apart can
+#' still read low.
 #'
 #' @section Scope:
 #' The target needs a characteristic function that decays, which excludes
@@ -696,6 +715,9 @@
 #'   from, in place of the grown start. Default `NULL`.
 #' @param seed Optional integer seed. When supplied, the random number
 #'   generator state is restored on exit.
+#'   A seed fixes the draws, not the fit across settings: the generator set
+#'   by [RNGkind()] and rounding in how `cf` is written can both move the
+#'   optimiser.
 #' @param bracket Logical. Compute the Kolmogorov bounds described under
 #'   *Checking a fit*. Default `TRUE`.
 #'
@@ -762,8 +784,9 @@ from_cf <- function(
     th <- .cf_axis_scales(phi, p)
     .check_cf_properties(phi, p, th)
     tail_index <- .cf_tail_index(phi, p, th)
+    co <- .cf_standardise(phi, p, th, min(tail_index) < 1.9)
+    tail_index <- .cf_tail_index_refined(phi, p, th, tail_index)
     heavy <- min(tail_index) < 1.9
-    co <- .cf_standardise(phi, p, th, heavy)
     A_inv <- solve(co$A)
     phi_std <- function(U) {
       Tm <- U %*% A_inv
@@ -886,6 +909,7 @@ from_cf <- function(
       kld_approx = NA_real_,
       validation_gap = NA_real_,
       heldout_kld = NA_real_,
+      heldout_kld_se = NA_real_,
       cf_heldout_rms = res$heldout_rms,
       cf_distance = kb$distance,
       cf_upper = kb$upper

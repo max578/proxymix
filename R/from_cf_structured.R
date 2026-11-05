@@ -385,6 +385,7 @@ from_cf_elliptical <- function(
       kld_approx = NA_real_,
       validation_gap = NA_real_,
       heldout_kld = NA_real_,
+      heldout_kld_se = NA_real_,
       cf_heldout_rms = res$heldout_rms,
       cf_distance = kb$distance,
       cf_upper = kb$upper
@@ -615,7 +616,12 @@ from_cf_sources <- function(
     # Scale and moments --------------------------------------------------------
     th <- .cf_axis_scales(phi, p)
     .check_cf_properties(phi, p, th)
-    co <- .cf_standardise(phi, p, th, min(.cf_tail_index(phi, p, th)) < 1.9)
+    index_first <- .cf_tail_index(phi, p, th)
+    index <- .cf_tail_index_refined(phi, p, th, index_first)
+    co <- .cf_standardise(
+      phi, p, th, min(index) < 1.9,
+      step = if (min(index_first) < 1.9) 1e-3 else 0.02
+    )
     if (is.null(co$cov)) {
       cli::cli_abort(
         "{.fn from_cf_sources} needs a target with a finite, positive definite covariance.",

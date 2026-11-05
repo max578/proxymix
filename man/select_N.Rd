@@ -9,6 +9,7 @@ select_N(
   candidates = 1:6,
   regime = c("auto", "sample", "kld"),
   seed = NULL,
+  n_starts = 20L,
   ...
 )
 }
@@ -23,6 +24,11 @@ samples, \code{"kld"} otherwise), \code{"sample"}, or \code{"kld"}.}
 \item{seed}{Optional integer seed shared across candidates (paired
 fits).}
 
+\item{n_starts}{For regime \code{"sample"}, the number of starts per candidate,
+default \code{20L}: comparing candidates needs each at its best optimum, and
+a table from too few starts need not improve with \code{N}. Ignored for regime
+\code{"kld"}.}
+
 \item{...}{Forwarded to the regime's fitter (\code{\link[=fit_em_samples]{fit_em_samples()}} or
 \code{\link[=fit_kld_em]{fit_kld_em()}}).}
 }
@@ -35,7 +41,10 @@ candidate with the criterion values; for regime \code{"sample"} also a
 \description{
 Fits every candidate component count and chooses one by a
 regime-appropriate criterion. With samples (regime ii) the choice is
-the smallest BIC. With an evaluable-only target (regime iii) each
+the smallest BIC among fits with no collapsed component; a collapsed
+component sits on a few points or on tied values, where the likelihood
+grows without the fit improving. It is chosen only when every candidate
+collapses. With an evaluable-only target (regime iii) each
 candidate is scored by its held-out validation KLD -- an independent
 importance draw the fit never trained on -- and the choice follows the
 one-standard-error rule: the smallest \code{N} whose validation score is

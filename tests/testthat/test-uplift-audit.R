@@ -57,7 +57,7 @@ test_that("the gap warns when a binary confounder splits the arms across regimes
     data.frame(y = y, t = t, x = x)
   })
   m <- fit_uplift(dat, "y", "t", "x", N = 2L, regime = "sample",
-                  max_iter = 300L, n_starts = 6L, seed = 5L)
+                  max_iter = 300L, n_starts = 30L, seed = 5L)
   grid <- withr::with_seed(202L, data.frame(x = stats::rnorm(300)))
 
   expect_warning(

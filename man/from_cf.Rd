@@ -54,7 +54,10 @@ fit has at most 700 parameters. Default \code{300L}.}
 from, in place of the grown start. Default \code{NULL}.}
 
 \item{seed}{Optional integer seed. When supplied, the random number
-generator state is restored on exit.}
+generator state is restored on exit.
+A seed fixes the draws, not the fit across settings: the generator set
+by \code{\link[=RNGkind]{RNGkind()}} and rounding in how \code{cf} is written can both move the
+optimiser.}
 
 \item{bracket}{Logical. Compute the Kolmogorov bounds described under
 \emph{Checking a fit}. Default \code{TRUE}.}
@@ -121,8 +124,12 @@ follow the seed. Set \code{bracket = FALSE} to skip the bounds.
 A Gaussian mixture has finite moments of every order, so it cannot
 reproduce infinite-variance tails and fits the centre only. The tail
 index is read from \eqn{-\log|\varphi|} near zero. It is 2 when the
-variance is finite and equals the stability index for a stable law. When
-it is below 1.9 a warning of class \code{proxymix_cf_heavy_tail} is raised.
+variance is finite and equals the stability index for a stable law. A
+target that mixes scales reads low at the usual frequencies, so an axis
+reading low is read again at frequencies 1e-5 to 1e-4 of the half-height
+frequency. When the index is still below 1.9 a warning of class
+\code{proxymix_cf_heavy_tail} is raised. Scales more than about 1e4 apart can
+still read low.
 }
 
 \section{Scope}{

@@ -147,9 +147,9 @@ test_that("annealing recovers the global optimum where cold EM lands in local op
   for (s in seq_len(n_seeds)) {
     ini <- init_random(N = 5L, p = 2L, centre = colMeans(x),
                        scale = 0.4, sigma_diag = 1, seed = s)
-    cold <- fit_em_samples(tgt, N = 5L, init = ini, max_iter = 300L)
+    cold <- fit_em_samples(tgt, N = 5L, init = ini, max_iter = 300L, tol = 1e-6)
     if (ll_star - cold@diagnostics$loglik_final > 1) cold_fail <- cold_fail + 1L
-    ann <- fit_em_samples(tgt, N = 5L, anneal = TRUE, max_iter = 300L, seed = s)
+    ann <- fit_em_samples(tgt, N = 5L, anneal = TRUE, max_iter = 300L, tol = 1e-6, seed = s)
     if (ll_star - ann@diagnostics$loglik_final > 1) ann_fail <- ann_fail + 1L
   }
   ## Cold single-start genuinely struggles; annealing essentially never does.

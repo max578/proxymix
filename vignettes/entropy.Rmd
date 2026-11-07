@@ -778,6 +778,9 @@ miss_flag <- sum(ft$flagged & !ft$chain)
 ## TRUE when every flag came from a fit that reached its round limit
 flag_by_rounds <- n_flag > 0L && all(!ft$converged[ft$flagged]) &&
   !any(ft$degenerate[ft$flagged]) && all(ft$heldout_kld[ft$flagged] <= 0.3)
+## TRUE when every flag came from a converged fit with a large KL divergence
+flag_by_kl <- n_flag > 0L && all(ft$converged[ft$flagged]) &&
+  !any(ft$degenerate[ft$flagged]) && all(ft$heldout_kld[ft$flagged] > 0.3)
 miss_text <- if (n_miss == 0L) {
   "No fit missed the chain."
 } else if (n_miss == 1L) {
@@ -794,7 +797,7 @@ the mixture recovered the chain in `r seed_count(6000L, "chain")` of
 `r seed_count(12000L, "chain")` of `r seed_n(12000L)`. The flag was raised on
 `r seed_count(6000L, "flagged")` of the fits with 6000 points and
 `r seed_count(12000L, "flagged")` of those with 12000.
-`r if (flag_by_rounds) "Each flagged fit reached its round limit without converging. None was degenerate or had a KL divergence above 0.3 on fresh draws." else ""`
+`r if (flag_by_rounds) "Each flagged fit reached its round limit without converging. None was degenerate or had a KL divergence above 0.3 on fresh draws." else if (flag_by_kl) "Each flagged fit converged and was flagged for a KL divergence above 0.3 on fresh draws." else ""`
 `r if (n_flag > 0L && flag_chain == n_flag) "Every flagged fit recovered the chain." else paste0("Of the ", n_flag, " flagged fits, ", flag_chain, " recovered the chain.")`
 `r miss_text` The flag describes the fit, not the graph read from it. To check
 a graph, refit with more trial points and see whether it stays the same.

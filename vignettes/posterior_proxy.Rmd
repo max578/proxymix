@@ -150,29 +150,18 @@ with heavier tails. It is centred on the maximum-likelihood estimate from
 `glm()`, with a spread three times the standard errors in each direction.
 The call asks for a proxy with two components, with 3,000 trial points
 (`is_size`), and sets a seed. The fit works in rounds, each of which refits
-the mixture to the weighted trial points.
-
-Each time the broad distribution is replaced, the trial points change. The
-fitting criterion can then drop from one round to the next, and the package
-reports this in a warning. The handler below collects the warning and prints
-its first line.
+the mixture to the weighted trial points. When the rounds settle, a last
+round with four times as many trial points reduces the random error of the
+fit.
 
 ```{r fit}
 mle <- stats::glm(am ~ wt, data = mtcars, family = stats::binomial())
 q0 <- proposal_mvt(2L, mean = stats::coef(mle),
                    sigma = 9 * stats::vcov(mle), df = 5)
 
-fit_notes <- character(0)
-fit <- withCallingHandlers(
-  fit_proxymix(tgt, N = 2L, regime = "kld", proposal = q0,
-               is_size = 3000L, max_iter = 60L, seed = 1L,
-               adapt = "pmc"),
-  proxymix_nonmonotone = function(cond) {
-    fit_notes <<- c(fit_notes, conditionMessage(cond))
-    invokeRestart("muffleWarning")
-  }
-)
-cat(sub("\n.*", "", fit_notes), sep = "\n")
+fit <- fit_proxymix(tgt, N = 2L, regime = "kld", proposal = q0,
+                    is_size = 3000L, max_iter = 60L, seed = 1L,
+                    adapt = "pmc")
 ```
 
 ### Check the fit before using it
@@ -511,8 +500,9 @@ dataset with `r p1` coefficients, against `r secs(p1, "proxymix")` s for
 proxymix, `r secs(p1, "DEzs")` s for DEzs, `r secs(p1, "NUTS, 4000 draws")` s
 for NUTS and `r secs(p1, "INLA")` s for INLA. The bootstrap intervals add
 `r fixed(min(res$secs_ensemble), 1)` to `r fixed(max(res$secs_ensemble), 1)` s
-to proxymix, which then
-`r if (all(px_total > nuts_secs)) "takes longer than NUTS" else "is about as fast as NUTS"`.
+to proxymix, which then takes `r fixed(px_total[1L], 1)` s per dataset with
+`r p1` coefficients and `r fixed(px_total[2L], 1)` s with `r p2`, against
+`r fixed(nuts_secs[1L], 1)` s and `r fixed(nuts_secs[2L], 1)` s for NUTS.
 Other jobs shared the computer during the run, so the times compare methods
 only within one number of coefficients.
 
@@ -629,8 +619,9 @@ gives the full simulation and a five-parameter example on survey data.
 ## Interpretation
 
 The certificate is consistent with a good fit. The rounds settled before
-the limit, and the weights did not collapse. The 3,000 weighted draws of the
-last round were worth `r round(cert$ess)` equally weighted draws,
+the limit, and the weights did not collapse. The
+`r format(nrow(fit@diagnostics$is_sample), big.mark = ",")` weighted draws of the
+last round were worth `r format(round(cert$ess), big.mark = ",")` equally weighted draws,
 `r round(100 * cert$ess_relative)` per cent of the total. The broad
 distribution was replaced `r fit@diagnostics$n_refresh` times during the
 fit. The KL divergence on fresh draws is `r signif(kl_fresh, 2)`, with a
@@ -655,7 +646,7 @@ certainly less likely to have a manual transmission. The proxy's 90 per
 cent interval for the slope runs from `r round(interval[1L], 2)` to
 `r round(interval[2L], 2)` log-odds per 1000 lb. The grid gives
 `r round(interval_quad[1L], 2)` to `r round(interval_quad[2L], 2)`. The
-upper ends agree, and the proxy's lower end lies slightly further out. The
+upper ends are close, and the proxy's lower end lies slightly further out. The
 largest gap between the two curves in the figure is
 `r round(100 * curve_gap / max(marg_quad))` per cent of the peak height.
 On the edges of the grid, the posterior density is less than

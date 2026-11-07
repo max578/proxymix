@@ -17,8 +17,7 @@
 * `fit_uplift()` scores a discrete column with a variance floor, so its choice no
   longer follows `ridge_eps`. That score now also chooses among the EM starts,
   half from k-means and half random: 100 per fit when the outcome or a covariate
-  is discrete, 20 otherwise, unless `n_starts` is given. On Project STAR the
-  effects now agree across seeds where they used to change sign. Each `N` starts
+  is discrete, 20 otherwise, unless `n_starts` is given. Each `N` starts
   from the same random state, so the result no longer depends on the fits made
   before it.
 * `gmm_impute(N = NULL)` skips fits in which a component holds a column constant
@@ -28,8 +27,11 @@
 * `proxy_overlap()` gains a `propensity` column, and it and `proxy_cate()` now
   flag a unit whose components hold only one treatment arm.
 * With `adapt = "pmc"`, `fit_kld_em()` now stops when a paired comparison on fresh
-  draws, averaged over 20 batches, finds no further gain against the state 20
-  batches earlier. It used to run to `max_iter` every time.
+  draws, averaged over 20 batches, finds no further gain against the fit 20
+  batches earlier, or when the objective stops changing within a batch. It then
+  fits one last batch of `4 * is_size` draws, which lowers the Monte Carlo
+  error of the returned fit for about 5% more target evaluations. It used to
+  run to `max_iter` every time.
 
 ### Bug fixes
 
@@ -49,8 +51,9 @@
 * `gmm_modes()` gains `min_height`, to ignore modes of negligible density.
 * `gmm_impute()` warns with class `proxymix_discrete_columns` on a column with at
   most ten distinct values, and `fit_uplift()` on such a covariate, because
-  different seeds can then reach different optima. In `fit_uplift()` this still
-  happens in small samples and with many tied values, as on the LaLonde data.
+  different seeds can then reach different optima. In `fit_uplift()`, in small
+  samples or with many tied values, as on the LaLonde data, the effects of those
+  optima can differ even in sign.
 * `gmm_kld()` warns with class `proxymix_negative_variational` when the variational
   value falls below zero.
 

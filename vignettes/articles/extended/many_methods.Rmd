@@ -1081,14 +1081,13 @@ se_lal <- sd(vapply(ens_lal$members, att_of, numeric(1L)))
 
 ```{illustration, eval = run_treatment}
 The ensemble holds `r length(ens_lal$members)` bootstrap refits. The sweep
-over one to four components warned twice that the
-expectation-maximisation objective decreased, in the three-component fit,
-where the 1974 and 1975 earnings are
+over one to four components chose `r gmm_n_components(model_lal@fit)`
+components by BIC`r if (isTRUE(gmm_fit_quality(model_lal@fit)$degenerate)) ", and that fit is flagged as degenerate"`.
+The 1974 and 1975 earnings are
 `r if (round(100 * mean(lal$re74 == 0)) == round(100 * mean(lal$re75 == 0))) paste0("each zero for about ", round(100 * mean(lal$re74 == 0))) else paste0("zero for ", round(100 * mean(lal$re74 == 0)), " and ", round(100 * mean(lal$re75 == 0)))`
-per cent of the men and a component
-can collapse onto them; the fit selected by BIC has
-`r gmm_n_components(model_lal@fit)` component, and the warnings do not
-concern it.
+per cent of the men, and a component can hold such a value constant at a
+spread set by the ridge. The fit then depends on its starting values, and
+other seeds give other estimates of the effect.
 ```
 
 ```{r lalonde-competitors, eval = run_treatment}

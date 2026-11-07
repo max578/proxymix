@@ -439,12 +439,10 @@ neither the right slope nor the right shift is known. Without an exclusion
 restriction, the Heckman estimator broke down, with an error of
 `r round(mv("sampleSelection heckit", "rmse"))` and no valid interval in
 `r res$n_undefined` of `r res$n_rep` datasets. In the censored design the
-Tobit model did better than proxymix, with an error of
-`r fixed(cv("AER tobit", "rmse"), 3)` against
-`r fixed(cv("proxymix", "rmse"), 3)` and a coverage of
+Tobit model had an error of `r fixed(cv("AER tobit", "rmse"), 3)` against
+`r fixed(cv("proxymix", "rmse"), 3)` for proxymix, and a coverage of
 `r fixed(cv("AER tobit", "coverage"), 3)` against
-`r fixed(cv("proxymix", "coverage"), 3)`, even though the proxymix
-intervals were wider.
+`r fixed(cv("proxymix", "coverage"), 3)`.
 
 proxymix is the slowest method here. On one dataset, its sweep over four
 slopes took `r fixed(res$time_secs[["proxymix sweep"]], 1)` seconds
@@ -594,12 +592,14 @@ assumed slope. A mixture with too few components cannot represent the two
 groups in the data. The pooled mean moves steadily as the assumed slope
 moves away from the truth, as the sweep table shows.
 
-With data censored at a known limit, the Tobit model was more accurate than
-proxymix in the simulation. The proxymix slope was biased by
-`r fixed(cv("proxymix", "bias"), 3)`, and its 95% intervals contained the
-true slope in only `r fixed(cv("proxymix", "coverage"), 3)` of datasets.
+With data censored at a known limit, the proxymix slope was biased by
+`r fixed(cv("proxymix", "bias"), 3)` in the simulation, and its 95%
+intervals contained the true slope in
+`r fixed(cv("proxymix", "coverage"), 3)` of datasets, against
+`r fixed(cv("AER tobit", "bias"), 3)` and
+`r fixed(cv("AER tobit", "coverage"), 3)` for the Tobit model.
 When the outcome follows a normal linear regression below the limit, as
-in this design, the Tobit model is the better choice. The simulation covers one mixture shape, one sample size, a
+in this design, the Tobit model is the direct and much faster choice. The simulation covers one mixture shape, one sample size, a
 logistic mechanism on one column, censoring at one known limit, and grids
 that contain a value near the truth. It does not show how either sweep
 behaves when its grid does not reach the truth.

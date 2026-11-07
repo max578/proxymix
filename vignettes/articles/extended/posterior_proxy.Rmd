@@ -142,31 +142,20 @@ rough guess of location and scale will do, because with `adapt = "pmc"` the
 proposal is refreshed from the fit itself.
 
 Population Monte Carlo re-estimates the fitting objective on a fresh
-importance sample at each refresh. In this run the objective rises between
-refreshes and falls at some of them, and the monotonicity check reports the
-largest fall as a notice. The handler below prints the notice's first line;
-its second line, a hint about ridge regularisation, is written for runs
-without refreshes.
+importance sample at each refresh, so the monotonicity check compares the
+objective only between refreshes.
 
 ```{r fit}
 mle <- stats::glm(am ~ wt, data = mtcars, family = stats::binomial())
 q0 <- proposal_mvt(2L, mean = stats::coef(mle),
                    sigma = 9 * stats::vcov(mle), df = 5)
 
-fit_notes <- character(0)
-fit <- withCallingHandlers(
-  fit_proxymix(tgt, N = 2L, regime = "kld", proposal = q0,
-               is_size = 3000L, max_iter = 60L, seed = 1L,
-               adapt = "pmc"),
-  proxymix_nonmonotone = function(cond) {
-    fit_notes <<- c(fit_notes, conditionMessage(cond))
-    invokeRestart("muffleWarning")
-  }
-)
+fit <- fit_proxymix(tgt, N = 2L, regime = "kld", proposal = q0,
+                    is_size = 3000L, max_iter = 60L, seed = 1L,
+                    adapt = "pmc")
 
 cert <- gmm_fit_quality(fit)
 n_refresh <- fit@diagnostics$n_refresh
-cat(sub("\n.*", "", fit_notes), sep = "\n")
 ```
 
 ```{r fit-quality-table, echo = FALSE}
@@ -334,6 +323,10 @@ cdf_quad <- cumsum(marg_quad) * db
 interval_quad <- stats::approx(cdf_quad, b_grid + db / 2,
                                xout = c(0.05, 0.95), ties = mean)$y
 gap_at <- b_grid[which.max(abs(marg_quad - marg_proxy))]
+# shoulder of the largest gap, then the other shoulder
+gap_side <- if (gap_at > b_grid[which.max(marg_quad)]) c("right", "left") else c("left", "right")
+# held-out validation gap in Monte Carlo standard errors
+gap_z <- round(abs(cert$validation_gap) / fit@diagnostics$validation_mc_se)
 ```
 
 ```{r marginal-figure-skip, eval = !has_ggplot2, echo = FALSE, results = "asis"}
@@ -412,21 +405,22 @@ knitr::kable(
 ## Interpretation
 
 The certificate is the first thing to read, and it clears the fit. The
-effective sample size is `r round(cert$ess)` out of 3000 importance draws,
-or `r round(100 * cert$ess_relative)` per cent, with the leanest single
+effective sample size is `r round(cert$ess)` out of the
+`r format(nrow(fit@diagnostics$is_sample), big.mark = " ")` importance draws of
+the final batch (four times `is_size`), or `r round(100 * cert$ess_relative)` per cent, with the leanest single
 component still carrying `r round(cert$min_component_ess)` effective draws
 and no single weight above `r sprintf("%.5f", cert$max_weight)`. The fit is not
 flagged degenerate. The held-out validation gap of
-`r signif(cert$validation_gap, 2)` is about
-`r round(abs(cert$validation_gap) / fit@diagnostics$validation_mc_se)` Monte Carlo
-standard errors, detectable but small next to the divergence itself. The proposal was
+`r signif(cert$validation_gap, 2)` is about `r gap_z` Monte Carlo
+standard error`r if (gap_z != 1) "s"`,
+`r if (gap_z >= 2) "detectable but small next to the divergence itself" else "within simulation noise"`. The proposal was
 refreshed `r n_refresh` times over the run. The certificate's in-sample divergence entry,
 `r round(cert$kld_final, 3)`, is negative because the target is
 unnormalised: for such a target the importance-sampled divergence is offset
 by the unknown $\log Z$, and the entry is read as a relative quantity across
 fits of the same target rather than as an absolute divergence. It is
-computed on the draws the fit was tuned to and reads lower than the
-held-out value, `r sprintf("%.3f", fit@diagnostics$validation_kld)` with a Monte
+computed on the draws the fit was tuned to, which biases it low. The
+held-out value is `r sprintf("%.3f", fit@diagnostics$validation_kld)`, with a Monte
 Carlo standard error of `r signif(fit@diagnostics$validation_mc_se, 1)`.
 
 The log normalising constant comes out at `r round(ev$log_z, 3)`, with a
@@ -458,13 +452,13 @@ The working grid leaves out `r power_ten(mass_outside)` of the posterior
 mass, as measured on the wider grid. The two marginal curves differ by at most `r signif(curve_gap, 2)` in
 density, against a peak density of `r signif(max(marg_quad), 3)`, or about
 `r round(100 * curve_gap / max(marg_quad))` per cent of the peak. The
-largest gap is on the right shoulder, at a slope of
+largest gap is on the `r gap_side[1L]` shoulder, at a slope of
 `r round(gap_at, 1)`, where the mixture sits
 `r if (marg_proxy[b_grid == gap_at] < marg_quad[b_grid == gap_at]) "below" else "above"`
 the exact curve. The mixture is also higher at the mode, lower on
-the left shoulder, higher over the inner part of the left tail and slightly
+the `r gap_side[2L]` shoulder, higher over the inner part of the left tail and slightly
 lower over its far end. The upper end of the 90 per cent
-interval agrees with quadrature, `r round(interval[2L], 2)` against
+interval is close to quadrature, `r round(interval[2L], 2)` against
 `r round(interval_quad[2L], 2)`, and the lower end sits further out,
 `r round(interval[1L], 2)` against `r round(interval_quad[1L], 2)`.
 
@@ -1275,15 +1269,6 @@ sim_order <- function(p, what, digits) {
   ordered_text(tab_sim$method[s1], tab_sim[[what]][s1], digits)
 }
 secs_p <- function(p, method) sim_value(p, method, "secs")
-# the range of monotonicity notices per fit, in words
-count_word <- function(k) if (k <= 10L) n_word(k) else format(k)
-notes_range <- range(sim$notes_per_fit)
-notes_txt <- if (notes_range[1L] == notes_range[2L]) {
-  paste(count_word(notes_range[1L]), "per fit")
-} else {
-  paste("from", count_word(notes_range[1L]), "to",
-        count_word(notes_range[2L]), "per fit")
-}
 # two methods on the same datasets: mean difference in dataset-level error
 # and its paired standard error
 per_ds <- attr(sim$sim_tab, "per_dataset")
@@ -1379,10 +1364,7 @@ dataset are correlated; the ensemble took a further
 coefficients. The fit's relative effective sample size averaged
 `r fixed(sim$ess_relative[["2"]], 2)` and `r fixed(sim$ess_relative[["5"]], 2)`,
 and the run raised `r sim$n_notes` monotonicity notices from population
-Monte Carlo over the `r sim$n_rep * length(sim$p_vec)` fits,
-`r notes_txt`.
-The simulation code counts these notices; the two-parameter example above
-prints its notice.
+Monte Carlo over the `r sim$n_rep * length(sim$p_vec)` fits.
 
 In this run `r method_label[lead_first("endpoints")]` came out ahead on
 the interval endpoints and on the log evidence at both sizes, by at least

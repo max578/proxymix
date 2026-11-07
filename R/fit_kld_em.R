@@ -60,14 +60,18 @@
 #'   with a one-line message so it is never silent.
 #' @param is_size Number of importance-sampling draws used for fitting. A fit
 #'   depends on these draws and on its local optimum. To compare two routes or
-#'   proposals, use several seeds.
+#'   proposals, use several seeds. With `adapt = "pmc"` the last batch has
+#'   four times this size.
 #' @param init A [gmm] initialisation, or `NULL` to use a kmeans pass on
 #'   the importance-resampled draws.
 #' @param max_iter Maximum number of EM iterations. The fit stops earlier when
 #'   it meets `tol`, and `converged` is `FALSE` if it does not. With
-#'   `adapt = "pmc"` each fresh batch of draws also compares the fit with its
-#'   state 20 batches earlier, and the fit stops when the gain averaged over 20
-#'   batches is under half its standard error.
+#'   `adapt = "pmc"` the fit stops when the relative change in the objective
+#'   within one batch falls below `tol`, or when the gain over the fit 20
+#'   batches earlier, measured on fresh draws and averaged over 20 batches, is
+#'   under half its standard error. Either stop is followed by one last batch
+#'   of `4 * is_size` draws, fitted without further refreshes of the proposal;
+#'   the diagnostics come from that batch.
 #' @param tol Convergence tolerance on the relative change in the
 #'   importance-weighted EM objective `Q(theta) = sum_n W_n log g(x_n)`.
 #'   `Q` is invariant to the target's normalising constant, so the
@@ -136,7 +140,8 @@
 #' @returns A [gmm_fit] with `regime = "kld"`. The diagnostics list
 #'   contains, among others, `kld_trace`, `kld_final` (in-sample),
 #'   `kld_is_shifted`, `kld_final_absolute` (when computable), `ess`,
-#'   `ess_relative` (`ess / is_size`), `max_weight`, `support_fraction`,
+#'   `ess_relative` (`ess` divided by the number of draws in the final
+#'   batch), `max_weight`, `support_fraction`,
 #'   `mc_se_kld`, `validation_kld` (held-out), `validation_ess`,
 #'   `validation_max_weight`, `heldout_kld`, the held-out estimate of the KL
 #'   divergence that [gmm_fit_quality()] describes, and `heldout_kld_se`, its
@@ -366,6 +371,13 @@ fit_kld_em <- function(target,
   batch_start <- 0L
   batch_id <- integer(0L)
   pmc_lag <- 20L
+  ## When a PMC stop fires, one last batch of `final_k * is_size` draws is
+  ## fitted from the current state, so the returned fit carries less
+  ## Monte-Carlo noise than any single batch.
+  final_k <- 4L
+  final_phase <- FALSE
+  force_final <- FALSE
+  n_x <- is_size
   pmc_ring <- vector("list", pmc_lag)
   pmc_gain <- numeric(0L)
   pmc_var <- numeric(0L)
@@ -393,7 +405,7 @@ fit_kld_em <- function(target,
 
     ## Under PMC the objective moves with each batch by more than the gain left,
     ## so gains are paired on draws neither state was fitted to.
-    if (adapt == "pmc" && it - 1L == batch_start && batch_start > 0L) {
+    if (adapt == "pmc" && !final_phase && it - 1L == batch_start && batch_start > 0L) {
       slot <- (n_refresh - 1L) %% pmc_lag + 1L
       before <- pmc_ring[[slot]]
       if (!is.null(before) && ess >= min_ess) {
@@ -407,8 +419,8 @@ fit_kld_em <- function(target,
           recent <- (n_gain - pmc_lag + 1L):n_gain
           gain_se <- sqrt(mean(pmc_var[recent]) / pmc_lag)
           if (mean(pmc_gain[recent]) <= max(0.5 * gain_se, tol * abs(weighted_obj))) {
-            converged <- TRUE
-            break
+            final_phase <- TRUE
+            force_final <- TRUE
           }
         }
       }
@@ -438,6 +450,9 @@ fit_kld_em <- function(target,
           ## the stabilised iterate) is usually far more efficient, and
           ## the final diagnostics should come from an adapted batch.
           force_refresh <- TRUE
+        } else if (adapt == "pmc" && !final_phase) {
+          final_phase <- TRUE
+          force_final <- TRUE
         } else {
           converged <- TRUE
           break
@@ -454,24 +469,24 @@ fit_kld_em <- function(target,
     ## next E-step, so a reseeded mean is dead on arrival and the reseed
     ## re-fires every iteration. Grant it one draw's worth of mass.
     Nk_adj <- Nk_W
-    Nk_adj[empty] <- 1 / is_size
+    Nk_adj[empty] <- 1 / n_x
     n_reseeds <- n_reseeds + sum(empty)
     weights <- as.numeric(Nk_adj / sum(Nk_adj))
     for (k in seq_len(N)) {
       if (empty[k]) {
         ## Re-seed at an IS-weighted random draw, at data scale.
         idx <- if (is.null(seed)) {
-          sample.int(is_size, size = 1L, prob = W)
+          sample.int(n_x, size = 1L, prob = W)
         } else {
           withr::with_seed(as.integer(seed) + 100L + it,
-                           sample.int(is_size, size = 1L, prob = W))
+                           sample.int(n_x, size = 1L, prob = W))
         }
         means[[k]] <- as.numeric(x[idx, ])
         covs[[k]] <- ridge(S_w, pmax(ridge_eps, 1e-6))
         next
       }
       mu_new <- as.numeric(colSums(W_resp[, k] * x) / Nk_W[k])
-      diff <- x - matrix(mu_new, nrow = is_size, ncol = p, byrow = TRUE)
+      diff <- x - matrix(mu_new, nrow = n_x, ncol = p, byrow = TRUE)
       S_new <- crossprod(diff * sqrt(W_resp[, k])) / Nk_W[k]
       means[[k]] <- mu_new
       covs[[k]] <- symmetrise(ridge(S_new, ridge_eps))
@@ -486,8 +501,8 @@ fit_kld_em <- function(target,
     ## toward it (each refresh re-centres on the current iterate) instead
     ## of freezing after a single hop; the escalation resets as soon as a
     ## healthy batch is drawn.
-    if (adapt == "pmc" && it < max_iter &&
-          (force_refresh || it %% refresh_every == 0L || ess < min_ess)) {
+    if (adapt == "pmc" && it < max_iter && (force_final || (!final_phase &&
+          (force_refresh || it %% refresh_every == 0L || ess < min_ess)))) {
       force_refresh <- FALSE
       ## On a degenerate batch the iterate has typically collapsed onto a
       ## handful of draws, so multiplying its (near-zero) covariance can
@@ -508,9 +523,12 @@ fit_kld_em <- function(target,
         covariances = prop_covs
       )
       draws <- .draw_pmc_refresh(
-        target, g_infl, proposal, defensive_gamma, is_size,
+        target, g_infl, proposal, defensive_gamma,
+        if (force_final) final_k * is_size else is_size,
         seed = if (is.null(seed)) NULL else as.integer(seed) + 500L + it
       )
+      force_final <- FALSE
+      n_x <- nrow(draws$x)
       x <- draws$x
       log_f <- draws$log_f
       log_W <- draws$log_W
@@ -688,7 +706,7 @@ fit_kld_em <- function(target,
       weighted_obj_trace = weighted_obj_trace,
       mc_se_kld = mc_se_kld,
       ess = ess,
-      ess_relative = ess / is_size,
+      ess_relative = ess / n_x,
       per_component_ess = per_component_ess,
       max_weight = max_weight,
       support_fraction = support_fraction,
@@ -699,7 +717,7 @@ fit_kld_em <- function(target,
       adapt = adapt,
       n_refresh = n_refresh,
       ess_history = ess_history,
-      n_target_evals = is_size * (1L + n_refresh) + validation_size,
+      n_target_evals = is_size * n_refresh + n_x + validation_size,
       is_size = is_size,
       is_sample = x,
       is_log_weights = log_W,
@@ -715,7 +733,7 @@ fit_kld_em <- function(target,
     converged = converged,
     degenerate = degenerate,
     ess = ess,
-    ess_relative = ess / is_size,
+    ess_relative = ess / n_x,
     min_component_ess = min(per_component_ess),
     max_weight = max_weight,
     support_fraction = support_fraction,

@@ -675,9 +675,9 @@
 #' index is read from \eqn{-\log|\varphi|} near zero. It is 2 when the
 #' variance is finite and equals the stability index for a stable law. A
 #' target that mixes scales reads low at the usual frequencies, so an axis
-#' reading low is read again at frequencies 1e-5 to 1e-4 of the half-height
+#' reading low is read again at frequencies \eqn{10^{-5}} to \eqn{10^{-4}} of the half-height
 #' frequency. When the index is still below 1.9 a warning of class
-#' `proxymix_cf_heavy_tail` is raised. Scales more than about 1e4 apart can
+#' `proxymix_cf_heavy_tail` is raised. Scales more than about \eqn{10^4} apart can
 #' still read low.
 #'
 #' @section Scope:

@@ -42,16 +42,20 @@ with a one-line message so it is never silent.}
 
 \item{is_size}{Number of importance-sampling draws used for fitting. A fit
 depends on these draws and on its local optimum. To compare two routes or
-proposals, use several seeds.}
+proposals, use several seeds. With \code{adapt = "pmc"} the last batch has
+four times this size.}
 
 \item{init}{A \link{gmm} initialisation, or \code{NULL} to use a kmeans pass on
 the importance-resampled draws.}
 
 \item{max_iter}{Maximum number of EM iterations. The fit stops earlier when
 it meets \code{tol}, and \code{converged} is \code{FALSE} if it does not. With
-\code{adapt = "pmc"} each fresh batch of draws also compares the fit with its
-state 20 batches earlier, and the fit stops when the gain averaged over 20
-batches is under half its standard error.}
+\code{adapt = "pmc"} the fit stops when the relative change in the objective
+within one batch falls below \code{tol}, or when the gain over the fit 20
+batches earlier, measured on fresh draws and averaged over 20 batches, is
+under half its standard error. Either stop is followed by one last batch
+of \code{4 * is_size} draws, fitted without further refreshes of the proposal;
+the diagnostics come from that batch.}
 
 \item{tol}{Convergence tolerance on the relative change in the
 importance-weighted EM objective \verb{Q(theta) = sum_n W_n log g(x_n)}.
@@ -137,7 +141,8 @@ mixture is post-processed by \code{\link[=gmm_canonicalise]{gmm_canonicalise()}}
 A \link{gmm_fit} with \code{regime = "kld"}. The diagnostics list
 contains, among others, \code{kld_trace}, \code{kld_final} (in-sample),
 \code{kld_is_shifted}, \code{kld_final_absolute} (when computable), \code{ess},
-\code{ess_relative} (\code{ess / is_size}), \code{max_weight}, \code{support_fraction},
+\code{ess_relative} (\code{ess} divided by the number of draws in the final
+batch), \code{max_weight}, \code{support_fraction},
 \code{mc_se_kld}, \code{validation_kld} (held-out), \code{validation_ess},
 \code{validation_max_weight}, \code{heldout_kld}, the held-out estimate of the KL
 divergence that \code{\link[=gmm_fit_quality]{gmm_fit_quality()}} describes, and \code{heldout_kld_se}, its

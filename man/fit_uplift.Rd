@@ -79,8 +79,8 @@ different \code{N} start from the same random state, so \code{N = "auto"} and th
 same fixed \code{N} agree at one \code{seed}.
 
 A discrete covariate raises a warning of class \code{proxymix_discrete_columns}.
-In a small sample, or with many tied values such as earnings of zero, different
-seeds can still reach optima with different effects, even in sign. A mixture
+In a small sample, or with many tied values, different seeds can still reach
+optima with different effects, even in sign. A mixture
 can also smooth over a difference in effect between the values of such a column.
 Compare several seeds, and a regression with the interaction, before reading an
 effect. The treatment is binary at this version (\verb{\{t0, t1\}}); a continuous dose

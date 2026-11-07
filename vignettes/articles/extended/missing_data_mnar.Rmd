@@ -478,8 +478,8 @@ aff_tbl <- data.frame(
 knitr::kable(
   aff_tbl, align = c("l", "r", "r", "r", "r"),
   col.names = c("Coefficient", "AER tobit", "survival survreg",
-                "proxymix, N = 1", paste0("proxymix, N = ",
-                                          imp_aff_bic@n_components)),
+                "proxymix, N = 1", paste0("proxymix, N by BIC (",
+                                          imp_aff_bic@n_components, ")")),
   caption = paste0(
     "Coefficients of the latent regression of affairs on five covariates, ",
     "with standard errors in brackets, from the Tobit likelihood in two ",
@@ -496,6 +496,7 @@ towards_zero <- slopes_aff[abs(pooled_aff_bic$estimate[slopes_aff]) <
 shift_aff <- abs(pooled_aff_bic$estimate - coef(fit_tobit)) /
   sqrt(diag(vcov(fit_tobit)))[seq_len(k_aff)]
 largest_shift <- towards_zero[which.max(shift_aff[towards_zero])]
+aff_bic_one <- imp_aff_bic@n_components == 1L
 name_list <- function(v) {
   if (length(v) == 1L) return(v)
   paste(paste(v[-length(v)], collapse = ", "), "and", v[length(v)])
@@ -510,12 +511,25 @@ over the truncated conditional rather than by direct maximisation, and its
 pooled coefficients fall within
 `r fixed(ceiling(10 * max(gap_aff)) / 10, 1)` Tobit standard errors of the
 Tobit estimates.
+```
+
+```{illustration, eval = run_illustration && aff_bic_one}
+Left to choose its component count, proxymix also selects one component.
+A larger count reaches a smaller BIC on these six coarsely coded columns,
+but holds a column constant or sits on a few rows, and is set aside. The
+two proxymix columns therefore come from the same fitted model and differ
+only through the random draws of the imputations. On this data the Tobit
+model is the natural reading; the simulation below scores the imputations
+against the truth.
+```
+
+```{illustration, eval = run_illustration && !aff_bic_one}
 Left to choose its component count, proxymix selects
 `r imp_aff_bic@n_components` components for the joint distribution of the
 six columns, all of them coarsely coded and three of them integer scores,
 and that fit
 `r if (imp_aff_bic@diagnostics$converged) "converged" else "had not converged"`
-after `r imp_aff_bic@diagnostics$iterations` iterations, the default limit.
+after `r imp_aff_bic@diagnostics$iterations` iterations.
 The regression on its completions is then the linear projection of a
 conditional that is no longer linear. Against the Tobit estimates, the
 coefficients on `r name_list(aff_tbl$term[towards_zero])` move towards zero,
@@ -1040,19 +1054,16 @@ bias `r fixed(cv("slope", "AER tobit", "bias"), 3)` and coverage
 `r fixed(cv("slope", "complete data", "coverage"), 3)` for the complete
 data. Taking the zeros at face value biases the slope by
 `r fixed(cv("slope", "zeros at face value", "bias"), 3)` and never covers
-it. The truncated imputations of proxymix remove almost all of that bias, to
+it. The truncated imputations of proxymix bring the bias to
 `r fixed(cv("slope", "proxymix", "bias"), 3)` on the slope and
-`r fixed(cv("intercept", "proxymix", "bias"), 3)` on the intercept, but not
-all of it, and its intervals cover in
-`r fixed(cv("slope", "proxymix", "coverage"), 3)` of datasets although they
-are wider than the Tobit intervals,
-`r fixed(cv("slope", "proxymix", "width"), 3)` against
-`r fixed(cv("slope", "AER tobit", "width"), 3)`. The Tobit likelihood is
-the correctly specified maximum-likelihood estimator for this design, and
-the imputation route, with its
-component count chosen by BIC and its parameters refitted on bootstrap
-resamples, pays a small price in both bias and coverage for reaching the
-same model from the imputation side.
+`r fixed(cv("intercept", "proxymix", "bias"), 3)` on the intercept, and its
+intervals cover in `r fixed(cv("slope", "proxymix", "coverage"), 3)` of
+datasets, with a width of `r fixed(cv("slope", "proxymix", "width"), 3)`
+against `r fixed(cv("slope", "AER tobit", "width"), 3)` for the Tobit
+intervals. The Tobit likelihood is the correctly specified
+maximum-likelihood estimator for this design; the imputation route reaches
+the same model from the imputation side, with its component count chosen
+by BIC and its parameters refitted on bootstrap resamples.
 
 In this run, proxymix's sweep and mice's delta adjustment did about
 equally well in the value-dependent design, each at the grid value nearest
@@ -1061,10 +1072,10 @@ coverage of `r fixed(mv("proxymix, slope 0.7", "coverage"), 3)` for
 proxymix at slope 0.7, against
 `r fixed(mv("mice, shift 0.4", "bias"), 3)` and
 `r fixed(mv("mice, shift 0.4", "coverage"), 3)` for mice at a shift of 0.4.
-The Tobit likelihood in AER and survival did better than proxymix's
-imputations in the censored design, with a slope root mean squared error of
-`r fixed(cv("slope", "AER tobit", "rmse"), 3)` against
-`r fixed(cv("slope", "proxymix", "rmse"), 3)` and coverage of
+In the censored design the Tobit likelihood in AER and survival had a slope
+root mean squared error of `r fixed(cv("slope", "AER tobit", "rmse"), 3)`
+against `r fixed(cv("slope", "proxymix", "rmse"), 3)` for proxymix's
+imputations, and coverage of
 `r fixed(cv("slope", "AER tobit", "coverage"), 3)` against
 `r fixed(cv("slope", "proxymix", "coverage"), 3)`. The comparison covers one mixture shape, one sample
 size, a logistic mechanism on one coordinate, censoring at a single known

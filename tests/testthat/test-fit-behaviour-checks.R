@@ -159,9 +159,29 @@ test_that("adapt = pmc stops late enough to match a long run by quadrature", {
                                     adapt = "pmc", max_iter = 3000L,
                                     validation_size = 0L))$value
     expect_true(f@converged)
+    expect_equal(nrow(f@diagnostics$is_sample), 4L * 5000L)
     true_kl(f)
   }, numeric(1L))
   expect_lt(mean(kl), 0.0035)
+  expect_lt(max(kl), 0.0026)
+})
+
+test_that("adapt = pmc reports the target evaluations it makes", {
+  n_calls <- 0L
+  lp <- function(th) {
+    if (is.null(dim(th))) th <- matrix(th, ncol = 2L)
+    n_calls <<- n_calls + nrow(th)
+    stats::dnorm(th[, 1L], 0, 2, log = TRUE) +
+      stats::dnorm(th[, 2L], (th[, 1L]^2 - 4) / 2, 1, log = TRUE)
+  }
+  tgt <- gmm_target(n_dim = 2L, log_density = lp, normalised = FALSE)
+  q <- is_mvt(2L, mean = c(0, 0), sigma = diag(c(8, 16)), df = 5)
+  f <- collect_classes(fit_kld_em(tgt, N = 3L, proposal = q, is_size = 1000L, seed = 1L,
+                                  adapt = "pmc", max_iter = 3000L,
+                                  validation_size = 0L))$value
+  expect_true(f@converged)
+  expect_equal(nrow(f@diagnostics$is_sample), 4L * 1000L)
+  expect_equal(f@diagnostics$n_target_evals, n_calls)
 })
 
 test_that("from_cf_sources accepts a finite-variance source that mixes scales", {

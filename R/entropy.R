@@ -61,8 +61,7 @@
 #'
 #' Computes the order-2 Renyi entropy (the default) or the Shannon differential
 #' entropy of a Gaussian mixture. These are different quantities: to compare
-#' with a published Shannon entropy, such as that of a normal distribution, use
-#' `order = "shannon"`. The quadratic (order-2) Renyi entropy \eqn{H_2(g) = -\log \int g(x)^2 \, dx} is available in
+#' with a published Shannon entropy, use `order = "shannon"`. The quadratic (order-2) Renyi entropy \eqn{H_2(g) = -\log \int g(x)^2 \, dx} is available in
 #' closed form, because \eqn{\int g^2} is a finite sum of Gaussian-density
 #' evaluations. Shannon entropy has no closed form for a mixture (the integrand
 #' carries the logarithm of a sum) and is estimated by Monte Carlo, reported
@@ -370,7 +369,7 @@ gmm_conditional_entropy <- function(g, given, order = c("renyi2", "shannon"),
 #' }
 #' target <- gmm_target(n_dim = 3L, log_density = function(X) -energy(X))
 #' g <- fit_kld_em(target, N = 8L, proposal = is_uniform(3L, -3, 3),
-#'                 is_size = 8000L, anneal = TRUE, seed = 1L, support_warn = FALSE)
+#'                 is_size = 4000L, anneal = TRUE, seed = 1L, support_warn = FALSE)
 #' gmm_independence_graph(g)            # recovers x1 - x2 - x3 (no x1 - x3 edge)
 gmm_independence_graph <- function(g, threshold = NULL, alpha = 0.05, n = NULL) {
   if (!S7::S7_inherits(g, gmm)) {

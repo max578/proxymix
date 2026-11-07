@@ -41,17 +41,17 @@ declares a bounded or one-sided \code{support}, otherwise a multivariate-t with
 with a one-line message so it is never silent.}
 
 \item{is_size}{Number of importance-sampling draws used for fitting. A fit
-depends on these draws and on its local optimum, so compare two routes or
-proposals over several seeds rather than at one.}
+depends on these draws and on its local optimum. To compare two routes or
+proposals, use several seeds.}
 
 \item{init}{A \link{gmm} initialisation, or \code{NULL} to use a kmeans pass on
 the importance-resampled draws.}
 
 \item{max_iter}{Maximum number of EM iterations. The fit stops earlier when
 it meets \code{tol}, and \code{converged} is \code{FALSE} if it does not. With
-\code{adapt = "pmc"} the fit compares itself every 50 iterations with its state
-50 iterations earlier, on a fresh batch of draws, and stops when the gain
-is within one standard error of that paired comparison.}
+\code{adapt = "pmc"} each fresh batch of draws also compares the fit with its
+state 20 batches earlier, and the fit stops when the gain averaged over 20
+batches is under half its standard error.}
 
 \item{tol}{Convergence tolerance on the relative change in the
 importance-weighted EM objective \verb{Q(theta) = sum_n W_n log g(x_n)}.

@@ -2,11 +2,7 @@
 ##
 ## Closed-form moment-matching fit.
 ##   N == 1 : exact moment match, mu = E[x], Sigma = Cov(x).
-##   N > 1  : equal-weight mixture spread along the principal direction, with
-##            within-component covariance reduced so that the mixture's mean
-##            and covariance equal the target's exactly. Moments do not
-##            determine a shape, so the result is a seed for regime (ii) or
-##            (iii) and says so.
+##   N > 1  : equal weights along the principal direction, moments kept exactly.
 
 #' Closed-form moment-matching fit
 #'

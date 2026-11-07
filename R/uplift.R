@@ -119,41 +119,86 @@ S7::method(print, uplift_model) <- function(x, ...) {
 
 ## Bayesian-information-criterion sweep for the component count -------------
 
-## Selects K by minimising BIC of the joint fit on the training matrix. The
-## mixture log-likelihood is read off `dgmm()`, so the sweep is regime-agnostic.
 ## A component holding a discrete column constant has a density limited only by
-## the ridge, so the score floors such a column's variance at spacing^2 / 12,
-## that of a value spread evenly over its own cell. Every K starts from the same
-## random state, so the optimum reached at K does not depend on the earlier K.
-.fit_uplift_k <- function(target, k, regime, ...) {
-  args <- list(...)
-  uses_em <- regime == "sample" || (regime == "auto" && k > 1L)
-  if (uses_em && is.null(args$n_starts)) args$n_starts <- 20L
-  do.call(fit_proxymix, c(list(target = target, N = k, regime = regime), args))
+## the ridge, so scores floor such a column's variance at spacing^2 / 12.
+.floored_loglik <- function(g, M, floor_var) {
+  scored <- gmm(
+    weights = g@weights,
+    means = g@means,
+    covariances = lapply(g@covariances, function(S) S + diag(floor_var, ncol(M)))
+  )
+  sum(dgmm(M, scored, log = TRUE))
 }
 
-.select_k_bic <- function(target, M, n_grid, regime, ...) {
+## Half k-means, half random: on Project STAR only k-means reaches the best optimum,
+## and on a mixed continuous and binary joint only random starts do.
+.uplift_starts <- function(samples, N, n_starts, ridge_eps) {
+  n_km <- ceiling(n_starts / 2)
+  km <- lapply(seq_len(n_km), function(i) {
+    tryCatch(init_kmeans(samples, N = N, ridge_eps = ridge_eps, nstart = 1L),
+             error = function(e) NULL)
+  })
+  mu <- colMeans(samples)
+  sds <- sqrt(diag(stats::cov(samples)))
+  rnd <- lapply(seq_len(n_starts - n_km), function(i) {
+    init_random(N = N, p = ncol(samples), centre = mu, scale = mean(sds),
+                sigma_diag = mean(sds^2))
+  })
+  c(km[!vapply(km, is.null, logical(1L))], rnd)
+}
+
+## EM from each start, keeping the fit with the best floored score.
+.fit_em_floored <- function(target, N, floor_var, max_iter = 500L, tol = 1e-8,
+                            ridge_eps = 1e-6, n_starts = NULL, seed = NULL,
+                            canonicalise = TRUE) {
+  samples <- target@samples
+  if (is.null(n_starts)) n_starts <- if (any(floor_var[-2L] > 0)) 100L else 20L
+  if (N == 1L) n_starts <- 1L
+  inits <- if (is.null(seed)) {
+    .uplift_starts(samples, N, n_starts, ridge_eps)
+  } else {
+    withr::with_seed(as.integer(seed), .uplift_starts(samples, N, n_starts, ridge_eps))
+  }
+  call <- match.call()
+  fits <- lapply(inits, function(init) {
+    tryCatch(em_samples_one_run(samples, init, target, max_iter, tol, ridge_eps,
+                                call = call),
+             error = function(e) NULL)
+  })
+  fits <- fits[!vapply(fits, is.null, logical(1L))]
+  if (!length(fits)) cli::cli_abort("all EM starts failed.")
+  scores <- vapply(fits, .floored_loglik, numeric(1L), M = samples,
+                   floor_var = floor_var)
+  .finish_em_samples(fits[[which.max(scores)]], samples, ridge_eps, canonicalise)
+}
+
+.fit_uplift_k <- function(target, k, regime, floor_var, ...) {
+  args <- list(...)
+  uses_em <- (regime == "sample" || (regime == "auto" && k > 1L)) &&
+    is.null(args$init) && !isTRUE(args$anneal)
+  if (!uses_em) {
+    return(do.call(fit_proxymix, c(list(target = target, N = k, regime = regime), args)))
+  }
+  args$anneal <- NULL
+  args$temp_schedule <- NULL
+  do.call(.fit_em_floored, c(list(target = target, N = k, floor_var = floor_var), args))
+}
+
+## Every K starts from the same random state, so the optimum reached at K does not
+## depend on the earlier K.
+.select_k_bic <- function(target, M, n_grid, regime, floor_var, ...) {
   n <- nrow(M)
   p <- ncol(M)
-  floor_var <- .discrete_variance_floor(M)
   fit_seed <- sample.int(.Machine$integer.max, 1L)
   fits <- vector("list", length(n_grid))
   bic <- numeric(length(n_grid))
   for (i in seq_along(n_grid)) {
     k <- n_grid[i]
     fits[[i]] <- withr::with_seed(
-      fit_seed, .fit_uplift_k(target, k, regime, ...)
+      fit_seed, .fit_uplift_k(target, k, regime, floor_var, ...)
     )
-    scored <- gmm(
-      weights = fits[[i]]@weights,
-      means = fits[[i]]@means,
-      covariances = lapply(fits[[i]]@covariances, function(S) {
-        S + diag(floor_var, p)
-      })
-    )
-    loglik <- sum(dgmm(M, scored, log = TRUE))
     n_par <- k * (p + p * (p + 1L) / 2L) + (k - 1L)
-    bic[i] <- -2 * loglik + n_par * log(n)
+    bic[i] <- -2 * .floored_loglik(fits[[i]], M, floor_var) + n_par * log(n)
   }
   best <- which.min(bic)
   list(fit = fits[[best]], K = n_grid[best],
@@ -176,14 +221,19 @@ S7::method(print, uplift_model) <- function(x, ...) {
 #' joint BIC; the full BIC trace is stored in the model's metadata. A binary
 #' or other discrete column can be held constant inside a component, where its
 #' density is limited only by the ridge, so the BIC floors the variance of a
-#' column with at most ten distinct values at `spacing^2 / 12`. Fits at
+#' column with at most ten distinct values at `spacing^2 / 12`. The same score
+#' chooses among the EM starts, half from k-means and half random: 100 starts
+#' per fit when the outcome or a covariate is discrete and 20 otherwise. Fits at
 #' different `N` start from the same random state, so `N = "auto"` and the
-#' same fixed `N` agree at one `seed`. With discrete covariates many optima
-#' fit about equally well and the effects can differ between them, even in sign,
-#' so a warning of class `proxymix_discrete_columns` is raised; compare several
-#' seeds before reading an effect. The
-#' treatment is binary at this version (`{t0, t1}`); a continuous dose is a
-#' future extension.
+#' same fixed `N` agree at one `seed`.
+#'
+#' A discrete covariate raises a warning of class `proxymix_discrete_columns`.
+#' In a small sample, or with many tied values such as earnings of zero, different
+#' seeds can still reach optima with different effects, even in sign. A mixture
+#' can also smooth over a difference in effect between the values of such a column.
+#' Compare several seeds, and a regression with the interaction, before reading an
+#' effect. The treatment is binary at this version (`{t0, t1}`); a continuous dose
+#' is a future extension.
 #'
 #' @param data A data frame holding the outcome, treatment and covariate
 #'   columns.
@@ -279,12 +329,20 @@ fit_uplift <- function(data,
 
   target <- gmm_target_from_samples(M, name = "uplift_joint")
 
-  .warn_discrete_columns(M[, -(1:2), drop = FALSE], covariates)
+  .warn_discrete_columns(
+    M[, -(1:2), drop = FALSE], covariates,
+    advice = paste(
+      "Different seeds can still reach optima with different effects, and a",
+      "mixture can smooth over a difference in effect between these values.",
+      "Compare several seeds and a regression with the interaction."
+    )
+  )
+  floor_var <- .discrete_variance_floor(M)
 
   # Fit (fixed K or BIC-selected) ---------------------------------------------
   if (identical(N, "auto")) {
     sel <- .select_k_bic(target, M, n_grid = as.integer(n_grid),
-                         regime = regime, ...)
+                         regime = regime, floor_var = floor_var, ...)
     fit <- sel$fit
     K <- sel$K
     bic_trace <- sel$bic
@@ -293,7 +351,7 @@ fit_uplift <- function(data,
     K <- as.integer(N)
     fit <- withr::with_seed(
       sample.int(.Machine$integer.max, 1L),
-      .fit_uplift_k(target, K, regime, ...)
+      .fit_uplift_k(target, K, regime, floor_var, ...)
     )
     bic_trace <- NULL
   }

@@ -174,9 +174,8 @@
   -2 * loglik + npar * log(n)
 }
 
-## TRUE when a component sits on fewer than p + 1 rows or holds some column
-## constant, at or near the ridge: its density then grows with the likelihood
-## while the imputations from it become a spike.
+## TRUE when a component has under p + 1 rows or holds a column at the ridge: its
+## density grows with the likelihood while its imputations form a spike.
 .mixture_collapsed <- function(g, X, ridge_eps) {
   n <- nrow(X)
   p <- ncol(X)
@@ -211,17 +210,20 @@
   candidates[best]
 }
 
-## Warn when a column has few distinct values: a Gaussian component can hold it
-## constant, which makes the likelihood, and any choice read from it, depend on
-## the ridge.
-.warn_discrete_columns <- function(X, var_names) {
+## A component can hold a column with few values constant, and the likelihood then
+## depends on the ridge.
+.warn_discrete_columns <- function(X, var_names, advice = paste(
+  "A component can hold such a column constant, so the likelihood, and anything",
+  "chosen or read from it, depends on {.arg ridge_eps}, and which optimum is",
+  "reached can change with the seed. Check a small fixed {.arg N} and several seeds."
+)) {
   few <- vapply(seq_len(ncol(X)), function(j) {
     length(unique(X[!is.na(X[, j]), j])) <= 10L
   }, logical(1L))
   if (any(few)) {
     cli::cli_warn(
       c("{sum(few)} column{?s} of {.arg data} {?has/have} at most ten distinct values: {.val {var_names[few]}}.",
-        "i" = "A component can hold such a column constant, so the likelihood, and anything chosen or read from it, depends on {.arg ridge_eps}, and which optimum is reached can change with the seed. Check a small fixed {.arg N} and several seeds."),
+        "i" = advice),
       class = "proxymix_discrete_columns"
     )
   }

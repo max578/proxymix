@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-title: "proxymix: Kullback-Leibler Optimal Gaussian Mixture Proxies for Target Densities"
+title: "proxymix: Gaussian Mixture Proxies for Densities and Characteristic Functions"
 message: "If you use this software, please cite it using the metadata in this file."
 type: software
 authors:
@@ -12,12 +12,14 @@ authors:
     name-particle: van der
     email: john.vanderhoek@adelaide.edu.au
 abstract: >-
-  An R package fitting multivariate Gaussian-mixture proxies that are
-  Kullback-Leibler optimal to user-supplied target densities. Three regimes
-  are unified under one verb: closed-form moment matching, classical EM on
-  samples, and importance-sampled KLD-EM against an evaluable-only target.
+  An R package fitting multivariate Gaussian-mixture proxies to target
+  distributions given by a density, by samples, or by a characteristic
+  function. Four regimes are unified under one verb: closed-form moment
+  matching, classical EM on samples, importance-sampled EM against a target
+  that can only be evaluated, and a least-squares fit to a characteristic
+  function.
 license: MIT
-version: 0.16.0.9000
+version: 0.18.0
 date-released: "2026-07-06"
 references:
   - type: article

@@ -72,14 +72,19 @@ The component count \code{N} may be fixed or chosen automatically. With
 joint BIC; the full BIC trace is stored in the model's metadata. A binary
 or other discrete column can be held constant inside a component, where its
 density is limited only by the ridge, so the BIC floors the variance of a
-column with at most ten distinct values at \code{spacing^2 / 12}. Fits at
+column with at most ten distinct values at \code{spacing^2 / 12}. The same score
+chooses among the EM starts, half from k-means and half random: 100 starts
+per fit when the outcome or a covariate is discrete and 20 otherwise. Fits at
 different \code{N} start from the same random state, so \code{N = "auto"} and the
-same fixed \code{N} agree at one \code{seed}. With discrete covariates many optima
-fit about equally well and the effects can differ between them, even in sign,
-so a warning of class \code{proxymix_discrete_columns} is raised; compare several
-seeds before reading an effect. The
-treatment is binary at this version (\verb{\{t0, t1\}}); a continuous dose is a
-future extension.
+same fixed \code{N} agree at one \code{seed}.
+
+A discrete covariate raises a warning of class \code{proxymix_discrete_columns}.
+In a small sample, or with many tied values such as earnings of zero, different
+seeds can still reach optima with different effects, even in sign. A mixture
+can also smooth over a difference in effect between the values of such a column.
+Compare several seeds, and a regression with the interaction, before reading an
+effect. The treatment is binary at this version (\verb{\{t0, t1\}}); a continuous dose
+is a future extension.
 }
 \examples{
 set.seed(1)

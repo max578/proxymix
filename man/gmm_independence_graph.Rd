@@ -68,7 +68,7 @@ energy <- function(X) {
 }
 target <- gmm_target(n_dim = 3L, log_density = function(X) -energy(X))
 g <- fit_kld_em(target, N = 8L, proposal = is_uniform(3L, -3, 3),
-                is_size = 8000L, anneal = TRUE, seed = 1L, support_warn = FALSE)
+                is_size = 4000L, anneal = TRUE, seed = 1L, support_warn = FALSE)
 gmm_independence_graph(g)            # recovers x1 - x2 - x3 (no x1 - x3 edge)
 }
 \seealso{

@@ -431,10 +431,8 @@
   }, numeric(1L))
 }
 
-## A target that mixes scales has a low slope at these frequencies even with
-## every moment finite, because the slope reaches 2 only below one over its
-## largest scale. An axis reading low is read again far below the half-height
-## frequency. A stable law has the same slope at every frequency.
+## A scale mixture's slope reaches 2 only below one over its largest scale, and a
+## stable law's slope is the same at every frequency.
 .cf_tail_index_refined <- function(phi, p, th, index) {
   vapply(seq_len(p), function(d) {
     if (index[d] >= 1.9) return(index[d])

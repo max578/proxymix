@@ -151,11 +151,8 @@
   apply(cover, 1L, min)
 }
 
-## Estimated probability of the arm `t1` given each row of covariates: the
-## responsibilities on the covariates alone weight, in each component, the
-## chance that the treatment given the covariates falls nearer `t1` than `t0`.
-## Masses, not densities, so that a component with one arm near the ridge does
-## not outweigh one with both. Zero or one means the fit has one arm there.
+## P(arm t1 | covariates) from masses, so a component with one arm near the ridge
+## does not outweigh one with both. Zero or one means the fit has one arm there.
 .arm_propensity <- function(g, t_idx, x_idx, t1, t0, X) {
   K <- gmm_n_components(g)
   n <- nrow(X)

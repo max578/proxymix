@@ -128,6 +128,42 @@ test_that("the heavy-tail warning separates mixed scales from stable laws", {
   }
 })
 
+test_that("adapt = pmc stops late enough to match a long run by quadrature", {
+  skip_on_cran()
+  ## DAAG::orings: temperature minus 70, any damage on that flight.
+  temp <- c(53, 57, 58, 63, 66, 67, 67, 67, 68, 69, 70, 70, 70, 70, 72, 73, 75,
+            75, 76, 76, 78, 79, 81) - 70
+  dam <- c(1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0)
+  lp <- function(th) {
+    if (is.null(dim(th))) th <- matrix(th, ncol = 2L)
+    eta <- outer(rep(1, length(temp)), th[, 1L]) + outer(temp, th[, 2L])
+    colSums(dam * eta - (pmax(eta, 0) + log1p(exp(-abs(eta)))))
+  }
+  op <- stats::optim(c(-1, -0.2), function(b) -lp(b), hessian = TRUE)
+  sig <- solve(op$hessian)
+  sds <- sqrt(diag(sig))
+  g1 <- seq(op$par[1L] - 14 * sds[1L], op$par[1L] + 24 * sds[1L], length.out = 241L)
+  g2 <- seq(op$par[2L] - 14 * sds[2L], op$par[2L] + 24 * sds[2L], length.out = 241L)
+  gr <- as.matrix(expand.grid(g1, g2))
+  lp_gr <- lp(gr)
+  da <- (g1[2L] - g1[1L]) * (g2[2L] - g2[1L])
+  log_z <- log(sum(exp(lp_gr)) * da)
+  true_kl <- function(f) {
+    keep <- lp_gr - log_z > -700
+    sum(exp(lp_gr[keep] - log_z) * (lp_gr[keep] - log_z - dgmm(gr[keep, ], f, log = TRUE))) * da
+  }
+  tgt <- gmm_target(n_dim = 2L, log_density = lp, normalised = FALSE)
+  q <- is_mvt(2L, mean = op$par, sigma = 4 * sig, df = 5)
+  kl <- vapply(1:3, function(s) {
+    f <- collect_classes(fit_kld_em(tgt, N = 3L, proposal = q, is_size = 5000L, seed = s,
+                                    adapt = "pmc", max_iter = 3000L,
+                                    validation_size = 0L))$value
+    expect_true(f@converged)
+    true_kl(f)
+  }, numeric(1L))
+  expect_lt(mean(kl), 0.0035)
+})
+
 test_that("from_cf_sources accepts a finite-variance source that mixes scales", {
   cf <- function(t) {
     s1 <- t[, 1L] + 0.5 * t[, 2L]
@@ -180,6 +216,23 @@ test_that("uplift selection is reproducible across seeds and agrees with a fixed
   expect_equal(gmm_n_components(fixed@fit), gmm_n_components(auto@fit))
   ## The score does not run away with the ridge.
   expect_gt(min(auto@metadata$bic_trace), -1e5 / 10)
+})
+
+test_that("fit_uplift reaches the true effects from seeds that used to miss them", {
+  skip_on_cran()
+  set.seed(20261107)
+  n <- 3000L
+  dat <- data.frame(x = stats::rnorm(n), b1 = stats::rbinom(n, 1L, 0.4),
+                    b2 = stats::rbinom(n, 1L, 0.3), t = stats::rbinom(n, 1L, 0.5))
+  dat$y <- 1 + dat$x + dat$b1 + dat$t * (0.5 + dat$b1) + stats::rnorm(n, sd = 0.5)
+  truth <- 0.5 + dat$b1
+  covs <- c("x", "b1", "b2")
+  dist <- vapply(c(11L, 18L, 19L, 20L), function(s) {
+    m <- collect_classes(fit_uplift(dat, "y", "t", covs, N = 4L, regime = "sample", seed = s))$value
+    tau <- collect_classes(proxy_cate(m, newdata = dat[, covs], se = FALSE))$value$tau
+    sqrt(mean((tau - truth)^2))
+  }, numeric(1L))
+  expect_lt(max(dist), 0.06)
 })
 
 test_that("proxy_overlap flags a profile whose components hold one arm", {

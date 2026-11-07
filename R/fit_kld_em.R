@@ -59,15 +59,15 @@
 #'   `df = 5` in `target@n_dim` dimensions. The automatic choice is announced
 #'   with a one-line message so it is never silent.
 #' @param is_size Number of importance-sampling draws used for fitting. A fit
-#'   depends on these draws and on its local optimum, so compare two routes or
-#'   proposals over several seeds rather than at one.
+#'   depends on these draws and on its local optimum. To compare two routes or
+#'   proposals, use several seeds.
 #' @param init A [gmm] initialisation, or `NULL` to use a kmeans pass on
 #'   the importance-resampled draws.
 #' @param max_iter Maximum number of EM iterations. The fit stops earlier when
 #'   it meets `tol`, and `converged` is `FALSE` if it does not. With
-#'   `adapt = "pmc"` the fit compares itself every 50 iterations with its state
-#'   50 iterations earlier, on a fresh batch of draws, and stops when the gain
-#'   is within one standard error of that paired comparison.
+#'   `adapt = "pmc"` each fresh batch of draws also compares the fit with its
+#'   state 20 batches earlier, and the fit stops when the gain averaged over 20
+#'   batches is under half its standard error.
 #' @param tol Convergence tolerance on the relative change in the
 #'   importance-weighted EM objective `Q(theta) = sum_n W_n log g(x_n)`.
 #'   `Q` is invariant to the target's normalising constant, so the
@@ -365,7 +365,10 @@ fit_kld_em <- function(target,
   ess_history <- ess
   batch_start <- 0L
   batch_id <- integer(0L)
-  pmc_checkpoint <- NULL
+  pmc_lag <- 20L
+  pmc_ring <- vector("list", pmc_lag)
+  pmc_gain <- numeric(0L)
+  pmc_var <- numeric(0L)
   esc <- 1
   force_refresh <- FALSE
   for (it in seq_len(max_iter)) {
@@ -388,26 +391,28 @@ fit_kld_em <- function(target,
     weighted_obj_trace <- c(weighted_obj_trace, weighted_obj)
     batch_id <- c(batch_id, n_refresh)
 
-    ## Under PMC the objective keeps moving on each fresh draw, and its error
-    ## across batches is larger than the improvement left to find. So the
-    ## stopping rule is paired: on draws neither state was fitted to, compare
-    ## the current state with the one 50 iterations back, and stop when the gain
-    ## is within one standard error.
-    if (adapt == "pmc" && it - 1L == batch_start && batch_start > 0L &&
-          batch_start %% 50L == 0L && ess >= min_ess) {
-      if (!is.null(pmc_checkpoint)) {
-        log_g_before <- dgmm_log_via_components(
-          x, pmc_checkpoint$weights, pmc_checkpoint$means, pmc_checkpoint$covs
-        )
-        pair <- log_g - log_g_before
+    ## Under PMC the objective moves with each batch by more than the gain left,
+    ## so gains are paired on draws neither state was fitted to.
+    if (adapt == "pmc" && it - 1L == batch_start && batch_start > 0L) {
+      slot <- (n_refresh - 1L) %% pmc_lag + 1L
+      before <- pmc_ring[[slot]]
+      if (!is.null(before) && ess >= min_ess) {
+        pair <- log_g - dgmm_log_via_components(x, before$weights, before$means,
+                                                before$covs)
         gain <- sum(W * pair)
-        gain_se <- sqrt(sum(W^2 * (pair - gain)^2))
-        if (gain <= max(gain_se, tol * abs(weighted_obj))) {
-          converged <- TRUE
-          break
+        pmc_gain <- c(pmc_gain, gain)
+        pmc_var <- c(pmc_var, sum(W^2 * (pair - gain)^2))
+        n_gain <- length(pmc_gain)
+        if (n_gain >= pmc_lag && n_gain %% pmc_lag == 0L) {
+          recent <- (n_gain - pmc_lag + 1L):n_gain
+          gain_se <- sqrt(mean(pmc_var[recent]) / pmc_lag)
+          if (mean(pmc_gain[recent]) <= max(0.5 * gain_se, tol * abs(weighted_obj))) {
+            converged <- TRUE
+            break
+          }
         }
       }
-      pmc_checkpoint <- list(weights = weights, means = means, covs = covs)
+      pmc_ring[[slot]] <- list(weights = weights, means = means, covs = covs)
     }
 
     ## Convergence is judged on the importance-weighted EM objective
@@ -529,10 +534,8 @@ fit_kld_em <- function(target,
     }
   }
 
-  ## The IS-weighted EM objective is monotone under exact updates on one set
-  ## of draws, so a PMC refresh boundary is not compared. An empty-component
-  ## reseed is a deliberate restart-like intervention that legitimately dips
-  ## the objective, so the invariant is only asserted for reseed-free runs.
+  ## The objective is monotone within one set of draws and no reseed, so only
+  ## those stretches are compared.
   same_batch <- diff(batch_id) == 0L
   if (n_reseeds == 0L && any(same_batch) && length(weighted_obj_trace) > 2L) {
     worst_drop <- min(diff(weighted_obj_trace)[same_batch])

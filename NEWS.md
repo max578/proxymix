@@ -1,4 +1,4 @@
-# proxymix (development version)
+# proxymix 0.18.0
 
 ### Changes to results
 
@@ -14,25 +14,28 @@
 * `fit_proxymix(regime = "moment")` at `N >= 2` now returns a mixture with exactly
   the target's mean and covariance. It used to return up to about three times
   the variance. A message says the mixture adds nothing to `N = 1`.
-* `fit_uplift(N = "auto")` scores a discrete column with a variance floor, so its
-  choice no longer follows `ridge_eps`, and each `N` starts from the same random
-  state, so the result no longer depends on the fits made before it. It uses 20
-  starts per fit on samples unless `n_starts` is given.
+* `fit_uplift()` scores a discrete column with a variance floor, so its choice no
+  longer follows `ridge_eps`. That score now also chooses among the EM starts,
+  half from k-means and half random: 100 per fit when the outcome or a covariate
+  is discrete, 20 otherwise, unless `n_starts` is given. On Project STAR the
+  effects now agree across seeds where they used to change sign. Each `N` starts
+  from the same random state, so the result no longer depends on the fits made
+  before it.
 * `gmm_impute(N = NULL)` skips fits in which a component holds a column constant
   or sits on a few rows. Under a censored or missing-not-at-random mechanism it
   scores each `N` with that mechanism's own fit, which removes imputations
   concentrated on a spike.
 * `proxy_overlap()` gains a `propensity` column, and it and `proxy_cate()` now
   flag a unit whose components hold only one treatment arm.
-* With `adapt = "pmc"`, `fit_kld_em()` now stops when a paired comparison on
-  fresh draws finds no further gain over 50 iterations. It used to run to
-  `max_iter` every time.
+* With `adapt = "pmc"`, `fit_kld_em()` now stops when a paired comparison on fresh
+  draws, averaged over 20 batches, finds no further gain against the state 20
+  batches earlier. It used to run to `max_iter` every time.
 
 ### Bug fixes
 
 * `from_cf()` no longer warns of heavy tails, and `from_cf_sources()` no longer
   refuses, a target with finite variance that mixes scales. An axis with a low
-  tail index is read again at much lower frequencies. Stable laws still warn.
+  tail index is read again at much lower frequencies. Stable distributions still warn.
 * `fit_kld_em(adapt = "pmc")` no longer warns that the objective decreased when
   the only change was a fresh batch of draws.
 
@@ -46,8 +49,10 @@
 * `gmm_modes()` gains `min_height`, to ignore modes of negligible density.
 * `gmm_impute()` warns with class `proxymix_discrete_columns` on a column with at
   most ten distinct values, and `fit_uplift()` on such a covariate, because
-  different seeds can then reach different optima with different effects; and `gmm_kld()` warns with class
-  `proxymix_negative_variational` when the variational value falls below zero.
+  different seeds can then reach different optima. In `fit_uplift()` this still
+  happens in small samples and with many tied values, as on the LaLonde data.
+* `gmm_kld()` warns with class `proxymix_negative_variational` when the variational
+  value falls below zero.
 
 # proxymix 0.17.0
 

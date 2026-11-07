@@ -17,7 +17,8 @@
 * `fit_uplift()` scores a discrete column with a variance floor, so its choice no
   longer follows `ridge_eps`. That score now also chooses among the EM starts,
   half from k-means and half random: 100 per fit when the outcome or a covariate
-  is discrete, 20 otherwise, unless `n_starts` is given. Each `N` starts
+  is discrete, 20 otherwise, unless `n_starts` is given. On Project STAR the
+  effects now agree across seeds where they used to change sign. Each `N` starts
   from the same random state, so the result no longer depends on the fits made
   before it.
 * `gmm_impute(N = NULL)` skips fits in which a component holds a column constant

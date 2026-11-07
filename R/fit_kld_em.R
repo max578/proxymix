@@ -371,9 +371,7 @@ fit_kld_em <- function(target,
   batch_start <- 0L
   batch_id <- integer(0L)
   pmc_lag <- 20L
-  ## When a PMC stop fires, one last batch of `final_k * is_size` draws is
-  ## fitted from the current state, so the returned fit carries less
-  ## Monte-Carlo noise than any single batch.
+  ## a PMC stop is followed by one fit to `final_k * is_size` fresh draws
   final_k <- 4L
   final_phase <- FALSE
   force_final <- FALSE
